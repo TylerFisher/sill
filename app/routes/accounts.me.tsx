@@ -19,7 +19,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
-const AddPost = () => {
+const Me = () => {
   const data = useLoaderData<typeof loader>();
 
   const nameDisplay = `${data?.actor.name} (@${data?.actor.handle})`;
@@ -48,4 +48,4 @@ const AddPost = () => {
   );
 };
 
-export default AddPost;
+export default Me;
