@@ -23,16 +23,16 @@ export async function uploadThumbnail(
     thumbnailArea
   );
   const thumbnail = await original.resize(thumbnailSize).webp().toBuffer();
-  // await s3.send(
-  //   new PutObjectCommand({
-  //     Bucket: S3_BUCKET,
-  //     Key: `media/${id}/thumbnail`,
-  //     Body: thumbnail.subarray(),
-  //     ContentType: "image/webp",
-  //   }),
-  // );
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: `media/${id}/thumbnail.webp`,
+      Body: thumbnail.subarray(),
+      ContentType: "image/webp",
+    })
+  );
   return {
-    thumbnailUrl: new URL(`media/${id}/thumbnail`, S3_URL_BASE).href,
+    thumbnailUrl: new URL(`media/${id}/thumbnail.webp`, S3_URL_BASE).href,
     thumbnailType: "image/webp",
     thumbnailWidth: thumbnailSize.width,
     thumbnailHeight: thumbnailSize.height,

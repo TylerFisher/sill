@@ -168,9 +168,8 @@ model Like {
 
 model Media {
   id              String   @id @db.Uuid
-  postId          String?  @db.Uuid
   type            String
-  url             String
+  url             String   @unique
   width           Int
   height          Int
   description     String?
@@ -179,7 +178,10 @@ model Media {
   thumbnailWidth  Int
   thumbnailHeight Int
   createdAt       DateTime @default(now())
+  postId          String?  @db.Uuid
   post            Post?    @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  itemId          String?  @db.Uuid
+  item            Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model Mention {
@@ -248,6 +250,7 @@ model Item {
   feed        Feed         @relation(fields: [feedId], references: [id])
   feedId      String       @db.Uuid
   statuses    ItemStatus[]
+  media       Media[]
 
   @@unique([url, feedId])
 }
