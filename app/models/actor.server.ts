@@ -2,7 +2,7 @@ import { exportJwk, generateCryptoKeyPair } from "@fedify/fedify";
 import federation from "../../federation";
 import { prisma } from "../db.server";
 import { uuidv7 } from "uuidv7-js";
-import { ActorType, Visibility } from "@prisma/client";
+import { Actor, ActorType, Visibility } from "@prisma/client";
 import { JsonObject } from "@prisma/client/runtime/library";
 
 export interface ActorFormData {
@@ -65,6 +65,17 @@ export const createActor = async (
           )) as JsonObject,
         },
       },
+    },
+  });
+};
+
+export const getActor = async (actorId: string) => {
+  return await prisma.actor.findFirstOrThrow({
+    where: {
+      id: actorId,
+    },
+    include: {
+      posts: true,
     },
   });
 };
