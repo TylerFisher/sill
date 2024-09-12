@@ -37,9 +37,9 @@ model Actor {
   inboxUrl       String
   followersUrl   String?
   sharedInboxUrl String?
-  followingCount BigInt?    @default(0)
-  followersCount BigInt?    @default(0)
-  postsCount     BigInt?    @default(0)
+  followingCount Int?       @default(0)
+  followersCount Int?       @default(0)
+  postsCount     Int?       @default(0)
   published      DateTime?
   updatedAt      DateTime   @updatedAt
   visibility     Visibility @default(public)
@@ -209,9 +209,9 @@ model Post {
   tags          Json       @default("{}")
   sensitive     Boolean    @default(false)
   url           String?
-  repliesCount  BigInt?    @default(0)
-  sharesCount   BigInt?    @default(0)
-  likesCount    BigInt?    @default(0)
+  repliesCount  Int?       @default(0)
+  sharesCount   Int?       @default(0)
+  likesCount    Int?       @default(0)
   published     DateTime?  @db.Timestamptz(6)
   updated       DateTime   @default(now()) @db.Timestamptz(6)
   likes         Like[]

@@ -3,11 +3,19 @@ import bcrypt from "bcryptjs";
 import { uuidv7 } from "uuidv7-js";
 
 import { prisma } from "../db.server";
-
 export type { User } from "@prisma/client";
 
 export async function getUserById(id: User["id"]) {
-  return prisma.user.findUnique({ where: { id } });
+  return prisma.user.findUnique({
+    where: { id },
+    include: {
+      actor: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
 }
 
 export async function getUserByEmail(email: User["email"]) {
