@@ -11,7 +11,7 @@ export const createFeed = async (url: string, userId: string) => {
   const rss = await parseFeed(xml);
   const feed = await prisma.feed.upsert({
     where: {
-      url: rss.links[0],
+      feedUrl: url,
     },
     create: {
       id: uuidv7(),
@@ -19,11 +19,13 @@ export const createFeed = async (url: string, userId: string) => {
       description: rss.description || "",
       url: rss.links[0],
       lastFetched: new Date(),
+      feedUrl: url,
     },
     update: {
       title: rss.title.value || rss.links[0],
       description: rss.description || "",
       lastFetched: new Date(),
+      url: rss.links[0],
     },
   });
 

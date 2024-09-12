@@ -230,7 +230,8 @@ model Feed {
   id            String         @id @db.Uuid
   title         String
   description   String?
-  url           String         @unique
+  url           String
+  feedUrl       String         @unique
   lastFetched   DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

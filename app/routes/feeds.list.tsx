@@ -23,7 +23,7 @@ const FeedList = () => {
     <>
       <h1>Feeds</h1>
       {data.items.map((item) => (
-        <div key={item.id}>
+        <section key={item.id}>
           <div>
             <hgroup>
               <h5
@@ -54,10 +54,10 @@ const FeedList = () => {
           </div>
           {item.media.length > 0 && (
             <div>
-              <img src={item.media[0].thumbnailUrl} />
+              <img src={item.media[0].thumbnailUrl} width={230} />
             </div>
           )}
-        </div>
+        </section>
       ))}
     </>
   );
