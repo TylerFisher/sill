@@ -11,6 +11,15 @@ import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+import { createHonoServer } from "react-router-hono-server/node";
+import { federation as fediMiddleware } from "@fedify/fedify/x/hono";
+import federation from "../federation";
+
+export const server = await createHonoServer({
+  configure: (app) => {
+    app.use(fediMiddleware(federation, (_) => undefined));
+  },
+});
 
 const ABORT_DELAY = 5_000;
 

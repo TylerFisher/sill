@@ -1,0 +1,313 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id    String  @id @db.Uuid
+  email String  @unique
+  name  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  password      Password?
+  roles         Role[]
+  sessions      Session[]
+  actor         Actor?
+  subscriptions Subscription[]
+  itemStatuses  ItemStatus[]
+  categories    Category[]
+}
+
+model Actor {
+  id             String     @id @db.Uuid
+  iri            String     @unique
+  handle         String     @unique
+  type           ActorType
+  name           String     @db.VarChar(100)
+  bioHtml        String?
+  url            String?
+  protected      Boolean    @default(false)
+  avatarUrl      String?
+  inboxUrl       String
+  followersUrl   String?
+  sharedInboxUrl String?
+  followingCount BigInt?    @default(0)
+  followersCount BigInt?    @default(0)
+  postsCount     BigInt?    @default(0)
+  published      DateTime?
+  updatedAt      DateTime   @updatedAt
+  visibility     Visibility @default(public)
+  userId         String?    @unique @db.Uuid
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  followers      Follow[]   @relation("actor_followers")
+  following      Follow[]   @relation("actor_following")
+  likes          Like[]
+  mentions       Mention[]
+  posts          Post[]
+  actorKeys      ActorKeys?
+}
+
+model ActorKeys {
+  rsaPrivateKeyJWK     Json
+  rsaPublicKeyJWK      Json
+  ed25519PrivateKeyJWK Json
+  ed25519PublicKeyJWK  Json
+  actorId              String @unique @db.Uuid
+  actor                Actor  @relation(fields: [actorId], references: [id])
+}
+
+model Password {
+  hash String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique @db.Uuid
+}
+
+model Session {
+  id             String   @id @db.Uuid
+  expirationDate DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.Uuid
+
+  // non-unique foreign key
+  @@index([userId])
+}
+
+model Permission {
+  id          String @id @db.Uuid
+  action      String // e.g. create, read, update, delete
+  entity      String // e.g. note, user, etc.
+  access      String // e.g. own or any
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles Role[]
+
+  @@unique([action, entity, access])
+}
+
+model Role {
+  id          String @id @db.Uuid
+  name        String @unique
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  permissions Permission[]
+}
+
+model Verification {
+  id        String   @id @db.Uuid
+  createdAt DateTime @default(now())
+
+  /// The type of verification, e.g. "email" or "phone"
+  type String
+
+  /// The thing we're trying to verify, e.g. a user's email or phone number
+  target String
+
+  /// The secret key used to generate the otp
+  secret String
+
+  /// The algorithm used to generate the otp
+  algorithm String
+
+  /// The number of digits in the otp
+  digits Int
+
+  /// The number of seconds the otp is valid for
+  period Int
+
+  /// The valid characters for the otp
+  charSet String
+
+  /// When it's safe to delete this verification
+  expiresAt DateTime?
+
+  @@unique([target, type])
+}
+
+model Follow {
+  iri         String    @unique
+  followingId String    @db.Uuid
+  followerId  String    @db.Uuid
+  shares      Boolean   @default(true)
+  notify      Boolean   @default(false)
+  languages   String[]
+  created     DateTime  @default(now()) @db.Timestamptz(6)
+  approved    DateTime? @db.Timestamptz(6)
+  follower    Actor     @relation("actor_followers", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  following   Actor     @relation("actor_following", fields: [followingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([followingId, followerId])
+}
+
+model Like {
+  postId    String   @db.Uuid
+  actorId   String   @db.Uuid
+  createdAt DateTime @default(now())
+  actor     Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([postId, actorId])
+}
+
+model Media {
+  id              String   @id @db.Uuid
+  postId          String?  @db.Uuid
+  type            String
+  url             String
+  width           Int
+  height          Int
+  description     String?
+  thumbnailType   String
+  thumbnailUrl    String
+  thumbnailWidth  Int
+  thumbnailHeight Int
+  createdAt       DateTime @default(now())
+  post            Post?    @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model Mention {
+  postId  String @db.Uuid
+  actorId String @db.Uuid
+  actor   Actor  @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([postId, actorId])
+}
+
+model Post {
+  id            String     @id @db.Uuid
+  iri           String     @unique
+  type          PostType
+  actorId       String     @db.Uuid
+  replyTargetId String?    @db.Uuid
+  sharingId     String?    @db.Uuid
+  visibility    Visibility
+  summaryHtml   String?
+  summary       String?
+  contentHtml   String?
+  content       String?
+  language      String?
+  tags          Json       @default("{}")
+  sensitive     Boolean    @default(false)
+  url           String?
+  repliesCount  BigInt?    @default(0)
+  sharesCount   BigInt?    @default(0)
+  likesCount    BigInt?    @default(0)
+  published     DateTime?  @db.Timestamptz(6)
+  updated       DateTime   @default(now()) @db.Timestamptz(6)
+  likes         Like[]
+  media         Media[]
+  mentions      Mention[]
+  actor         Actor      @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  replyTarget   Post?      @relation("replies", fields: [replyTargetId], references: [id], onUpdate: NoAction)
+  replies       Post[]     @relation("replies")
+  sharing       Post?      @relation("shares", fields: [sharingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  shares        Post[]     @relation("shares")
+
+  @@unique([id, actorId])
+}
+
+model Feed {
+  id            String         @id @db.Uuid
+  title         String
+  description   String?
+  url           String         @unique
+  lastFetched   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  items         Item[]
+  subscriptions Subscription[]
+}
+
+model Item {
+  id          String       @id @db.Uuid
+  title       String
+  description String?
+  content     String?
+  url         String
+  publishedAt DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  feed        Feed         @relation(fields: [feedId], references: [id])
+  feedId      String       @db.Uuid
+  statuses    ItemStatus[]
+
+  @@unique([url, feedId])
+}
+
+model Subscription {
+  id         String    @id @db.Uuid
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String    @db.Uuid
+  feed       Feed      @relation(fields: [feedId], references: [id])
+  feedId     String    @db.Uuid
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?   @db.Uuid
+
+  @@unique([userId, feedId])
+}
+
+model ItemStatus {
+  id        String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.Uuid
+  item      Item     @relation(fields: [itemId], references: [id])
+  itemId    String   @db.Uuid
+  read      Boolean  @default(false)
+  starred   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, itemId])
+}
+
+model Category {
+  id            String         @id @db.Uuid
+  name          String
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String         @db.Uuid
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+
+  @@unique([name, userId])
+}
+
+enum Visibility {
+  public
+  unlisted
+  private
+  direct
+}
+
+enum PostType {
+  Article
+  Note
+}
+
+enum ActorType {
+  Application
+  Group
+  Organization
+  Person
+  Service
+}
