@@ -40,6 +40,7 @@ const AddFeed = () => {
 				)}
 			<Form method="post">
 				<input type="hidden" value={data.user.id} name="userId" />
+				{/* biome-ignore lint/a11y/useSemanticElements: picocss wants this */}
 				<fieldset role="group">
 					<input type="url" name="url" placeholder="Enter RSS URL" />
 					<input type="submit" value="Add" />

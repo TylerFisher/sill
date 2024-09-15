@@ -54,7 +54,11 @@ const FeedList = () => {
 					</div>
 					{item.media.length > 0 && (
 						<div>
-							<img src={item.media[0].thumbnailUrl} width={230} />
+							<img
+								src={item.media[0].thumbnailUrl}
+								width={230}
+								alt="Article thumbnail"
+							/>
 						</div>
 					)}
 				</section>

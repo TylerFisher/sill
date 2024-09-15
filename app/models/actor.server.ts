@@ -1,6 +1,6 @@
 import { exportJwk, generateCryptoKeyPair } from "@fedify/fedify";
 import { Actor, ActorType, Visibility } from "@prisma/client";
-import { JsonObject } from "@prisma/client/runtime/library";
+import type { JsonObject } from "@prisma/client/runtime/library";
 import { uuidv7 } from "uuidv7-js";
 import federation from "../../federation";
 import { prisma } from "../db.server";

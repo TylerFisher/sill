@@ -28,7 +28,7 @@ const Me = () => {
 		<>
 			<h1>{nameDisplay}</h1>
 			{data?.actor.posts.map((post) => (
-				<section>
+				<section key={post.id}>
 					<article>
 						<header>
 							<strong>{data?.actor.name}</strong>
@@ -39,7 +39,7 @@ const Me = () => {
 							dangerouslySetInnerHTML={{
 								__html: post.contentHtml || "",
 							}}
-						></div>
+						/>
 						<footer>{post.updated}</footer>
 					</article>
 				</section>

@@ -1,17 +1,17 @@
 import {
 	type ActionFunctionArgs,
-	LoaderFunctionArgs,
+	type LoaderFunctionArgs,
 	type MetaFunction,
 	json,
 	redirect,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { ActorFormData, createActor } from "../models/actor.server";
+import { type ActorFormData, createActor } from "../models/actor.server";
 import { requireUser } from "../session.server";
 
 interface FormErrors {
-	username?: String;
-	name?: String;
+	username?: string;
+	name?: string;
 }
 
 export const meta: MetaFunction = () => [{ title: "Create actor" }];
@@ -106,7 +106,7 @@ const Setup = () => {
 					<textarea
 						name="bio"
 						placeholder="A software engineer in Seoul, and a father of two kids."
-					></textarea>
+					/>
 					<small>A short description of yourself. Markdown is supported.</small>
 				</label>
 				<label>

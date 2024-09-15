@@ -11,9 +11,9 @@ import { validateEmail } from "../utils";
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
 interface FormErrors {
-	email?: String;
-	password?: String;
-	passwordConfirm?: String;
+	email?: string;
+	password?: string;
+	passwordConfirm?: string;
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {

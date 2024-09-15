@@ -1,5 +1,5 @@
-import { FeedEntry, parseFeed } from "@mikaelporttila/rss";
-import { Media } from "@prisma/client";
+import { type FeedEntry, parseFeed } from "@mikaelporttila/rss";
+import type { Media } from "@prisma/client";
 import sharp from "sharp";
 import { uuidv7 } from "uuidv7-js";
 import { uploadThumbnail } from "~/media";
