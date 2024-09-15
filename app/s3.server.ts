@@ -2,10 +2,10 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { fromEnv } from "@aws-sdk/credential-providers";
 
 export const s3 = new S3Client({
-  credentials: fromEnv(),
-  region: "auto",
-  // biome-ignore lint/complexity/useLiteralKeys: tsc complains about this (TS4111)
-  endpoint: process.env["S3_ENDPOINT_URL"],
+	credentials: fromEnv(),
+	region: "auto",
+	// biome-ignore lint/complexity/useLiteralKeys: tsc complains about this (TS4111)
+	endpoint: process.env["S3_ENDPOINT_URL"],
 });
 
 // biome-ignore lint/complexity/useLiteralKeys: tsc complains about this (TS4111)

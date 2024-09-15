@@ -1,7 +1,7 @@
 import {
-  json,
-  type ActionFunctionArgs,
-  type MetaFunction,
+	json,
+	type ActionFunctionArgs,
+	type MetaFunction,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { validateEmail } from "../utils";
@@ -11,85 +11,85 @@ import { createUserSession } from "../session.server";
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
 interface FormErrors {
-  email?: String;
-  password?: String;
-  passwordConfirm?: String;
+	email?: String;
+	password?: String;
+	passwordConfirm?: String;
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const email = String(formData.get("email"));
-  const sentPassword = String(formData.get("password"));
+	const formData = await request.formData();
+	const email = String(formData.get("email"));
+	const sentPassword = String(formData.get("password"));
 
-  const errors: FormErrors = {};
+	const errors: FormErrors = {};
 
-  if (!validateEmail(email)) {
-    errors.email = "Invalid email address";
-  }
+	if (!validateEmail(email)) {
+		errors.email = "Invalid email address";
+	}
 
-  if (!sentPassword) {
-    errors.password = "Password is required";
-  }
+	if (!sentPassword) {
+		errors.password = "Password is required";
+	}
 
-  if (Object.keys(errors).length > 0) {
-    return json({ errors }, { status: 400 });
-  }
+	if (Object.keys(errors).length > 0) {
+		return json({ errors }, { status: 400 });
+	}
 
-  const user = await verifyLogin(email, sentPassword);
+	const user = await verifyLogin(email, sentPassword);
 
-  if (!user) {
-    errors.email = "Invalid email or password";
-    errors.password = "Invalid email or password";
-    return json({ errors }, { status: 400 });
-  }
+	if (!user) {
+		errors.email = "Invalid email or password";
+		errors.password = "Invalid email or password";
+		return json({ errors }, { status: 400 });
+	}
 
-  return createUserSession({
-    redirectTo: "/actors/setup",
-    remember: false,
-    request,
-    userId: user.id,
-  });
+	return createUserSession({
+		redirectTo: "/actors/setup",
+		remember: false,
+		request,
+		userId: user.id,
+	});
 };
 
 const Index = () => {
-  const actionData = useActionData<typeof action>();
+	const actionData = useActionData<typeof action>();
 
-  return (
-    <>
-      <h1>Login</h1>
-      <Form method="post">
-        <label>
-          Email{" "}
-          <input
-            type="email"
-            name="email"
-            required={true}
-            placeholder="john@example.com"
-            aria-invalid={actionData?.errors?.email != null ? true : undefined}
-          />
-          {actionData?.errors?.email && (
-            <small>{actionData?.errors.email}</small>
-          )}
-        </label>
-        <label>
-          Password{" "}
-          <input
-            type="password"
-            name="password"
-            required={true}
-            minLength={6}
-            aria-invalid={
-              actionData?.errors?.password != null ? true : undefined
-            }
-          />
-          {actionData?.errors?.password && (
-            <small>{actionData?.errors.password}</small>
-          )}
-        </label>
-        <button type="submit">Sign in</button>
-      </Form>
-    </>
-  );
+	return (
+		<>
+			<h1>Login</h1>
+			<Form method="post">
+				<label>
+					Email{" "}
+					<input
+						type="email"
+						name="email"
+						required={true}
+						placeholder="john@example.com"
+						aria-invalid={actionData?.errors?.email != null ? true : undefined}
+					/>
+					{actionData?.errors?.email && (
+						<small>{actionData?.errors.email}</small>
+					)}
+				</label>
+				<label>
+					Password{" "}
+					<input
+						type="password"
+						name="password"
+						required={true}
+						minLength={6}
+						aria-invalid={
+							actionData?.errors?.password != null ? true : undefined
+						}
+					/>
+					{actionData?.errors?.password && (
+						<small>{actionData?.errors.password}</small>
+					)}
+				</label>
+				<button type="submit">Sign in</button>
+			</Form>
+		</>
+	);
 };
 
 export default Index;
