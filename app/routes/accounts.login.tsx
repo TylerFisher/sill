@@ -1,12 +1,12 @@
 import {
-	json,
 	type ActionFunctionArgs,
 	type MetaFunction,
+	json,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
-import { validateEmail } from "../utils";
 import { verifyLogin } from "../models/user.server";
 import { createUserSession } from "../session.server";
+import { validateEmail } from "../utils";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 

@@ -453,7 +453,6 @@ federation
 			if (post?.replyTargetId != null) {
 				await updatePostStats({ id: post.replyTargetId });
 			}
-		} else {
 		}
 	})
 	.on(Like, async (ctx, like) => {
@@ -469,7 +468,6 @@ federation
 			if (actor == null) return;
 			const account = await persistActor(actor, ctx);
 			if (account == null) return;
-			// biome-ignore lint/complexity/useLiteralKeys:
 			const postId = parsed.values["id"];
 			await db.like.create({
 				data: {
@@ -478,7 +476,6 @@ federation
 				},
 			});
 			await updatePostStats({ id: postId });
-		} else {
 		}
 	})
 	.on(Announce, async (ctx, announce) => {
@@ -488,7 +485,6 @@ federation
 			if (post?.sharingId != null) {
 				await updatePostStats({ id: post.sharingId });
 			}
-		} else {
 		}
 	})
 	.on(Update, async (ctx, update) => {
@@ -497,7 +493,6 @@ federation
 			await persistActor(object, ctx);
 		} else if (object instanceof Article || object instanceof Note) {
 			await persistPost(object, ctx);
-		} else {
 		}
 	})
 	.on(Delete, async (_ctx, del) => {
@@ -570,7 +565,6 @@ federation
 					},
 				});
 				await updatePostStats({ id: postId.href });
-			} else {
 			}
 		} else if (object instanceof Announce) {
 			const sharer = object.actorId;
@@ -596,7 +590,6 @@ federation
 			if (deleted.count > 0) {
 				await updatePostStats({ id: originalPost.id });
 			}
-		} else {
 		}
 	});
 

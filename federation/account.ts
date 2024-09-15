@@ -7,7 +7,7 @@ import {
 	isActor,
 	lookupObject,
 } from "@fedify/fedify";
-import { Visibility, type Actor as DbActor } from "@prisma/client";
+import { type Actor as DbActor, Visibility } from "@prisma/client";
 import { uuidv7 } from "uuidv7-js";
 import { prisma as db } from "../app/db.server";
 import { toDate } from "./date";
@@ -52,9 +52,9 @@ export async function persistActor(
 		inboxUrl: actor.inboxId.href,
 		followersUrl: followers?.id?.href || null,
 		sharedInboxUrl: actor.endpoints?.sharedInbox?.href || null,
-		followingCount: BigInt((await actor.getFollowing(opts))?.totalItems ?? 0),
-		followersCount: BigInt(followers?.totalItems ?? 0),
-		postsCount: BigInt((await actor.getOutbox(opts))?.totalItems ?? 0),
+		followingCount: (await actor.getFollowing(opts))?.totalItems ?? 0,
+		followersCount: followers?.totalItems ?? 0,
+		postsCount: (await actor.getOutbox(opts))?.totalItems ?? 0,
 		published: toDate(actor.published),
 		updatedAt: toDate(actor.updated) || new Date(),
 		visibility: Visibility.public, // TODO

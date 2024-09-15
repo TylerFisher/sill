@@ -1,13 +1,13 @@
-import { Note, lookupObject, isActor, DocumentLoader } from "@fedify/fedify";
-import { Post, PostType } from "@prisma/client";
-import { uuidv7 } from "uuidv7-js";
-import { prisma } from "~/db.server";
-import MarkdownIt from "markdown-it";
+import { DocumentLoader, Note, isActor, lookupObject } from "@fedify/fedify";
 import { hashtag } from "@fedify/markdown-it-hashtag";
 import { mention } from "@fedify/markdown-it-mention";
-import { persistActor } from "federation/account";
-import replaceLink from "markdown-it-replace-link";
+import { Post, PostType } from "@prisma/client";
 import federation from "federation";
+import { persistActor } from "federation/account";
+import MarkdownIt from "markdown-it";
+import replaceLink from "markdown-it-replace-link";
+import { uuidv7 } from "uuidv7-js";
+import { prisma } from "~/db.server";
 
 export interface FormatResult {
 	html: string;
@@ -72,7 +72,7 @@ export const createPost = async (
 
 	if (content.mentions.length > 0) {
 		await prisma.mention.createMany({
-			data: content.mentions.map((m) => ({
+			data: content.mentions.map((_) => ({
 				postId: post.id,
 				actorId: actor.id,
 			})),
@@ -167,7 +167,6 @@ const formatPostBody = async (
 				return `#<span>${encodeURIComponent(tag.substring(1))}</span>`;
 			},
 		})
-		// biome-ignore lint/suspicious/noExplicitAny: untyped
 		.use(replaceLink as any, {
 			processHTML: false,
 			replaceLink(link: string, env: Env) {

@@ -16,8 +16,8 @@ import {
 	type Actor,
 	type Post,
 	PostType,
-	Visibility,
 	Prisma,
+	Visibility,
 } from "@prisma/client";
 import sharp from "sharp";
 // @ts-ignore: No type definitions available

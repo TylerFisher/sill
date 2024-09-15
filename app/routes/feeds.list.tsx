@@ -1,7 +1,7 @@
 import {
-	json,
 	type LoaderFunctionArgs,
 	type MetaFunction,
+	json,
 } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { getItemsForUser } from "~/models/feed.server";

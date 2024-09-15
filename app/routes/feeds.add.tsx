@@ -1,12 +1,12 @@
 import {
-	json,
-	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
 	type MetaFunction,
+	json,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { requireUser } from "~/session.server";
 import { createFeed } from "~/models/feed.server";
+import { requireUser } from "~/session.server";
 
 export const meta: MetaFunction = () => [{ title: "Add Feed" }];
 

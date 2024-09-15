@@ -1,8 +1,8 @@
 import {
-	json,
-	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
 	type MetaFunction,
+	json,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { createPost } from "~/models/post.server";
@@ -31,7 +31,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 const AddPost = () => {
 	const data = useLoaderData<typeof loader>();
-	const actionData = useActionData<typeof action>();
 	return (
 		<>
 			<h1>Add post</h1>

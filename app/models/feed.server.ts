@@ -1,9 +1,9 @@
-import { uuidv7 } from "uuidv7-js";
-import { prisma } from "../db.server";
 import { FeedEntry, parseFeed } from "@mikaelporttila/rss";
-import sharp from "sharp";
-import { uploadThumbnail } from "~/media";
 import { Media } from "@prisma/client";
+import sharp from "sharp";
+import { uuidv7 } from "uuidv7-js";
+import { uploadThumbnail } from "~/media";
+import { prisma } from "../db.server";
 
 export const createFeed = async (url: string, userId: string) => {
 	const response = await fetch(url);

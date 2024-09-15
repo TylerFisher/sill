@@ -1,13 +1,13 @@
 import {
-	json,
-	LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	LoaderFunctionArgs,
 	type MetaFunction,
+	json,
 	redirect,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { ActorFormData, createActor } from "../models/actor.server";
 import { requireUser } from "../session.server";
-import { createActor, ActorFormData } from "../models/actor.server";
 
 interface FormErrors {
 	username?: String;
