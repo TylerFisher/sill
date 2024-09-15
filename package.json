@@ -6,7 +6,7 @@
 	"scripts": {
 		"build": "NODE_ENV=production remix vite:build",
 		"dev": "vite --host",
-		"lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+		"lint": "biome check",
 		"start": "NODE_ENV=production node ./build/server/index.js",
 		"typecheck": "tsc",
 		"test": "vitest"
