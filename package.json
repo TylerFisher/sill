@@ -8,7 +8,8 @@
 		"dev": "vite --host",
 		"lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
 		"start": "NODE_ENV=production node ./build/server/index.js",
-		"typecheck": "tsc"
+		"typecheck": "tsc",
+		"test": "vitest"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.650.0",
@@ -53,9 +54,11 @@
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"postcss": "^8.4.38",
 		"prisma": "^5.19.1",
+		"ts-node": "^10.9.2",
 		"typescript": "^5.1.6",
 		"vite": "^5.1.0",
-		"vite-tsconfig-paths": "^4.2.1"
+		"vite-tsconfig-paths": "^4.2.1",
+		"vitest": "^2.1.1"
 	},
 	"engines": {
 		"node": ">=20.0.0"
