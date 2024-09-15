@@ -14,7 +14,7 @@ export default defineConfig({
 	},
 	plugins: [
 		devServer(),
-		process.env.VITEST
+		!process.env.VITEST
 			? remix({
 					future: {
 						v3_fetcherPersist: true,
