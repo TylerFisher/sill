@@ -15,51 +15,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  password      Password?
-  roles         Role[]
-  sessions      Session[]
-  actor         Actor?
-  subscriptions Subscription[]
-  itemStatuses  ItemStatus[]
-  categories    Category[]
-}
-
-model Actor {
-  id             String     @id @db.Uuid
-  iri            String     @unique
-  handle         String     @unique
-  type           ActorType
-  name           String     @db.VarChar(100)
-  bioHtml        String?
-  url            String?
-  protected      Boolean    @default(false)
-  avatarUrl      String?
-  inboxUrl       String
-  followersUrl   String?
-  sharedInboxUrl String?
-  followingCount Int?       @default(0)
-  followersCount Int?       @default(0)
-  postsCount     Int?       @default(0)
-  published      DateTime?
-  updatedAt      DateTime   @updatedAt
-  visibility     Visibility @default(public)
-  userId         String?    @unique @db.Uuid
-  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  followers      Follow[]   @relation("actor_followers")
-  following      Follow[]   @relation("actor_following")
-  likes          Like[]
-  mentions       Mention[]
-  posts          Post[]
-  actorKeys      ActorKeys?
-}
-
-model ActorKeys {
-  rsaPrivateKeyJWK     Json
-  rsaPublicKeyJWK      Json
-  ed25519PrivateKeyJWK Json
-  ed25519PublicKeyJWK  Json
-  actorId              String @unique @db.Uuid
-  actor                Actor  @relation(fields: [actorId], references: [id])
+  password       Password?
+  roles          Role[]
+  sessions       Session[]
+  subscriptions  Subscription[]
+  itemStatuses   ItemStatus[]
+  categories     Category[]
+  mastodonTokens MastodonOauthToken[]
+  BlueskyAccount BlueskyAccount[]
 }
 
 model Password {
@@ -81,6 +44,35 @@ model Session {
 
   // non-unique foreign key
   @@index([userId])
+}
+
+model MastodonOauthToken {
+  id           String   @id @db.Uuid
+  instance     String
+  accessToken  String
+  tokenType    String
+  expiresIn    Int?
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String   @db.Uuid
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model BlueskyAccount {
+  id              String   @id @db.Uuid
+  service         String
+  refreshJwt      String
+  accessJwt       String
+  handle          String   @unique
+  did             String   @unique
+  email           String?
+  emailConfirmed  Boolean?
+  emailAuthFactor Boolean?
+  active          Boolean
+  status          String?
+  userId          String   @db.Uuid
+  user            User     @relation(fields: [userId], references: [id])
 }
 
 model Permission {
@@ -141,31 +133,6 @@ model Verification {
   @@unique([target, type])
 }
 
-model Follow {
-  iri         String    @unique
-  followingId String    @db.Uuid
-  followerId  String    @db.Uuid
-  shares      Boolean   @default(true)
-  notify      Boolean   @default(false)
-  languages   String[]
-  created     DateTime  @default(now()) @db.Timestamptz(6)
-  approved    DateTime? @db.Timestamptz(6)
-  follower    Actor     @relation("actor_followers", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  following   Actor     @relation("actor_following", fields: [followingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([followingId, followerId])
-}
-
-model Like {
-  postId    String   @db.Uuid
-  actorId   String   @db.Uuid
-  createdAt DateTime @default(now())
-  actor     Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([postId, actorId])
-}
-
 model Media {
   id              String   @id @db.Uuid
   type            String
@@ -178,52 +145,8 @@ model Media {
   thumbnailWidth  Int
   thumbnailHeight Int
   createdAt       DateTime @default(now())
-  postId          String?  @db.Uuid
-  post            Post?    @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   itemId          String?  @db.Uuid
   item            Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-model Mention {
-  postId  String @db.Uuid
-  actorId String @db.Uuid
-  actor   Actor  @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([postId, actorId])
-}
-
-model Post {
-  id            String     @id @db.Uuid
-  iri           String     @unique
-  type          PostType
-  actorId       String     @db.Uuid
-  replyTargetId String?    @db.Uuid
-  sharingId     String?    @db.Uuid
-  visibility    Visibility
-  summaryHtml   String?
-  summary       String?
-  contentHtml   String?
-  content       String?
-  language      String?
-  tags          Json       @default("{}")
-  sensitive     Boolean    @default(false)
-  url           String?
-  repliesCount  Int?       @default(0)
-  sharesCount   Int?       @default(0)
-  likesCount    Int?       @default(0)
-  published     DateTime?  @db.Timestamptz(6)
-  updated       DateTime   @default(now()) @db.Timestamptz(6)
-  likes         Like[]
-  media         Media[]
-  mentions      Mention[]
-  actor         Actor      @relation(fields: [actorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  replyTarget   Post?      @relation("replies", fields: [replyTargetId], references: [id], onUpdate: NoAction)
-  replies       Post[]     @relation("replies")
-  sharing       Post?      @relation("shares", fields: [sharingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  shares        Post[]     @relation("shares")
-
-  @@unique([id, actorId])
 }
 
 model Feed {

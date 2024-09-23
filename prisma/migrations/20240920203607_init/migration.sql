@@ -7,6 +7,9 @@ CREATE TYPE "PostType" AS ENUM ('Article', 'Note');
 -- CreateEnum
 CREATE TYPE "ActorType" AS ENUM ('Application', 'Group', 'Organization', 'Person', 'Service');
 
+-- CreateEnum
+CREATE TYPE "TokenTypes" AS ENUM ('mastodon', 'bluesky');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" UUID NOT NULL,
@@ -16,40 +19,6 @@ CREATE TABLE "User" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Actor" (
-    "id" UUID NOT NULL,
-    "iri" TEXT NOT NULL,
-    "handle" TEXT NOT NULL,
-    "type" "ActorType" NOT NULL,
-    "name" VARCHAR(100) NOT NULL,
-    "bioHtml" TEXT,
-    "url" TEXT,
-    "protected" BOOLEAN NOT NULL DEFAULT false,
-    "avatarUrl" TEXT,
-    "inboxUrl" TEXT NOT NULL,
-    "followersUrl" TEXT,
-    "sharedInboxUrl" TEXT,
-    "followingCount" BIGINT DEFAULT 0,
-    "followersCount" BIGINT DEFAULT 0,
-    "postsCount" BIGINT DEFAULT 0,
-    "published" TIMESTAMP(3),
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "visibility" "Visibility" NOT NULL DEFAULT 'public',
-    "userId" UUID,
-
-    CONSTRAINT "Actor_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ActorKeys" (
-    "rsaPrivateKeyJWK" JSONB NOT NULL,
-    "rsaPublicKeyJWK" JSONB NOT NULL,
-    "ed25519PrivateKeyJWK" JSONB NOT NULL,
-    "ed25519PublicKeyJWK" JSONB NOT NULL,
-    "actorId" UUID NOT NULL
 );
 
 -- CreateTable
@@ -67,6 +36,21 @@ CREATE TABLE "Session" (
     "userId" UUID NOT NULL,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OauthToken" (
+    "id" UUID NOT NULL,
+    "type" "TokenTypes" NOT NULL,
+    "accessToken" TEXT NOT NULL,
+    "tokenType" TEXT NOT NULL,
+    "expiresIn" INTEGER,
+    "refreshToken" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" UUID NOT NULL,
+
+    CONSTRAINT "OauthToken_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -110,32 +94,8 @@ CREATE TABLE "Verification" (
 );
 
 -- CreateTable
-CREATE TABLE "Follow" (
-    "iri" TEXT NOT NULL,
-    "followingId" UUID NOT NULL,
-    "followerId" UUID NOT NULL,
-    "shares" BOOLEAN NOT NULL DEFAULT true,
-    "notify" BOOLEAN NOT NULL DEFAULT false,
-    "languages" TEXT[],
-    "created" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "approved" TIMESTAMPTZ(6),
-
-    CONSTRAINT "Follow_pkey" PRIMARY KEY ("followingId","followerId")
-);
-
--- CreateTable
-CREATE TABLE "Like" (
-    "postId" UUID NOT NULL,
-    "actorId" UUID NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Like_pkey" PRIMARY KEY ("postId","actorId")
-);
-
--- CreateTable
 CREATE TABLE "Media" (
     "id" UUID NOT NULL,
-    "postId" UUID,
     "type" TEXT NOT NULL,
     "url" TEXT NOT NULL,
     "width" INTEGER NOT NULL,
@@ -146,42 +106,9 @@ CREATE TABLE "Media" (
     "thumbnailWidth" INTEGER NOT NULL,
     "thumbnailHeight" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "itemId" UUID,
 
     CONSTRAINT "Media_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Mention" (
-    "postId" UUID NOT NULL,
-    "actorId" UUID NOT NULL,
-
-    CONSTRAINT "Mention_pkey" PRIMARY KEY ("postId","actorId")
-);
-
--- CreateTable
-CREATE TABLE "Post" (
-    "id" UUID NOT NULL,
-    "iri" TEXT NOT NULL,
-    "type" "PostType" NOT NULL,
-    "actorId" UUID NOT NULL,
-    "replyTargetId" UUID,
-    "sharingId" UUID,
-    "visibility" "Visibility" NOT NULL,
-    "summaryHtml" TEXT,
-    "summary" TEXT,
-    "contentHtml" TEXT,
-    "content" TEXT,
-    "language" TEXT,
-    "tags" JSONB NOT NULL DEFAULT '{}',
-    "sensitive" BOOLEAN NOT NULL DEFAULT false,
-    "url" TEXT,
-    "repliesCount" BIGINT DEFAULT 0,
-    "sharesCount" BIGINT DEFAULT 0,
-    "likesCount" BIGINT DEFAULT 0,
-    "published" TIMESTAMPTZ(6),
-    "updated" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -190,6 +117,7 @@ CREATE TABLE "Feed" (
     "title" TEXT NOT NULL,
     "description" TEXT,
     "url" TEXT NOT NULL,
+    "feedUrl" TEXT NOT NULL,
     "lastFetched" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -264,18 +192,6 @@ CREATE TABLE "_RoleToUser" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Actor_iri_key" ON "Actor"("iri");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Actor_handle_key" ON "Actor"("handle");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Actor_userId_key" ON "Actor"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ActorKeys_actorId_key" ON "ActorKeys"("actorId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Password_userId_key" ON "Password"("userId");
 
 -- CreateIndex
@@ -291,16 +207,10 @@ CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 CREATE UNIQUE INDEX "Verification_target_type_key" ON "Verification"("target", "type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Follow_iri_key" ON "Follow"("iri");
+CREATE UNIQUE INDEX "Media_url_key" ON "Media"("url");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Post_iri_key" ON "Post"("iri");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Post_id_actorId_key" ON "Post"("id", "actorId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Feed_url_key" ON "Feed"("url");
+CREATE UNIQUE INDEX "Feed_feedUrl_key" ON "Feed"("feedUrl");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Item_url_feedId_key" ON "Item"("url", "feedId");
@@ -327,46 +237,16 @@ CREATE UNIQUE INDEX "_RoleToUser_AB_unique" ON "_RoleToUser"("A", "B");
 CREATE INDEX "_RoleToUser_B_index" ON "_RoleToUser"("B");
 
 -- AddForeignKey
-ALTER TABLE "Actor" ADD CONSTRAINT "Actor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "ActorKeys" ADD CONSTRAINT "ActorKeys_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Password" ADD CONSTRAINT "Password_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "Actor"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "OauthToken" ADD CONSTRAINT "OauthToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "Actor"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Like" ADD CONSTRAINT "Like_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Like" ADD CONSTRAINT "Like_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Media" ADD CONSTRAINT "Media_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Mention" ADD CONSTRAINT "Mention_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Mention" ADD CONSTRAINT "Mention_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_replyTargetId_fkey" FOREIGN KEY ("replyTargetId") REFERENCES "Post"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_sharingId_fkey" FOREIGN KEY ("sharingId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "Media" ADD CONSTRAINT "Media_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "Item" ADD CONSTRAINT "Item_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feed"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

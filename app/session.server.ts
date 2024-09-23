@@ -87,6 +87,26 @@ export async function createUserSession({
 	});
 }
 
+export async function createInstanceCookie(
+	request: Request,
+	instance: string,
+	redirectTo: string,
+) {
+	const session = await getSession(request);
+	session.set("instance", instance);
+	return redirect(redirectTo, {
+		headers: {
+			"Set-Cookie": await sessionStorage.commitSession(session),
+		},
+	});
+}
+
+export async function getInstanceCookie(request: Request) {
+	const session = await getSession(request);
+	const instance = session.get("instance");
+	return instance;
+}
+
 export async function logout(request: Request) {
 	const session = await getSession(request);
 	return redirect("/", {

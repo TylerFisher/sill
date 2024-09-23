@@ -14,7 +14,7 @@ const Index = () => {
 					<a href="/accounts/login">Log in</a>
 				</li>
 				<li>
-					<a href="/actors/setup">Actor setup</a>
+					<a href="/feeds/add">Add Feed</a>
 				</li>
 			</ul>
 		</>
