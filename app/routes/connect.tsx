@@ -13,6 +13,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			where: { id: userId },
 			include: {
 				mastodonTokens: true,
+				BlueskyAccount: true,
 			},
 		});
 	}
@@ -47,6 +48,19 @@ export default function Index() {
 						/>
 						<button type="submit">Connect to Mastodon</button>
 					</Form>
+				</>
+			)}
+			{user && user.BlueskyAccount.length > 0 ? (
+				<>
+					<h2>Connected to Bluesky</h2>
+					<p>You are successfully connected to your Bluesky account</p>
+					<p>Account: {user.BlueskyAccount[0].handle}</p>
+					<Form action="/bluesky/auth/revoke" method="post">
+						<button type="submit">Disconnect from Bluesky</button>
+					</Form>
+				</>
+			) : (
+				<>
 					<h1>Connect to Bluesky</h1>
 					<Form action="/bluesky/auth" method="POST">
 						<input
