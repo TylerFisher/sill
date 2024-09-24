@@ -16,13 +16,13 @@ model User {
   updatedAt DateTime @updatedAt
 
   password         Password?
-  roles            Role[]
   sessions         Session[]
   subscriptions    Subscription[]
   itemStatuses     ItemStatus[]
   categories       Category[]
   mastodonAccounts MastodonAccount[]
   blueskyAccounts  BlueskyAccount[]
+  linkPosts        LinkPost[]
 }
 
 model Password {
@@ -80,39 +80,46 @@ model BlueskyAccount {
 }
 
 model LinkPost {
-  id       String       @id @db.Uuid
-  postUrl  String
-  linkUrl  String
-  type     LinkPostType
+  id String @id @db.Uuid
+
+  linkId String @db.Uuid
+  link   Link   @relation(fields: [linkId], references: [id])
+  postId String @db.Uuid
+  post   Post   @relation(fields: [postId], references: [id])
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Link {
+  id          String     @id @db.Uuid
+  url         String
+  title       String
+  description String?
+  imageUrl    String?
+  linkPosts   LinkPost[]
+}
+
+model Post {
+  id       String   @id @db.Uuid
+  url      String
+  text     String
   postDate DateTime
-  repost   Boolean      @default(false)
+  postType PostType
+  repost   Boolean  @default(false)
+
+  actorId String @db.Uuid
+  actor   Actor  @relation(fields: [actorId], references: [id])
+
+  linkPosts LinkPost[]
 }
 
-model Permission {
-  id          String @id @db.Uuid
-  action      String // e.g. create, read, update, delete
-  entity      String // e.g. note, user, etc.
-  access      String // e.g. own or any
-  description String @default("")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  roles Role[]
-
-  @@unique([action, entity, access])
-}
-
-model Role {
-  id          String @id @db.Uuid
-  name        String @unique
-  description String @default("")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users       User[]
-  permissions Permission[]
+model Actor {
+  id        String  @id @db.Uuid
+  url       String
+  name      String
+  handle    String
+  avatarUrl String?
+  posts     Post[]
 }
 
 model Verification {
@@ -232,27 +239,7 @@ model Category {
   @@unique([name, userId])
 }
 
-enum Visibility {
-  public
-  unlisted
-  private
-  direct
-}
-
 enum PostType {
-  Article
-  Note
-}
-
-enum ActorType {
-  Application
-  Group
-  Organization
-  Person
-  Service
-}
-
-enum LinkPostType {
   bluesky
   mastodon
 }

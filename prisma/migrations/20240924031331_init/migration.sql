@@ -1,14 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Visibility" AS ENUM ('public', 'unlisted', 'private', 'direct');
-
--- CreateEnum
-CREATE TYPE "PostType" AS ENUM ('Article', 'Note');
-
--- CreateEnum
-CREATE TYPE "ActorType" AS ENUM ('Application', 'Group', 'Organization', 'Person', 'Service');
-
--- CreateEnum
-CREATE TYPE "TokenTypes" AS ENUM ('mastodon', 'bluesky');
+CREATE TYPE "PostType" AS ENUM ('bluesky', 'mastodon');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -39,42 +30,83 @@ CREATE TABLE "Session" (
 );
 
 -- CreateTable
-CREATE TABLE "OauthToken" (
+CREATE TABLE "MastodonAccount" (
     "id" UUID NOT NULL,
-    "type" "TokenTypes" NOT NULL,
+    "instance" TEXT NOT NULL,
     "accessToken" TEXT NOT NULL,
     "tokenType" TEXT NOT NULL,
     "expiresIn" INTEGER,
     "refreshToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "mostRecentPostId" TEXT,
     "userId" UUID NOT NULL,
 
-    CONSTRAINT "OauthToken_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "MastodonAccount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Permission" (
+CREATE TABLE "BlueskyAccount" (
     "id" UUID NOT NULL,
-    "action" TEXT NOT NULL,
-    "entity" TEXT NOT NULL,
-    "access" TEXT NOT NULL,
-    "description" TEXT NOT NULL DEFAULT '',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "service" TEXT NOT NULL,
+    "refreshJwt" TEXT NOT NULL,
+    "accessJwt" TEXT NOT NULL,
+    "handle" TEXT NOT NULL,
+    "did" TEXT NOT NULL,
+    "email" TEXT,
+    "emailConfirmed" BOOLEAN,
+    "emailAuthFactor" BOOLEAN,
+    "active" BOOLEAN NOT NULL,
+    "status" TEXT,
+    "mostRecentPostDate" TIMESTAMP(3),
+    "userId" UUID NOT NULL,
 
-    CONSTRAINT "Permission_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "BlueskyAccount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Role" (
+CREATE TABLE "LinkPost" (
     "id" UUID NOT NULL,
+    "linkId" UUID NOT NULL,
+    "postId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+
+    CONSTRAINT "LinkPost_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Link" (
+    "id" UUID NOT NULL,
+    "url" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "imageUrl" TEXT,
+
+    CONSTRAINT "Link_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Post" (
+    "id" UUID NOT NULL,
+    "url" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "postDate" TIMESTAMP(3) NOT NULL,
+    "postType" "PostType" NOT NULL,
+    "repost" BOOLEAN NOT NULL DEFAULT false,
+    "actorId" UUID NOT NULL,
+
+    CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Actor" (
+    "id" UUID NOT NULL,
+    "url" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT NOT NULL DEFAULT '',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "handle" TEXT NOT NULL,
+    "avatarUrl" TEXT,
 
-    CONSTRAINT "Role_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Actor_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -176,18 +208,6 @@ CREATE TABLE "Category" (
     CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "_PermissionToRole" (
-    "A" UUID NOT NULL,
-    "B" UUID NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "_RoleToUser" (
-    "A" UUID NOT NULL,
-    "B" UUID NOT NULL
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -198,10 +218,10 @@ CREATE UNIQUE INDEX "Password_userId_key" ON "Password"("userId");
 CREATE INDEX "Session_userId_idx" ON "Session"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Permission_action_entity_access_key" ON "Permission"("action", "entity", "access");
+CREATE UNIQUE INDEX "BlueskyAccount_handle_key" ON "BlueskyAccount"("handle");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
+CREATE UNIQUE INDEX "BlueskyAccount_did_key" ON "BlueskyAccount"("did");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Verification_target_type_key" ON "Verification"("target", "type");
@@ -224,18 +244,6 @@ CREATE UNIQUE INDEX "ItemStatus_userId_itemId_key" ON "ItemStatus"("userId", "it
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_name_userId_key" ON "Category"("name", "userId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "_PermissionToRole_AB_unique" ON "_PermissionToRole"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_PermissionToRole_B_index" ON "_PermissionToRole"("B");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_RoleToUser_AB_unique" ON "_RoleToUser"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_RoleToUser_B_index" ON "_RoleToUser"("B");
-
 -- AddForeignKey
 ALTER TABLE "Password" ADD CONSTRAINT "Password_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -243,7 +251,22 @@ ALTER TABLE "Password" ADD CONSTRAINT "Password_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "OauthToken" ADD CONSTRAINT "OauthToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MastodonAccount" ADD CONSTRAINT "MastodonAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BlueskyAccount" ADD CONSTRAINT "BlueskyAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_linkId_fkey" FOREIGN KEY ("linkId") REFERENCES "Link"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Post" ADD CONSTRAINT "Post_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Media" ADD CONSTRAINT "Media_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -268,15 +291,3 @@ ALTER TABLE "ItemStatus" ADD CONSTRAINT "ItemStatus_itemId_fkey" FOREIGN KEY ("i
 
 -- AddForeignKey
 ALTER TABLE "Category" ADD CONSTRAINT "Category_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_A_fkey" FOREIGN KEY ("A") REFERENCES "Permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_PermissionToRole" ADD CONSTRAINT "_PermissionToRole_B_fkey" FOREIGN KEY ("B") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_RoleToUser" ADD CONSTRAINT "_RoleToUser_A_fkey" FOREIGN KEY ("A") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_RoleToUser" ADD CONSTRAINT "_RoleToUser_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

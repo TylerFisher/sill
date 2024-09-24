@@ -22,7 +22,7 @@ const Links = () => {
 	return (
 		<ul>
 			{data.links.map((item) => (
-				<li>
+				<li key={item.linkUrl}>
 					<a href={item.linkUrl}>{item.linkUrl}</a> posted by{" "}
 					{item._count.linkUrl} people
 				</li>
