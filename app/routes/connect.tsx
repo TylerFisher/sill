@@ -12,8 +12,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		user = await prisma.user.findUnique({
 			where: { id: userId },
 			include: {
-				mastodonTokens: true,
-				BlueskyAccount: true,
+				mastodonAccounts: true,
+				blueskyAccounts: true,
 			},
 		});
 	}
@@ -27,11 +27,11 @@ export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
 		<div>
-			{user && user.mastodonTokens.length > 0 ? (
+			{user && user.mastodonAccounts.length > 0 ? (
 				<div>
 					<h2>Connected to Mastodon</h2>
 					<p>You are successfully connected to your Mastodon account.</p>
-					<p>Instance: {user.mastodonTokens[0].instance}</p>
+					<p>Instance: {user.mastodonAccounts[0].instance}</p>
 					<Form action="/mastodon/auth/revoke" method="post">
 						<button type="submit">Disconnect from Mastodon</button>
 					</Form>
@@ -50,11 +50,11 @@ export default function Index() {
 					</Form>
 				</>
 			)}
-			{user && user.BlueskyAccount.length > 0 ? (
+			{user && user.blueskyAccounts.length > 0 ? (
 				<>
 					<h2>Connected to Bluesky</h2>
 					<p>You are successfully connected to your Bluesky account</p>
-					<p>Account: {user.BlueskyAccount[0].handle}</p>
+					<p>Account: {user.blueskyAccounts[0].handle}</p>
 					<Form action="/bluesky/auth/revoke" method="post">
 						<button type="submit">Disconnect from Bluesky</button>
 					</Form>

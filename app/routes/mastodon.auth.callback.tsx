@@ -21,7 +21,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			id: userId,
 		},
 		data: {
-			mastodonTokens: {
+			mastodonAccounts: {
 				create: {
 					id: uuidv7(),
 					accessToken: tokenData.access_token,

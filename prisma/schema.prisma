@@ -15,14 +15,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  password       Password?
-  roles          Role[]
-  sessions       Session[]
-  subscriptions  Subscription[]
-  itemStatuses   ItemStatus[]
-  categories     Category[]
-  mastodonTokens MastodonOauthToken[]
-  BlueskyAccount BlueskyAccount[]
+  password         Password?
+  roles            Role[]
+  sessions         Session[]
+  subscriptions    Subscription[]
+  itemStatuses     ItemStatus[]
+  categories       Category[]
+  mastodonAccounts MastodonAccount[]
+  blueskyAccounts  BlueskyAccount[]
 }
 
 model Password {
@@ -46,33 +46,46 @@ model Session {
   @@index([userId])
 }
 
-model MastodonOauthToken {
-  id           String   @id @db.Uuid
-  instance     String
-  accessToken  String
-  tokenType    String
-  expiresIn    Int?
-  refreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  userId       String   @db.Uuid
-  user         User     @relation(fields: [userId], references: [id])
+model MastodonAccount {
+  id               String   @id @db.Uuid
+  instance         String
+  accessToken      String
+  tokenType        String
+  expiresIn        Int?
+  refreshToken     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  mostRecentPostId String?
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model BlueskyAccount {
-  id              String   @id @db.Uuid
-  service         String
-  refreshJwt      String
-  accessJwt       String
-  handle          String   @unique
-  did             String   @unique
-  email           String?
-  emailConfirmed  Boolean?
-  emailAuthFactor Boolean?
-  active          Boolean
-  status          String?
-  userId          String   @db.Uuid
-  user            User     @relation(fields: [userId], references: [id])
+  id                 String    @id @db.Uuid
+  service            String
+  refreshJwt         String
+  accessJwt          String
+  handle             String    @unique
+  did                String    @unique
+  email              String?
+  emailConfirmed     Boolean?
+  emailAuthFactor    Boolean?
+  active             Boolean
+  status             String?
+  mostRecentPostDate DateTime?
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model LinkPost {
+  id       String       @id @db.Uuid
+  postUrl  String
+  linkUrl  String
+  type     LinkPostType
+  postDate DateTime
+  repost   Boolean      @default(false)
 }
 
 model Permission {
@@ -237,4 +250,9 @@ enum ActorType {
   Organization
   Person
   Service
+}
+
+enum LinkPostType {
+  bluesky
+  mastodon
 }
