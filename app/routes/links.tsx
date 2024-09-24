@@ -21,10 +21,9 @@ const Links = () => {
 
 	return (
 		<ul>
-			{data.links.map((item) => (
-				<li key={item.linkUrl}>
-					<a href={item.linkUrl}>{item.linkUrl}</a> posted by{" "}
-					{item._count.linkUrl} people
+			{data.links.map((link) => (
+				<li key={link[0]}>
+					<a href={link[0]}>{link[0]}</a> posted by {link[1].length} people
 				</li>
 			))}
 		</ul>

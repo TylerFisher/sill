@@ -70,6 +70,7 @@ CREATE TABLE "LinkPost" (
     "linkId" UUID NOT NULL,
     "postId" UUID NOT NULL,
     "userId" UUID NOT NULL,
+    "actorId" UUID NOT NULL,
 
     CONSTRAINT "LinkPost_pkey" PRIMARY KEY ("id")
 );
@@ -93,7 +94,7 @@ CREATE TABLE "Post" (
     "postDate" TIMESTAMP(3) NOT NULL,
     "postType" "PostType" NOT NULL,
     "repost" BOOLEAN NOT NULL DEFAULT false,
-    "actorId" UUID NOT NULL,
+    "actorHandle" TEXT NOT NULL,
 
     CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
 );
@@ -102,7 +103,7 @@ CREATE TABLE "Post" (
 CREATE TABLE "Actor" (
     "id" UUID NOT NULL,
     "url" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" TEXT,
     "handle" TEXT NOT NULL,
     "avatarUrl" TEXT,
 
@@ -224,6 +225,18 @@ CREATE UNIQUE INDEX "BlueskyAccount_handle_key" ON "BlueskyAccount"("handle");
 CREATE UNIQUE INDEX "BlueskyAccount_did_key" ON "BlueskyAccount"("did");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "LinkPost_linkId_postId_userId_actorId_key" ON "LinkPost"("linkId", "postId", "userId", "actorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Link_url_key" ON "Link"("url");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Post_url_key" ON "Post"("url");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Actor_handle_key" ON "Actor"("handle");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Verification_target_type_key" ON "Verification"("target", "type");
 
 -- CreateIndex
@@ -266,7 +279,10 @@ ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_postId_fkey" FOREIGN KEY ("postI
 ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LinkPost" ADD CONSTRAINT "LinkPost_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "Actor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Post" ADD CONSTRAINT "Post_actorHandle_fkey" FOREIGN KEY ("actorHandle") REFERENCES "Actor"("handle") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Media" ADD CONSTRAINT "Media_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE CASCADE ON UPDATE NO ACTION;

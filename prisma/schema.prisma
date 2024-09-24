@@ -82,17 +82,21 @@ model BlueskyAccount {
 model LinkPost {
   id String @id @db.Uuid
 
-  linkId String @db.Uuid
-  link   Link   @relation(fields: [linkId], references: [id])
-  postId String @db.Uuid
-  post   Post   @relation(fields: [postId], references: [id])
-  userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id])
+  linkUrl     String
+  link        Link   @relation(fields: [linkUrl], references: [url])
+  postUrl     String
+  post        Post   @relation(fields: [postUrl], references: [url])
+  userId      String @db.Uuid
+  user        User   @relation(fields: [userId], references: [id])
+  actorHandle String
+  actor       Actor  @relation(fields: [actorHandle], references: [handle])
+
+  @@unique([linkUrl, postUrl, userId, actorHandle])
 }
 
 model Link {
   id          String     @id @db.Uuid
-  url         String
+  url         String     @unique
   title       String
   description String?
   imageUrl    String?
@@ -101,25 +105,25 @@ model Link {
 
 model Post {
   id       String   @id @db.Uuid
-  url      String
+  url      String   @unique
   text     String
   postDate DateTime
   postType PostType
-  repost   Boolean  @default(false)
 
-  actorId String @db.Uuid
-  actor   Actor  @relation(fields: [actorId], references: [id])
+  actorHandle String
+  actor       Actor  @relation(fields: [actorHandle], references: [handle])
 
   linkPosts LinkPost[]
 }
 
 model Actor {
-  id        String  @id @db.Uuid
+  id        String     @id @db.Uuid
   url       String
-  name      String
-  handle    String
+  name      String?
+  handle    String     @unique
   avatarUrl String?
   posts     Post[]
+  linkPosts LinkPost[]
 }
 
 model Verification {
