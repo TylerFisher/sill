@@ -111,6 +111,8 @@ export const getBlueskyTimeline = async (userId: string) => {
 			},
 			data: {
 				mostRecentPostDate: new Date(timeline[0].post.indexedAt),
+				accessJwt: agent.session?.accessJwt,
+				refreshJwt: agent.session?.refreshJwt,
 			},
 		});
 	}
