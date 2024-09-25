@@ -1,27 +1,17 @@
 import { prisma } from "~/db.server";
-import { AtpAgent, AppBskyFeedPost } from "@atproto/api";
-import { createRestAPIClient } from "masto";
+import {
+	AppBskyFeedDefs,
+	AtpAgent,
+	AppBskyFeedPost,
+	AppBskyEmbedRecord,
+	AppBskyEmbedExternal,
+	type AppBskyActorDefs,
+} from "@atproto/api";
+import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
 import groupBy from "object.groupby";
-
-interface BskyExternalEmbed {
-	uri: string;
-	title: string;
-	description: string;
-	thumb: string;
-}
-
-interface BskyReposter {
-	handle: string;
-	name?: string;
-	avatar?: string;
-	did: string;
-}
-
-interface BskyRecord {
-	text: string;
-}
+import { Prisma } from "@prisma/client";
 
 export const getMastodonTimeline = async (userId: string) => {
 	const yesterday = new Date(Date.now() - 86400000);
@@ -36,26 +26,25 @@ export const getMastodonTimeline = async (userId: string) => {
 		accessToken: account.accessToken,
 	});
 
-	async function getTimeline(
-		maxId: string | undefined,
-		sinceId: string | null | undefined,
-	) {
-		const timeline = await client.v1.timelines.home.list({
-			limit: 40,
-			maxId,
-			sinceId,
-		});
-		let newPosts = timeline.filter(
-			(post) => new Date(post.createdAt) > yesterday,
-		);
-		if (newPosts.length === 40) {
-			const lastPost = newPosts.at(-1);
-			newPosts = newPosts.concat(await getTimeline(lastPost?.id, undefined));
+	const timeline: mastodon.v1.Status[] = [];
+	let ended = false;
+	for await (const statuses of client.v1.timelines.home.list({
+		sinceId: account.mostRecentPostId,
+	})) {
+		if (ended) break;
+		for await (const status of statuses) {
+			if (new Date(status.createdAt) <= yesterday) {
+				continue;
+			}
+			if (status.id === account.mostRecentPostId) {
+				ended = true;
+				break;
+			}
+			timeline.push(status);
 		}
-		return newPosts;
 	}
 
-	const timeline = await getTimeline(undefined, account.mostRecentPostId);
+	console.log(timeline.length);
 
 	if (timeline.length > 0) {
 		await prisma.mastodonAccount.update({
@@ -131,179 +120,278 @@ export const getBlueskyTimeline = async (userId: string) => {
 	return timeline;
 };
 
-export const getLinksFromMastodon = async (userId: string) => {
-	const timeline = await getMastodonTimeline(userId);
-	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
-	for (const t of linksOnly) {
-		const original = t.reblog || t;
-		const url = original.url;
-		const card = original.card;
+const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
+	const original = t.reblog || t;
+	const url = original.url;
+	const card = original.card;
 
-		if (!url || !card) {
-			continue;
-		}
+	if (!url || !card) {
+		return null;
+	}
 
-		await prisma.linkPost.upsert({
-			where: {
-				linkUrl_postUrl_userId_actorHandle: {
-					linkUrl: card.url,
-					postUrl: url,
-					userId,
-					actorHandle: t.account.username,
-				},
+	await prisma.linkPost.upsert({
+		where: {
+			linkUrl_postUrl_userId_actorHandle: {
+				linkUrl: card.url,
+				postUrl: url,
+				userId,
+				actorHandle: t.account.username,
 			},
-			create: {
-				id: uuidv7(),
-				post: {
-					connectOrCreate: {
-						where: {
-							url,
-						},
-						create: {
-							id: uuidv7(),
-							url,
-							text: original.text || "",
-							postDate: original.createdAt,
-							postType: PostType.mastodon,
-							actor: {
-								connectOrCreate: {
-									where: {
-										handle: original.account.username,
-									},
-									create: {
-										id: uuidv7(),
-										name: original.account.displayName,
-										handle: original.account.username,
-										url: original.account.url,
-										avatarUrl: original.account.avatar,
-									},
+		},
+		create: {
+			id: uuidv7(),
+			post: {
+				connectOrCreate: {
+					where: {
+						url,
+					},
+					create: {
+						id: uuidv7(),
+						url,
+						text: original.content || "",
+						postDate: original.createdAt,
+						postType: PostType.mastodon,
+						actor: {
+							connectOrCreate: {
+								where: {
+									handle: original.account.username,
+								},
+								create: {
+									id: uuidv7(),
+									name: original.account.displayName,
+									handle: original.account.username,
+									url: original.account.url,
+									avatarUrl: original.account.avatar,
 								},
 							},
 						},
 					},
 				},
-				link: {
-					connectOrCreate: {
-						where: {
-							url: original.card?.url,
-						},
-						create: {
-							id: uuidv7(),
-							url: card.url,
-							title: card.title,
-							description: original.card?.description,
-							imageUrl: original.card?.image,
-						},
+			},
+			link: {
+				connectOrCreate: {
+					where: {
+						url: original.card?.url,
 					},
-				},
-				actor: {
-					connectOrCreate: {
-						where: {
-							handle: t.account.username,
-						},
-						create: {
-							id: uuidv7(),
-							handle: t.account.username,
-							url: t.account.url,
-							name: t.account.displayName,
-							avatarUrl: t.account.avatar,
-						},
-					},
-				},
-				user: {
-					connect: {
-						id: userId,
+					create: {
+						id: uuidv7(),
+						url: card.url,
+						title: card.title,
+						description: original.card?.description,
+						imageUrl: original.card?.image,
 					},
 				},
 			},
-			update: {},
-		});
+			actor: {
+				connectOrCreate: {
+					where: {
+						handle: t.account.username,
+					},
+					create: {
+						id: uuidv7(),
+						handle: t.account.username,
+						url: t.account.url,
+						name: t.account.displayName,
+						avatarUrl: t.account.avatar,
+					},
+				},
+			},
+			user: {
+				connect: {
+					id: userId,
+				},
+			},
+		},
+		update: {},
+	});
+};
+
+export const getLinksFromMastodon = async (userId: string) => {
+	const timeline = await getMastodonTimeline(userId);
+	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
+	for await (const t of linksOnly) {
+		try {
+			await processMastodonLink(userId, t);
+		} catch (e) {
+			if (e instanceof Prisma.PrismaClientKnownRequestError) {
+				if (e.code === "P2002") {
+					await processMastodonLink(userId, t);
+				}
+			}
+		}
 	}
+};
+
+const processBlueskyLink = async (
+	userId: string,
+	t: AppBskyFeedDefs.FeedViewPost,
+) => {
+	let record: AppBskyFeedPost.Record | null = null;
+	if (AppBskyFeedPost.isRecord(t.post.record)) {
+		record = t.post.record;
+	}
+	if (!record) {
+		return null;
+	}
+
+	// Handle embeds
+	let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
+	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
+	let quotedValue: AppBskyFeedPost.Record | null = null;
+	let externalRecord: AppBskyEmbedExternal.View | null = null;
+	if (AppBskyEmbedRecord.isView(t.post.embed)) {
+		quoted = t.post.embed;
+		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
+			quotedRecord = quoted.record;
+			const embeddedLink = quotedRecord.embeds?.find((e) =>
+				AppBskyEmbedExternal.isView(e),
+			);
+			if (embeddedLink) {
+				externalRecord = embeddedLink;
+			}
+		}
+		if (AppBskyFeedPost.isRecord(quoted.record.value)) {
+			quotedValue = quoted.record.value;
+		}
+	}
+
+	if (AppBskyEmbedExternal.isView(t.post.embed)) {
+		externalRecord = t.post.embed;
+	}
+
+	if (!externalRecord) {
+		return null;
+	}
+
+	let linkPoster: AppBskyActorDefs.ProfileViewBasic | null = null;
+	if (AppBskyFeedDefs.isReasonRepost(t.reason)) {
+		linkPoster = t.reason.by;
+	} else {
+		linkPoster = t.post.author;
+	}
+
+	const postUrl = `https://bsky.app/profile/${t.post.author.did}/post/${t.post.uri.split("/").at(-1)}`;
+
+	await prisma.linkPost.upsert({
+		where: {
+			linkUrl_postUrl_userId_actorHandle: {
+				linkUrl: externalRecord.external.uri,
+				postUrl: postUrl,
+				userId,
+				actorHandle: linkPoster.handle,
+			},
+		},
+		create: {
+			id: uuidv7(),
+			post: {
+				connectOrCreate: {
+					where: {
+						url: postUrl,
+					},
+					create: {
+						id: uuidv7(),
+						url: postUrl,
+						text: record.text,
+						postDate: new Date(t.post.indexedAt),
+						postType: PostType.bluesky,
+						quoting:
+							quotedValue && quotedRecord
+								? {
+										connectOrCreate: {
+											where: {
+												url: quotedRecord.uri,
+											},
+											create: {
+												id: uuidv7(),
+												url: quotedRecord.uri,
+												text: quotedValue.text,
+												postDate: new Date(quotedRecord.indexedAt),
+												postType: PostType.bluesky,
+												actor: {
+													connectOrCreate: {
+														where: {
+															handle: quotedRecord.author.handle,
+														},
+														create: {
+															id: uuidv7(),
+															name: quotedRecord.author.displayName,
+															handle: quotedRecord.author.handle,
+															url: `https://bsky.app/profile/${quotedRecord.author.did}`,
+															avatarUrl: quotedRecord.author.avatar,
+														},
+													},
+												},
+											},
+										},
+									}
+								: undefined,
+						actor: {
+							connectOrCreate: {
+								where: {
+									handle: t.post.author.handle,
+								},
+								create: {
+									id: uuidv7(),
+									name: t.post.author.displayName || "",
+									handle: t.post.author.handle,
+									url: `https://bsky.app/profile/${t.post.author.did}`,
+									avatarUrl: t.post.author.avatar,
+								},
+							},
+						},
+					},
+				},
+			},
+			link: {
+				connectOrCreate: {
+					where: {
+						url: externalRecord.external.uri,
+					},
+					create: {
+						id: uuidv7(),
+						url: externalRecord.external.uri,
+						title: externalRecord.external.title,
+						description: externalRecord.external.description,
+						imageUrl: externalRecord.external.thumb,
+					},
+				},
+			},
+			actor: {
+				connectOrCreate: {
+					where: {
+						handle: linkPoster.handle,
+					},
+					create: {
+						id: uuidv7(),
+						handle: linkPoster.handle,
+						url: `https://bsky.app/profile/${linkPoster.did}`,
+						name: linkPoster.displayName,
+						avatarUrl: linkPoster.avatar,
+					},
+				},
+			},
+			user: {
+				connect: {
+					id: userId,
+				},
+			},
+		},
+		update: {},
+	});
 };
 
 export const getLinksFromBluesky = async (userId: string) => {
 	const timeline = await getBlueskyTimeline(userId);
-	const linksOnly = timeline.filter((t) => t.post.embed?.external);
-	for (const t of linksOnly) {
-		const external = t.post.embed?.external as BskyExternalEmbed;
-		const linkPoster =
-			(t.reason?.by as BskyReposter) || (t.post.author as BskyReposter);
-		const record = t.post.record as BskyRecord;
-		await prisma.linkPost.upsert({
-			where: {
-				linkUrl_postUrl_userId_actorHandle: {
-					linkUrl: external.uri,
-					postUrl: t.post.uri,
-					userId,
-					actorHandle: linkPoster.handle,
-				},
-			},
-			create: {
-				id: uuidv7(),
-				post: {
-					connectOrCreate: {
-						where: {
-							url: t.post.uri,
-						},
-						create: {
-							id: uuidv7(),
-							url: t.post.uri,
-							text: record.text,
-							postDate: new Date(t.post.indexedAt),
-							postType: PostType.bluesky,
-							actor: {
-								connectOrCreate: {
-									where: {
-										handle: t.post.author.handle,
-									},
-									create: {
-										id: uuidv7(),
-										name: t.post.author.displayName || "",
-										handle: t.post.author.handle,
-										url: t.post.author.did,
-										avatarUrl: t.post.author.avatar,
-									},
-								},
-							},
-						},
-					},
-				},
-				link: {
-					connectOrCreate: {
-						where: {
-							url: external.uri,
-						},
-						create: {
-							id: uuidv7(),
-							url: external.uri,
-							title: external.title,
-							description: external.description,
-							imageUrl: external.thumb,
-						},
-					},
-				},
-				actor: {
-					connectOrCreate: {
-						where: {
-							handle: linkPoster.handle,
-						},
-						create: {
-							id: uuidv7(),
-							handle: linkPoster.handle,
-							url: linkPoster.did,
-							name: linkPoster.name,
-							avatarUrl: linkPoster.avatar,
-						},
-					},
-				},
-				user: {
-					connect: {
-						id: userId,
-					},
-				},
-			},
-			update: {},
-		});
+	for await (const t of timeline) {
+		try {
+			await processBlueskyLink(userId, t);
+		} catch (e) {
+			if (e instanceof Prisma.PrismaClientKnownRequestError) {
+				if (e.code === "P2002") {
+					await processBlueskyLink(userId, t);
+				}
+			}
+		}
 	}
 };
 

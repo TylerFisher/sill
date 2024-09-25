@@ -104,14 +104,17 @@ model Link {
 }
 
 model Post {
-  id       String   @id @db.Uuid
-  url      String   @unique
-  text     String
-  postDate DateTime
-  postType PostType
+  id        String   @id @db.Uuid
+  url       String   @unique
+  text      String
+  postDate  DateTime
+  postType  PostType
+  quotingId String?  @db.Uuid
+  quoting   Post?    @relation("quotes", fields: [quotingId], references: [id])
+  quotes    Post[]   @relation("quotes")
 
   actorHandle String
-  actor       Actor  @relation(fields: [actorHandle], references: [handle])
+  actor       Actor  @relation(fields: [actorHandle], references: [handle], onDelete: Cascade)
 
   linkPosts LinkPost[]
 }

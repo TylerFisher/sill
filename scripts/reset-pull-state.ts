@@ -15,6 +15,18 @@ const removeCursors = async () => {
 		},
 	});
 
+	await prisma.linkPost.deleteMany({
+		where: {},
+	});
+
+	await prisma.actor.deleteMany({
+		where: {},
+	});
+
+	await prisma.link.deleteMany({
+		where: {},
+	});
+
 	console.log("Finished");
 };
 
