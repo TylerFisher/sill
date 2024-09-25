@@ -23,26 +23,34 @@ const Links = () => {
 		<ul>
 			{data.links.map((link) => (
 				<li key={link[0]}>
-					<a href={link[0]}>{link[1][0].link.title || link[0]}</a> posted by{" "}
-					{link[1].length} people
+					<a target="_blank" rel="noreferrer" href={link[0]}>
+						{link[1][0].link.title || link[0]}
+					</a>{" "}
+					posted by {link[1].length} people
 					<ul>
 						{link[1].map((linkPost) => (
 							<li key={linkPost.id}>
 								{linkPost.actor.handle !== linkPost.post.actor.handle && (
 									<>
-										<em>Reposted by {linkPost.actor.handle}</em>
+										<small>
+											<em>Reposted by {linkPost.actor.handle}</em>
+										</small>
 										<br />
 									</>
 								)}
 								{linkPost.post.text} -{" "}
-								<a href={linkPost.post.url}>
+								<a href={linkPost.post.url} target="_blank" rel="noreferrer">
 									{linkPost.post.actor.name} ({linkPost.post.actor.handle})
 								</a>{" "}
 								{linkPost.post.quoting && (
 									<ul>
 										<li>
 											{linkPost.post.quoting.text} -{" "}
-											<a href={linkPost.post.quoting.url}>
+											<a
+												href={linkPost.post.quoting.url}
+												target="_blank"
+												rel="noreferrer"
+											>
 												{linkPost.post.quoting.actor.name} (
 												{linkPost.post.quoting.actorHandle})
 											</a>
