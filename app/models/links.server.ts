@@ -415,6 +415,11 @@ export const countLinkOccurrences = async (userId: string) => {
 			post: {
 				include: {
 					actor: true,
+					quoting: {
+						include: {
+							actor: true,
+						},
+					},
 				},
 			},
 			actor: true,
