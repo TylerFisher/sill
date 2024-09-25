@@ -42,7 +42,7 @@ const Links = () => {
 									<ul>
 										<li>
 											{linkPost.post.quoting.text} -{" "}
-											<a href="{linkPost.post.quoting.url}">
+											<a href={linkPost.post.quoting.url}>
 												{linkPost.post.quoting.actor.name} (
 												{linkPost.post.quoting.actorHandle})
 											</a>

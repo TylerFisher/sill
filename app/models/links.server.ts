@@ -44,8 +44,6 @@ export const getMastodonTimeline = async (userId: string) => {
 		}
 	}
 
-	console.log(timeline.length);
-
 	if (timeline.length > 0) {
 		await prisma.mastodonAccount.update({
 			where: {
@@ -299,11 +297,11 @@ const processBlueskyLink = async (
 								? {
 										connectOrCreate: {
 											where: {
-												url: quotedRecord.uri,
+												url: `https://bsky.app/profile/${quotedRecord.author.did}/post/${quotedRecord.uri.split("/").at(-1)}`,
 											},
 											create: {
 												id: uuidv7(),
-												url: quotedRecord.uri,
+												url: `https://bsky.app/profile/${quotedRecord.author.did}/post/${quotedRecord.uri.split("/").at(-1)}`,
 												text: quotedValue.text,
 												postDate: new Date(quotedRecord.indexedAt),
 												postType: PostType.bluesky,
