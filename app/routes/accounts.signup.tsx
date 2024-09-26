@@ -7,6 +7,15 @@ import { Form, useActionData } from "@remix-run/react";
 import { createUser, getUserByEmail } from "../models/user.server";
 import { createUserSession } from "../session.server";
 import { validateEmail } from "../utils";
+import {
+	Container,
+	Heading,
+	TextField,
+	Text,
+	Button,
+	Box,
+	Flex,
+} from "@radix-ui/themes";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
@@ -59,60 +68,90 @@ const UserSetup = () => {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<>
-			<h1>Welcome!</h1>
-			<p>Setup your account.</p>
+		<Container mt="9">
+			<Box mb="5">
+				<Heading size="8">Sign up</Heading>
+			</Box>
+
 			<Form method="post">
-				<fieldset>
-					<label>
-						Email{" "}
-						<input
-							type="email"
-							name="email"
-							required={true}
-							placeholder="john@example.com"
-							aria-invalid={actionData?.errors.email != null ? true : undefined}
-						/>
-						{actionData?.errors?.email ? (
-							<small>{actionData?.errors.email}</small>
-						) : null}
-					</label>
-				</fieldset>
-				<fieldset className="grid">
-					<label>
-						Password{" "}
-						<input
-							type="password"
-							name="password"
-							required={true}
-							minLength={6}
-							aria-invalid={
-								actionData?.errors.password != null ? true : undefined
-							}
-						/>
-						{actionData?.errors.password ? (
-							<small>{actionData?.errors.password}</small>
-						) : null}
-					</label>
-					<label>
-						Password (again){" "}
-						<input
-							type="password"
-							name="password_confirm"
-							required={true}
-							minLength={6}
-							aria-invalid={
-								actionData?.errors.passwordConfirm != null ? true : undefined
-							}
-						/>
-						{actionData?.errors.passwordConfirm ? (
-							<small>{actionData?.errors.passwordConfirm}</small>
-						) : null}
-					</label>
-				</fieldset>
-				<button type="submit">Submit</button>
+				<Box mb="5">
+					<Flex mb="1">
+						<label htmlFor="email">
+							<Text size="3" weight="bold">
+								Email address
+							</Text>
+						</label>
+					</Flex>
+					<TextField.Root
+						type="email"
+						name="email"
+						required={true}
+						placeholder="tyler@tylerjfisher.com"
+						aria-invalid={actionData?.errors.email != null ? true : undefined}
+						size="3"
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					{actionData?.errors?.email ? (
+						<Text size="1">{actionData?.errors.email}</Text>
+					) : null}
+				</Box>
+
+				<Box mb="5">
+					<Flex mb="1">
+						<label htmlFor="password">
+							<Text size="3" weight="bold">
+								Password
+							</Text>
+						</label>
+					</Flex>
+					<TextField.Root
+						type="password"
+						name="password"
+						required={true}
+						minLength={6}
+						aria-invalid={
+							actionData?.errors.password != null ? true : undefined
+						}
+						size="3"
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					{actionData?.errors.password ? (
+						<Text size="1">{actionData?.errors.password}</Text>
+					) : null}
+				</Box>
+
+				<Box mb="5">
+					<Flex mb="1">
+						<label htmlFor="password_confirm">
+							<Text size="3" weight="bold">
+								Confirm password
+							</Text>
+						</label>
+					</Flex>
+					<TextField.Root
+						type="password"
+						name="password_confirm"
+						required={true}
+						minLength={6}
+						aria-invalid={
+							actionData?.errors.passwordConfirm != null ? true : undefined
+						}
+						size="3"
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					{actionData?.errors.passwordConfirm ? (
+						<Text size="1">{actionData?.errors.passwordConfirm}</Text>
+					) : null}
+				</Box>
+
+				<Button type="submit" size="3">
+					Submit
+				</Button>
 			</Form>
-		</>
+		</Container>
 	);
 };
 

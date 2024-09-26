@@ -98,25 +98,29 @@ export const getBlueskyTimeline = async (userId: string) => {
 		if (!reachedEnd) {
 			newPosts = newPosts.concat(await getTimeline(response.data.cursor));
 		}
-
 		return newPosts;
 	}
 
 	const timeline = await getTimeline();
 
 	if (timeline.length > 0) {
+		const firstPost = timeline[0];
+
 		await prisma.blueskyAccount.update({
 			where: {
 				id: account.id,
 			},
 			data: {
-				mostRecentPostDate: new Date(timeline[0].post.indexedAt),
+				mostRecentPostDate: new Date(
+					AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+						? firstPost.reason.indexedAt
+						: firstPost.post.indexedAt,
+				),
 				accessJwt: agent.session?.accessJwt,
 				refreshJwt: agent.session?.refreshJwt,
 			},
 		});
 	}
-
 	return timeline;
 };
 
@@ -148,7 +152,7 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 					create: {
 						id: uuidv7(),
 						url,
-						text: original.content || "",
+						text: original.content,
 						postDate: original.createdAt,
 						postType: PostType.mastodon,
 						actor: {
