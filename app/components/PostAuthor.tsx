@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, Text } from "@radix-ui/themes";
 import type { Actor } from "@prisma/client";
 import TimeAgo from "javascript-time-ago";

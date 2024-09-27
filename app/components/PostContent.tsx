@@ -1,4 +1,3 @@
-import React from "react";
 import { Text } from "@radix-ui/themes";
 import type { Post } from "@prisma/client";
 

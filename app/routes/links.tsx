@@ -4,9 +4,9 @@ import {
 	json,
 } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import { Container, Box } from "@radix-ui/themes";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/session.server";
-import { Container, Box, Card } from "@radix-ui/themes";
 import LinkRep from "~/components/LinkRep";
 import PostRep from "~/components/PostRep";
 

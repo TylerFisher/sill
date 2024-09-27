@@ -1,4 +1,3 @@
-import React from "react";
 import type { Actor } from "@prisma/client";
 import { Link, Text } from "@radix-ui/themes";
 

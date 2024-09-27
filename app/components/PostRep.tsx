@@ -1,5 +1,4 @@
-import React from "react";
-import { Card, Box, Text, Avatar, Link, Flex } from "@radix-ui/themes";
+import { Card, Box, Avatar, Flex } from "@radix-ui/themes";
 import type { Post, Actor } from "@prisma/client";
 
 import RepostActor from "~/components/RepostActor";

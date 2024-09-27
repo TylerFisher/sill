@@ -1,4 +1,3 @@
-import React from "react";
 import { Heading, Link, Text } from "@radix-ui/themes";
 import type { Link as DbLink } from "@prisma/client";
 
