@@ -7,6 +7,7 @@ import {
 } from "@remix-run/react";
 import type React from "react";
 import "@radix-ui/themes/styles.css";
+import "~/styles/override.css";
 import { Theme } from "@radix-ui/themes";
 
 export function Layout({ children }: { children: React.ReactNode }) {

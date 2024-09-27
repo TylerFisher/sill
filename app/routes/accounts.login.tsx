@@ -7,6 +7,15 @@ import { Form, useActionData } from "@remix-run/react";
 import { verifyLogin } from "../models/user.server";
 import { createUserSession } from "../session.server";
 import { validateEmail } from "../utils";
+import {
+	Container,
+	Box,
+	TextField,
+	Heading,
+	Button,
+	Flex,
+	Text,
+} from "@radix-ui/themes";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
@@ -55,25 +64,41 @@ const Index = () => {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<>
-			<h1>Login</h1>
+		<Container mt="9">
+			<Box mb="5">
+				<Heading size="8">Login</Heading>
+			</Box>
 			<Form method="post">
-				<label>
-					Email{" "}
-					<input
+				<Box mb="5">
+					<Flex mb="1">
+						<label htmlFor="email">
+							<Text size="3" weight="bold">
+								Email
+							</Text>
+						</label>
+					</Flex>
+					<TextField.Root
 						type="email"
 						name="email"
 						required={true}
 						placeholder="john@example.com"
 						aria-invalid={actionData?.errors?.email != null ? true : undefined}
-					/>
+					>
+						<TextField.Slot />
+					</TextField.Root>
 					{actionData?.errors?.email && (
 						<small>{actionData?.errors.email}</small>
 					)}
-				</label>
-				<label>
-					Password{" "}
-					<input
+				</Box>
+				<Box mb="5">
+					<Flex mb="1">
+						<label htmlFor="password">
+							<Text size="3" weight="bold">
+								Password
+							</Text>
+						</label>
+					</Flex>
+					<TextField.Root
 						type="password"
 						name="password"
 						required={true}
@@ -81,14 +106,17 @@ const Index = () => {
 						aria-invalid={
 							actionData?.errors?.password != null ? true : undefined
 						}
-					/>
+					>
+						<TextField.Slot />
+					</TextField.Root>
 					{actionData?.errors?.password && (
 						<small>{actionData?.errors.password}</small>
 					)}
-				</label>
-				<button type="submit">Sign in</button>
+				</Box>
+
+				<Button type="submit">Sign in</Button>
 			</Form>
-		</>
+		</Container>
 	);
 };
 

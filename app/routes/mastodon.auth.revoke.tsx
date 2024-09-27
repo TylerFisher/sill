@@ -13,12 +13,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
 		include: {
-			mastodonTokens: true,
+			mastodonAccounts: true,
 		},
 	});
 
-	if (user && user.mastodonTokens.length > 0) {
-		const token = user.mastodonTokens[0];
+	if (user && user.mastodonAccounts.length > 0) {
+		const token = user.mastodonAccounts[0];
 
 		const accessToken = token.accessToken;
 		const instance = token.instance;
@@ -36,7 +36,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		});
 
 		// Delete tokens from the database
-		await prisma.mastodonOauthToken.deleteMany({
+		await prisma.mastodonAccount.deleteMany({
 			where: { userId: userId },
 		});
 

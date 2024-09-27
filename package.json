@@ -25,6 +25,7 @@
 		"bcryptjs": "^2.4.3",
 		"ioredis": "^5.4.1",
 		"isbot": "^4.1.0",
+		"javascript-time-ago": "^2.5.11",
 		"masto": "^6.8.0",
 		"object.groupby": "^1.0.3",
 		"react": "^18.2.0",
