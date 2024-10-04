@@ -399,18 +399,18 @@ export const getLinksFromBluesky = async (userId: string) => {
 	}
 };
 
-export const countLinkOccurrences = async (userId: string) => {
+export const countLinkOccurrences = async (userId: string, time: number) => {
 	await Promise.all([
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
-	const yesterday = new Date(Date.now() - 86400000);
+	const start = new Date(Date.now() - time);
 	const mostRecentLinkPosts = await prisma.linkPost.findMany({
 		where: {
 			userId,
 			post: {
 				postDate: {
-					gte: yesterday,
+					gte: start,
 				},
 			},
 		},

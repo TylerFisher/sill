@@ -17,7 +17,10 @@ const LinkRep = ({ link, numPosts }: LinkRepProps) => (
 		>
 			{link.title || link.url}
 		</Link>{" "}
-		<Text weight="regular"> posted by {numPosts} people</Text>
+		<Text weight="regular">
+			{" "}
+			posted by {numPosts} {numPosts === 1 ? "person" : "people"} you follow
+		</Text>
 	</Heading>
 );
 
