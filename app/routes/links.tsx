@@ -56,7 +56,7 @@ const Links = () => {
 	return (
 		<Container mt="9">
 			<Box mb="5">
-				<Heading mb="2">Select time range</Heading>
+				<Heading mb="2">Show links posted in the last</Heading>
 				<Flex gap="3">
 					{buttons.map((button) => (
 						<TimeSelectButton
