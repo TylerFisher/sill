@@ -428,6 +428,11 @@ export const countLinkOccurrences = async (userId: string) => {
 			},
 			actor: true,
 		},
+		orderBy: {
+			post: {
+				postDate: "desc",
+			},
+		},
 	});
 
 	const grouped = groupBy(mostRecentLinkPosts, (l) => l.link.url);
