@@ -8,8 +8,8 @@ const timeAgo = new TimeAgo("en-US");
 
 interface PostAuthor {
 	actor: Actor;
-	postUrl: string;
-	postDate: Date;
+	postUrl?: string;
+	postDate?: Date;
 }
 
 const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
@@ -23,14 +23,18 @@ const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
 				@{actor.handle}
 			</Text>
 		</Link>
-		<Text mx="1" color="gray">
-			·
-		</Text>
-		<Link href={postUrl} target="_blank" rel="noreferrer" underline="hover">
-			<Text color="gray" weight="regular">
-				{timeAgo.format(postDate, "mini")}
-			</Text>
-		</Link>
+		{postUrl && postDate && (
+			<>
+				<Text mx="1" color="gray">
+					·
+				</Text>
+				<Link href={postUrl} target="_blank" rel="noreferrer" underline="hover">
+					<Text color="gray" weight="regular">
+						{timeAgo.format(postDate, "mini")}
+					</Text>
+				</Link>
+			</>
+		)}
 	</Text>
 );
 
