@@ -26,7 +26,10 @@ const Links = () => {
 		<Container mt="9">
 			{data.links.map((link) => (
 				<Box key={link[1][0].link.id} mb="5" maxWidth="600px">
-					<LinkRep link={link[1][0].link} numPosts={link[1].length} />
+					<LinkRep
+						link={link[1][0].link}
+						numPosts={[...new Set(link[1].map((l) => l.actorHandle))].length}
+					/>
 					{link[1].map((linkPost) => (
 						<PostRep
 							key={linkPost.post.id}

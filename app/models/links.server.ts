@@ -428,16 +428,13 @@ export const countLinkOccurrences = async (userId: string) => {
 			},
 			actor: true,
 		},
-		orderBy: {
-			post: {
-				postDate: "desc",
-			},
-		},
 	});
 
 	const grouped = groupBy(mostRecentLinkPosts, (l) => l.link.url);
 	const sorted = Object.entries(grouped).sort(
-		(a, b) => b[1].length - a[1].length,
+		(a, b) =>
+			[...new Set(b[1].map((l) => l.actorHandle))].length -
+			[...new Set(a[1].map((l) => l.actorHandle))].length,
 	);
 	return sorted;
 };
