@@ -4,7 +4,7 @@ import {
 	json,
 } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Container, Box, Button, Flex, Heading } from "@radix-ui/themes";
+import { Container, Box, Flex, Heading } from "@radix-ui/themes";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/session.server";
 import LinkRep from "~/components/LinkRep";
@@ -51,6 +51,8 @@ const Links = () => {
 		},
 	];
 
+	const currentTime = searchParams.get("time") || "86400000";
+
 	return (
 		<Container mt="9">
 			<Box mb="5">
@@ -60,25 +62,23 @@ const Links = () => {
 						<TimeSelectButton
 							key={button.time}
 							time={button.time}
-							color={
-								searchParams.get("time") === button.time ? "amber" : "gray"
-							}
 							setter={setTimeParam}
 							label={button.label}
+							variant={currentTime === button.time ? "solid" : "outline"}
 						/>
 					))}
 				</Flex>
 			</Box>
 
 			{data.links.map((link) => (
-				<Box key={link[1][0].link.id} mb="5" maxWidth="600px">
+				<Box key={link[0]} mb="5" maxWidth="600px">
 					<LinkRep
 						link={link[1][0].link}
 						numPosts={[...new Set(link[1].map((l) => l.actorHandle))].length}
 					/>
 					{link[1].map((linkPost) => (
 						<PostRep
-							key={linkPost.post.id}
+							key={linkPost.id}
 							post={linkPost.post}
 							linkPostActor={linkPost.actor}
 						/>
