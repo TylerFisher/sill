@@ -117,6 +117,15 @@ model Post {
   actor       Actor  @relation(fields: [actorHandle], references: [handle], onDelete: Cascade)
 
   linkPosts LinkPost[]
+  images    PostImage[]
+}
+
+model PostImage {
+  id     String @id @db.Uuid
+  alt    String
+  url    String
+  postId String @db.Uuid
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model Actor {

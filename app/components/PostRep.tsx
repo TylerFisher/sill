@@ -1,5 +1,5 @@
 import { Card, Box, Avatar, Flex } from "@radix-ui/themes";
-import type { Post, Actor, LinkPost, Link } from "@prisma/client";
+import type { Post, Actor, LinkPost, Link, PostImage } from "@prisma/client";
 
 import RepostActor from "~/components/RepostActor";
 import PostAuthor from "~/components/PostAuthor";
@@ -12,6 +12,7 @@ type PostWithActor = Overwrite<
 	{
 		actor: Actor;
 		postDate: string;
+		images: PostImage[];
 	}
 >;
 
@@ -41,8 +42,10 @@ const PostRep = ({ post, group }: PostRepProps) => {
 					size="3"
 					src={post.actor.avatarUrl || undefined}
 					radius="full"
-					fallback="T"
+					fallback={post.actorHandle[0]}
 					mt={reposters.length > 0 ? "4" : "1"}
+					loading="lazy"
+					decoding="async"
 				/>
 				<Box>
 					{reposters.length > 0 && <RepostActor actors={reposters} />}
@@ -61,7 +64,7 @@ const PostRep = ({ post, group }: PostRepProps) => {
 							size="1"
 							src={post.quoting.actor.avatarUrl || undefined}
 							radius="full"
-							fallback="T"
+							fallback={post.quoting.actorHandle[0]}
 						/>
 						<PostAuthor
 							actor={post.quoting.actor}

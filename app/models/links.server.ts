@@ -5,13 +5,24 @@ import {
 	AppBskyFeedPost,
 	AppBskyEmbedRecord,
 	AppBskyEmbedExternal,
+	AppBskyEmbedImages,
 	type AppBskyActorDefs,
+	AppBskyRichtextFacet,
+	RichText,
 } from "@atproto/api";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
 import groupBy from "object.groupby";
 import { Prisma } from "@prisma/client";
+import { extractFromUrl } from "@jcottam/html-metadata";
+
+interface BskyDetectedLink {
+	uri: string;
+	title: string | null;
+	description: string | null;
+	imageUrl?: string | null;
+}
 
 export const getMastodonTimeline = async (userId: string) => {
 	const yesterday = new Date(Date.now() - 86400000);
@@ -243,6 +254,8 @@ const processBlueskyLink = async (
 	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
 	let quotedValue: AppBskyFeedPost.Record | null = null;
 	let externalRecord: AppBskyEmbedExternal.View | null = null;
+	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
+	let detectedLink: BskyDetectedLink | null = null;
 	if (AppBskyEmbedRecord.isView(t.post.embed)) {
 		quoted = t.post.embed;
 		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
@@ -253,9 +266,18 @@ const processBlueskyLink = async (
 			if (embeddedLink) {
 				externalRecord = embeddedLink;
 			}
+			const imageGroup = quotedRecord?.embeds?.find((embed) =>
+				AppBskyEmbedImages.isView(embed),
+			);
+			if (imageGroup) {
+				quotedImageGroup = imageGroup.images;
+			}
 		}
 		if (AppBskyFeedPost.isRecord(quoted.record.value)) {
 			quotedValue = quoted.record.value;
+			if (!externalRecord) {
+				detectedLink = await findBlueskyLinkFacets(quotedValue);
+			}
 		}
 	}
 
@@ -263,8 +285,28 @@ const processBlueskyLink = async (
 		externalRecord = t.post.embed;
 	}
 
+	// check for a post with a link but no preview card
 	if (!externalRecord) {
+		if (!detectedLink) {
+			detectedLink = await findBlueskyLinkFacets(record);
+		}
+	} else {
+		detectedLink = {
+			uri: externalRecord.external.uri,
+			title: externalRecord.external.title,
+			description: externalRecord.external.description,
+			imageUrl: externalRecord.external.thumb,
+		};
+	}
+
+	if (!detectedLink) {
 		return null;
+	}
+
+	// handle image
+	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
+	if (AppBskyEmbedImages.isView(t.post.embed)) {
+		imageGroup = t.post.embed.images;
 	}
 
 	let linkPoster: AppBskyActorDefs.ProfileViewBasic | null = null;
@@ -279,7 +321,7 @@ const processBlueskyLink = async (
 	await prisma.linkPost.upsert({
 		where: {
 			linkUrl_postUrl_userId_actorHandle: {
-				linkUrl: externalRecord.external.uri,
+				linkUrl: detectedLink.uri,
 				postUrl: postUrl,
 				userId,
 				actorHandle: linkPoster.handle,
@@ -298,6 +340,15 @@ const processBlueskyLink = async (
 						text: record.text,
 						postDate: new Date(t.post.indexedAt),
 						postType: PostType.bluesky,
+						images: {
+							createMany: {
+								data: imageGroup.map((image) => ({
+									id: uuidv7(),
+									url: image.fullsize,
+									alt: image.alt,
+								})),
+							},
+						},
 						quoting:
 							quotedValue && quotedRecord
 								? {
@@ -311,6 +362,15 @@ const processBlueskyLink = async (
 												text: quotedValue.text,
 												postDate: new Date(quotedRecord.indexedAt),
 												postType: PostType.bluesky,
+												images: {
+													createMany: {
+														data: quotedImageGroup.map((image) => ({
+															id: uuidv7(),
+															url: image.fullsize,
+															alt: image.alt,
+														})),
+													},
+												},
 												actor: {
 													connectOrCreate: {
 														where: {
@@ -349,14 +409,14 @@ const processBlueskyLink = async (
 			link: {
 				connectOrCreate: {
 					where: {
-						url: externalRecord.external.uri,
+						url: detectedLink.uri,
 					},
 					create: {
 						id: uuidv7(),
-						url: externalRecord.external.uri,
-						title: externalRecord.external.title,
-						description: externalRecord.external.description,
-						imageUrl: externalRecord.external.thumb,
+						url: detectedLink.uri,
+						title: detectedLink.title || "",
+						description: detectedLink.description,
+						imageUrl: detectedLink.imageUrl,
 					},
 				},
 			},
@@ -399,6 +459,32 @@ export const getLinksFromBluesky = async (userId: string) => {
 	}
 };
 
+const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
+	let foundLink: BskyDetectedLink | null = null;
+	const rt = new RichText({
+		text: record.text,
+		facets: record.facets,
+	});
+	for await (const segment of rt.segments()) {
+		if (
+			segment.link &&
+			AppBskyRichtextFacet.validateLink(segment.link).success
+		) {
+			const metadata = await extractFromUrl(segment.link.uri);
+			if (metadata) {
+				foundLink = {
+					uri: segment.link.uri,
+					title: metadata["og:title"] || metadata.title,
+					imageUrl: metadata["og:image"],
+					description: metadata["og:description"] || metadata.description,
+				};
+			}
+			break;
+		}
+	}
+	return foundLink;
+};
+
 export const countLinkOccurrences = async (userId: string, time: number) => {
 	await Promise.all([
 		getLinksFromMastodon(userId),
@@ -422,8 +508,10 @@ export const countLinkOccurrences = async (userId: string, time: number) => {
 					quoting: {
 						include: {
 							actor: true,
+							images: true,
 						},
 					},
+					images: true,
 				},
 			},
 			actor: true,

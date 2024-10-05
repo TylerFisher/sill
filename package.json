@@ -16,6 +16,7 @@
 		"@atproto/bsky": "^0.0.83",
 		"@aws-sdk/client-s3": "^3.650.0",
 		"@aws-sdk/credential-providers": "^3.650.0",
+		"@jcottam/html-metadata": "^2.1.1",
 		"@mikaelporttila/rss": "npm:@jsr/mikaelporttila__rss@^1.1.1",
 		"@prisma/client": "^5.19.1",
 		"@radix-ui/themes": "^3.1.4",
