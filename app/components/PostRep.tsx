@@ -36,7 +36,7 @@ const PostRep = ({ post, group }: PostRepProps) => {
 		.map((l) => l.actor);
 
 	return (
-		<Card key={post.id} mb="5">
+		<Card key={post.id} mt="5">
 			<Flex gap="3" align="start" mb="1">
 				<Avatar
 					size="3"
@@ -58,7 +58,7 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				</Box>
 			</Flex>
 			{post.quoting && (
-				<Card ml="8">
+				<Card ml="8" mt="1">
 					<Flex gap="1" mb="1">
 						<Avatar
 							size="1"

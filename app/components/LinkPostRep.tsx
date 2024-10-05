@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Avatar, Box, Button, IconButton, Text } from "@radix-ui/themes";
+import {
+	Avatar,
+	Box,
+	Button,
+	IconButton,
+	Separator,
+	Text,
+} from "@radix-ui/themes";
 import LinkRep from "./LinkRep";
 import PostRep, { type ExtendedLinkPost } from "./PostRep";
 import groupBy from "object.groupby";
@@ -17,7 +24,7 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 	const uniqueActors = [...new Set(linkPosts.map((l) => l.actor.avatarUrl))];
 
 	return (
-		<Box key={link} mb="5" maxWidth="600px">
+		<Box key={link}>
 			<LinkRep link={linkPosts[0].link} />
 			<Collapsible.Root
 				className="CollapsibleRoot"
@@ -46,7 +53,7 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 					</Button>
 				</Collapsible.Trigger>
 				<Collapsible.Content>
-					<Box mt="2">
+					<Box mt="5">
 						{Object.entries(groupedLinkPosts).map(([postUrl, group]) => (
 							<PostRep key={postUrl} post={group[0].post} group={group} />
 						))}

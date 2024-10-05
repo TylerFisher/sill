@@ -4,7 +4,7 @@ import {
 	json,
 } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Container, Box, Flex, Heading } from "@radix-ui/themes";
+import { Container, Box, Flex, Heading, Separator } from "@radix-ui/themes";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/session.server";
 import LinkPostRep from "~/components/LinkPostRep";
@@ -53,7 +53,7 @@ const Links = () => {
 	const currentTime = searchParams.get("time") || "86400000";
 
 	return (
-		<Container mt="9">
+		<Container mt="9" maxWidth="640px">
 			<Box mb="5">
 				<Heading mb="2">Show links posted in the last</Heading>
 				<Flex gap="3">
@@ -69,8 +69,13 @@ const Links = () => {
 				</Flex>
 			</Box>
 
-			{data.links.map((link) => (
-				<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
+			{data.links.map((link, i) => (
+				<>
+					<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
+					{i < data.links.length - 1 && (
+						<Separator my="7" size="4" orientation="horizontal" />
+					)}
+				</>
 			))}
 		</Container>
 	);
