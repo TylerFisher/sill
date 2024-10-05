@@ -101,6 +101,9 @@ const Links = () => {
 					borderRight: "1px solid var(--accent-a6)",
 				}}
 			>
+				<Heading as="h2" mb="2" size="7">
+					Links
+				</Heading>
 				<Box mb="6">
 					<Collapsible.Root
 						className="CollapsibleRoot"
@@ -110,6 +113,7 @@ const Links = () => {
 						<Collapsible.Trigger asChild>
 							<Button variant="ghost" size="4">
 								Filters
+								{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
 							</Button>
 						</Collapsible.Trigger>
 						<Collapsible.Content>
@@ -139,9 +143,6 @@ const Links = () => {
 						</Collapsible.Content>
 					</Collapsible.Root>
 				</Box>
-				<Heading as="h2" mb="2">
-					Links
-				</Heading>
 				{data.links.map((link, i) => (
 					<>
 						<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
