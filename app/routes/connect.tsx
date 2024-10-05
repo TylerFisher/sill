@@ -5,7 +5,6 @@ import { useLoaderData } from "@remix-run/react";
 import { Form } from "@remix-run/react";
 import {
 	Badge,
-	Container,
 	Box,
 	Card,
 	Heading,
@@ -14,6 +13,7 @@ import {
 	Flex,
 	TextField,
 } from "@radix-ui/themes";
+import Layout from "~/components/Layout";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -37,7 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
-		<Container size="2">
+		<Layout>
 			<Box mb="8">
 				<Heading size="8">Connect your accounts</Heading>
 			</Box>
@@ -128,6 +128,6 @@ export default function Index() {
 					</Box>
 				)}
 			</Flex>
-		</Container>
+		</Layout>
 	);
 }

@@ -1,11 +1,12 @@
 import type { MetaFunction } from "@remix-run/node";
-import { Container, Heading, Link } from "@radix-ui/themes";
+import { Heading, Link } from "@radix-ui/themes";
+import Layout from "~/components/Layout";
 
 export const meta: MetaFunction = () => [{ title: "Casement" }];
 
 const Index = () => {
 	return (
-		<Container size="2">
+		<Layout>
 			<Heading as="h1" size="8">
 				Welcome!
 			</Heading>
@@ -20,7 +21,7 @@ const Index = () => {
 					<Link href="/links">Top Links</Link>
 				</li>
 			</ul>
-		</Container>
+		</Layout>
 	);
 };
 

@@ -4,18 +4,11 @@ import {
 	json,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
+import { Heading, TextField, Text, Button, Box, Flex } from "@radix-ui/themes";
 import { createUser, getUserByEmail } from "../models/user.server";
 import { createUserSession } from "../session.server";
 import { validateEmail } from "../utils";
-import {
-	Container,
-	Heading,
-	TextField,
-	Text,
-	Button,
-	Box,
-	Flex,
-} from "@radix-ui/themes";
+import Layout from "~/components/Layout";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
@@ -68,7 +61,7 @@ const UserSetup = () => {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<Container size="2">
+		<Layout>
 			<Box mb="5">
 				<Heading size="8">Sign up</Heading>
 			</Box>
@@ -151,7 +144,7 @@ const UserSetup = () => {
 					Submit
 				</Button>
 			</Form>
-		</Container>
+		</Layout>
 	);
 };
 

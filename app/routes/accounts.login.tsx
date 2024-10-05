@@ -4,18 +4,12 @@ import {
 	json,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
+import { Box, TextField, Heading, Button, Flex, Text } from "@radix-ui/themes";
 import { verifyLogin } from "../models/user.server";
 import { createUserSession } from "../session.server";
 import { validateEmail } from "../utils";
-import {
-	Container,
-	Box,
-	TextField,
-	Heading,
-	Button,
-	Flex,
-	Text,
-} from "@radix-ui/themes";
+
+import Layout from "~/components/Layout";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
@@ -64,7 +58,7 @@ const Index = () => {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<Container size="2">
+		<Layout>
 			<Box mb="5">
 				<Heading size="8">Login</Heading>
 			</Box>
@@ -116,7 +110,7 @@ const Index = () => {
 
 				<Button type="submit">Sign in</Button>
 			</Form>
-		</Container>
+		</Layout>
 	);
 };
 
