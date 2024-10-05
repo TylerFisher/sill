@@ -41,7 +41,7 @@ const FilterButtonGroup = ({
 						value={button.value}
 						setter={setter}
 						label={button.label}
-						variant={variantCheck === button.value ? "solid" : "outline"}
+						variant={variantCheck === button.value ? "soft" : "outline"}
 						size="1"
 					/>
 				))}
