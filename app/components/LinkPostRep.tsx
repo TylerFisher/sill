@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-	Avatar,
-	Box,
-	Button,
-	IconButton,
-	Separator,
-	Text,
-} from "@radix-ui/themes";
+import { Avatar, Box, Button } from "@radix-ui/themes";
 import LinkRep from "./LinkRep";
 import PostRep, { type ExtendedLinkPost } from "./PostRep";
 import groupBy from "object.groupby";

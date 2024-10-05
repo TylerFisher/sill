@@ -1,10 +1,18 @@
+import { useState } from "react";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	json,
 } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Container, Box, Flex, Heading, Separator } from "@radix-ui/themes";
+import {
+	Button,
+	Container,
+	Box,
+	Flex,
+	Heading,
+	Separator,
+} from "@radix-ui/themes";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/session.server";
 import LinkPostRep from "~/components/LinkPostRep";
@@ -14,19 +22,32 @@ export const meta: MetaFunction = () => [{ title: "Links" }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
-	const time = new URL(request.url).searchParams.get("time") || "86400000";
-	const links = await countLinkOccurrences(userId, Number.parseInt(time));
+	const url = new URL(request.url);
+	const time = url.searchParams.get("time") || "86400000";
+	const hideReposts = url.searchParams.get("reposts") === "true";
+	const links = await countLinkOccurrences(
+		userId,
+		Number.parseInt(time),
+		hideReposts,
+	);
 
 	return json({ links });
 };
 
 const Links = () => {
 	const data = useLoaderData<typeof loader>();
-	const [searchParams, setSearchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams({});
 
 	function setTimeParam(time: string) {
 		setSearchParams((prev) => {
 			prev.set("time", time);
+			return prev;
+		});
+	}
+
+	function setRepostsParam(value: string) {
+		setSearchParams((prev) => {
+			prev.set("reposts", value);
 			return prev;
 		});
 	}
@@ -54,7 +75,7 @@ const Links = () => {
 
 	return (
 		<Container mt="9" maxWidth="640px">
-			<Box mb="5">
+			<Box mb="8">
 				<Heading mb="2">Show links posted in the last</Heading>
 				<Flex gap="3">
 					{buttons.map((button) => (
@@ -66,6 +87,27 @@ const Links = () => {
 							variant={currentTime === button.time ? "solid" : "outline"}
 						/>
 					))}
+				</Flex>
+				<Heading mt="2" mb="2">
+					Hide reposts
+				</Heading>
+				<Flex gap="3">
+					<Button
+						variant={
+							searchParams.get("reposts") === "true" ? "solid" : "outline"
+						}
+						onClick={() => setRepostsParam("true")}
+					>
+						Yes
+					</Button>
+					<Button
+						variant={
+							searchParams.get("reposts") === "true" ? "outline" : "solid"
+						}
+						onClick={() => setRepostsParam("false")}
+					>
+						No
+					</Button>
 				</Flex>
 			</Box>
 

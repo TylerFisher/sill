@@ -485,7 +485,11 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	return foundLink;
 };
 
-export const countLinkOccurrences = async (userId: string, time: number) => {
+export const countLinkOccurrences = async (
+	userId: string,
+	time: number,
+	hideReposts = false,
+) => {
 	await Promise.all([
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
@@ -524,6 +528,16 @@ export const countLinkOccurrences = async (userId: string, time: number) => {
 	});
 
 	const grouped = groupBy(mostRecentLinkPosts, (l) => l.link.url);
+
+	if (hideReposts) {
+		for (const url in grouped) {
+			const group = grouped[url];
+			grouped[url] = group.filter(
+				(linkPost) => linkPost.actorHandle === linkPost.post.actorHandle,
+			);
+		}
+	}
+
 	const sorted = Object.entries(grouped).sort(
 		(a, b) =>
 			[...new Set(b[1].map((l) => l.actorHandle))].length -
