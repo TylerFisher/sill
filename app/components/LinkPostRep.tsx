@@ -25,7 +25,7 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 				onOpenChange={setOpen}
 			>
 				<Collapsible.Trigger asChild>
-					<Button variant="outline">
+					<Button variant="soft">
 						{uniqueActors.slice(0, 3).map((actor, i) => (
 							<Avatar
 								src={actor || undefined}

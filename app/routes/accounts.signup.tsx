@@ -68,7 +68,7 @@ const UserSetup = () => {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<Container mt="9">
+		<Container size="2">
 			<Box mb="5">
 				<Heading size="8">Sign up</Heading>
 			</Box>

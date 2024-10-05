@@ -37,7 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
-		<Container mt="9">
+		<Container size="2">
 			<Box mb="8">
 				<Heading size="8">Connect your accounts</Heading>
 			</Box>

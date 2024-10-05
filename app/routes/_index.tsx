@@ -5,7 +5,7 @@ export const meta: MetaFunction = () => [{ title: "Casement" }];
 
 const Index = () => {
 	return (
-		<Container mt="9">
+		<Container size="2">
 			<Heading as="h1" size="8">
 				Welcome!
 			</Heading>

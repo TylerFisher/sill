@@ -4,7 +4,7 @@ import {
 	json,
 } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Container, Box, Separator } from "@radix-ui/themes";
+import { Container, Box, Separator, Heading } from "@radix-ui/themes";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/session.server";
 import LinkPostRep from "~/components/LinkPostRep";
@@ -87,39 +87,53 @@ const Links = () => {
 	const currentSort = searchParams.get("sort") || "popularity";
 
 	return (
-		<Container mt="9" maxWidth="640px">
-			<Box mb="8">
-				<FilterButtonGroup
-					heading="Show posts from the last"
-					param="time"
-					buttonData={timeButtons}
-					setter={setSearchParam}
-					variantCheck={currentTime}
-				/>
-				<FilterButtonGroup
-					heading="Hide reposts"
-					param="reposts"
-					buttonData={repostButtons}
-					setter={setSearchParam}
-					variantCheck={currentRepost}
-				/>
-				<FilterButtonGroup
-					heading="Sort by"
-					param="sort"
-					buttonData={sortButtons}
-					setter={setSearchParam}
-					variantCheck={currentSort}
-				/>
-			</Box>
-
-			{data.links.map((link, i) => (
-				<>
-					<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
-					{i < data.links.length - 1 && (
-						<Separator my="7" size="4" orientation="horizontal" />
-					)}
-				</>
-			))}
+		<Container size="2">
+			<div
+				style={{
+					backgroundColor: "var(--accent-1)",
+					padding: "1em",
+					borderLeft: "1px solid var(--accent-a6)",
+					borderRight: "1px solid var(--accent-a6)",
+				}}
+			>
+				<Box mb="6">
+					<Heading as="h2" mb="2">
+						Filters
+					</Heading>
+					<FilterButtonGroup
+						heading="Hide reposts"
+						param="reposts"
+						buttonData={repostButtons}
+						setter={setSearchParam}
+						variantCheck={currentRepost}
+					/>
+					<FilterButtonGroup
+						heading="Sort by"
+						param="sort"
+						buttonData={sortButtons}
+						setter={setSearchParam}
+						variantCheck={currentSort}
+					/>
+					<FilterButtonGroup
+						heading="Show posts from the last"
+						param="time"
+						buttonData={timeButtons}
+						setter={setSearchParam}
+						variantCheck={currentTime}
+					/>
+				</Box>
+				<Heading as="h2" mb="2">
+					Links
+				</Heading>
+				{data.links.map((link, i) => (
+					<>
+						<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
+						{i < data.links.length - 1 && (
+							<Separator my="7" size="4" orientation="horizontal" />
+						)}
+					</>
+				))}
+			</div>
 		</Container>
 	);
 };

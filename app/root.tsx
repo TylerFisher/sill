@@ -6,6 +6,7 @@ import {
 	ScrollRestoration,
 } from "@remix-run/react";
 import type React from "react";
+import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme } from "@radix-ui/themes";
@@ -20,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<Links />
 			</head>
 			<body>
-				<Theme accentColor="amber">
+				<Theme accentColor="sky" appearance="light" grayColor="slate">
 					<main className="container">{children}</main>
 				</Theme>
 				<ScrollRestoration />

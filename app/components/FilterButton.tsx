@@ -17,7 +17,7 @@ const FilterButton = ({
 	React.RefAttributes<HTMLButtonElement> &
 	FilterButtonProps) => {
 	return (
-		<Button onClick={() => setter(param, value)} variant={variant}>
+		<Button onClick={() => setter(param, value)} variant={variant} size="1">
 			{label}
 		</Button>
 	);

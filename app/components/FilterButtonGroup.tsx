@@ -1,5 +1,5 @@
 import FilterButton from "./FilterButton";
-import { Flex, Heading } from "@radix-ui/themes";
+import { Box, Flex, Heading } from "@radix-ui/themes";
 
 export interface ButtonProps {
 	value: string;
@@ -22,8 +22,17 @@ const FilterButtonGroup = ({
 	heading,
 }: FilterButtonGroupProps) => {
 	return (
-		<>
-			<Heading mb="2">{heading}</Heading>
+		<Box mb="4">
+			<Heading
+				mb="1"
+				size="1"
+				as="h5"
+				style={{
+					textTransform: "uppercase",
+				}}
+			>
+				{heading}
+			</Heading>
 			<Flex gap="3">
 				{buttonData.map((button) => (
 					<FilterButton
@@ -33,10 +42,11 @@ const FilterButtonGroup = ({
 						setter={setter}
 						label={button.label}
 						variant={variantCheck === button.value ? "solid" : "outline"}
+						size="1"
 					/>
 				))}
 			</Flex>
-		</>
+		</Box>
 	);
 };
 

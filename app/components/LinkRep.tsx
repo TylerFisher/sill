@@ -1,4 +1,4 @@
-import { Card, Inset, Link, Text } from "@radix-ui/themes";
+import { Card, Heading, Inset, Link, Text } from "@radix-ui/themes";
 import type { Link as DbLink } from "@prisma/client";
 
 interface LinkRepProps {
@@ -20,10 +20,10 @@ const LinkRep = ({ link }: LinkRepProps) => (
 				</Link>
 			</Inset>
 		)}
-		<Text size="1" color="gray">
+		<Text size="1" color="gray" as="p" mt="3" mb="1">
 			{new URL(link.url).host}
 		</Text>
-		<Text size="3" as="p">
+		<Heading as="h3" size="3">
 			<Link
 				target="_blank"
 				rel="noreferrer"
@@ -33,8 +33,8 @@ const LinkRep = ({ link }: LinkRepProps) => (
 			>
 				{link.title || link.url}
 			</Link>
-		</Text>
-		<Text>{link.description}</Text>
+		</Heading>
+		<Text as="p">{link.description}</Text>
 	</Card>
 );
 
