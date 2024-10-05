@@ -111,7 +111,7 @@ const Links = () => {
 						onOpenChange={setOpen}
 					>
 						<Collapsible.Trigger asChild>
-							<Button variant="ghost" size="4">
+							<Button variant="outline" size="2">
 								Filters
 								{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
 							</Button>
