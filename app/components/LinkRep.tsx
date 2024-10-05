@@ -9,13 +9,15 @@ const LinkRep = ({ link }: LinkRepProps) => (
 	<Card mb="5">
 		{link.imageUrl && (
 			<Inset mb="4">
-				<img
-					src={link.imageUrl}
-					loading="lazy"
-					alt=""
-					decoding="async"
-					width="100%"
-				/>
+				<Link target="_blank" rel="noreferrer" href={link.url}>
+					<img
+						src={link.imageUrl}
+						loading="lazy"
+						alt=""
+						decoding="async"
+						width="100%"
+					/>
+				</Link>
 			</Inset>
 		)}
 		<Text size="1" color="gray">
