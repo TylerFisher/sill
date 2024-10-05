@@ -529,5 +529,5 @@ export const countLinkOccurrences = async (userId: string, time: number) => {
 			[...new Set(b[1].map((l) => l.actorHandle))].length -
 			[...new Set(a[1].map((l) => l.actorHandle))].length,
 	);
-	return sorted;
+	return sorted.slice(0, 20);
 };
