@@ -489,6 +489,7 @@ export const countLinkOccurrences = async (
 	userId: string,
 	time: number,
 	hideReposts = false,
+	sort = "popularity",
 ) => {
 	await Promise.all([
 		getLinksFromMastodon(userId),
@@ -535,13 +536,19 @@ export const countLinkOccurrences = async (
 			grouped[url] = group.filter(
 				(linkPost) => linkPost.actorHandle === linkPost.post.actorHandle,
 			);
+			if (grouped[url].length === 0) {
+				delete grouped[url];
+			}
 		}
 	}
 
-	const sorted = Object.entries(grouped).sort(
-		(a, b) =>
-			[...new Set(b[1].map((l) => l.actorHandle))].length -
-			[...new Set(a[1].map((l) => l.actorHandle))].length,
-	);
-	return sorted.slice(0, 20);
+	if (sort === "popularity") {
+		const sorted = Object.entries(grouped).sort(
+			(a, b) =>
+				[...new Set(b[1].map((l) => l.actorHandle))].length -
+				[...new Set(a[1].map((l) => l.actorHandle))].length,
+		);
+		return sorted.slice(0, 20);
+	}
+	return Object.entries(grouped);
 };
