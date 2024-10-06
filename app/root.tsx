@@ -23,7 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			<body>
 				<Theme
 					accentColor="yellow"
-					appearance="light"
+					appearance="dark"
 					grayColor="slate"
 					radius="full"
 				>

@@ -1,3 +1,40 @@
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-Regular.otf");
+}
+
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-Italic.otf");
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-Bold.otf");
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-BoldItalic.otf");
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-Black.otf");
+  font-weight: 900;
+}
+
+@font-face {
+  font-family: "Nacelle";
+  src: url("./fonts/Nacelle-BlackItalic.otf");
+  font-weight: 900;
+  font-style: italic;
+}
+
 .radix-themes {
   --cursor-button: pointer;
   --cursor-checkbox: pointer;
@@ -9,4 +46,7 @@
   --cursor-slider-thumb-active: grabbing;
   --cursor-switch: pointer;
   background-color: var(--accent-2);
+
+  --default-font-family: "Nacelle";
+  --heading-font-family: "Nacelle";
 }

@@ -94,9 +94,6 @@ const Links = () => {
 
 	return (
 		<Layout>
-			<Heading as="h2" mb="2" size="7">
-				Links
-			</Heading>
 			<Box mb="6">
 				<Collapsible.Root
 					className="CollapsibleRoot"
@@ -104,7 +101,7 @@ const Links = () => {
 					onOpenChange={setOpen}
 				>
 					<Collapsible.Trigger asChild>
-						<Button variant="outline" size="2">
+						<Button variant="ghost" size="2">
 							Filters
 							{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
 						</Button>
