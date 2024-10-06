@@ -137,12 +137,12 @@ const Links = () => {
 				</Collapsible.Root>
 			</Box>
 			{data.links.map((link, i) => (
-				<>
-					<LinkPostRep key={link[0]} link={link[0]} linkPosts={link[1]} />
+				<div key={link[0]}>
+					<LinkPostRep link={link[0]} linkPosts={link[1]} />
 					{i < data.links.length - 1 && (
 						<Separator my="7" size="4" orientation="horizontal" />
 					)}
-				</>
+				</div>
 			))}
 		</Layout>
 	);

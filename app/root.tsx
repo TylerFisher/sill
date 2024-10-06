@@ -21,7 +21,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<Links />
 			</head>
 			<body>
-				<Theme accentColor="sky" appearance="light" grayColor="slate">
+				<Theme
+					accentColor="yellow"
+					appearance="light"
+					grayColor="slate"
+					radius="full"
+				>
 					<main className="container">{children}</main>
 				</Theme>
 				<ScrollRestoration />

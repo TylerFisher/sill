@@ -41,8 +41,8 @@ const FilterButtonGroup = ({
 						value={button.value}
 						setter={setter}
 						label={button.label}
-						variant={variantCheck === button.value ? "soft" : "outline"}
-						size="1"
+						variant={variantCheck === button.value ? "solid" : "outline"}
+						size="2"
 					/>
 				))}
 			</Flex>

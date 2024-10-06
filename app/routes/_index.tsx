@@ -2,7 +2,7 @@ import type { MetaFunction } from "@remix-run/node";
 import { Heading, Link } from "@radix-ui/themes";
 import Layout from "~/components/Layout";
 
-export const meta: MetaFunction = () => [{ title: "Casement" }];
+export const meta: MetaFunction = () => [{ title: "Sill" }];
 
 const Index = () => {
 	return (
