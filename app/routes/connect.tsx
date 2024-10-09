@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { requireUserId } from "~/session.server";
+import { requireUserId } from "~/utils/auth.server";
 import { prisma } from "~/db.server";
 import { useLoaderData } from "@remix-run/react";
 import { Form } from "@remix-run/react";

@@ -5,11 +5,11 @@ import {
 	json,
 } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Box, Separator, Heading, Button } from "@radix-ui/themes";
+import { Box, Separator, Button } from "@radix-ui/themes";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { countLinkOccurrences } from "~/models/links.server";
-import { requireUserId } from "~/session.server";
+import { requireUserId } from "~/utils/auth.server";
 import LinkPostRep from "~/components/LinkPostRep";
 import FilterButtonGroup, {
 	type ButtonProps,

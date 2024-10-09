@@ -2,10 +2,10 @@ import { type ActionFunctionArgs, redirect } from "@remix-run/node";
 import { AtpAgent } from "@atproto/api";
 import { prisma } from "~/db.server";
 import { uuidv7 } from "uuidv7-js";
-import { getUserId } from "~/session.server";
+import { requireUserId } from "~/utils/auth.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-	const userId = await getUserId(request);
+	const userId = await requireUserId(request);
 	const data = await request.formData();
 	const handle = String(data.get("handle"));
 	const password = String(data.get("password"));

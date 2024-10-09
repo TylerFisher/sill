@@ -1,6 +1,7 @@
 import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { getAccessToken } from "~/utils/mastodon.server";
-import { getInstanceCookie, getUserId } from "~/session.server";
+import { getInstanceCookie } from "~/session.server";
+import { getUserId } from "~/utils/auth.server";
 import { prisma } from "~/db.server";
 import { uuidv7 } from "uuidv7-js";
 

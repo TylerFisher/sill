@@ -52,7 +52,7 @@ export async function handleVerification({
 		react: <EmailChangeNotice userId={user.id} />,
 	});
 
-	return redirect("/settings/profile", {
+	return redirect("/settings", {
 		headers: {
 			"set-cookie": await verifySessionStorage.destroySession(verifySession),
 		},

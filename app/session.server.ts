@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "@remix-run/node";
+import { createCookieSessionStorage, redirect } from "@remix-run/node";
 
 export const authSessionStorage = createCookieSessionStorage({
 	cookie: {
@@ -36,3 +36,26 @@ Object.defineProperty(authSessionStorage, "commitSession", {
 		return setCookieHeader;
 	},
 });
+
+export async function createInstanceCookie(
+	request: Request,
+	instance: string,
+	redirectTo: string,
+) {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	session.set("instance", instance);
+	return redirect(redirectTo, {
+		headers: {
+			"Set-Cookie": await authSessionStorage.commitSession(session),
+		},
+	});
+}
+export async function getInstanceCookie(request: Request) {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	const instance = session.get("instance");
+	return instance;
+}
