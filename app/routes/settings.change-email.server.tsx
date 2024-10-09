@@ -1,5 +1,4 @@
 import { invariant } from "@epic-web/invariant";
-import * as E from "@react-email/components";
 import { json, redirect } from "@remix-run/node";
 import {
 	requireRecentVerification,
@@ -8,6 +7,7 @@ import {
 import { prisma } from "~/db.server";
 import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
+import EmailChangeNotice from "~/emails/emailChangeNotice";
 import { newEmailAddressSessionKey } from "./settings.change-email";
 
 export async function handleVerification({
@@ -46,10 +46,10 @@ export async function handleVerification({
 		data: { email: newEmail },
 	});
 
-	void sendEmail({
+	await sendEmail({
 		to: preUpdateUser.email,
 		subject: "Epic Stack email changed",
-		react: <EmailChangeNoticeEmail userId={user.id} />,
+		react: <EmailChangeNotice userId={user.id} />,
 	});
 
 	return redirect("/settings/profile", {
@@ -57,59 +57,4 @@ export async function handleVerification({
 			"set-cookie": await verifySessionStorage.destroySession(verifySession),
 		},
 	});
-}
-
-export function EmailChangeEmail({
-	verifyUrl,
-	otp,
-}: {
-	verifyUrl: string;
-	otp: string;
-}) {
-	return (
-		<E.Html lang="en" dir="ltr">
-			<E.Container>
-				<h1>
-					<E.Text>Epic Notes Email Change</E.Text>
-				</h1>
-				<p>
-					<E.Text>
-						Here's your verification code: <strong>{otp}</strong>
-					</E.Text>
-				</p>
-				<p>
-					<E.Text>Or click the link:</E.Text>
-				</p>
-				<E.Link href={verifyUrl}>{verifyUrl}</E.Link>
-			</E.Container>
-		</E.Html>
-	);
-}
-
-function EmailChangeNoticeEmail({ userId }: { userId: string }) {
-	return (
-		<E.Html lang="en" dir="ltr">
-			<E.Container>
-				<h1>
-					<E.Text>Your Epic Notes email has been changed</E.Text>
-				</h1>
-				<p>
-					<E.Text>
-						We're writing to let you know that your Epic Notes email has been
-						changed.
-					</E.Text>
-				</p>
-				<p>
-					<E.Text>
-						If you changed your email address, then you can safely ignore this.
-						But if you did not change your email address, then please contact
-						support immediately.
-					</E.Text>
-				</p>
-				<p>
-					<E.Text>Your Account ID: {userId}</E.Text>
-				</p>
-			</E.Container>
-		</E.Html>
-	);
 }
