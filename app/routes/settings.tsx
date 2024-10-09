@@ -1,6 +1,6 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useHref } from "@remix-run/react";
+import { Link, Outlet, useLocation } from "@remix-run/react";
 import { requireUserId } from "~/utils/auth.server";
 import { prisma } from "~/db.server";
 import { useUser } from "~/utils/user";
@@ -19,7 +19,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function EditUserProfile() {
 	const user = useUser();
-	const href = useHref();
+	const { pathname } = useLocation();
 
 	return (
 		<>
@@ -44,7 +44,7 @@ export default function EditUserProfile() {
 						<li>
 							<RadixLink
 								asChild
-								weight={href === "/settings/connect" ? "bold" : "regular"}
+								weight={pathname === "/settings/connect" ? "bold" : "regular"}
 							>
 								<Link to="./connect">Connect accounts</Link>
 							</RadixLink>
@@ -52,7 +52,9 @@ export default function EditUserProfile() {
 						<li>
 							<RadixLink
 								asChild
-								weight={href === "/settings/change-email" ? "bold" : "regular"}
+								weight={
+									pathname === "/settings/change-email" ? "bold" : "regular"
+								}
 							>
 								<Link to="./change-email">Change email address</Link>
 							</RadixLink>
@@ -60,7 +62,7 @@ export default function EditUserProfile() {
 						<li>
 							<RadixLink
 								asChild
-								weight={href === "/settings/password" ? "bold" : "regular"}
+								weight={pathname === "/settings/password" ? "bold" : "regular"}
 							>
 								<Link to="./password">Change password</Link>
 							</RadixLink>
@@ -69,7 +71,9 @@ export default function EditUserProfile() {
 							<RadixLink
 								asChild
 								weight={
-									href.startsWith("/settings/two-factor") ? "bold" : "regular"
+									pathname.startsWith("/settings/two-factor")
+										? "bold"
+										: "regular"
 								}
 							>
 								<Link to="./two-factor">Setup two-factor authentication</Link>
