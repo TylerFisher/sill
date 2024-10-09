@@ -23,7 +23,6 @@ export async function getUserId(request: Request) {
 		select: { user: { select: { id: true } } },
 		where: { id: sessionId, expirationDate: { gt: new Date() } },
 	});
-	console.log(sessionId);
 	if (!session?.user) {
 		throw redirect("/", {
 			headers: {
