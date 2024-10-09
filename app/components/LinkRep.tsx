@@ -1,4 +1,11 @@
-import { Card, Heading, Inset, Link, Text } from "@radix-ui/themes";
+import {
+	AspectRatio,
+	Card,
+	Heading,
+	Inset,
+	Link,
+	Text,
+} from "@radix-ui/themes";
 import type { Link as DbLink } from "@prisma/client";
 
 interface LinkRepProps {
@@ -8,16 +15,27 @@ interface LinkRepProps {
 const LinkRep = ({ link }: LinkRepProps) => (
 	<Card mb="5">
 		{link.imageUrl && (
-			<Inset mb="4">
-				<Link target="_blank" rel="noreferrer" href={link.url}>
-					<img
-						src={link.imageUrl}
-						loading="lazy"
-						alt=""
-						decoding="async"
-						width="100%"
-					/>
-				</Link>
+			<Inset
+				mb="4"
+				style={{
+					borderRadius: 0,
+				}}
+			>
+				<AspectRatio ratio={16 / 9}>
+					<Link target="_blank" rel="noreferrer" href={link.url}>
+						<img
+							src={link.imageUrl}
+							loading="lazy"
+							alt=""
+							decoding="async"
+							width="100%"
+							height="100%"
+							style={{
+								objectFit: "cover",
+							}}
+						/>
+					</Link>
+				</AspectRatio>
 			</Inset>
 		)}
 		<Text size="1" color="gray" as="p" mt="3" mb="1">

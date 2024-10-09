@@ -24,12 +24,6 @@
 
 @font-face {
   font-family: "Nacelle";
-  src: url("./fonts/Nacelle-Black.otf");
-  font-weight: 900;
-}
-
-@font-face {
-  font-family: "Nacelle";
   src: url("./fonts/Nacelle-BlackItalic.otf");
   font-weight: 900;
   font-style: italic;

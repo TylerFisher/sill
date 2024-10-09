@@ -2,63 +2,105 @@ import {
 	type ActionFunctionArgs,
 	type MetaFunction,
 	json,
+	redirect,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
-import { Heading, TextField, Text, Button, Box, Flex } from "@radix-ui/themes";
-import { createUser, getUserByEmail } from "../models/user.server";
-import { createUserSession } from "../session.server";
-import { validateEmail } from "../utils";
+import { Heading, Text, Button, Box, Flex } from "@radix-ui/themes";
+import { Resend } from "resend";
+import { z } from "zod";
+import { parseWithZod } from "@conform-to/zod";
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { EmailSchema } from "~/utils/userValidation";
 import Layout from "~/components/Layout";
+import Verify from "~/emails/verify";
+import TextInput from "~/components/TextInput";
+import { HoneypotInputs } from "remix-utils/honeypot/react";
+import { checkHoneypot } from "~/utils/honeypot.server";
+import { prisma } from "~/db.server";
+import { prepareVerification } from "./accounts.verify.server";
+import { sendEmail } from "~/utils/email.server";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
-interface FormErrors {
-	email?: string;
-	password?: string;
-	passwordConfirm?: string;
-}
+const SignupSchema = z.object({
+	email: EmailSchema,
+});
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const formData = await request.formData();
-	const email = String(formData.get("email"));
-	const sentPassword = String(formData.get("password"));
-	const confirmedPassword = String(formData.get("password_confirm"));
-
-	const errors: FormErrors = {};
-
-	if (!validateEmail(email)) {
-		errors.email = "Invalid email address";
-	}
-
-	if (!sentPassword) {
-		errors.password = "Password is required";
-	}
-
-	if (sentPassword !== confirmedPassword) {
-		errors.passwordConfirm = "Passwords do not match";
-	}
-	const existingUser = await getUserByEmail(email);
-
-	if (existingUser) {
-		errors.email = "An account with this email address already exists";
-	}
-
-	if (Object.keys(errors).length > 0) {
-		return json({ errors }, { status: 400 });
-	}
-
-	const user = await createUser(email, sentPassword);
-
-	return createUserSession({
-		redirectTo: "/connect",
-		remember: false,
-		request,
-		userId: user.id,
+	checkHoneypot(formData);
+	const submission = await parseWithZod(formData, {
+		schema: SignupSchema.superRefine(async (data, ctx) => {
+			const existingUser = await prisma.user.findUnique({
+				where: {
+					email: data.email,
+				},
+				select: { id: true },
+			});
+			if (existingUser) {
+				ctx.addIssue({
+					path: ["email"],
+					code: z.ZodIssueCode.custom,
+					message: "A user already exists with this email",
+				});
+				return;
+			}
+		}),
+		async: true,
 	});
+
+	if (submission.status !== "success") {
+		// If validation fails, return errors
+		return json(
+			{ result: submission.reply() },
+			{
+				status: submission.status === "error" ? 400 : 200,
+			},
+		);
+	}
+
+	const { email } = submission.value;
+	const { verifyUrl, redirectTo, otp } = await prepareVerification({
+		period: 10 * 60,
+		request,
+		type: "onboarding",
+		target: email,
+	});
+
+	const response = await sendEmail({
+		to: email,
+		subject: "Verify your email",
+		react: <Verify link={verifyUrl.toString()} otp={otp} />,
+	});
+
+	if (response.error) {
+		return json(
+			{
+				result: submission.reply({ formErrors: [response.error.message] }),
+			},
+			{
+				status: 500,
+			},
+		);
+	}
+	return redirect(redirectTo.toString());
 };
 
 const UserSetup = () => {
 	const actionData = useActionData<typeof action>();
+	const [form, fields] = useForm({
+		// Sync the result of last submission
+		lastResult: actionData?.result,
+
+		// Reuse the validation logic on the client
+		onValidate({ formData }) {
+			const result = parseWithZod(formData, { schema: SignupSchema });
+			return result;
+		},
+		// Validate the form on blur event triggered
+		shouldValidate: "onBlur",
+		shouldRevalidate: "onInput",
+	});
 
 	return (
 		<Layout>
@@ -66,80 +108,19 @@ const UserSetup = () => {
 				<Heading size="8">Sign up</Heading>
 			</Box>
 
-			<Form method="post">
-				<Box mb="5">
-					<Flex mb="1">
-						<label htmlFor="email">
-							<Text size="3" weight="bold">
-								Email address
-							</Text>
-						</label>
-					</Flex>
-					<TextField.Root
-						type="email"
-						name="email"
-						required={true}
-						placeholder="tyler@tylerjfisher.com"
-						aria-invalid={actionData?.errors.email != null ? true : undefined}
-						size="3"
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{actionData?.errors?.email ? (
-						<Text size="1">{actionData?.errors.email}</Text>
-					) : null}
-				</Box>
-
-				<Box mb="5">
-					<Flex mb="1">
-						<label htmlFor="password">
-							<Text size="3" weight="bold">
-								Password
-							</Text>
-						</label>
-					</Flex>
-					<TextField.Root
-						type="password"
-						name="password"
-						required={true}
-						minLength={6}
-						aria-invalid={
-							actionData?.errors.password != null ? true : undefined
-						}
-						size="3"
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{actionData?.errors.password ? (
-						<Text size="1">{actionData?.errors.password}</Text>
-					) : null}
-				</Box>
-
-				<Box mb="5">
-					<Flex mb="1">
-						<label htmlFor="password_confirm">
-							<Text size="3" weight="bold">
-								Confirm password
-							</Text>
-						</label>
-					</Flex>
-					<TextField.Root
-						type="password"
-						name="password_confirm"
-						required={true}
-						minLength={6}
-						aria-invalid={
-							actionData?.errors.passwordConfirm != null ? true : undefined
-						}
-						size="3"
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{actionData?.errors.passwordConfirm ? (
-						<Text size="1">{actionData?.errors.passwordConfirm}</Text>
-					) : null}
-				</Box>
-
+			<Form method="post" {...getFormProps(form)}>
+				<HoneypotInputs />
+				<TextInput
+					labelProps={{
+						htmlFor: fields.email.name,
+						children: "Email address",
+					}}
+					inputProps={{
+						...getInputProps(fields.email, { type: "email" }),
+						placeholder: "your@email.com",
+					}}
+					errors={fields.email.errors}
+				/>
 				<Button type="submit" size="3">
 					Submit
 				</Button>

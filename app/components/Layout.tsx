@@ -1,4 +1,5 @@
 import { Container, Heading } from "@radix-ui/themes";
+import { Link } from "@remix-run/react";
 import type { PropsWithChildren } from "react";
 
 const Layout = ({ children }: PropsWithChildren) => (
@@ -10,16 +11,25 @@ const Layout = ({ children }: PropsWithChildren) => (
 				fontStyle: "italic",
 				textAlign: "center",
 				color: "var(--accent-11)",
+				textTransform: "lowercase",
 			}}
 			my="4"
 		>
-			sill
+			<Link
+				to="/"
+				style={{
+					color: "inherit",
+					textDecoration: "none",
+				}}
+			>
+				Sill
+			</Link>
 		</Heading>
 		<div
 			style={{
 				backgroundColor: "var(--accent-1)",
 				padding: "1em",
-				border: "1px solid var(--gray-a4)",
+				boxShadow: "var(--base-card-surface-box-shadow)",
 				borderRadius: "1em",
 			}}
 		>

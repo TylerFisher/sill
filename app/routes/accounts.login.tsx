@@ -1,117 +1,157 @@
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Box, Button, Flex, Text, Heading } from "@radix-ui/themes";
 import {
-	type ActionFunctionArgs,
-	type MetaFunction,
 	json,
+	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	type MetaFunction,
 } from "@remix-run/node";
-import { Form, useActionData } from "@remix-run/react";
-import { Box, TextField, Heading, Button, Flex, Text } from "@radix-ui/themes";
-import { verifyLogin } from "../models/user.server";
-import { createUserSession } from "../session.server";
-import { validateEmail } from "../utils";
+import { Form, Link, useActionData, useSearchParams } from "@remix-run/react";
+import { HoneypotInputs } from "remix-utils/honeypot/react";
+import { z } from "zod";
+import TextInput from "~/components/TextInput";
+import CheckboxField from "~/components/CheckboxField";
+import { login, requireAnonymous } from "~/utils/auth.server";
+import { checkHoneypot } from "~/utils/honeypot.server";
+import { PasswordSchema, UsernameSchema } from "~/utils/userValidation";
+import { handleNewSession } from "./accounts.login.server";
 
 import Layout from "~/components/Layout";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
-interface FormErrors {
-	email?: string;
-	password?: string;
-	passwordConfirm?: string;
+const LoginFormSchema = z.object({
+	username: UsernameSchema,
+	password: PasswordSchema,
+	redirectTo: z.string().optional(),
+	remember: z.boolean().optional(),
+});
+
+export async function loader({ request }: LoaderFunctionArgs) {
+	await requireAnonymous(request);
+	return json({});
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export async function action({ request }: ActionFunctionArgs) {
+	await requireAnonymous(request);
 	const formData = await request.formData();
-	const email = String(formData.get("email"));
-	const sentPassword = String(formData.get("password"));
+	checkHoneypot(formData);
+	const submission = await parseWithZod(formData, {
+		schema: (intent) =>
+			LoginFormSchema.transform(async (data, ctx) => {
+				if (intent !== null) return { ...data, session: null };
 
-	const errors: FormErrors = {};
+				const session = await login(data);
+				if (!session) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						message: "Invalid username or password",
+					});
+					return z.NEVER;
+				}
 
-	if (!validateEmail(email)) {
-		errors.email = "Invalid email address";
-	}
-
-	if (!sentPassword) {
-		errors.password = "Password is required";
-	}
-
-	if (Object.keys(errors).length > 0) {
-		return json({ errors }, { status: 400 });
-	}
-
-	const user = await verifyLogin(email, sentPassword);
-
-	if (!user) {
-		errors.email = "Invalid email or password";
-		errors.password = "Invalid email or password";
-		return json({ errors }, { status: 400 });
-	}
-
-	return createUserSession({
-		redirectTo: "/connect",
-		remember: false,
-		request,
-		userId: user.id,
+				return { ...data, session };
+			}),
+		async: true,
 	});
-};
 
-const Index = () => {
+	if (submission.status !== "success" || !submission.value.session) {
+		return json(
+			{ result: submission.reply({ hideFields: ["password"] }) },
+			{ status: submission.status === "error" ? 400 : 200 },
+		);
+	}
+
+	const { session, remember, redirectTo } = submission.value;
+
+	return handleNewSession({
+		request,
+		session,
+		remember: remember ?? false,
+		redirectTo,
+	});
+}
+
+const Login = () => {
 	const actionData = useActionData<typeof action>();
+	const [searchParams] = useSearchParams();
+	const redirectTo = searchParams.get("redirectTo");
+
+	const [form, fields] = useForm({
+		id: "login-form",
+		constraint: getZodConstraint(LoginFormSchema),
+		defaultValue: { redirectTo },
+		lastResult: actionData?.result,
+		onValidate({ formData }) {
+			return parseWithZod(formData, { schema: LoginFormSchema });
+		},
+		shouldRevalidate: "onBlur",
+	});
 
 	return (
 		<Layout>
 			<Box mb="5">
 				<Heading size="8">Login</Heading>
 			</Box>
-			<Form method="post">
-				<Box mb="5">
-					<Flex mb="1">
-						<label htmlFor="email">
-							<Text size="3" weight="bold">
-								Email
-							</Text>
-						</label>
+			<Form method="post" {...getFormProps(form)}>
+				<HoneypotInputs />
+				<TextInput
+					labelProps={{
+						htmlFor: fields.username.name,
+						children: "Username",
+					}}
+					inputProps={{ ...getInputProps(fields.username, { type: "text" }) }}
+					errors={fields.username.errors}
+				/>
+				<TextInput
+					labelProps={{
+						htmlFor: fields.password.name,
+						children: "Password",
+					}}
+					inputProps={{ ...getInputProps(fields.password, { type: "text" }) }}
+					errors={fields.password.errors}
+				/>
+				<Box width="100%">
+					<Flex mb="5" align="center" justify="between" gap="3" width="100%">
+						<CheckboxField
+							labelProps={{
+								htmlFor: fields.remember.name,
+								children: "Remember me?",
+							}}
+							inputProps={{
+								name: fields.remember.name,
+								id: fields.remember.id,
+							}}
+							errors={fields.remember.errors}
+						/>
+						<Box>
+							<Link to="/accounts/reset-password">
+								<Text size="2">Forgot password?</Text>
+							</Link>
+						</Box>
 					</Flex>
-					<TextField.Root
-						type="email"
-						name="email"
-						required={true}
-						placeholder="john@example.com"
-						aria-invalid={actionData?.errors?.email != null ? true : undefined}
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{actionData?.errors?.email && (
-						<small>{actionData?.errors.email}</small>
-					)}
-				</Box>
-				<Box mb="5">
-					<Flex mb="1">
-						<label htmlFor="password">
-							<Text size="3" weight="bold">
-								Password
-							</Text>
-						</label>
-					</Flex>
-					<TextField.Root
-						type="password"
-						name="password"
-						required={true}
-						minLength={6}
-						aria-invalid={
-							actionData?.errors?.password != null ? true : undefined
-						}
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{actionData?.errors?.password && (
-						<small>{actionData?.errors.password}</small>
-					)}
 				</Box>
 
+				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
+
 				<Button type="submit">Sign in</Button>
+
+				<Box mt="5">
+					<Text size="2">New here? </Text>
+					<Link
+						to={
+							redirectTo
+								? `/accounts/signup?${encodeURIComponent(redirectTo)}`
+								: "/accounts/signup"
+						}
+					>
+						<Text size="2">Create an account</Text>
+					</Link>
+				</Box>
 			</Form>
 		</Layout>
 	);
 };
 
-export default Index;
+export default Login;

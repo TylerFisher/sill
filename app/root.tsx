@@ -4,12 +4,21 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
+	useLoaderData,
 } from "@remix-run/react";
+import { json } from "@remix-run/node";
 import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme } from "@radix-ui/themes";
+import { honeypot } from "~/utils/honeypot.server";
+import { HoneypotProvider } from "remix-utils/honeypot/react";
+
+export async function loader() {
+	// more code here
+	return json({ honeypotInputProps: honeypot.getInputProps() });
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
@@ -37,5 +46,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-	return <Outlet />;
+	const { honeypotInputProps } = useLoaderData<typeof loader>();
+	return (
+		<HoneypotProvider {...honeypotInputProps}>
+			<Outlet />
+		</HoneypotProvider>
+	);
 }

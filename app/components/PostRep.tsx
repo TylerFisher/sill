@@ -58,7 +58,7 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				</Box>
 			</Flex>
 			{post.quoting && (
-				<Card ml="8" mt="1">
+				<Card ml="8" mt="2">
 					<Flex gap="1" mb="1">
 						<Avatar
 							size="1"

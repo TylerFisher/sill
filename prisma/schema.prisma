@@ -8,9 +8,11 @@ generator client {
 }
 
 model User {
-  id    String  @id @db.Uuid
-  email String  @unique
-  name  String?
+  id              String  @id @db.Uuid
+  email           String  @unique
+  username        String  @unique
+  name            String?
+  email_confirmed Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -23,6 +25,16 @@ model User {
   mastodonAccounts MastodonAccount[]
   blueskyAccounts  BlueskyAccount[]
   linkPosts        LinkPost[]
+  emailToken       EmailToken?
+}
+
+model EmailToken {
+  token String
+
+  createdAt DateTime @default(now())
+
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Password {

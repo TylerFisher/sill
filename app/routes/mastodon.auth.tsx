@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { getAuthorizationUrl } from "~/utils";
+import { getAuthorizationUrl } from "~/utils/mastodon.server";
 import { createInstanceCookie } from "~/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

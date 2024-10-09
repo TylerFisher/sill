@@ -1,0 +1,237 @@
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import {
+	json,
+	redirect,
+	type LoaderFunctionArgs,
+	type ActionFunctionArgs,
+	type MetaFunction,
+} from "@remix-run/node";
+import {
+	Form,
+	useActionData,
+	useLoaderData,
+	useSearchParams,
+} from "@remix-run/react";
+import { HoneypotInputs } from "remix-utils/honeypot/react";
+import { safeRedirect } from "remix-utils/safe-redirect";
+import { z } from "zod";
+import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
+import { prisma } from "~/db.server";
+import { checkHoneypot } from "~/utils/honeypot.server";
+import { authSessionStorage } from "~/session.server";
+import {
+	NameSchema,
+	PasswordAndConfirmPasswordSchema,
+	UsernameSchema,
+} from "~/utils/userValidation";
+import { verifySessionStorage } from "~/utils/verification.server";
+import {
+	Box,
+	Button,
+	Checkbox,
+	Flex,
+	Heading,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
+import Layout from "~/components/Layout";
+import TextInput from "~/components/TextInput";
+import CheckboxField from "~/components/CheckboxField";
+
+export const onboardingEmailSessionKey = "onboardingEmail";
+
+const SignupFormSchema = z
+	.object({
+		username: UsernameSchema,
+		name: NameSchema,
+		agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
+			required_error:
+				"You must agree to the terms of service and privacy policy",
+		}),
+		remember: z.boolean().optional(),
+		redirectTo: z.string().optional(),
+	})
+	.and(PasswordAndConfirmPasswordSchema);
+
+async function requireOnboardingEmail(request: Request) {
+	await requireAnonymous(request);
+	const verifySession = await verifySessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	const email = verifySession.get(onboardingEmailSessionKey);
+	if (typeof email !== "string" || !email) {
+		throw redirect("/signup");
+	}
+	return email;
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+	const email = await requireOnboardingEmail(request);
+	return json({ email });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+	const email = await requireOnboardingEmail(request);
+	const formData = await request.formData();
+	checkHoneypot(formData);
+	const submission = await parseWithZod(formData, {
+		schema: (intent) =>
+			SignupFormSchema.superRefine(async (data, ctx) => {
+				const existingUser = await prisma.user.findUnique({
+					where: { username: data.username },
+					select: { id: true },
+				});
+				if (existingUser) {
+					ctx.addIssue({
+						path: ["username"],
+						code: z.ZodIssueCode.custom,
+						message: "A user already exists with this username",
+					});
+					return;
+				}
+			}).transform(async (data) => {
+				if (intent !== null) return { ...data, session: null };
+
+				const session = await signup({ ...data, email });
+				return { ...data, session };
+			}),
+		async: true,
+	});
+
+	if (submission.status !== "success" || !submission.value.session) {
+		return json(
+			{ result: submission.reply() },
+			{ status: submission.status === "error" ? 400 : 200 },
+		);
+	}
+
+	const { session, remember, redirectTo } = submission.value;
+
+	const authSession = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	authSession.set(sessionKey, session.id);
+	const verifySession = await verifySessionStorage.getSession();
+	const headers = new Headers();
+	headers.append(
+		"set-cookie",
+		await authSessionStorage.commitSession(authSession, {
+			expires: remember ? session.expirationDate : undefined,
+		}),
+	);
+	headers.append(
+		"set-cookie",
+		await verifySessionStorage.destroySession(verifySession),
+	);
+
+	return redirect(safeRedirect(redirectTo), { headers });
+}
+
+export const meta: MetaFunction = () => {
+	return [{ title: "Setup Sill Account" }];
+};
+
+export default function OnboardingRoute() {
+	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
+	const [searchParams] = useSearchParams();
+	const redirectTo = searchParams.get("redirectTo");
+
+	const [form, fields] = useForm({
+		id: "onboarding-form",
+		constraint: getZodConstraint(SignupFormSchema),
+		defaultValue: { redirectTo },
+		lastResult: actionData?.result,
+		onValidate({ formData }) {
+			return parseWithZod(formData, { schema: SignupFormSchema });
+		},
+		shouldRevalidate: "onBlur",
+	});
+
+	return (
+		<Layout>
+			<Box mb="5">
+				<Heading size="8">Welcome</Heading>
+				<Text as="p">Please enter your account details.</Text>
+			</Box>
+			<Form method="post" {...getFormProps(form)}>
+				<HoneypotInputs />
+				<TextInput
+					labelProps={{
+						htmlFor: fields.username.name,
+						children: "Username",
+					}}
+					inputProps={{
+						...getInputProps(fields.username, { type: "text" }),
+					}}
+					errors={fields.username.errors}
+				/>
+				<TextInput
+					labelProps={{
+						htmlFor: fields.name.name,
+						children: "Name",
+					}}
+					inputProps={{
+						...getInputProps(fields.name, { type: "text" }),
+					}}
+					errors={fields.name.errors}
+				/>
+				<TextInput
+					labelProps={{
+						htmlFor: fields.password.name,
+						children: "Password",
+					}}
+					inputProps={{
+						...getInputProps(fields.password, { type: "password" }),
+					}}
+					errors={fields.password.errors}
+				/>
+				<TextInput
+					labelProps={{
+						htmlFor: fields.confirmPassword.name,
+						children: "Confirm password",
+					}}
+					inputProps={{
+						...getInputProps(fields.confirmPassword, { type: "password" }),
+					}}
+					errors={fields.confirmPassword.errors}
+				/>
+
+				<Box mb="5">
+					<CheckboxField
+						labelProps={{
+							htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.name,
+							children:
+								"Do you agree to our Terms of Service and Privacy Policy?",
+						}}
+						inputProps={{
+							id: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
+							name: fields.agreeToTermsOfServiceAndPrivacyPolicy.name,
+						}}
+						errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
+					/>
+				</Box>
+				<Box mb="5">
+					<CheckboxField
+						labelProps={{
+							htmlFor: fields.remember.name,
+							children: "Remember me?",
+						}}
+						inputProps={{
+							id: fields.remember.id,
+							name: fields.remember.name,
+						}}
+						errors={fields.remember.errors}
+					/>
+				</Box>
+
+				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
+
+				<div className="flex items-center justify-between gap-6">
+					<Button type="submit">Create an account</Button>
+				</div>
+			</Form>
+		</Layout>
+	);
+}

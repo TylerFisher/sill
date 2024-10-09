@@ -1,6 +1,7 @@
 import type { Password, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { uuidv7 } from "uuidv7-js";
+import jwt from "jsonwebtoken";
 
 import { prisma } from "../db.server";
 export type { User } from "@prisma/client";
@@ -8,13 +9,6 @@ export type { User } from "@prisma/client";
 export async function getUserById(id: User["id"]) {
 	return prisma.user.findUnique({
 		where: { id },
-		include: {
-			actor: {
-				select: {
-					id: true,
-				},
-			},
-		},
 	});
 }
 
@@ -25,7 +19,7 @@ export async function getUserByEmail(email: User["email"]) {
 export async function createUser(email: User["email"], password: string) {
 	const hashedPassword = await bcrypt.hash(password, 10);
 
-	return prisma.user.create({
+	return await prisma.user.create({
 		data: {
 			id: uuidv7(),
 			email,
@@ -36,6 +30,25 @@ export async function createUser(email: User["email"], password: string) {
 			},
 		},
 	});
+}
+
+export async function createEmailToken(user: User) {
+	const token = jwt.sign(
+		{ email: user.email, id: user.id },
+		process.env.SECRET_KEY as string,
+		{ expiresIn: "1h" },
+	);
+	return await prisma.emailToken.create({
+		data: {
+			userId: user.id,
+			token,
+		},
+	});
+}
+
+export async function getEmailToken(token: string) {
+	const tokenData = jwt.verify(token, process.env.SECRET_KEY as string);
+	return tokenData;
 }
 
 export async function deleteUserByEmail(email: User["email"]) {
