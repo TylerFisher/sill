@@ -18,8 +18,7 @@ import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChange from "~/emails/emailChange";
-import Layout from "~/components/Layout.js";
-import { Box, Button, Heading, Text } from "@radix-ui/themes";
+import { Box, Button, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput.js";
 
 export const newEmailAddressSessionKey = "new-email-address";

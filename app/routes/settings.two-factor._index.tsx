@@ -11,7 +11,6 @@ import { prisma } from "~/db.server";
 import { generateTOTP } from "~/utils/totp.server";
 import { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
 import { uuidv7 } from "uuidv7-js";
-import Layout from "~/components/Layout";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 
 export const twoFAVerificationType = "2fa" satisfies VerificationTypes;

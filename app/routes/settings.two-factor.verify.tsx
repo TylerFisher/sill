@@ -15,7 +15,6 @@ import { prisma } from "~/db.server";
 import { getDomainUrl, useIsPending } from "~/utils/misc";
 import { getTOTPAuthUri } from "~/utils/totp.server";
 import { twoFAVerificationType } from "./settings.two-factor._index";
-import Layout from "~/components/Layout";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { OTPField } from "~/components/OTPField";
 

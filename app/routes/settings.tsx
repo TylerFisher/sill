@@ -5,7 +5,7 @@ import { requireUserId } from "~/utils/auth.server";
 import { prisma } from "~/db.server";
 import { useUser } from "~/utils/user";
 import Layout from "~/components/Layout";
-import { Box, Link as RadixLink, Grid } from "@radix-ui/themes";
+import { Box, Link as RadixLink, Grid, Heading } from "@radix-ui/themes";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
@@ -22,23 +22,28 @@ export default function EditUserProfile() {
 	const { pathname } = useLocation();
 
 	return (
-		<>
-			<Grid columns="minmax(10px, 1fr) minmax(10px, 3fr)" gap="8">
+		<Box ml="4">
+			<Grid columns="minmax(10px, 1fr) minmax(10px, 3fr)" gap="4">
 				<Box
 					width="100%"
 					style={{
 						backgroundColor: "var(--accent-1)",
 						boxShadow: "var(--base-card-surface-box-shadow)",
 						borderRadius: "1em",
+						height: "100vh",
 					}}
 					p="4"
-					mt="9"
-					ml="4"
 				>
+					<Heading as="h4" size="3" mb="4">
+						Settings for {user.name} ({user.username})
+					</Heading>
 					<ul
 						style={{
 							listStyle: "none",
 							padding: 0,
+							display: "flex",
+							flexDirection: "column",
+							gap: "0.25rem",
 						}}
 					>
 						<li>
@@ -87,6 +92,6 @@ export default function EditUserProfile() {
 					</Layout>
 				</Box>
 			</Grid>
-		</>
+		</Box>
 	);
 }

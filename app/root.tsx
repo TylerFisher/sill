@@ -1,4 +1,5 @@
 import {
+	Link,
 	Links,
 	Meta,
 	Outlet,
@@ -11,7 +12,7 @@ import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
-import { Theme as RadixTheme } from "@radix-ui/themes";
+import { Heading, Theme as RadixTheme } from "@radix-ui/themes";
 import { honeypot } from "~/utils/honeypot.server";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { makeTimings, time } from "./utils/timing.server";
@@ -111,6 +112,27 @@ function App() {
 	const theme = useTheme();
 	return (
 		<Document nonce={nonce} theme={theme}>
+			<Heading
+				size="9"
+				style={{
+					fontWeight: 900,
+					fontStyle: "italic",
+					textAlign: "center",
+					color: "var(--accent-11)",
+					textTransform: "lowercase",
+				}}
+				mb="4"
+			>
+				<Link
+					to="/"
+					style={{
+						color: "inherit",
+						textDecoration: "none",
+					}}
+				>
+					Sill
+				</Link>
+			</Heading>
 			<Outlet />
 		</Document>
 	);
