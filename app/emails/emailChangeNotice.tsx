@@ -5,12 +5,11 @@ const EmailChangeNoticeEmail = ({ userId }: { userId: string }) => {
 		<Html lang="en" dir="ltr">
 			<Container>
 				<h1>
-					<Text>Your Epic Notes email has been changed</Text>
+					<Text>Your Sill email has been changed</Text>
 				</h1>
 				<p>
 					<Text>
-						We're writing to let you know that your Epic Notes email has been
-						changed.
+						We're writing to let you know that your Sill email has been changed.
 					</Text>
 				</p>
 				<p>

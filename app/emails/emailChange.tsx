@@ -11,7 +11,7 @@ const EmailChangeEmail = ({
 		<Html lang="en" dir="ltr">
 			<Container>
 				<h1>
-					<Text>Epic Notes Email Change</Text>
+					<Text>Sill Email Change</Text>
 				</h1>
 				<p>
 					<Text>
