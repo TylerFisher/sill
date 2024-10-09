@@ -9,6 +9,7 @@ import { validateRequest } from "./accounts.verify.server";
 import Layout from "~/components/Layout";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { OTPField } from "~/components/OTPField";
+import ErrorList from "~/components/ErrorList";
 
 export const codeQueryParam = "code";
 export const targetQueryParam = "target";
@@ -82,6 +83,7 @@ const Verify = () => {
 
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<Box mb="5">
 					<Flex mb="1">
 						<OTPField

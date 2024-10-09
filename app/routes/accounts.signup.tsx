@@ -19,6 +19,7 @@ import { checkHoneypot } from "~/utils/honeypot.server";
 import { prisma } from "~/db.server";
 import { prepareVerification } from "./accounts.verify.server";
 import { sendEmail } from "~/utils/email.server";
+import ErrorList from "~/components/ErrorList";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
@@ -110,6 +111,7 @@ const UserSetup = () => {
 
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
 						htmlFor: fields.email.name,

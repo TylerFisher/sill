@@ -17,6 +17,7 @@ import { prisma } from "~/db.server";
 import { PasswordSchema } from "~/utils/userValidation";
 import TextInput from "~/components/TextInput";
 import { Button, Flex } from "@radix-ui/themes";
+import ErrorList from "~/components/ErrorList";
 
 const ChangePasswordForm = z
 	.object({
@@ -105,6 +106,7 @@ export default function ChangePasswordRoute() {
 
 	return (
 		<Form method="POST" {...getFormProps(form)} className="mx-auto max-w-md">
+			<ErrorList errors={form.errors} id={form.errorId} />
 			<TextInput
 				labelProps={{ children: "Current Password" }}
 				inputProps={{

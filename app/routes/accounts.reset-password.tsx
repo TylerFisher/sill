@@ -9,6 +9,7 @@ import {
 	type MetaFunction,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import ErrorList from "~/components/ErrorList";
 import Layout from "~/components/Layout";
 import TextInput from "~/components/TextInput";
 import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
@@ -90,6 +91,7 @@ export default function ResetPasswordPage() {
 				</Text>
 			</Box>
 			<Form method="POST" {...getFormProps(form)}>
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
 						htmlFor: fields.password.id,

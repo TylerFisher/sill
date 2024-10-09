@@ -18,6 +18,7 @@ import { PasswordSchema, UsernameSchema } from "~/utils/userValidation";
 import { handleNewSession } from "./accounts.login.server";
 
 import Layout from "~/components/Layout";
+import ErrorList from "~/components/ErrorList";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
@@ -96,6 +97,7 @@ const Login = () => {
 			</Box>
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
 						htmlFor: fields.username.name,

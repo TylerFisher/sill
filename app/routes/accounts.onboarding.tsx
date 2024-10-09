@@ -30,6 +30,7 @@ import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import Layout from "~/components/Layout";
 import TextInput from "~/components/TextInput";
 import CheckboxField from "~/components/CheckboxField";
+import ErrorList from "~/components/ErrorList";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 
@@ -149,6 +150,7 @@ export default function OnboardingRoute() {
 			</Box>
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
 						htmlFor: fields.username.name,

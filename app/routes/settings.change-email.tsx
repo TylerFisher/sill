@@ -20,6 +20,7 @@ import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChange from "~/emails/emailChange";
 import { Box, Button, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput.js";
+import ErrorList from "~/components/ErrorList";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -120,6 +121,7 @@ export default function ChangeEmailIndex() {
 			</Box>
 
 			<Form method="POST" {...getFormProps(form)}>
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{ children: "New Email" }}
 					inputProps={{

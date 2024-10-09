@@ -18,6 +18,7 @@ import ForgotPasswordEmail from "~/emails/forgotPassword";
 import Layout from "~/components/Layout";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput";
+import ErrorList from "~/components/ErrorList";
 
 const ForgotPasswordSchema = z.object({
 	usernameOrEmail: z.union([EmailSchema, UsernameSchema]),
@@ -115,6 +116,7 @@ export default function ForgotPasswordRoute() {
 
 			<Form method="POST" {...getFormProps(form)}>
 				<HoneypotInputs />
+				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
 						htmlFor: fields.usernameOrEmail.id,

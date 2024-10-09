@@ -37,12 +37,12 @@ export default function Index() {
 	return (
 		<Box>
 			{user && user.mastodonAccounts.length > 0 ? (
-				<Box mb="4">
+				<Box>
 					<Heading size="4" mb="1">
 						Mastodon
 					</Heading>
 					<Text size="2" as="p" mb="3">
-						You are successfully connected to{" "}
+						You are connected to{" "}
 						<Badge>{user.mastodonAccounts[0].instance}</Badge>.
 					</Text>
 					<Form action="/mastodon/auth/revoke" method="post">
@@ -52,7 +52,7 @@ export default function Index() {
 					</Form>
 				</Box>
 			) : (
-				<Box mb="4">
+				<Box>
 					<Heading size="4" mb="1">
 						Mastodon
 					</Heading>
@@ -79,8 +79,8 @@ export default function Index() {
 						Bluesky
 					</Heading>
 					<Text size="2" as="p" mb="3">
-						You are successfully connected to{" "}
-						<Badge>{user.blueskyAccounts[0].handle}</Badge>.
+						You are connected to <Badge>{user.blueskyAccounts[0].handle}</Badge>
+						.
 					</Text>
 					<Form action="/bluesky/auth/revoke" method="post">
 						<Button type="submit" size="1">
