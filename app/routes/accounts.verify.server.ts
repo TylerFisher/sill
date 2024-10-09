@@ -6,7 +6,7 @@ import { uuidv7 } from "uuidv7-js";
 import { prisma } from "~/db.server";
 import { generateTOTP, verifyTOTP } from "~/utils/totp.server";
 import { getDomainUrl } from "~/utils/misc";
-import { twoFAVerificationType } from "~/routes/settings.two-factor";
+import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
 import type { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
 import {
 	handleVerification as handleLoginTwoFactorVerification,
