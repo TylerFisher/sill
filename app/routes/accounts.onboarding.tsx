@@ -26,15 +26,7 @@ import {
 	UsernameSchema,
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
-import {
-	Box,
-	Button,
-	Checkbox,
-	Flex,
-	Heading,
-	Text,
-	TextField,
-} from "@radix-ui/themes";
+import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import Layout from "~/components/Layout";
 import TextInput from "~/components/TextInput";
 import CheckboxField from "~/components/CheckboxField";

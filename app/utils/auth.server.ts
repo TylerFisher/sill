@@ -77,12 +77,10 @@ export async function logout(
 	const sessionId = authSession.get(sessionKey);
 	// if this fails, we still need to delete the session from the user's browser
 	// and it doesn't do any harm staying in the db anyway.
-	console.log(sessionId);
 	if (sessionId) {
-		const deleted = await prisma.session.deleteMany({
+		await prisma.session.deleteMany({
 			where: { id: sessionId },
 		});
-		console.log(deleted);
 	}
 	return redirect(safeRedirect(redirectTo), {
 		...responseInit,
@@ -178,4 +176,24 @@ export async function verifyUserPassword(
 	}
 
 	return { id: userWithPassword.id };
+}
+
+export async function resetUserPassword({
+	username,
+	password,
+}: {
+	username: User["username"];
+	password: string;
+}) {
+	const hashedPassword = await getPasswordHash(password);
+	return prisma.user.update({
+		where: { username },
+		data: {
+			password: {
+				update: {
+					hash: hashedPassword,
+				},
+			},
+		},
+	});
 }

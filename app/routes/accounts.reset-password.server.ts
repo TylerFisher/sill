@@ -26,7 +26,7 @@ export async function handleVerification({ submission }: VerifyFunctionArgs) {
 
 	const verifySession = await verifySessionStorage.getSession();
 	verifySession.set(resetPasswordUsernameSessionKey, user.username);
-	return redirect("/reset-password", {
+	return redirect("/accounts/reset-password", {
 		headers: {
 			"set-cookie": await verifySessionStorage.commitSession(verifySession),
 		},

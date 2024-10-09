@@ -109,7 +109,9 @@ const Login = () => {
 						htmlFor: fields.password.name,
 						children: "Password",
 					}}
-					inputProps={{ ...getInputProps(fields.password, { type: "text" }) }}
+					inputProps={{
+						...getInputProps(fields.password, { type: "password" }),
+					}}
 					errors={fields.password.errors}
 				/>
 				<Box width="100%">
@@ -126,7 +128,7 @@ const Login = () => {
 							errors={fields.remember.errors}
 						/>
 						<Box>
-							<Link to="/accounts/reset-password">
+							<Link to="/accounts/forgot-password">
 								<Text size="2">Forgot password?</Text>
 							</Link>
 						</Box>
