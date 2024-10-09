@@ -55,6 +55,16 @@ model Session {
   @@index([userId])
 }
 
+model AtprotoAuthSession {
+  key     String @id
+  session String
+}
+
+model AtprotoAuthState {
+  key   String @id
+  state String
+}
+
 model MastodonAccount {
   id               String   @id @db.Uuid
   instance         String
@@ -73,15 +83,10 @@ model MastodonAccount {
 model BlueskyAccount {
   id                 String    @id @db.Uuid
   service            String
-  refreshJwt         String
+  refreshJwt         String?
   accessJwt          String
   handle             String    @unique
   did                String    @unique
-  email              String?
-  emailConfirmed     Boolean?
-  emailAuthFactor    Boolean?
-  active             Boolean
-  status             String?
   mostRecentPostDate DateTime?
 
   userId String @db.Uuid

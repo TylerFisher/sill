@@ -1,7 +1,7 @@
 import { prisma } from "~/db.server";
 import {
 	AppBskyFeedDefs,
-	AtpAgent,
+	Agent,
 	AppBskyFeedPost,
 	AppBskyEmbedRecord,
 	AppBskyEmbedExternal,
@@ -10,6 +10,7 @@ import {
 	AppBskyRichtextFacet,
 	RichText,
 } from "@atproto/api";
+import { createOAuthClient } from "~/server/oauth/client";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
@@ -45,7 +46,8 @@ export const getMastodonTimeline = async (userId: string) => {
 		if (ended) break;
 		for await (const status of statuses) {
 			if (new Date(status.createdAt) <= yesterday) {
-				continue;
+				ended = true;
+				break;
 			}
 			if (status.id === account.mostRecentPostId) {
 				ended = true;
@@ -53,6 +55,7 @@ export const getMastodonTimeline = async (userId: string) => {
 			}
 			timeline.push(status);
 		}
+		console.log("mastodon", timeline.length);
 	}
 
 	if (timeline.length > 0) {
@@ -75,16 +78,9 @@ export const getBlueskyTimeline = async (userId: string) => {
 			userId: userId,
 		},
 	});
-	const agent = new AtpAgent({
-		service: "https://bsky.social",
-	});
-	await agent.resumeSession({
-		accessJwt: account.accessJwt,
-		refreshJwt: account.refreshJwt,
-		handle: account.handle,
-		did: account.did,
-		active: account.active,
-	});
+	const client = await createOAuthClient();
+	const oauthSession = await client.restore(account.did);
+	const agent = new Agent(oauthSession);
 
 	async function getTimeline(cursor: string | undefined = undefined) {
 		const response = await agent.getTimeline({
@@ -109,6 +105,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 		if (!reachedEnd) {
 			newPosts = newPosts.concat(await getTimeline(response.data.cursor));
 		}
+		console.log("bluesky", newPosts.length);
 		return newPosts;
 	}
 
@@ -116,6 +113,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 
 	if (timeline.length > 0) {
 		const firstPost = timeline[0];
+		const tokenSet = await oauthSession.getTokenSet();
 
 		await prisma.blueskyAccount.update({
 			where: {
@@ -127,8 +125,8 @@ export const getBlueskyTimeline = async (userId: string) => {
 						? firstPost.reason.indexedAt
 						: firstPost.post.indexedAt,
 				),
-				accessJwt: agent.session?.accessJwt,
-				refreshJwt: agent.session?.refreshJwt,
+				accessJwt: tokenSet.access_token,
+				refreshJwt: tokenSet.refresh_token,
 			},
 		});
 	}
@@ -230,6 +228,7 @@ export const getLinksFromMastodon = async (userId: string) => {
 		} catch (e) {
 			if (e instanceof Prisma.PrismaClientKnownRequestError) {
 				if (e.code === "P2002") {
+					console.log("processing mastodon error", t.uri);
 					await processMastodonLink(userId, t);
 				}
 			}
@@ -452,6 +451,7 @@ export const getLinksFromBluesky = async (userId: string) => {
 		} catch (e) {
 			if (e instanceof Prisma.PrismaClientKnownRequestError) {
 				if (e.code === "P2002") {
+					console.log("processing bluesky error", t.post.uri);
 					await processBlueskyLink(userId, t);
 				}
 			}
@@ -495,6 +495,7 @@ export const countLinkOccurrences = async (
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
+	console.log("processed links");
 	const start = new Date(Date.now() - time);
 	const mostRecentLinkPosts = await prisma.linkPost.findMany({
 		where: {
@@ -548,7 +549,10 @@ export const countLinkOccurrences = async (
 				[...new Set(b[1].map((l) => l.actorHandle))].length -
 				[...new Set(a[1].map((l) => l.actorHandle))].length,
 		);
+		console.log("sorted", sorted.length);
+
 		return sorted.slice(0, 20);
 	}
+
 	return Object.entries(grouped);
 };

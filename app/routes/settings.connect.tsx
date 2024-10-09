@@ -102,15 +102,6 @@ export default function Index() {
 						>
 							<TextField.Slot />
 						</TextField.Root>
-						<TextField.Root
-							name="password"
-							type="password"
-							placeholder="Use an app password"
-							required
-							mb="3"
-						>
-							<TextField.Slot />
-						</TextField.Root>
 						<Button type="submit" size="1">
 							Connect to Bluesky
 						</Button>

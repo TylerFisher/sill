@@ -120,6 +120,7 @@ function App() {
 					textAlign: "center",
 					color: "var(--accent-11)",
 					textTransform: "lowercase",
+					paddingTop: "1rem",
 				}}
 				mb="4"
 			>
