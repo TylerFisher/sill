@@ -51,5 +51,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		},
 	});
 
-	return redirect("/connect");
+	return redirect("/settings/connect");
 };

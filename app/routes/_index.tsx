@@ -20,6 +20,12 @@ const Index = () => {
 				<li>
 					<Link href="/links">Top Links</Link>
 				</li>
+				<li>
+					<Link href="/settings/connect">Connect to your accounts</Link>
+				</li>
+				<li>
+					<Link href="/accounts/logout">Log out</Link>
+				</li>
 			</ul>
 		</Layout>
 	);

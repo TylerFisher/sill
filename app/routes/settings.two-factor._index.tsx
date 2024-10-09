@@ -51,7 +51,7 @@ export default function TwoFactorRoute() {
 	const enable2FAFetcher = useFetcher<typeof action>();
 
 	return (
-		<Layout>
+		<Box>
 			{data.is2FAEnabled ? (
 				<Flex
 					gap="2"
@@ -90,6 +90,6 @@ export default function TwoFactorRoute() {
 					</enable2FAFetcher.Form>
 				</Flex>
 			)}
-		</Layout>
+		</Box>
 	);
 }

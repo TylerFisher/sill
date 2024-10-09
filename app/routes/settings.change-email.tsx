@@ -109,9 +109,8 @@ export default function ChangeEmailIndex() {
 	});
 
 	return (
-		<Layout>
+		<Box>
 			<Box mb="5">
-				<Heading size="8">Change Email</Heading>
 				<Text as="p">
 					You will receive an email at the new email address to confirm.
 				</Text>
@@ -134,6 +133,6 @@ export default function ChangeEmailIndex() {
 					<Button type="submit">Send Confirmation</Button>
 				</div>
 			</Form>
-		</Layout>
+		</Box>
 	);
 }

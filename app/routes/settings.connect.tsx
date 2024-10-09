@@ -37,10 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
-		<Layout>
-			<Box mb="8">
-				<Heading size="8">Connect your accounts</Heading>
-			</Box>
+		<Box>
 			<Flex gap="3">
 				{user && user.mastodonAccounts.length > 0 ? (
 					<Box width="50%">
@@ -128,6 +125,6 @@ export default function Index() {
 					</Box>
 				)}
 			</Flex>
-		</Layout>
+		</Box>
 	);
 }

@@ -6,38 +6,97 @@ import {
 	ScrollRestoration,
 	useLoaderData,
 } from "@remix-run/react";
-import { json } from "@remix-run/node";
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
-import { Theme } from "@radix-ui/themes";
+import { Theme as RadixTheme } from "@radix-ui/themes";
 import { honeypot } from "~/utils/honeypot.server";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
+import { makeTimings, time } from "./utils/timing.server";
+import { prisma } from "./db.server";
+import { logout, getUserId } from "./utils/auth.server";
+import { ClientHintCheck, getHints } from "./utils/client-hints";
+import { getDomainUrl } from "./utils/misc";
+import { type Theme, getTheme } from "./utils/theme.server";
+import { useNonce } from "./utils/nonce-provider";
+import { useOptionalUser, useUser } from "./utils/user";
+import { ThemeSwitch, useTheme } from "./routes/resources.theme-switch";
 
-export async function loader() {
-	// more code here
-	return json({ honeypotInputProps: honeypot.getInputProps() });
+export async function loader({ request }: LoaderFunctionArgs) {
+	const timings = makeTimings("root loader");
+	const userId = await time(() => getUserId(request), {
+		timings,
+		type: "getUserId",
+		desc: "getUserId in root",
+	});
+
+	const user = userId
+		? await time(
+				() =>
+					prisma.user.findUniqueOrThrow({
+						select: {
+							id: true,
+							name: true,
+							username: true,
+						},
+						where: { id: userId },
+					}),
+				{ timings, type: "find user", desc: "find user in root" },
+			)
+		: null;
+	if (userId && !user) {
+		console.info("something weird happened");
+		// something weird happened... The user is authenticated but we can't find
+		// them in the database. Maybe they were deleted? Let's log them out.
+		await logout({ request, redirectTo: "/" });
+	}
+	const honeyProps = honeypot.getInputProps();
+
+	return json(
+		{
+			user,
+			requestInfo: {
+				hints: getHints(request),
+				origin: getDomainUrl(request),
+				path: new URL(request.url).pathname,
+				userPrefs: {
+					theme: getTheme(request),
+				},
+			},
+			honeyProps,
+		},
+		{
+			headers: { "Server-Timing": timings.toString() },
+		},
+	);
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Document({
+	children,
+	nonce,
+	theme = "light",
+}: { children: React.ReactNode; nonce: string; theme?: Theme }) {
 	return (
 		<html lang="en">
 			<head>
+				<ClientHintCheck nonce={nonce} />
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<Meta />
 				<Links />
 			</head>
 			<body>
-				<Theme
+				<RadixTheme
 					accentColor="yellow"
-					appearance="dark"
+					appearance={theme}
 					grayColor="slate"
 					radius="full"
 				>
-					<main className="container">{children}</main>
-				</Theme>
+					<main>{children}</main>
+				</RadixTheme>
+				<ThemeSwitch />
 				<ScrollRestoration />
 				<Scripts />
 			</body>
@@ -45,11 +104,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	);
 }
 
-export default function App() {
-	const { honeypotInputProps } = useLoaderData<typeof loader>();
+function App() {
+	const data = useLoaderData<typeof loader>();
+	const nonce = useNonce();
+	const user = useOptionalUser();
+	const theme = useTheme();
 	return (
-		<HoneypotProvider {...honeypotInputProps}>
+		<Document nonce={nonce} theme={theme}>
 			<Outlet />
+		</Document>
+	);
+}
+
+export default function AppWithProviders() {
+	const data = useLoaderData<typeof loader>();
+	return (
+		<HoneypotProvider {...data.honeyProps}>
+			<App />
 		</HoneypotProvider>
 	);
 }

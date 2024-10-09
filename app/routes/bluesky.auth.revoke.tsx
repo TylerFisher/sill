@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs, json, redirect } from "@remix-run/node";
 import { prisma } from "~/db.server"; // Adjust based on your project structure
-import { requireUserId } from "~/session.server"; // Adjust based on your session setup
+import { requireUserId } from "~/utils/auth.server"; // Adjust based on your session setup
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -14,5 +14,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		where: { userId: userId },
 	});
 
-	return redirect("/connect");
+	return redirect("/settings/connect");
 };

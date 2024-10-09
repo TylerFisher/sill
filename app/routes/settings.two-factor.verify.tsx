@@ -130,7 +130,7 @@ export default function TwoFactorRoute() {
 	});
 
 	return (
-		<Layout>
+		<Box>
 			<Flex
 				gap="4"
 				style={{
@@ -209,6 +209,6 @@ export default function TwoFactorRoute() {
 					</Flex>
 				</Form>
 			</Flex>
-		</Layout>
+		</Box>
 	);
 }

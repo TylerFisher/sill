@@ -40,7 +40,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			where: { userId: userId },
 		});
 
-		return redirect("/connect");
+		return redirect("/settings/connect");
 	}
 
 	return json({ message: "No tokens to revoke." });
