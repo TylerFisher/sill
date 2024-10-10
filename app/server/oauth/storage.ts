@@ -17,7 +17,6 @@ export class StateStore implements NodeSavedStateStore {
 	}
 
 	async set(key: string, state: NodeSavedState) {
-		console.log(state);
 		const data = { key, state: JSON.stringify(state) };
 		await prisma.atprotoAuthState.upsert({
 			where: { key },
@@ -43,7 +42,6 @@ export class SessionStore implements NodeSavedSessionStore {
 	}
 
 	async set(key: string, session: NodeSavedSession) {
-		console.log(session);
 		const data = { key, session: JSON.stringify(session) };
 		await prisma.atprotoAuthSession.upsert({
 			where: { key },

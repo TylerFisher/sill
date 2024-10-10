@@ -137,7 +137,6 @@ export const getBlueskyTimeline = async (userId: string) => {
 		if (!reachedEnd) {
 			newPosts = newPosts.concat(await getTimeline(response.data.cursor));
 		}
-		console.log("bluesky", newPosts.length);
 		return newPosts;
 	}
 
@@ -260,7 +259,6 @@ export const getLinksFromMastodon = async (userId: string) => {
 		} catch (e) {
 			if (e instanceof Prisma.PrismaClientKnownRequestError) {
 				if (e.code === "P2002") {
-					console.log("processing mastodon error", t.uri);
 					await processMastodonLink(userId, t);
 				}
 			}
@@ -279,6 +277,7 @@ const processBlueskyLink = async (
 	if (!record) {
 		return null;
 	}
+	const postUrl = `https://bsky.app/profile/${t.post.author.handle}/post/${t.post.uri.split("/").at(-1)}`;
 
 	// Handle embeds
 	let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
@@ -333,7 +332,6 @@ const processBlueskyLink = async (
 	if (!detectedLink) {
 		return null;
 	}
-
 	// handle image
 	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	if (AppBskyEmbedImages.isView(t.post.embed)) {
@@ -346,8 +344,6 @@ const processBlueskyLink = async (
 	} else {
 		linkPoster = t.post.author;
 	}
-
-	const postUrl = `https://bsky.app/profile/${t.post.author.did}/post/${t.post.uri.split("/").at(-1)}`;
 
 	await prisma.linkPost.upsert({
 		where: {
@@ -486,6 +482,8 @@ export const getLinksFromBluesky = async (userId: string) => {
 					console.log("processing bluesky error", t.post.uri);
 					await processBlueskyLink(userId, t);
 				}
+			} else {
+				console.error(e);
 			}
 		}
 	}
@@ -502,16 +500,25 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			segment.link &&
 			AppBskyRichtextFacet.validateLink(segment.link).success
 		) {
-			const metadata = await extractFromUrl(segment.link.uri);
-			if (metadata) {
-				foundLink = {
-					uri: segment.link.uri,
-					title: metadata["og:title"] || metadata.title,
-					imageUrl: metadata["og:image"],
-					description: metadata["og:description"] || metadata.description,
-				};
+			try {
+				console.log("fetching", segment.link.uri);
+				const metadata = await extractFromUrl(segment.link.uri, {
+					timeout: 5000,
+				});
+				console.log("fetched", segment.link.uri);
+				if (metadata) {
+					foundLink = {
+						uri: segment.link.uri,
+						title: metadata["og:title"] || metadata.title,
+						imageUrl: metadata["og:image"],
+						description: metadata["og:description"] || metadata.description,
+					};
+				}
+				break;
+			} catch (e) {
+				console.error("welp", e);
+				break;
 			}
-			break;
 		}
 	}
 	return foundLink;
@@ -527,7 +534,6 @@ export const countLinkOccurrences = async (
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
-	console.log("processed links");
 	const start = new Date(Date.now() - time);
 	const mostRecentLinkPosts = await prisma.linkPost.findMany({
 		where: {
@@ -581,8 +587,6 @@ export const countLinkOccurrences = async (
 				[...new Set(b[1].map((l) => l.actorHandle))].length -
 				[...new Set(a[1].map((l) => l.actorHandle))].length,
 		);
-		console.log("sorted", sorted.length);
-
 		return sorted.slice(0, 20);
 	}
 
