@@ -5,12 +5,10 @@ import {
 	AppBskyEmbedRecord,
 	AppBskyEmbedExternal,
 	AppBskyEmbedImages,
-	type AppBskyActorDefs,
 	AppBskyRichtextFacet,
 	RichText,
 } from "@atproto/api";
 import {
-	type NodeOAuthClient,
 	OAuthResponseError,
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
@@ -30,8 +28,40 @@ interface BskyDetectedLink {
 	imageUrl?: string | null;
 }
 
+const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
+
+const fetchRebloggedPosts = async (
+	client: mastodon.rest.Client,
+	status: mastodon.v1.Status,
+) => {
+	const rebloggedPosts: mastodon.v1.Status[] = [];
+	for await (const rebloggerGroup of client.v1.statuses
+		.$select(status.id)
+		.rebloggedBy.list()) {
+		for await (const reblogger of rebloggerGroup) {
+			for await (const rebloggerStatuses of client.v1.accounts
+				.$select(reblogger.id)
+				.statuses.list()) {
+				let foundStatus = false;
+				for await (const rebloggerStatus of rebloggerStatuses) {
+					if (rebloggerStatus.reblog?.id === status.id) {
+						rebloggedPosts.push(rebloggerStatus);
+						foundStatus = true;
+						break;
+					}
+				}
+				if (foundStatus) {
+					break;
+				}
+			}
+		}
+	}
+
+	return rebloggedPosts;
+};
+
 export const getMastodonTimeline = async (userId: string) => {
-	const yesterday = new Date(Date.now() - 86400000);
+	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
 	const account = await prisma.mastodonAccount.findFirst({
 		where: {
@@ -66,27 +96,8 @@ export const getMastodonTimeline = async (userId: string) => {
 			// We need those reblogs. So we have to find the rebloggers and search their
 			// timelines for the reblog post.
 			if (status.reblogsCount > 0) {
-				for await (const rebloggerGroup of client.v1.statuses
-					.$select(status.id)
-					.rebloggedBy.list()) {
-					for await (const reblogger of rebloggerGroup) {
-						for await (const rebloggerStatuses of client.v1.accounts
-							.$select(reblogger.id)
-							.statuses.list()) {
-							let foundStatus = false;
-							for await (const rebloggerStatus of rebloggerStatuses) {
-								if (rebloggerStatus.reblog?.id === status.id) {
-									timeline.push(rebloggerStatus);
-									foundStatus = true;
-									break;
-								}
-							}
-							if (foundStatus) {
-								break;
-							}
-						}
-					}
-				}
+				const rebloggedPosts = await fetchRebloggedPosts(client, status);
+				timeline.push(...rebloggedPosts);
 			}
 			timeline.push(status);
 		}
@@ -106,28 +117,30 @@ export const getMastodonTimeline = async (userId: string) => {
 	return timeline;
 };
 
+const handleBlueskyOAuth = async (account: { did: string }) => {
+	let oauthSession: OAuthSession | null = null;
+	try {
+		const client = await createOAuthClient();
+		oauthSession = await client.restore(account.did);
+	} catch (error) {
+		if (error instanceof OAuthResponseError) {
+			const client = await createOAuthClient();
+			oauthSession = await client.restore(account.did);
+		}
+	}
+	return oauthSession;
+};
+
 export const getBlueskyTimeline = async (userId: string) => {
 	const account = await prisma.blueskyAccount.findFirst({
 		where: {
 			userId: userId,
 		},
 	});
-
 	if (!account) return [];
 
-	let client: NodeOAuthClient | null = null;
-	let oauthSession: OAuthSession | null = null;
-	try {
-		client = await createOAuthClient();
-		oauthSession = await client.restore(account.did);
-	} catch (error) {
-		if (error instanceof OAuthResponseError) {
-			client = await createOAuthClient();
-			oauthSession = await client.restore(account.did);
-		}
-	}
-
-	if (!client || !oauthSession) return [];
+	const oauthSession = await handleBlueskyOAuth(account);
+	if (!oauthSession) return [];
 
 	const agent = new Agent(oauthSession);
 
@@ -138,7 +151,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 		});
 		const timeline = response.data.feed;
 		const checkDate =
-			account?.mostRecentPostDate || new Date(Date.now() - 86400000); // 24 hours ago
+			account?.mostRecentPostDate || new Date(Date.now() - ONE_DAY_MS); // 24 hours ago
 
 		let reachedEnd = false;
 		let newPosts = timeline.filter((item) => {
@@ -283,6 +296,60 @@ export const getLinksFromMastodon = async (userId: string) => {
 	}
 };
 
+const extractQuotedData = async (embed: AppBskyFeedDefs.PostView["embed"]) => {
+	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
+	let quotedValue: AppBskyFeedPost.Record | null = null;
+	let externalRecord: AppBskyEmbedExternal.View | null = null;
+	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
+
+	if (AppBskyEmbedRecord.isView(embed)) {
+		if (AppBskyEmbedRecord.isViewRecord(embed.record)) {
+			quotedRecord = embed.record;
+		}
+
+		// Extract external link if present
+		externalRecord =
+			quotedRecord?.embeds?.find(AppBskyEmbedExternal.isView) || null;
+
+		// Extract images if present
+		const imageGroup = quotedRecord?.embeds?.find(AppBskyEmbedImages.isView);
+		if (imageGroup) {
+			quotedImageGroup = imageGroup.images;
+		}
+
+		// Extract quoted post's record
+		if (AppBskyFeedPost.isRecord(quotedRecord?.value)) {
+			quotedValue = quotedRecord.value;
+		}
+	}
+
+	return { quotedRecord, quotedValue, externalRecord, quotedImageGroup };
+};
+
+const extractDetectedLink = async (
+	record: AppBskyFeedPost.Record,
+	embed: AppBskyFeedDefs.PostView["embed"],
+) => {
+	let detectedLink: BskyDetectedLink | null = null;
+	let externalRecord: AppBskyEmbedExternal.View | null = null;
+
+	// Check for external embed links
+	if (AppBskyEmbedExternal.isView(embed)) {
+		externalRecord = embed;
+		detectedLink = {
+			uri: externalRecord.external.uri,
+			title: externalRecord.external.title,
+			description: externalRecord.external.description,
+			imageUrl: externalRecord.external.thumb,
+		};
+	} else {
+		// Detect link facets from the original post
+		detectedLink = await findBlueskyLinkFacets(record);
+	}
+
+	return detectedLink;
+};
+
 const processBlueskyLink = async (
 	userId: string,
 	t: AppBskyFeedDefs.FeedViewPost,
@@ -297,70 +364,28 @@ const processBlueskyLink = async (
 	const postUrl = `https://bsky.app/profile/${t.post.author.handle}/post/${t.post.uri.split("/").at(-1)}`;
 
 	// Handle embeds
-	let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
-	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
-	let quotedValue: AppBskyFeedPost.Record | null = null;
-	let externalRecord: AppBskyEmbedExternal.View | null = null;
-	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	let detectedLink: BskyDetectedLink | null = null;
-	if (AppBskyEmbedRecord.isView(t.post.embed)) {
-		quoted = t.post.embed;
-		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
-			quotedRecord = quoted.record;
-			const embeddedLink = quotedRecord.embeds?.find((e) =>
-				AppBskyEmbedExternal.isView(e),
-			);
-			if (embeddedLink) {
-				externalRecord = embeddedLink;
-			}
-			const imageGroup = quotedRecord?.embeds?.find((embed) =>
-				AppBskyEmbedImages.isView(embed),
-			);
-			if (imageGroup) {
-				quotedImageGroup = imageGroup.images;
-			}
-		}
-		if (AppBskyFeedPost.isRecord(quoted.record.value)) {
-			quotedValue = quoted.record.value;
-			if (!externalRecord) {
-				detectedLink = await findBlueskyLinkFacets(quotedValue);
-			}
-		}
+	const { quotedRecord, quotedValue, externalRecord, quotedImageGroup } =
+		await extractQuotedData(t.post.embed);
+	if (!externalRecord && quotedValue) {
+		detectedLink = await findBlueskyLinkFacets(quotedValue);
 	}
-
-	if (AppBskyEmbedExternal.isView(t.post.embed)) {
-		externalRecord = t.post.embed;
+	if (!detectedLink) {
+		detectedLink = await extractDetectedLink(record, t.post.embed);
 	}
-
-	// check for a post with a link but no preview card
-	if (!externalRecord) {
-		if (!detectedLink) {
-			detectedLink = await findBlueskyLinkFacets(record);
-		}
-	} else {
-		detectedLink = {
-			uri: externalRecord.external.uri,
-			title: externalRecord.external.title,
-			description: externalRecord.external.description,
-			imageUrl: externalRecord.external.thumb,
-		};
-	}
-
 	if (!detectedLink) {
 		return null;
 	}
+
 	// handle image
 	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	if (AppBskyEmbedImages.isView(t.post.embed)) {
 		imageGroup = t.post.embed.images;
 	}
 
-	let linkPoster: AppBskyActorDefs.ProfileViewBasic | null = null;
-	if (AppBskyFeedDefs.isReasonRepost(t.reason)) {
-		linkPoster = t.reason.by;
-	} else {
-		linkPoster = t.post.author;
-	}
+	const linkPoster = AppBskyFeedDefs.isReasonRepost(t.post.reason)
+		? t.post.reason.by
+		: t.post.author;
 
 	await prisma.linkPost.upsert({
 		where: {
