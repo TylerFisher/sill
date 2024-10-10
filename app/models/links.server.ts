@@ -12,6 +12,7 @@ import {
 import {
 	type NodeOAuthClient,
 	OAuthResponseError,
+	type OAuthSession,
 } from "@atproto/oauth-client-node";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
@@ -115,17 +116,19 @@ export const getBlueskyTimeline = async (userId: string) => {
 	if (!account) return [];
 
 	let client: NodeOAuthClient | null = null;
+	let oauthSession: OAuthSession | null = null;
 	try {
 		client = await createOAuthClient();
+		oauthSession = await client.restore(account.did);
 	} catch (error) {
 		if (error instanceof OAuthResponseError) {
 			client = await createOAuthClient();
+			oauthSession = await client.restore(account.did);
 		}
 	}
 
-	if (!client) return [];
+	if (!client || !oauthSession) return [];
 
-	const oauthSession = await client.restore(account.did);
 	const agent = new Agent(oauthSession);
 
 	async function getTimeline(cursor: string | undefined = undefined) {
@@ -139,8 +142,8 @@ export const getBlueskyTimeline = async (userId: string) => {
 
 		let reachedEnd = false;
 		let newPosts = timeline.filter((item) => {
-			const postDate = item.reason
-				? new Date(item.reason?.indexedAt as string) // atproto is missing this type
+			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
+				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
 			if (postDate <= checkDate) {
 				reachedEnd = true;
