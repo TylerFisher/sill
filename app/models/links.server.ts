@@ -28,11 +28,14 @@ interface BskyDetectedLink {
 export const getMastodonTimeline = async (userId: string) => {
 	const yesterday = new Date(Date.now() - 86400000);
 
-	const account = await prisma.mastodonAccount.findFirstOrThrow({
+	const account = await prisma.mastodonAccount.findFirst({
 		where: {
 			userId: userId,
 		},
 	});
+
+	if (!account) return [];
+
 	const client = createRestAPIClient({
 		url: account.instance,
 		accessToken: account.accessToken,
@@ -53,9 +56,35 @@ export const getMastodonTimeline = async (userId: string) => {
 				ended = true;
 				break;
 			}
+
+			// NASTY. Mastodon doesn't return reblogs if you follow the original poster.
+			// We need those reblogs. So we have to find the rebloggers and search their
+			// timelines for the reblog post.
+			if (status.reblogsCount > 0) {
+				for await (const rebloggerGroup of client.v1.statuses
+					.$select(status.id)
+					.rebloggedBy.list()) {
+					for await (const reblogger of rebloggerGroup) {
+						for await (const rebloggerStatuses of client.v1.accounts
+							.$select(reblogger.id)
+							.statuses.list()) {
+							let foundStatus = false;
+							for await (const rebloggerStatus of rebloggerStatuses) {
+								if (rebloggerStatus.reblog?.id === status.id) {
+									timeline.push(rebloggerStatus);
+									foundStatus = true;
+									break;
+								}
+							}
+							if (foundStatus) {
+								break;
+							}
+						}
+					}
+				}
+			}
 			timeline.push(status);
 		}
-		console.log("mastodon", timeline.length);
 	}
 
 	if (timeline.length > 0) {
@@ -73,11 +102,14 @@ export const getMastodonTimeline = async (userId: string) => {
 };
 
 export const getBlueskyTimeline = async (userId: string) => {
-	const account = await prisma.blueskyAccount.findFirstOrThrow({
+	const account = await prisma.blueskyAccount.findFirst({
 		where: {
 			userId: userId,
 		},
 	});
+
+	if (!account) return [];
+
 	const client = await createOAuthClient();
 	const oauthSession = await client.restore(account.did);
 	const agent = new Agent(oauthSession);
@@ -89,7 +121,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 		});
 		const timeline = response.data.feed;
 		const checkDate =
-			account.mostRecentPostDate || new Date(Date.now() - 86400000); // 24 hours ago
+			account?.mostRecentPostDate || new Date(Date.now() - 86400000); // 24 hours ago
 
 		let reachedEnd = false;
 		let newPosts = timeline.filter((item) => {
