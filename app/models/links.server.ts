@@ -501,11 +501,9 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			AppBskyRichtextFacet.validateLink(segment.link).success
 		) {
 			try {
-				console.log("fetching", segment.link.uri);
 				const metadata = await extractFromUrl(segment.link.uri, {
 					timeout: 5000,
 				});
-				console.log("fetched", segment.link.uri);
 				if (metadata) {
 					foundLink = {
 						uri: segment.link.uri,
