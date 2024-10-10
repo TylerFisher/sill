@@ -1,4 +1,3 @@
-import { prisma } from "~/db.server";
 import {
 	AppBskyFeedDefs,
 	Agent,
@@ -10,13 +9,18 @@ import {
 	AppBskyRichtextFacet,
 	RichText,
 } from "@atproto/api";
-import { createOAuthClient } from "~/server/oauth/client";
+import {
+	type NodeOAuthClient,
+	OAuthResponseError,
+} from "@atproto/oauth-client-node";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
 import groupBy from "object.groupby";
 import { Prisma } from "@prisma/client";
 import { extractFromUrl } from "@jcottam/html-metadata";
+import { createOAuthClient } from "~/server/oauth/client";
+import { prisma } from "~/db.server";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -110,7 +114,17 @@ export const getBlueskyTimeline = async (userId: string) => {
 
 	if (!account) return [];
 
-	const client = await createOAuthClient();
+	let client: NodeOAuthClient | null = null;
+	try {
+		client = await createOAuthClient();
+	} catch (error) {
+		if (error instanceof OAuthResponseError) {
+			client = await createOAuthClient();
+		}
+	}
+
+	if (!client) return [];
+
 	const oauthSession = await client.restore(account.did);
 	const agent = new Agent(oauthSession);
 
