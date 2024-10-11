@@ -394,8 +394,8 @@ const processBlueskyLink = async (
 		imageGroup = t.post.embed.images;
 	}
 
-	const linkPoster = AppBskyFeedDefs.isReasonRepost(t.post.reason)
-		? t.post.reason.by
+	const linkPoster = AppBskyFeedDefs.isReasonRepost(t.reason)
+		? t.reason.by
 		: t.post.author;
 
 	await prisma.linkPost.upsert({
