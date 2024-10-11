@@ -14,8 +14,7 @@ interface LinkRepProps {
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
-	const id = url.searchParams.get("v");
-	if (!id) return <div />;
+	const id = url.searchParams.get("v") || url.pathname;
 	return (
 		<Card mb="5">
 			<Youtube videoId={id} />
@@ -25,7 +24,7 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 
 const LinkRep = ({ link }: LinkRepProps) => {
 	const url = new URL(link.url);
-	if (url.hostname === "www.youtube.com") {
+	if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
 		return <YoutubeEmbed url={url} />;
 	}
 	return (

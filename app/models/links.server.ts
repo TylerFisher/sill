@@ -6,6 +6,7 @@ import {
 	AppBskyEmbedExternal,
 	AppBskyEmbedImages,
 	AppBskyRichtextFacet,
+	type AppBskyActorDefs,
 	RichText,
 } from "@atproto/api";
 import {
@@ -375,28 +376,70 @@ const processBlueskyLink = async (
 	const postUrl = `https://bsky.app/profile/${t.post.author.handle}/post/${t.post.uri.split("/").at(-1)}`;
 
 	// Handle embeds
+	let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
+	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
+	let quotedValue: AppBskyFeedPost.Record | null = null;
+	let externalRecord: AppBskyEmbedExternal.View | null = null;
+	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	let detectedLink: BskyDetectedLink | null = null;
-	const { quotedRecord, quotedValue, externalRecord, quotedImageGroup } =
-		await extractQuotedData(t.post.embed);
-	if (!externalRecord && quotedValue) {
-		detectedLink = await findBlueskyLinkFacets(quotedValue);
+	if (AppBskyEmbedRecord.isView(t.post.embed)) {
+		quoted = t.post.embed;
+		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
+			quotedRecord = quoted.record;
+			const embeddedLink = quotedRecord.embeds?.find((e) =>
+				AppBskyEmbedExternal.isView(e),
+			);
+			if (embeddedLink) {
+				externalRecord = embeddedLink;
+			}
+			const imageGroup = quotedRecord?.embeds?.find((embed) =>
+				AppBskyEmbedImages.isView(embed),
+			);
+			if (imageGroup) {
+				quotedImageGroup = imageGroup.images;
+			}
+		}
+		if (AppBskyFeedPost.isRecord(quoted.record.value)) {
+			quotedValue = quoted.record.value;
+			if (!externalRecord) {
+				detectedLink = await findBlueskyLinkFacets(quotedValue);
+			}
+		}
 	}
-	if (!detectedLink) {
-		detectedLink = await extractDetectedLink(record, t.post.embed);
+
+	if (AppBskyEmbedExternal.isView(t.post.embed)) {
+		externalRecord = t.post.embed;
 	}
+
+	// check for a post with a link but no preview card
+	if (!externalRecord) {
+		if (!detectedLink) {
+			detectedLink = await findBlueskyLinkFacets(record);
+		}
+	} else {
+		detectedLink = {
+			uri: externalRecord.external.uri,
+			title: externalRecord.external.title,
+			description: externalRecord.external.description,
+			imageUrl: externalRecord.external.thumb,
+		};
+	}
+
 	if (!detectedLink) {
 		return null;
 	}
-
 	// handle image
 	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	if (AppBskyEmbedImages.isView(t.post.embed)) {
 		imageGroup = t.post.embed.images;
 	}
 
-	const linkPoster = AppBskyFeedDefs.isReasonRepost(t.reason)
-		? t.reason.by
-		: t.post.author;
+	let linkPoster: AppBskyActorDefs.ProfileViewBasic | null = null;
+	if (AppBskyFeedDefs.isReasonRepost(t.reason)) {
+		linkPoster = t.reason.by;
+	} else {
+		linkPoster = t.post.author;
+	}
 
 	await prisma.linkPost.upsert({
 		where: {
@@ -618,7 +661,14 @@ export const countLinkOccurrences = async (
 		},
 	});
 
-	const grouped = groupBy(mostRecentLinkPosts, (l) => l.link.url);
+	const grouped = groupBy(mostRecentLinkPosts, (l) => {
+		const url = new URL(l.link.url);
+		if (url.hostname !== "www.youtube.com" && url.hostname !== "youtu.be") {
+			const key = `${l.link.title} - ${new URL(l.link.url).hostname}`;
+			return key;
+		}
+		return l.link.url;
+	});
 
 	if (hideReposts) {
 		for (const url in grouped) {
