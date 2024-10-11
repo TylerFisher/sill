@@ -203,6 +203,17 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		return null;
 	}
 
+	// Sometimes Mastodon returns broken cards for YouTube.
+	// I know I shouldn't regex HTML, but here we are.
+	if (original.card?.url === "https://www.youtube.com/undefined") {
+		const regex =
+			/(https:\/\/(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+(?:<[^>]+>)*[\w-]+(?:\?(?:[\w-=&]+(?:<[^>]+>)*[\w-=&]+)?)?)/g;
+		const youtubeUrls = original.content.match(regex);
+		if (youtubeUrls) {
+			original.card.url = youtubeUrls[0];
+		}
+	}
+
 	await prisma.linkPost.upsert({
 		where: {
 			linkUrl_postUrl_userId_actorHandle: {
