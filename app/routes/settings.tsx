@@ -75,6 +75,14 @@ export default function EditUserProfile() {
 						<li>
 							<RadixLink
 								asChild
+								weight={pathname === "/settings/mute" ? "bold" : "regular"}
+							>
+								<Link to="./password">Mute phrases</Link>
+							</RadixLink>
+						</li>
+						<li>
+							<RadixLink
+								asChild
 								weight={
 									pathname.startsWith("/settings/two-factor")
 										? "bold"

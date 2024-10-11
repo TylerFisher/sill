@@ -308,60 +308,6 @@ export const getLinksFromMastodon = async (userId: string) => {
 	}
 };
 
-const extractQuotedData = async (embed: AppBskyFeedDefs.PostView["embed"]) => {
-	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
-	let quotedValue: AppBskyFeedPost.Record | null = null;
-	let externalRecord: AppBskyEmbedExternal.View | null = null;
-	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
-
-	if (AppBskyEmbedRecord.isView(embed)) {
-		if (AppBskyEmbedRecord.isViewRecord(embed.record)) {
-			quotedRecord = embed.record;
-		}
-
-		// Extract external link if present
-		externalRecord =
-			quotedRecord?.embeds?.find(AppBskyEmbedExternal.isView) || null;
-
-		// Extract images if present
-		const imageGroup = quotedRecord?.embeds?.find(AppBskyEmbedImages.isView);
-		if (imageGroup) {
-			quotedImageGroup = imageGroup.images;
-		}
-
-		// Extract quoted post's record
-		if (AppBskyFeedPost.isRecord(quotedRecord?.value)) {
-			quotedValue = quotedRecord.value;
-		}
-	}
-
-	return { quotedRecord, quotedValue, externalRecord, quotedImageGroup };
-};
-
-const extractDetectedLink = async (
-	record: AppBskyFeedPost.Record,
-	embed: AppBskyFeedDefs.PostView["embed"],
-) => {
-	let detectedLink: BskyDetectedLink | null = null;
-	let externalRecord: AppBskyEmbedExternal.View | null = null;
-
-	// Check for external embed links
-	if (AppBskyEmbedExternal.isView(embed)) {
-		externalRecord = embed;
-		detectedLink = {
-			uri: externalRecord.external.uri,
-			title: externalRecord.external.title,
-			description: externalRecord.external.description,
-			imageUrl: externalRecord.external.thumb,
-		};
-	} else {
-		// Detect link facets from the original post
-		detectedLink = await findBlueskyLinkFacets(record);
-	}
-
-	return detectedLink;
-};
-
 const processBlueskyLink = async (
 	userId: string,
 	t: AppBskyFeedDefs.FeedViewPost,
@@ -628,10 +574,94 @@ export const countLinkOccurrences = async (
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
+
+	const mutePhrases = await prisma.mutePhrase.findMany({
+		where: {
+			userId,
+		},
+	});
+
+	const mutePhraseSearch = mutePhrases.map((p) => `${p.phrase}`).join(" | ");
+	// const mutePhraseSearch = "Tesla";
+
 	const start = new Date(Date.now() - time);
 	const mostRecentLinkPosts = await prisma.linkPost.findMany({
 		where: {
 			userId,
+			NOT: {
+				OR: [
+					{
+						link: {
+							description: {
+								search: mutePhraseSearch,
+								mode: "insensitive",
+							},
+						},
+					},
+					{
+						link: {
+							title: {
+								search: mutePhraseSearch,
+								mode: "insensitive",
+							},
+						},
+					},
+					{
+						post: {
+							text: {
+								search: mutePhraseSearch,
+								mode: "insensitive",
+							},
+						},
+					},
+					{
+						post: {
+							quoting: {
+								text: {
+									search: mutePhraseSearch,
+									mode: "insensitive",
+								},
+							},
+						},
+					},
+					{
+						post: {
+							actor: {
+								name: {
+									search: mutePhraseSearch,
+									mode: "insensitive",
+								},
+							},
+						},
+					},
+					{
+						post: {
+							actor: {
+								handle: {
+									search: mutePhraseSearch,
+									mode: "insensitive",
+								},
+							},
+						},
+					},
+					{
+						actor: {
+							name: {
+								search: mutePhraseSearch,
+								mode: "insensitive",
+							},
+						},
+					},
+					{
+						actor: {
+							handle: {
+								search: mutePhraseSearch,
+								mode: "insensitive",
+							},
+						},
+					},
+				],
+			},
 			post: {
 				postDate: {
 					gte: start,

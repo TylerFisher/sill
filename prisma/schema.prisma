@@ -4,7 +4,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 model User {
@@ -23,6 +24,7 @@ model User {
   blueskyAccounts  BlueskyAccount[]
   linkPosts        LinkPost[]
   emailToken       EmailToken?
+  mutePhrases      MutePhrase[]
 }
 
 model EmailToken {
@@ -181,6 +183,20 @@ model Verification {
   expiresAt DateTime?
 
   @@unique([target, type])
+}
+
+model MutePhrase {
+  id     String  @id @db.Uuid()
+  phrase String
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @db.Uuid()
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, phrase])
 }
 
 enum PostType {
