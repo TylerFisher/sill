@@ -1,5 +1,6 @@
 import {
 	AspectRatio,
+	Box,
 	Card,
 	Heading,
 	Inset,
@@ -16,9 +17,11 @@ interface LinkRepProps {
 const YoutubeEmbed = ({ url }: { url: URL }) => {
 	const id = url.searchParams.get("v") || url.pathname;
 	return (
-		<Card mb="5">
-			<Youtube videoId={id} />
-		</Card>
+		<Box mb="5">
+			<AspectRatio ratio={16 / 9}>
+				<Youtube videoId={id} />
+			</AspectRatio>
+		</Box>
 	);
 };
 
