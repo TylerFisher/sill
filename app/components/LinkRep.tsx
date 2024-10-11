@@ -7,8 +7,6 @@ import {
 	Text,
 } from "@radix-ui/themes";
 import type { Link as DbLink } from "@prisma/client";
-import LiteYouTubeEmbed from "react-lite-youtube-embed";
-import "react-lite-youtube-embed/dist/LiteYouTubeEmbed.css";
 import Youtube from "react-youtube";
 
 interface LinkRepProps {
