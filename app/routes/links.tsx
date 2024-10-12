@@ -4,8 +4,8 @@ import {
 	type MetaFunction,
 	json,
 } from "@remix-run/node";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { Box, Separator, Button } from "@radix-ui/themes";
+import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Box, Separator, Button, Flex, TextField } from "@radix-ui/themes";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { countLinkOccurrences } from "~/models/links.server";
@@ -15,6 +15,7 @@ import FilterButtonGroup, {
 	type ButtonProps,
 } from "~/components/FilterButtonGroup";
 import Layout from "~/components/Layout";
+import TextInput from "~/components/TextInput";
 
 export const meta: MetaFunction = () => [{ title: "Links" }];
 
@@ -24,11 +25,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const time = url.searchParams.get("time") || "86400000";
 	const hideReposts = url.searchParams.get("reposts") === "true";
 	const sort = url.searchParams.get("sort") || undefined;
+	const query = url.searchParams.get("query") || undefined;
 	const links = await countLinkOccurrences(
 		userId,
 		Number.parseInt(time),
 		hideReposts,
 		sort,
+		query,
 	);
 
 	return json({ links });
@@ -132,6 +135,20 @@ const Links = () => {
 						</Box>
 					</Collapsible.Content>
 				</Collapsible.Root>
+				<Box my="2">
+					<Form method="GET">
+						<Flex align="center" content="center">
+							<TextField.Root
+								name="query"
+								type="text"
+								defaultValue={searchParams.get("query") || ""}
+							>
+								<TextField.Slot />
+							</TextField.Root>
+							<Button type="submit">Search</Button>
+						</Flex>
+					</Form>
+				</Box>
 			</Box>
 			{data.links.map((link, i) => (
 				<div key={link[0]}>

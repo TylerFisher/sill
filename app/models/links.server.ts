@@ -569,6 +569,7 @@ export const countLinkOccurrences = async (
 	time: number,
 	hideReposts = false,
 	sort = "popularity",
+	query: string | undefined = undefined,
 ) => {
 	await Promise.all([
 		getLinksFromMastodon(userId),
@@ -582,12 +583,50 @@ export const countLinkOccurrences = async (
 	});
 
 	const mutePhraseSearch = mutePhrases.map((p) => `${p.phrase}`).join(" | ");
-	// const mutePhraseSearch = "Tesla";
+	const searchQuery: Prisma.LinkPostWhereInput[] = query
+		? [
+				{
+					link: {
+						description: {
+							search: query,
+							mode: "insensitive",
+						},
+					},
+				},
+				{
+					link: {
+						title: {
+							search: query,
+							mode: "insensitive",
+						},
+					},
+				},
+				{
+					post: {
+						text: {
+							search: query,
+							mode: "insensitive",
+						},
+					},
+				},
+				{
+					post: {
+						quoting: {
+							text: {
+								search: query,
+								mode: "insensitive",
+							},
+						},
+					},
+				},
+			]
+		: undefined;
 
 	const start = new Date(Date.now() - time);
 	const mostRecentLinkPosts = await prisma.linkPost.findMany({
 		where: {
 			userId,
+			OR: searchQuery,
 			NOT: {
 				OR: [
 					{
