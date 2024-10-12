@@ -7,7 +7,11 @@ import {
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
 import { Box, Separator, Button, Flex, TextField } from "@radix-ui/themes";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import {
+	ChevronDownIcon,
+	ChevronUpIcon,
+	MagnifyingGlassIcon,
+} from "@radix-ui/react-icons";
 import { countLinkOccurrences } from "~/models/links.server";
 import { requireUserId } from "~/utils/auth.server";
 import LinkPostRep from "~/components/LinkPostRep";
@@ -143,9 +147,15 @@ const Links = () => {
 								type="text"
 								defaultValue={searchParams.get("query") || ""}
 							>
-								<TextField.Slot />
+								<TextField.Slot>
+									<MagnifyingGlassIcon height="16" width="16" />
+								</TextField.Slot>
+								<TextField.Slot>
+									<Button type="submit" variant="ghost">
+										Search
+									</Button>
+								</TextField.Slot>
 							</TextField.Root>
-							<Button type="submit">Search</Button>
 						</Flex>
 					</Form>
 				</Box>

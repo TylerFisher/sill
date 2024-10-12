@@ -583,7 +583,7 @@ export const countLinkOccurrences = async (
 	});
 
 	const mutePhraseSearch = mutePhrases.map((p) => `${p.phrase}`).join(" | ");
-	const searchQuery: Prisma.LinkPostWhereInput[] = query
+	const searchQuery: Prisma.LinkPostWhereInput[] | undefined = query
 		? [
 				{
 					link: {
