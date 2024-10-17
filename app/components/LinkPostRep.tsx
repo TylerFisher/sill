@@ -6,7 +6,7 @@ import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 
-interface LinkPostRepProps {
+export interface LinkPostRepProps {
 	link: string;
 	linkPosts: ExtendedLinkPost[];
 }

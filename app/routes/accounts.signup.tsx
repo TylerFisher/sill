@@ -6,7 +6,6 @@ import {
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { Heading, Text, Button, Box, Flex } from "@radix-ui/themes";
-import { Resend } from "resend";
 import { z } from "zod";
 import { parseWithZod } from "@conform-to/zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
