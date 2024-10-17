@@ -731,11 +731,6 @@ export const countLinkOccurrences = async (
 	});
 
 	const grouped = groupBy(mostRecentLinkPosts, (l) => {
-		const url = new URL(l.link.url);
-		if (url.hostname !== "www.youtube.com" && url.hostname !== "youtu.be") {
-			const key = `${l.link.title} - ${new URL(l.link.url).hostname}`;
-			return key;
-		}
 		return l.link.url;
 	});
 
