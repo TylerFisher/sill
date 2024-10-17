@@ -755,5 +755,5 @@ export const countLinkOccurrences = async (
 		return sorted.slice(0, 20);
 	}
 
-	return Object.entries(grouped);
+	return Object.entries(grouped).slice(0, 20);
 };
