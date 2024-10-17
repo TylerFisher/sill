@@ -566,11 +566,11 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 
 interface LinkOccurrenceArgs {
 	userId: string;
-	time: number;
-	hideReposts: boolean;
-	sort: string;
-	query: string | undefined;
-	fetch: boolean;
+	time?: number;
+	hideReposts?: boolean;
+	sort?: string;
+	query?: string | undefined;
+	fetch?: boolean;
 }
 
 export const countLinkOccurrences = async ({
