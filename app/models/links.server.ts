@@ -564,17 +564,29 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	return foundLink;
 };
 
-export const countLinkOccurrences = async (
-	userId: string,
-	time: number,
+interface LinkOccurrenceArgs {
+	userId: string;
+	time: number;
+	hideReposts: boolean;
+	sort: string;
+	query: string | undefined;
+	fetch: boolean;
+}
+
+export const countLinkOccurrences = async ({
+	userId,
+	time = ONE_DAY_MS,
 	hideReposts = false,
 	sort = "popularity",
-	query: string | undefined = undefined,
-) => {
-	await Promise.all([
-		getLinksFromMastodon(userId),
-		getLinksFromBluesky(userId),
-	]);
+	query = undefined,
+	fetch = false,
+}: LinkOccurrenceArgs) => {
+	if (fetch) {
+		await Promise.all([
+			getLinksFromMastodon(userId),
+			getLinksFromBluesky(userId),
+		]);
+	}
 
 	const mutePhrases = await prisma.mutePhrase.findMany({
 		where: {

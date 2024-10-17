@@ -19,7 +19,6 @@ import FilterButtonGroup, {
 	type ButtonProps,
 } from "~/components/FilterButtonGroup";
 import Layout from "~/components/Layout";
-import TextInput from "~/components/TextInput";
 
 export const meta: MetaFunction = () => [{ title: "Links" }];
 
@@ -28,15 +27,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const url = new URL(request.url);
 	const time = url.searchParams.get("time") || "86400000";
 	const hideReposts = url.searchParams.get("reposts") === "true";
-	const sort = url.searchParams.get("sort") || undefined;
+	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
-	const links = await countLinkOccurrences(
+	const links = await countLinkOccurrences({
 		userId,
-		Number.parseInt(time),
+		time: Number.parseInt(time),
 		hideReposts,
 		sort,
 		query,
-	);
+		fetch: true,
+	});
 
 	return json({ links });
 };
