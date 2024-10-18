@@ -21,6 +21,7 @@ import { Prisma } from "@prisma/client";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { createOAuthClient } from "~/server/oauth/client";
 import { prisma } from "~/db.server";
+import { linksQueue } from "~/queue.server";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -542,26 +543,41 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			segment.link &&
 			AppBskyRichtextFacet.validateLink(segment.link).success
 		) {
-			try {
-				const metadata = await extractFromUrl(segment.link.uri, {
-					timeout: 5000,
-				});
-				if (metadata) {
-					foundLink = {
-						uri: segment.link.uri,
-						title: metadata["og:title"] || metadata.title,
-						imageUrl: metadata["og:image"],
-						description: metadata["og:description"] || metadata.description,
-					};
-				}
-				break;
-			} catch (e) {
-				console.error("welp", e);
-				break;
-			}
+			await linksQueue.add("fetchMetadata", { uri: segment.link.uri });
+			foundLink = {
+				uri: segment.link.uri,
+				title: "",
+				imageUrl: null,
+				description: null,
+			};
+			break;
 		}
 	}
 	return foundLink;
+};
+
+export const fetchLinkMetadata = async (uri: string) => {
+	console.log("fetching");
+	try {
+		const metadata = await extractFromUrl(uri, {
+			timeout: 5000,
+		});
+		if (metadata) {
+			await prisma.link.update({
+				where: {
+					url: uri,
+				},
+				data: {
+					title: metadata["og:title"] || metadata.title,
+					description:
+						metadata["og:description"] || metadata.description || null,
+					imageUrl: metadata["og:image"] || null,
+				},
+			});
+		}
+	} catch (e) {
+		console.error(`Failed to fetch link ${uri}`, e);
+	}
 };
 
 interface LinkOccurrenceArgs {
@@ -595,12 +611,14 @@ export const countLinkOccurrences = async ({
 	});
 
 	const mutePhraseSearch = mutePhrases.map((p) => `${p.phrase}`).join(" | ");
-	const searchQuery: Prisma.LinkPostWhereInput[] | undefined = query
+	const encodedQuery = query ? query.trim().split(" ").join(" & ") : undefined;
+
+	const searchQuery: Prisma.LinkPostWhereInput[] | undefined = encodedQuery
 		? [
 				{
 					link: {
 						description: {
-							search: query,
+							search: encodedQuery,
 							mode: "insensitive",
 						},
 					},
@@ -608,7 +626,7 @@ export const countLinkOccurrences = async ({
 				{
 					link: {
 						title: {
-							search: query,
+							search: encodedQuery,
 							mode: "insensitive",
 						},
 					},
@@ -616,7 +634,7 @@ export const countLinkOccurrences = async ({
 				{
 					post: {
 						text: {
-							search: query,
+							search: encodedQuery,
 							mode: "insensitive",
 						},
 					},
@@ -625,7 +643,7 @@ export const countLinkOccurrences = async ({
 					post: {
 						quoting: {
 							text: {
-								search: query,
+								search: encodedQuery,
 								mode: "insensitive",
 							},
 						},
