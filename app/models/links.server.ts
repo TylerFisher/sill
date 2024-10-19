@@ -543,6 +543,21 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			segment.link &&
 			AppBskyRichtextFacet.validateLink(segment.link).success
 		) {
+			const existingLink = await prisma.link.findFirst({
+				where: {
+					url: segment.link.uri,
+				},
+			});
+
+			// if we already have data
+			if (existingLink?.description) {
+				return {
+					uri: existingLink.url,
+					title: existingLink.title,
+					imageUrl: existingLink.imageUrl,
+					description: existingLink.description,
+				};
+			}
 			await linksQueue.add("fetchMetadata", { uri: segment.link.uri });
 			foundLink = {
 				uri: segment.link.uri,
@@ -557,17 +572,35 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 };
 
 export const fetchLinkMetadata = async (uri: string) => {
-	console.log("fetching");
+	const foundLink = await prisma.link.findFirst({
+		where: {
+			url: uri,
+		},
+	});
+
+	// if we already have data
+	if (foundLink?.description) {
+		return;
+	}
+
 	try {
 		const metadata = await extractFromUrl(uri, {
 			timeout: 5000,
 		});
 		if (metadata) {
-			await prisma.link.update({
+			await prisma.link.upsert({
 				where: {
 					url: uri,
 				},
-				data: {
+				update: {
+					title: metadata["og:title"] || metadata.title,
+					description:
+						metadata["og:description"] || metadata.description || null,
+					imageUrl: metadata["og:image"] || null,
+				},
+				create: {
+					id: uuidv7(),
+					url: uri,
 					title: metadata["og:title"] || metadata.title,
 					description:
 						metadata["og:description"] || metadata.description || null,
