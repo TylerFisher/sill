@@ -472,6 +472,24 @@ const processBlueskyLink = async (
 			: undefined,
 	};
 
+	let images = imageGroup.map((image) => ({
+		id: uuidv7(),
+		alt: image.alt,
+		url: image.thumb,
+		postId: post.id,
+	}));
+
+	if (quotedPost) {
+		images = images.concat(
+			quotedImageGroup.map((image) => ({
+				id: uuidv7(),
+				alt: image.alt,
+				url: image.thumb,
+				postId: quotedPost.id,
+			})),
+		);
+	}
+
 	const link = {
 		id: uuidv7(),
 		url: detectedLink.uri,
@@ -489,147 +507,11 @@ const processBlueskyLink = async (
 	return {
 		actors,
 		quotedPost,
+		images,
 		post,
 		link,
 		newLinkPost,
 	};
-
-	// // Prefetch a ton of stuff so we don't do unnecessary selects below
-	// const handlesToFetch = [
-	// 	t.post.author.handle,
-	// 	quotedRecord?.author.handle || "",
-	// 	linkPoster.handle,
-	// ].filter(Boolean);
-
-	// const postUrlsToFetch = [postUrl, quotedPostUrl || ""].filter(Boolean);
-
-	// const [existingActors, existingPosts, existingLink] =
-	// 	await prisma.$transaction([
-	// 		prisma.actor.findMany({ where: { handle: { in: handlesToFetch } } }),
-	// 		prisma.post.findMany({ where: { url: { in: postUrlsToFetch } } }),
-	// 		prisma.link.findUnique({ where: { url: detectedLink.uri } }),
-	// 	]);
-
-	// const actorMap = new Map(
-	// 	existingActors.map((actor) => [actor.handle, actor]),
-	// );
-	// const postMap = new Map(existingPosts.map((post) => [post.url, post]));
-
-	// // Nested quoted post handling
-	// let quotedPostData;
-	// if (quotedValue && quotedRecord) {
-	// 	quotedPostData = postMap.get(quotedPostUrl || "")
-	// 		? { connect: { url: quotedPostUrl || "" } }
-	// 		: {
-	// 				create: {
-	// 					id: uuidv7(),
-	// 					url: quotedPostUrl || "",
-	// 					text: quotedValue.text,
-	// 					postDate: new Date(quotedRecord.indexedAt),
-	// 					postType: PostType.bluesky,
-	// 					images: {
-	// 						createMany: {
-	// 							data: quotedImageGroup.map((image) => ({
-	// 								id: uuidv7(),
-	// 								url: image.fullsize,
-	// 								alt: image.alt,
-	// 							})),
-	// 						},
-	// 					},
-	// 					actor: actorMap.get(quotedRecord.author.handle)
-	// 						? {
-	// 								connect: { handle: quotedRecord.author.handle },
-	// 							}
-	// 						: {
-	// 								create: {
-	// 									id: uuidv7(),
-	// 									name: quotedRecord.author.displayName || "",
-	// 									handle: quotedRecord.author.handle,
-	// 									url: `https://bsky.app/profile/${quotedRecord.author.handle}`,
-	// 									avatarUrl: quotedRecord.author.avatar,
-	// 								},
-	// 							},
-	// 				},
-	// 			};
-	// }
-
-	// const postData = postMap.get(postUrl)
-	// 	? { connect: { url: postUrl } }
-	// 	: {
-	// 			create: {
-	// 				id: uuidv7(),
-	// 				url: postUrl,
-	// 				text: record.text,
-	// 				postDate: new Date(t.post.indexedAt),
-	// 				postType: PostType.bluesky,
-	// 				// Images, quotes, etc.
-	// 				images: {
-	// 					createMany: {
-	// 						data: imageGroup.map((image) => ({
-	// 							id: uuidv7(),
-	// 							url: image.fullsize,
-	// 							alt: image.alt,
-	// 						})),
-	// 					},
-	// 				},
-	// 				quoting: quotedPostData,
-	// 				actor: actorMap.get(t.post.author.handle)
-	// 					? { connect: { handle: t.post.author.handle } }
-	// 					: {
-	// 							create: {
-	// 								id: uuidv7(),
-	// 								name: t.post.author.displayName || "",
-	// 								handle: t.post.author.handle,
-	// 								url: `https://bsky.app/profile/${t.post.author.handle}`,
-	// 								avatarUrl: t.post.author.avatar,
-	// 							},
-	// 						},
-	// 			},
-	// 		};
-
-	// await prisma.$transaction([
-	// 	prisma.linkPost.upsert({
-	// 		where: {
-	// 			linkUrl_postUrl_actorHandle: {
-	// 				linkUrl: detectedLink.uri,
-	// 				postUrl: postUrl,
-	// 				actorHandle: linkPoster.handle,
-	// 			},
-	// 		},
-	// 		create: {
-	// 			id: uuidv7(),
-	// 			post: postData,
-	// 			link: existingLink
-	// 				? { connect: { url: existingLink.url } }
-	// 				: {
-	// 						create: {
-	// 							id: uuidv7(),
-	// 							url: detectedLink.uri,
-	// 							title: detectedLink.title || "",
-	// 							description: detectedLink.description,
-	// 							imageUrl: detectedLink.imageUrl,
-	// 						},
-	// 					},
-	// 			actor: actorMap.get(linkPoster.handle)
-	// 				? { connect: { handle: linkPoster.handle } }
-	// 				: {
-	// 						create: {
-	// 							id: uuidv7(),
-	// 							handle: linkPoster.handle,
-	// 							url: `https://bsky.app/profile/${linkPoster.handle}`,
-	// 							name: linkPoster.displayName,
-	// 							avatarUrl: linkPoster.avatar,
-	// 						},
-	// 					},
-	// 			users: {
-	// 				connect: {
-	// 					id: userId,
-	// 				},
-	// 			},
-	// 		},
-	// 		update: {},
-	// 	}),
-	// ]);
 };
 
 export const getLinksFromBluesky = async (userId: string) => {
@@ -640,6 +522,7 @@ export const getLinksFromBluesky = async (userId: string) => {
 	const posts = [];
 	const links = [];
 	const linkPosts = [];
+	const images = [];
 	for await (const t of timeline) {
 		const result = await processBlueskyLink(userId, t);
 		if (result) {
@@ -648,6 +531,7 @@ export const getLinksFromBluesky = async (userId: string) => {
 				quotedPosts.push(result.quotedPost);
 			}
 			posts.push(result.post);
+			images.push(...result.images);
 			links.push(result.link);
 			linkPosts.push(result.newLinkPost);
 		}
@@ -673,6 +557,12 @@ export const getLinksFromBluesky = async (userId: string) => {
 			skipDuplicates: true,
 		}),
 	]);
+
+	await prisma.postImage.createMany({
+		data: images,
+		skipDuplicates: true,
+	});
+
 	const createdLinkPosts = await prisma.linkPost.createManyAndReturn({
 		data: linkPosts,
 		skipDuplicates: true,
