@@ -298,20 +298,13 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 export const getLinksFromMastodon = async (userId: string) => {
 	const timeline = await getMastodonTimeline(userId);
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
-	const actors = [];
-	const posts = [];
-	const links = [];
-	const linkPosts = [];
-	for await (const t of linksOnly) {
-		const result = await processMastodonLink(userId, t);
-
-		if (result) {
-			actors.push(...result.actors);
-			posts.push(result.post);
-			links.push(result.link);
-			linkPosts.push(result.newLinkPost);
-		}
-	}
+	const processedResults = (
+		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))
+	).filter((p) => p !== null);
+	const actors = processedResults.flatMap((p) => p.actors);
+	const posts = processedResults.map((p) => p.post);
+	const links = processedResults.map((p) => p.link);
+	const linkPosts = processedResults.map((p) => p.newLinkPost);
 
 	await prisma.actor.createMany({
 		data: actors,
@@ -550,25 +543,17 @@ const processBlueskyLink = async (
 
 export const getLinksFromBluesky = async (userId: string) => {
 	const timeline = await getBlueskyTimeline(userId);
-	const actors = [];
-	const quotedPosts = [];
-	const posts = [];
-	const links = [];
-	const linkPosts = [];
-	const images = [];
-	for await (const t of timeline) {
-		const result = await processBlueskyLink(userId, t);
-		if (result) {
-			actors.push(...result.actors);
-			if (result.quotedPost) {
-				quotedPosts.push(result.quotedPost);
-			}
-			posts.push(result.post);
-			images.push(...result.images);
-			links.push(result.link);
-			linkPosts.push(result.newLinkPost);
-		}
-	}
+	const processedResults = (
+		await Promise.all(timeline.map((t) => processBlueskyLink(userId, t)))
+	).filter((p) => p !== null);
+	const actors = processedResults.flatMap((p) => p.actors);
+	const quotedPosts = processedResults
+		.map((p) => p.quotedPost)
+		.filter((p) => p !== undefined);
+	const posts = processedResults.map((p) => p.post);
+	const links = processedResults.map((p) => p.link);
+	const linkPosts = processedResults.map((p) => p.newLinkPost);
+	const images = processedResults.flatMap((p) => p.images);
 
 	await prisma.actor.createMany({
 		data: actors,
