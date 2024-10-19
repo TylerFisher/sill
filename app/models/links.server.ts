@@ -6,7 +6,6 @@ import {
 	AppBskyEmbedExternal,
 	AppBskyEmbedImages,
 	AppBskyRichtextFacet,
-	type AppBskyActorDefs,
 	RichText,
 } from "@atproto/api";
 import {
@@ -17,16 +16,11 @@ import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
 import groupBy from "object.groupby";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { createOAuthClient } from "~/server/oauth/client";
 import { prisma } from "~/db.server";
 import { linksQueue } from "~/queue.server";
-import TimeAgo from "javascript-time-ago";
-import en from "javascript-time-ago/locale/en";
-
-TimeAgo.addDefaultLocale(en);
-const timeAgo = new TimeAgo("en-US");
 
 interface BskyDetectedLink {
 	uri: string;
@@ -212,104 +206,144 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 
 	// Sometimes Mastodon returns broken cards for YouTube.
 	// I know I shouldn't regex HTML, but here we are.
-	if (original.card?.url === "https://www.youtube.com/undefined") {
+	if (card.url === "https://www.youtube.com/undefined") {
 		const regex =
 			/(https:\/\/(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+(?:<[^>]+>)*[\w-]+(?:\?(?:[\w-=&]+(?:<[^>]+>)*[\w-=&]+)?)?)/g;
 		const youtubeUrls = original.content.match(regex);
 		if (youtubeUrls) {
-			original.card.url = youtubeUrls[0];
+			card.url = youtubeUrls[0];
 		}
 	}
 
-	await prisma.linkPost.upsert({
+	// Do we know about this post?
+	const linkPost = await prisma.linkPost.findFirst({
 		where: {
-			linkUrl_postUrl_actorHandle: {
-				linkUrl: card.url,
-				postUrl: url,
-			},
-		},
-		create: {
-			id: uuidv7(),
-			post: {
-				connectOrCreate: {
-					where: {
-						url,
-					},
-					create: {
-						id: uuidv7(),
-						url,
-						text: original.content,
-						postDate: original.createdAt,
-						postType: PostType.mastodon,
-						actor: {
-							connectOrCreate: {
-								where: {
-									handle: original.account.username,
-								},
-								create: {
-									id: uuidv7(),
-									name: original.account.displayName,
-									handle: original.account.username,
-									url: original.account.url,
-									avatarUrl: original.account.avatar,
-								},
-							},
-						},
-					},
-				},
-			},
 			link: {
-				connectOrCreate: {
-					where: {
-						url: original.card?.url,
-					},
-					create: {
-						id: uuidv7(),
-						url: card.url,
-						title: card.title,
-						description: original.card?.description,
-						imageUrl: original.card?.image,
-					},
-				},
+				url: card.url,
 			},
-			actor: {
-				connectOrCreate: {
-					where: {
-						handle: t.account.username,
-					},
-					create: {
-						id: uuidv7(),
-						handle: t.account.username,
-						url: t.account.url,
-						name: t.account.displayName,
-						avatarUrl: t.account.avatar,
-					},
-				},
-			},
-			users: {
-				connect: {
-					id: userId,
-				},
+			post: {
+				url: url,
+				repostHandle: t.reblog ? t.account.username : undefined,
 			},
 		},
-		update: {},
 	});
+
+	if (linkPost) {
+		await prisma.linkPost.update({
+			where: {
+				id: linkPost.id,
+			},
+			data: {
+				users: {
+					connect: { id: userId },
+				},
+			},
+		});
+
+		return null;
+	}
+
+	const actors = [
+		{
+			id: uuidv7(),
+			name: original.account.displayName,
+			handle: original.account.username,
+			url: original.account.url,
+			avatarUrl: original.account.avatar,
+		},
+	];
+
+	if (t.reblog) {
+		actors.push({
+			id: uuidv7(),
+			handle: t.account.username,
+			url: t.account.url,
+			name: t.account.displayName,
+			avatarUrl: t.account.avatar,
+		});
+	}
+
+	const post = {
+		id: uuidv7(),
+		url,
+		text: original.content,
+		postDate: original.createdAt,
+		postType: PostType.mastodon,
+		actorHandle: original.account.username,
+		repostHandle: t.reblog ? t.account.username : undefined,
+	};
+
+	const link = {
+		id: uuidv7(),
+		url: card.url,
+		title: card.title,
+		description: card.description,
+		imageUrl: card.image,
+	};
+
+	const newLinkPost = {
+		id: uuidv7(),
+		linkUrl: card.url,
+		postId: post.id,
+	};
+
+	return {
+		actors,
+		post,
+		link,
+		newLinkPost,
+	};
 };
 
 export const getLinksFromMastodon = async (userId: string) => {
 	const timeline = await getMastodonTimeline(userId);
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
+	const actors = [];
+	const posts = [];
+	const links = [];
+	const linkPosts = [];
 	for await (const t of linksOnly) {
-		try {
-			await processMastodonLink(userId, t);
-		} catch (e) {
-			if (e instanceof Prisma.PrismaClientKnownRequestError) {
-				if (e.code === "P2002") {
-					await processMastodonLink(userId, t);
-				}
-			}
+		const result = await processMastodonLink(userId, t);
+
+		if (result) {
+			actors.push(...result.actors);
+			posts.push(result.post);
+			links.push(result.link);
+			linkPosts.push(result.newLinkPost);
 		}
 	}
+
+	await prisma.actor.createMany({
+		data: actors,
+		skipDuplicates: true,
+	});
+
+	await prisma.$transaction([
+		prisma.post.createMany({
+			data: posts,
+			skipDuplicates: true,
+		}),
+		prisma.link.createMany({
+			data: links,
+			skipDuplicates: true,
+		}),
+	]);
+
+	const createdLinkPosts = await prisma.linkPost.createManyAndReturn({
+		data: linkPosts,
+		skipDuplicates: true,
+	});
+
+	await prisma.user.update({
+		where: {
+			id: userId,
+		},
+		data: {
+			linkPosts: {
+				connect: createdLinkPosts.map((l) => ({ id: l.id })),
+			},
+		},
+	});
 };
 
 const processBlueskyLink = async (
@@ -515,7 +549,6 @@ const processBlueskyLink = async (
 };
 
 export const getLinksFromBluesky = async (userId: string) => {
-	const now = new Date(Date.now());
 	const timeline = await getBlueskyTimeline(userId);
 	const actors = [];
 	const quotedPosts = [];
@@ -578,8 +611,6 @@ export const getLinksFromBluesky = async (userId: string) => {
 			},
 		},
 	});
-
-	console.log("bluesky processed", timeAgo.format(now, "twitter-now"));
 };
 
 const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
@@ -682,7 +713,7 @@ export const countLinkOccurrences = async ({
 }: LinkOccurrenceArgs) => {
 	if (fetch) {
 		await Promise.all([
-			// getLinksFromMastodon(userId),
+			getLinksFromMastodon(userId),
 			getLinksFromBluesky(userId),
 		]);
 	}
