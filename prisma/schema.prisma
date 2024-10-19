@@ -98,16 +98,13 @@ model BlueskyAccount {
 model LinkPost {
   id String @id @db.Uuid
 
-  linkUrl     String
-  link        Link   @relation(fields: [linkUrl], references: [url])
-  postUrl     String
-  post        Post   @relation(fields: [postUrl], references: [url])
-  userId      String @db.Uuid
-  user        User   @relation(fields: [userId], references: [id])
-  actorHandle String
-  actor       Actor  @relation(fields: [actorHandle], references: [handle])
+  linkUrl String
+  link    Link   @relation(fields: [linkUrl], references: [url])
+  postId  String @db.Uuid
+  post    Post   @relation(fields: [postId], references: [id])
+  users   User[]
 
-  @@unique([linkUrl, postUrl, userId, actorHandle])
+  @@unique([linkUrl, postId])
 }
 
 model Link {
@@ -121,7 +118,7 @@ model Link {
 
 model Post {
   id        String   @id @db.Uuid
-  url       String   @unique
+  url       String
   text      String
   postDate  DateTime
   postType  PostType
@@ -129,8 +126,10 @@ model Post {
   quoting   Post?    @relation("quotes", fields: [quotingId], references: [id])
   quotes    Post[]   @relation("quotes")
 
-  actorHandle String
-  actor       Actor  @relation(fields: [actorHandle], references: [handle], onDelete: Cascade)
+  actorHandle  String
+  actor        Actor   @relation("author", fields: [actorHandle], references: [handle], onDelete: Cascade)
+  repostHandle String?
+  reposter     Actor?  @relation("reposter", fields: [repostHandle], references: [handle], onDelete: Cascade)
 
   linkPosts LinkPost[]
   images    PostImage[]
@@ -145,13 +144,13 @@ model PostImage {
 }
 
 model Actor {
-  id        String     @id @db.Uuid
+  id        String  @id @db.Uuid
   url       String
   name      String?
-  handle    String     @unique
+  handle    String  @unique
   avatarUrl String?
-  posts     Post[]
-  linkPosts LinkPost[]
+  posts     Post[]  @relation("author")
+  reposts   Post[]  @relation("reposter")
 }
 
 model Verification {

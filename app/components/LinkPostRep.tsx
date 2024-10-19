@@ -13,8 +13,11 @@ export interface LinkPostRepProps {
 
 const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 	const [open, setOpen] = useState(false);
-	const groupedLinkPosts = groupBy(linkPosts, (l) => l.postUrl);
-	const uniqueActors = [...new Set(linkPosts.map((l) => l.actor.avatarUrl))];
+	const groupedLinkPosts = groupBy(linkPosts, (l) => l.post.url);
+	const allActors = linkPosts.map((l) =>
+		l.post.reposter ? l.post.reposter.avatarUrl : l.post.actor.avatarUrl,
+	);
+	const uniqueActors = [...new Set(allActors)];
 
 	return (
 		<Box key={link}>

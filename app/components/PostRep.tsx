@@ -18,11 +18,11 @@ type PostWithActor = Overwrite<
 
 export interface PostProp extends PostWithActor {
 	quoting: PostWithActor | null;
+	reposter: Actor | null;
 }
 
 export interface ExtendedLinkPost extends LinkPost {
 	post: PostProp;
-	actor: Actor;
 	link: Link;
 }
 interface PostRepProps {
@@ -32,8 +32,11 @@ interface PostRepProps {
 
 const PostRep = ({ post, group }: PostRepProps) => {
 	const reposters = group
-		.filter((l) => l.actorHandle !== l.post.actorHandle)
-		.map((l) => l.actor);
+		.filter(
+			(l) => l.post.repostHandle !== l.post.actorHandle && l.post.reposter,
+		)
+		.map((l) => l.post.reposter)
+		.filter((l) => l !== null);
 
 	return (
 		<Card key={post.id} mt="5">
