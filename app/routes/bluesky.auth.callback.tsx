@@ -5,6 +5,7 @@ import { Agent } from "@atproto/api";
 import { prisma } from "~/db.server";
 import { uuidv7 } from "uuidv7-js";
 import { requireUserId } from "~/utils/auth.server";
+import { blueskyFetchQueue } from "~/queue.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
@@ -40,6 +41,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				service: oauthSession.serverMetadata.issuer,
 			},
 		});
+
+		blueskyFetchQueue.add(`${userId}-bluesky-fetch`, {
+			userId,
+		});
+
 		return redirect("/settings/connect");
 	} catch (error) {
 		console.error("Bluesky OAuth Error", { error: String(error) });

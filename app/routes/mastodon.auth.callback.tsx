@@ -4,6 +4,7 @@ import { getInstanceCookie } from "~/session.server";
 import { getUserId } from "~/utils/auth.server";
 import { prisma } from "~/db.server";
 import { uuidv7 } from "uuidv7-js";
+import { mastodonFetchQueue } from "~/queue.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const url = new URL(request.url);
@@ -31,6 +32,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				},
 			},
 		},
+	});
+
+	mastodonFetchQueue.add(`${userId}-mastodon-fetch`, {
+		userId,
 	});
 
 	return redirect("/settings/connect");
