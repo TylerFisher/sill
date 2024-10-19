@@ -1,5 +1,6 @@
 import { Card, Inset, Text } from "@radix-ui/themes";
 import type { Post, PostImage } from "@prisma/client";
+import styles from "./PostContent.module.css";
 
 type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
 type PostWithStringDate = Overwrite<
@@ -18,6 +19,7 @@ const PostContent = ({ post }: PostContentProps) => (
 				dangerouslySetInnerHTML={{
 					__html: post.text,
 				}}
+				className={styles["mastodon-post-content"]}
 			/>
 		) : (
 			<Text

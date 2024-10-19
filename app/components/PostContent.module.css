@@ -1,0 +1,3 @@
+.mastodon-post-content > p {
+  overflow-wrap: anywhere;
+}
