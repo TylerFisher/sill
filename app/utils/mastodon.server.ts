@@ -144,32 +144,23 @@ export const getMastodonTimeline = async (userId: string) => {
 };
 
 /**
- * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
- * @param userId ID for logged in user
- * @param t Status object from Mastodon timeline
- * @returns Actors, post, link, and new link post to insert into database
+ * Searches for YouTube URLs in the content of a Mastodon post
+ * Mastodon returns broken preview cards for YouTube URLs, so this is a workaround
+ * @param content Content from the Mastodon post
+ * @returns Youtube URL or null
  */
-const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
-	const original = t.reblog || t;
-	const url = original.url;
-	const card = original.card;
+const getYoutubeUrl = async (content: string): Promise<string | null> => {
+	const regex =
+		/(https:\/\/(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+(?:<[^>]+>)*[\w-]+(?:\?(?:[\w-=&]+(?:<[^>]+>)*[\w-=&]+)?)?)/g;
+	const youtubeUrls = content.match(regex);
+	return youtubeUrls ? youtubeUrls[0] : null;
+};
 
-	if (!url || !card) {
-		return null;
-	}
-
-	// Sometimes Mastodon returns broken cards for YouTube.
-	// I know I shouldn't regex HTML, but here we are.
-	if (card.url === "https://www.youtube.com/undefined") {
-		const regex =
-			/(https:\/\/(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+(?:<[^>]+>)*[\w-]+(?:\?(?:[\w-=&]+(?:<[^>]+>)*[\w-=&]+)?)?)/g;
-		const youtubeUrls = original.content.match(regex);
-		if (youtubeUrls) {
-			card.url = youtubeUrls[0];
-		}
-	}
-
-	// Do we know about this post?
+const getLinkPostSearch = async (
+	url: string,
+	cardUrl: string,
+	t: mastodon.v1.Status,
+) => {
 	const linkPostSearch = await db.transaction(async (tx) => {
 		const existingPost = await tx.query.post.findFirst({
 			where: and(
@@ -184,7 +175,7 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		if (existingPost) {
 			const existingLinkPost = await tx.query.linkPost.findFirst({
 				where: and(
-					eq(linkPost.linkUrl, card.url),
+					eq(linkPost.linkUrl, cardUrl),
 					eq(linkPost.postId, existingPost.id),
 				),
 				columns: { id: true },
@@ -194,20 +185,23 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 				linkPost: existingLinkPost,
 			};
 		}
-	});
-
-	if (linkPostSearch?.linkPost) {
-		await db
-			.insert(linkPostToUser)
-			.values({
-				userId,
-				linkPostId: linkPostSearch.linkPost.id,
-			})
-			.onConflictDoNothing();
 
 		return null;
-	}
+	});
 
+	return linkPostSearch;
+};
+
+/**
+ * Gets actors for a Mastodon post, including reposters
+ * @param original Original Mastodon status
+ * @param t Mastodon status in the timeline
+ * @returns All actors needed for the post in the database
+ */
+const getActors = async (
+	original: mastodon.v1.Status,
+	t: mastodon.v1.Status,
+) => {
 	const actors = [
 		{
 			id: uuidv7(),
@@ -228,7 +222,22 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		});
 	}
 
-	const post = {
+	return actors;
+};
+
+/**
+ * Formats a Mastodon status into a post for the database
+ * @param original Original Mastodon status
+ * @param t Mastodon status in the timeline
+ * @param url URL for the Mastodon status
+ * @returns Post object for the database
+ */
+const createPost = async (
+	original: mastodon.v1.Status,
+	t: mastodon.v1.Status,
+	url: string,
+) => {
+	return {
 		id: uuidv7(),
 		url,
 		text: original.content,
@@ -237,21 +246,88 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		actorHandle: original.account.username,
 		repostHandle: t.reblog ? t.account.username : undefined,
 	};
+};
 
-	const link = {
+/**
+ * Formats a Mastodon preview card into a link for the database
+ * @param card Preview card from Mastodon status
+ * @returns Link object for the database
+ */
+const createLink = async (card: mastodon.v1.PreviewCard) => {
+	return {
 		id: uuidv7(),
 		url: card.url,
 		title: card.title,
 		description: card.description,
 		imageUrl: card.image,
 	};
+};
 
-	const newLinkPost = {
+/**
+ * Formats a Mastodon status into a link post for the database
+ * @param card Preview card from Mastodon status
+ * @param postId ID of post to be created in database
+ * @param createdAt Creation date of the post
+ * @returns LinkPost object for the database
+ */
+const createNewLinkPost = async (
+	card: mastodon.v1.PreviewCard,
+	postId: string,
+	createdAt: string,
+) => {
+	return {
 		id: uuidv7(),
 		linkUrl: card.url,
-		postId: post.id,
-		date: new Date(original.createdAt),
+		postId,
+		date: new Date(createdAt),
 	};
+};
+
+/**
+ * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
+ * @param userId ID for logged in user
+ * @param t Status object from Mastodon timeline
+ * @returns Actors, post, link, and new link post to insert into database
+ */
+const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
+	const original = t.reblog || t;
+	const url = original.url;
+	const card = original.card;
+
+	if (!url || !card) {
+		return null;
+	}
+
+	if (card.url === "https://www.youtube.com/undefined") {
+		const youtubeUrl = await getYoutubeUrl(original.content);
+		if (youtubeUrl) {
+			card.url = youtubeUrl;
+		}
+	}
+
+	// Do we know about this post?
+	const linkPostSearch = await getLinkPostSearch(url, card.url, t);
+
+	if (linkPostSearch?.linkPost) {
+		await db
+			.insert(linkPostToUser)
+			.values({
+				userId,
+				linkPostId: linkPostSearch.linkPost.id,
+			})
+			.onConflictDoNothing();
+
+		return null;
+	}
+
+	const actors = await getActors(original, t);
+	const post = await createPost(original, t, url);
+	const link = await createLink(card);
+	const newLinkPost = await createNewLinkPost(
+		card,
+		post.id,
+		original.createdAt,
+	);
 
 	return {
 		actors,

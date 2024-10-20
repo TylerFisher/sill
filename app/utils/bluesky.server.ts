@@ -29,6 +29,7 @@ import {
 	postType,
 	post as schemaPost,
 } from "~/drizzle/schema.server";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -123,25 +124,21 @@ export const getBlueskyTimeline = async (userId: string) => {
 };
 
 /**
- * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
- * @param userId ID for logged in user
- * @param t Post object from Bluesky timeline
- * @returns Actors, quoted post, images, post, link, and new link post to insert into database
+ * Constructs a full URL for a Bluesky post
+ * @param authorHandle Handle of the author of the post
+ * @param postUri Full AT URI of the post
+ * @returns Full URL for the post
  */
-const processBlueskyLink = async (
-	userId: string,
-	t: AppBskyFeedDefs.FeedViewPost,
-) => {
-	let record: AppBskyFeedPost.Record | null = null;
-	if (AppBskyFeedPost.isRecord(t.post.record)) {
-		record = t.post.record;
-	}
-	if (!record) {
-		return null;
-	}
-	const postUrl = `https://bsky.app/profile/${t.post.author.handle}/post/${t.post.uri.split("/").at(-1)}`;
+const getPostUrl = async (authorHandle: string, postUri: string) => {
+	return `https://bsky.app/profile/${authorHandle}/post/${postUri.split("/").at(-1)}`;
+};
 
-	// Handle embeds
+/**
+ * Handles embeds in a Bluesky post
+ * @param embed Embed object from Bluesky post
+ * @returns Quoted post, external link, and image group data
+ */
+const handleEmbeds = async (embed: PostView["embed"]) => {
 	let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
 	let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
 	let quotedValue: AppBskyFeedPost.Record | null = null;
@@ -149,11 +146,15 @@ const processBlueskyLink = async (
 	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	let detectedLink: BskyDetectedLink | null = null;
 	let quotedPostUrl: string | null = null;
-	if (AppBskyEmbedRecord.isView(t.post.embed)) {
-		quoted = t.post.embed;
+
+	if (AppBskyEmbedRecord.isView(embed)) {
+		quoted = embed;
 		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
 			quotedRecord = quoted.record;
-			quotedPostUrl = `https://bsky.app/profile/${quotedRecord.author.handle}/post/${quotedRecord.uri.split("/").at(-1)}`;
+			quotedPostUrl = await getPostUrl(
+				quotedRecord.author.handle,
+				quotedRecord.uri,
+			);
 			const embeddedLink = quotedRecord.embeds?.find((e) =>
 				AppBskyEmbedExternal.isView(e),
 			);
@@ -175,12 +176,36 @@ const processBlueskyLink = async (
 		}
 	}
 
-	if (AppBskyEmbedExternal.isView(t.post.embed)) {
-		externalRecord = t.post.embed;
+	if (AppBskyEmbedExternal.isView(embed)) {
+		externalRecord = embed;
 	}
 
+	return {
+		quoted,
+		quotedRecord,
+		quotedValue,
+		externalRecord,
+		quotedImageGroup,
+		detectedLink,
+		quotedPostUrl,
+	};
+};
+
+/**
+ * Checks for an external record in a Bluesky post
+ * If available, returns the external record
+ * If not, searches for a link facet in the post record
+ * @param record Record from Bluesky post
+ * @param externalRecord External record from Bluesky post
+ * @returns Detected link from Bluesky post
+ */
+const getDetectedLink = async (
+	record: AppBskyFeedPost.Record,
+	externalRecord: AppBskyEmbedExternal.View | null,
+	initialDetectedLink: BskyDetectedLink | null = null,
+) => {
+	let detectedLink = initialDetectedLink;
 	if (!externalRecord) {
-		// check for a post with a link but no preview card
 		if (!detectedLink) {
 			detectedLink = await findBlueskyLinkFacets(record);
 		}
@@ -192,57 +217,19 @@ const processBlueskyLink = async (
 			imageUrl: externalRecord.external.thumb,
 		};
 	}
+	return detectedLink;
+};
 
-	if (!detectedLink) {
-		return null;
-	}
-
-	// handle image
-	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
-	if (AppBskyEmbedImages.isView(t.post.embed)) {
-		imageGroup = t.post.embed.images;
-	}
-
-	const linkPostSearch = await db.transaction(async (tx) => {
-		const existingPost = await tx.query.post.findFirst({
-			where: and(
-				eq(schemaPost.url, postUrl),
-				AppBskyFeedDefs.isReasonRepost(t.reason)
-					? eq(schemaPost.repostHandle, t.reason.by.handle)
-					: undefined,
-			),
-			columns: {
-				id: true,
-			},
-		});
-
-		if (existingPost) {
-			const existingLinkPost = await tx.query.linkPost.findFirst({
-				where: and(
-					eq(linkPost.linkUrl, detectedLink.uri),
-					eq(linkPost.postId, existingPost.id),
-				),
-				columns: { id: true },
-			});
-
-			return {
-				linkPost: existingLinkPost,
-			};
-		}
-	});
-
-	if (linkPostSearch?.linkPost) {
-		await db
-			.insert(linkPostToUser)
-			.values({
-				userId,
-				linkPostId: linkPostSearch.linkPost.id,
-			})
-			.onConflictDoNothing();
-
-		return null;
-	}
-
+/**
+ * Retrieves original actor, quoted actor, and repost actor from a Bluesky post
+ * @param t Bluesky post object
+ * @param quotedRecord Parse quoted record from Bluesky post
+ * @returns All actors from the post object
+ */
+const getActors = async (
+	t: AppBskyFeedDefs.FeedViewPost,
+	quotedRecord: AppBskyEmbedRecord.ViewRecord | null,
+) => {
 	const actors = [
 		{
 			id: uuidv7(),
@@ -263,18 +250,6 @@ const processBlueskyLink = async (
 		});
 	}
 
-	const quotedPost =
-		quotedValue && quotedRecord
-			? {
-					id: uuidv7(),
-					url: quotedPostUrl || "",
-					text: quotedValue.text,
-					postDate: new Date(quotedRecord.indexedAt),
-					postType: postType.enumValues[0],
-					actorHandle: quotedRecord.author.handle,
-				}
-			: undefined;
-
 	if (AppBskyFeedDefs.isReasonRepost(t.reason)) {
 		actors.push({
 			id: uuidv7(),
@@ -284,6 +259,176 @@ const processBlueskyLink = async (
 			avatarUrl: t.reason.by.avatar,
 		});
 	}
+
+	return actors;
+};
+
+/**
+ *
+ * @param quotedValue Value of the quoted post
+ * @param quotedRecord ViewRecord of the quoted post
+ * @param quotedPostUrl URL to the quoted post
+ * @returns Quoted post object for the database
+ */
+const getQuotedPost = async (
+	quotedValue: AppBskyFeedPost.Record | null,
+	quotedRecord: AppBskyEmbedRecord.ViewRecord | null,
+	quotedPostUrl: string | null,
+) => {
+	return quotedValue && quotedRecord
+		? {
+				id: uuidv7(),
+				url: quotedPostUrl || "",
+				text: quotedValue.text,
+				postDate: new Date(quotedRecord.indexedAt),
+				postType: postType.enumValues[0],
+				actorHandle: quotedRecord.author.handle,
+			}
+		: undefined;
+};
+
+/**
+ *
+ * @param imageGroup Image group for original post
+ * @param quotedImageGroup Image group for quoted post
+ * @param postId Post ID for original post
+ * @param quotedPostId Post ID for quoted post
+ * @returns List of images for the database
+ */
+const getImages = async (
+	imageGroup: AppBskyEmbedImages.ViewImage[],
+	quotedImageGroup: AppBskyEmbedImages.ViewImage[],
+	postId: string,
+	quotedPostId: string | undefined,
+) => {
+	let images = imageGroup.map((image) => ({
+		id: uuidv7(),
+		alt: image.alt,
+		url: image.thumb,
+		postId: postId,
+	}));
+
+	if (quotedPostId) {
+		images = images.concat(
+			quotedImageGroup.map((image) => ({
+				id: uuidv7(),
+				alt: image.alt,
+				url: image.thumb,
+				postId: quotedPostId,
+			})),
+		);
+	}
+
+	return images;
+};
+
+/**
+ * Searches for a link post that matches the current post and link in the database
+ * @param postUrl URL for Bluesky post
+ * @param detectedLinkUri Detected link URI in the post
+ * @param t Bluesky post object
+ * @returns Link post if one exists, null if not
+ */
+const searchForLinkPost = async (
+	postUrl: string,
+	detectedLinkUri: string,
+	t: AppBskyFeedDefs.FeedViewPost,
+) => {
+	const linkPostSearch = await db.transaction(async (tx) => {
+		const existingPost = await tx.query.post.findFirst({
+			where: and(
+				eq(schemaPost.url, postUrl),
+				AppBskyFeedDefs.isReasonRepost(t.reason)
+					? eq(schemaPost.repostHandle, t.reason.by.handle)
+					: undefined,
+			),
+			columns: {
+				id: true,
+			},
+		});
+
+		if (existingPost) {
+			const existingLinkPost = await tx.query.linkPost.findFirst({
+				where: and(
+					eq(linkPost.linkUrl, detectedLinkUri),
+					eq(linkPost.postId, existingPost.id),
+				),
+				columns: { id: true },
+			});
+
+			return {
+				linkPost: existingLinkPost,
+			};
+		}
+		return null;
+	});
+
+	return linkPostSearch;
+};
+
+/**
+ * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
+ * @param userId ID for logged in user
+ * @param t Post object from Bluesky timeline
+ * @returns Actors, quoted post, images, post, link, and new link post to insert into database
+ */
+const processBlueskyLink = async (
+	userId: string,
+	t: AppBskyFeedDefs.FeedViewPost,
+) => {
+	let record: AppBskyFeedPost.Record | null = null;
+	if (AppBskyFeedPost.isRecord(t.post.record)) {
+		record = t.post.record;
+	} else {
+		return null;
+	}
+	const postUrl = await getPostUrl(t.post.author.handle, t.post.uri);
+
+	const {
+		quotedRecord,
+		quotedValue,
+		quotedImageGroup,
+		quotedPostUrl,
+		externalRecord,
+		detectedLink: initialDetectedLink,
+	} = await handleEmbeds(t.post.embed);
+
+	const detectedLink = await getDetectedLink(
+		record,
+		externalRecord,
+		initialDetectedLink,
+	);
+
+	if (!detectedLink) {
+		return null;
+	}
+
+	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
+	if (AppBskyEmbedImages.isView(t.post.embed)) {
+		imageGroup = t.post.embed.images;
+	}
+
+	const linkPostSearch = await searchForLinkPost(postUrl, detectedLink.uri, t);
+
+	// If we've already seen this link post, we can just subscribe our user to it and move on
+	if (linkPostSearch?.linkPost) {
+		await db
+			.insert(linkPostToUser)
+			.values({
+				userId,
+				linkPostId: linkPostSearch.linkPost.id,
+			})
+			.onConflictDoNothing();
+
+		return null;
+	}
+
+	const actors = await getActors(t, quotedRecord);
+	const quotedPost = await getQuotedPost(
+		quotedValue,
+		quotedRecord,
+		quotedPostUrl,
+	);
 
 	const post = {
 		id: uuidv7(),
@@ -298,23 +443,12 @@ const processBlueskyLink = async (
 			: undefined,
 	};
 
-	let images = imageGroup.map((image) => ({
-		id: uuidv7(),
-		alt: image.alt,
-		url: image.thumb,
-		postId: post.id,
-	}));
-
-	if (quotedPost) {
-		images = images.concat(
-			quotedImageGroup.map((image) => ({
-				id: uuidv7(),
-				alt: image.alt,
-				url: image.thumb,
-				postId: quotedPost.id,
-			})),
-		);
-	}
+	const images = await getImages(
+		imageGroup,
+		quotedImageGroup,
+		post.id,
+		quotedPost?.id,
+	);
 
 	const link = {
 		id: uuidv7(),
