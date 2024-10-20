@@ -1,6 +1,8 @@
 import { type ActionFunctionArgs, json, redirect } from "@remix-run/node";
-import { prisma } from "~/db.server"; // Adjust based on your project structure
-import { requireUserId } from "~/utils/auth.server"; // Adjust based on your session setup
+import { eq } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
+import { mastodonAccount, user } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -9,16 +11,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		throw new Error("User not authenticated.");
 	}
 
-	// Fetch the user's tokens
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		include: {
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
 			mastodonAccounts: true,
 		},
 	});
 
-	if (user && user.mastodonAccounts.length > 0) {
-		const token = user.mastodonAccounts[0];
+	if (existingUser && existingUser.mastodonAccounts.length > 0) {
+		const token = existingUser.mastodonAccounts[0];
 
 		const accessToken = token.accessToken;
 		const instance = token.instance;
@@ -36,9 +37,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		});
 
 		// Delete tokens from the database
-		await prisma.mastodonAccount.deleteMany({
-			where: { userId: userId },
-		});
+		await db.delete(mastodonAccount).where(eq(user.id, userId));
 
 		return redirect("/settings/connect");
 	}

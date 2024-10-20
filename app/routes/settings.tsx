@@ -2,18 +2,20 @@ import { invariantResponse } from "@epic-web/invariant";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, Outlet, useLocation } from "@remix-run/react";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { useUser } from "~/utils/user";
 import Layout from "~/components/Layout";
 import { Box, Link as RadixLink, Grid, Heading } from "@radix-ui/themes";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { username: true },
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		columns: { username: true },
 	});
-	invariantResponse(user, "User not found", { status: 404 });
+	invariantResponse(existingUser, "User not found", { status: 404 });
 	return json({});
 }
 

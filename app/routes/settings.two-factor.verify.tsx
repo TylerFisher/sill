@@ -11,13 +11,15 @@ import * as QRCode from "qrcode";
 import { z } from "zod";
 import { isCodeValid } from "~/routes/accounts.verify.server";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { getDomainUrl, useIsPending } from "~/utils/misc";
 import { getTOTPAuthUri } from "~/utils/totp.server";
 import { twoFAVerificationType } from "./settings.two-factor._index";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { OTPField } from "~/components/OTPField";
 import ErrorList from "~/components/ErrorList";
+import { and, eq } from "drizzle-orm";
+import { user, verification } from "~/drizzle/schema.server";
 
 const CancelSchema = z.object({ intent: z.literal("cancel") });
 const VerifySchema = z.object({
@@ -34,11 +36,12 @@ export const twoFAVerifyVerificationType = "2fa-verify";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
-	const verification = await prisma.verification.findUnique({
-		where: {
-			target_type: { type: twoFAVerifyVerificationType, target: userId },
-		},
-		select: {
+	const existingVerification = await db.query.verification.findFirst({
+		where: and(
+			eq(verification.target, userId),
+			eq(verification.type, twoFAVerificationType),
+		),
+		columns: {
 			id: true,
 			algorithm: true,
 			secret: true,
@@ -46,17 +49,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			digits: true,
 		},
 	});
-	if (!verification) {
+	if (!existingVerification) {
 		return redirect("/settings/two-factor");
 	}
-	const user = await prisma.user.findUniqueOrThrow({
-		where: { id: userId },
-		select: { email: true },
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		columns: { email: true },
 	});
+
+	if (!existingUser) {
+		throw new Error("Something went wrong");
+	}
+
 	const issuer = new URL(getDomainUrl(request)).host;
 	const otpUri = getTOTPAuthUri({
-		...verification,
-		accountName: user.email,
+		...existingVerification,
+		accountName: existingUser.email,
 		issuer,
 	});
 	const qrCode = await QRCode.toDataURL(otpUri);
@@ -97,18 +105,28 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	switch (submission.value.intent) {
 		case "cancel": {
-			await prisma.verification.deleteMany({
-				where: { type: twoFAVerifyVerificationType, target: userId },
-			});
+			await db
+				.delete(verification)
+				.where(
+					and(
+						eq(verification.target, userId),
+						eq(verification.type, twoFAVerificationType),
+					),
+				);
 			return redirect("/settings/two-factor");
 		}
 		case "verify": {
-			await prisma.verification.update({
-				where: {
-					target_type: { type: twoFAVerifyVerificationType, target: userId },
-				},
-				data: { type: twoFAVerificationType },
-			});
+			await db
+				.update(verification)
+				.set({
+					type: twoFAVerificationType,
+				})
+				.where(
+					and(
+						eq(verification.target, userId),
+						eq(verification.type, twoFAVerificationType),
+					),
+				);
 			return redirect("/settings/two-factor");
 		}
 	}

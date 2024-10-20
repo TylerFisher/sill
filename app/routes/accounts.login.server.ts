@@ -3,7 +3,7 @@ import { redirect } from "@remix-run/node";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
 import { getUserId, sessionKey } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { combineResponseInits } from "~/utils/misc";
 import { authSessionStorage } from "~/session.server";
 import { verifySessionStorage } from "~/utils/verification.server";
@@ -11,6 +11,8 @@ import {
 	getRedirectToUrl,
 	type VerifyFunctionArgs,
 } from "./accounts.verify.server";
+import { and, eq } from "drizzle-orm";
+import { verification, session } from "~/drizzle/schema.server";
 
 const verifiedTimeKey = "verified-time";
 const unverifiedSessionIdKey = "unverified-session-id";
@@ -24,19 +26,20 @@ export async function handleNewSession(
 		remember,
 	}: {
 		request: Request;
-		session: { userId: string; id: string; expirationDate: Date };
+		session: { userId: string; id: string; expirationDate: string };
 		redirectTo?: string;
 		remember: boolean;
 	},
 	responseInit?: ResponseInit,
 ) {
-	const verification = await prisma.verification.findUnique({
-		select: { id: true },
-		where: {
-			target_type: { target: session.userId, type: twoFAVerificationType },
-		},
+	const existingVerification = await db.query.verification.findFirst({
+		columns: { id: true },
+		where: and(
+			eq(verification.target, session.userId),
+			eq(verification.type, twoFAVerificationType),
+		),
 	});
-	const userHasTwoFactor = Boolean(verification);
+	const userHasTwoFactor = Boolean(existingVerification);
 
 	if (userHasTwoFactor) {
 		const verifySession = await verifySessionStorage.getSession();
@@ -72,7 +75,7 @@ export async function handleNewSession(
 			{
 				headers: {
 					"set-cookie": await authSessionStorage.commitSession(authSession, {
-						expires: remember ? session.expirationDate : undefined,
+						expires: remember ? new Date(session.expirationDate) : undefined,
 					}),
 				},
 			},
@@ -103,11 +106,11 @@ export async function handleVerification({
 
 	const unverifiedSessionId = verifySession.get(unverifiedSessionIdKey);
 	if (unverifiedSessionId) {
-		const session = await prisma.session.findUnique({
-			select: { expirationDate: true },
-			where: { id: unverifiedSessionId },
+		const existingSession = await db.query.session.findFirst({
+			columns: { expirationDate: true },
+			where: eq(session.id, unverifiedSessionId),
 		});
-		if (!session) {
+		if (!existingSession) {
 			throw redirect("/login");
 		}
 		authSession.set(sessionKey, unverifiedSessionId);
@@ -115,7 +118,9 @@ export async function handleVerification({
 		headers.append(
 			"set-cookie",
 			await authSessionStorage.commitSession(authSession, {
-				expires: remember ? session.expirationDate : undefined,
+				expires: remember
+					? new Date(existingSession.expirationDate)
+					: undefined,
 			}),
 		);
 	} else {
@@ -144,9 +149,12 @@ export async function shouldRequestTwoFA(request: Request) {
 	const userId = await getUserId(request);
 	if (!userId) return false;
 	// if it's over two hours since they last verified, we should request 2FA again
-	const userHasTwoFA = await prisma.verification.findUnique({
-		select: { id: true },
-		where: { target_type: { target: userId, type: twoFAVerificationType } },
+	const userHasTwoFA = await db.query.verification.findFirst({
+		columns: { id: true },
+		where: and(
+			eq(verification.target, userId),
+			eq(verification.type, twoFAVerificationType),
+		),
 	});
 	if (!userHasTwoFA) return false;
 	const verifiedTime = authSession.get(verifiedTimeKey) ?? new Date(0);

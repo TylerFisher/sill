@@ -16,11 +16,34 @@ import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { PostType } from "@prisma/client";
 import groupBy from "object.groupby";
-import type { Prisma } from "@prisma/client";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { createOAuthClient } from "~/server/oauth/client";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { linksQueue } from "~/queue.server";
+import {
+	actor,
+	blueskyAccount,
+	link,
+	linkPost,
+	linkPostToUser,
+	mastodonAccount,
+	mutePhrase,
+	post,
+	postImage,
+	post as schemaPost,
+	user,
+} from "~/drizzle/schema.server";
+import {
+	and,
+	eq,
+	not,
+	or,
+	sql,
+	gte,
+	desc,
+	aliasedTable,
+	inArray,
+} from "drizzle-orm";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -64,10 +87,8 @@ const fetchRebloggedPosts = async (
 export const getMastodonTimeline = async (userId: string) => {
 	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
-	const account = await prisma.mastodonAccount.findFirst({
-		where: {
-			userId: userId,
-		},
+	const account = await db.query.mastodonAccount.findFirst({
+		where: eq(mastodonAccount.userId, userId),
 	});
 
 	if (!account) return [];
@@ -105,14 +126,12 @@ export const getMastodonTimeline = async (userId: string) => {
 	}
 
 	if (timeline.length > 0) {
-		await prisma.mastodonAccount.update({
-			where: {
-				id: account.id,
-			},
-			data: {
+		await db
+			.update(mastodonAccount)
+			.set({
 				mostRecentPostId: timeline[0].id,
-			},
-		});
+			})
+			.where(eq(mastodonAccount.id, account.id));
 	}
 
 	return timeline;
@@ -133,10 +152,8 @@ const handleBlueskyOAuth = async (account: { did: string }) => {
 };
 
 export const getBlueskyTimeline = async (userId: string) => {
-	const account = await prisma.blueskyAccount.findFirst({
-		where: {
-			userId: userId,
-		},
+	const account = await db.query.blueskyAccount.findFirst({
+		where: eq(blueskyAccount.userId, userId),
 	});
 	if (!account) return [];
 
@@ -151,8 +168,9 @@ export const getBlueskyTimeline = async (userId: string) => {
 			cursor,
 		});
 		const timeline = response.data.feed;
-		const checkDate =
-			account?.mostRecentPostDate || new Date(Date.now() - ONE_DAY_MS); // 24 hours ago
+		const checkDate = account?.mostRecentPostDate
+			? new Date(account.mostRecentPostDate)
+			: new Date(Date.now() - ONE_DAY_MS);
 
 		let reachedEnd = false;
 		let newPosts = timeline.filter((item) => {
@@ -177,20 +195,16 @@ export const getBlueskyTimeline = async (userId: string) => {
 		const firstPost = timeline[0];
 		const tokenSet = await oauthSession.getTokenSet();
 
-		await prisma.blueskyAccount.update({
-			where: {
-				id: account.id,
-			},
-			data: {
-				mostRecentPostDate: new Date(
-					AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-						? firstPost.reason.indexedAt
-						: firstPost.post.indexedAt,
-				),
+		await db
+			.update(blueskyAccount)
+			.set({
+				mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+					? firstPost.reason.indexedAt
+					: firstPost.post.indexedAt,
 				accessJwt: tokenSet.access_token,
 				refreshJwt: tokenSet.refresh_token,
-			},
-		});
+			})
+			.where(eq(blueskyAccount.userId, userId));
 	}
 	return timeline;
 };
@@ -216,29 +230,40 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 	}
 
 	// Do we know about this post?
-	const linkPost = await prisma.linkPost.findFirst({
-		where: {
-			link: {
-				url: card.url,
-			},
-			post: {
-				url: url,
-				repostHandle: t.reblog ? t.account.username : undefined,
-			},
-		},
-	});
-
-	if (linkPost) {
-		await prisma.linkPost.update({
-			where: {
-				id: linkPost.id,
-			},
-			data: {
-				users: {
-					connect: { id: userId },
-				},
+	const linkPostSearch = await db.transaction(async (tx) => {
+		const existingPost = await tx.query.post.findFirst({
+			where: and(
+				eq(schemaPost.url, url),
+				t.reblog ? eq(schemaPost.repostHandle, t.account.username) : undefined,
+			),
+			columns: {
+				id: true,
 			},
 		});
+
+		if (existingPost) {
+			const existingLinkPost = await tx.query.linkPost.findFirst({
+				where: and(
+					eq(linkPost.linkUrl, card.url),
+					eq(linkPost.postId, existingPost.id),
+				),
+				columns: { id: true },
+			});
+
+			return {
+				linkPost: existingLinkPost,
+			};
+		}
+	});
+
+	if (linkPostSearch?.linkPost) {
+		await db
+			.insert(linkPostToUser)
+			.values({
+				userId,
+				linkPostId: linkPostSearch.linkPost.id,
+			})
+			.onConflictDoNothing();
 
 		return null;
 	}
@@ -301,41 +326,33 @@ export const getLinksFromMastodon = async (userId: string) => {
 	const processedResults = (
 		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))
 	).filter((p) => p !== null);
+
+	if (processedResults.length === 0) {
+		return null;
+	}
+
 	const actors = processedResults.flatMap((p) => p.actors);
 	const posts = processedResults.map((p) => p.post);
 	const links = processedResults.map((p) => p.link);
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
 
-	await prisma.actor.createMany({
-		data: actors,
-		skipDuplicates: true,
-	});
-
-	await prisma.$transaction([
-		prisma.post.createMany({
-			data: posts,
-			skipDuplicates: true,
-		}),
-		prisma.link.createMany({
-			data: links,
-			skipDuplicates: true,
-		}),
-	]);
-
-	const createdLinkPosts = await prisma.linkPost.createManyAndReturn({
-		data: linkPosts,
-		skipDuplicates: true,
-	});
-
-	await prisma.user.update({
-		where: {
-			id: userId,
-		},
-		data: {
-			linkPosts: {
-				connect: createdLinkPosts.map((l) => ({ id: l.id })),
-			},
-		},
+	await db.transaction(async (tx) => {
+		await tx.insert(actor).values(actors).onConflictDoNothing();
+		await tx.insert(post).values(posts).onConflictDoNothing();
+		await tx.insert(link).values(links).onConflictDoNothing();
+		const createdLinkPosts = await tx
+			.insert(linkPost)
+			.values(linkPosts)
+			.onConflictDoNothing()
+			.returning({
+				id: linkPost.id,
+			});
+		await tx.insert(linkPostToUser).values(
+			createdLinkPosts.map((lp) => ({
+				userId,
+				linkPostId: lp.id,
+			})),
+		);
 	});
 };
 
@@ -414,32 +431,42 @@ const processBlueskyLink = async (
 		imageGroup = t.post.embed.images;
 	}
 
-	// Do we know about this post?
-	const linkPost = await prisma.linkPost.findFirst({
-		where: {
-			link: {
-				url: detectedLink.uri,
-			},
-			post: {
-				url: postUrl,
-				repostHandle: AppBskyFeedDefs.isReasonRepost(t.reason)
-					? t.reason.by.handle
+	const linkPostSearch = await db.transaction(async (tx) => {
+		const existingPost = await tx.query.post.findFirst({
+			where: and(
+				eq(schemaPost.url, postUrl),
+				AppBskyFeedDefs.isReasonRepost(t.reason)
+					? eq(schemaPost.repostHandle, t.reason.by.handle)
 					: undefined,
-			},
-		},
-	});
-
-	if (linkPost) {
-		await prisma.linkPost.update({
-			where: {
-				id: linkPost.id,
-			},
-			data: {
-				users: {
-					connect: { id: userId },
-				},
+			),
+			columns: {
+				id: true,
 			},
 		});
+
+		if (existingPost) {
+			const existingLinkPost = await tx.query.linkPost.findFirst({
+				where: and(
+					eq(linkPost.linkUrl, detectedLink.uri),
+					eq(linkPost.postId, existingPost.id),
+				),
+				columns: { id: true },
+			});
+
+			return {
+				linkPost: existingLinkPost,
+			};
+		}
+	});
+
+	if (linkPostSearch?.linkPost) {
+		await db
+			.insert(linkPostToUser)
+			.values({
+				userId,
+				linkPostId: linkPostSearch.linkPost.id,
+			})
+			.onConflictDoNothing();
 
 		return null;
 	}
@@ -470,7 +497,7 @@ const processBlueskyLink = async (
 					id: uuidv7(),
 					url: quotedPostUrl || "",
 					text: quotedValue.text,
-					postDate: new Date(quotedRecord.indexedAt),
+					postDate: quotedRecord.indexedAt,
 					postType: PostType.bluesky,
 					actorHandle: quotedRecord.author.handle,
 				}
@@ -490,7 +517,7 @@ const processBlueskyLink = async (
 		id: uuidv7(),
 		url: postUrl,
 		text: record.text,
-		postDate: new Date(t.post.indexedAt),
+		postDate: t.post.indexedAt,
 		postType: PostType.bluesky,
 		actorHandle: t.post.author.handle,
 		quotingId: quotedPost ? quotedPost.id : undefined,
@@ -546,6 +573,11 @@ export const getLinksFromBluesky = async (userId: string) => {
 	const processedResults = (
 		await Promise.all(timeline.map((t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
+
+	if (processedResults.length === 0) {
+		return null;
+	}
+
 	const actors = processedResults.flatMap((p) => p.actors);
 	const quotedPosts = processedResults
 		.map((p) => p.quotedPost)
@@ -555,46 +587,25 @@ export const getLinksFromBluesky = async (userId: string) => {
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
 	const images = processedResults.flatMap((p) => p.images);
 
-	await prisma.actor.createMany({
-		data: actors,
-		skipDuplicates: true,
-	});
-
-	await prisma.post.createMany({
-		data: quotedPosts,
-		skipDuplicates: true,
-	});
-
-	await prisma.$transaction([
-		prisma.post.createMany({
-			data: posts,
-			skipDuplicates: true,
-		}),
-		prisma.link.createMany({
-			data: links,
-			skipDuplicates: true,
-		}),
-	]);
-
-	await prisma.postImage.createMany({
-		data: images,
-		skipDuplicates: true,
-	});
-
-	const createdLinkPosts = await prisma.linkPost.createManyAndReturn({
-		data: linkPosts,
-		skipDuplicates: true,
-	});
-
-	await prisma.user.update({
-		where: {
-			id: userId,
-		},
-		data: {
-			linkPosts: {
-				connect: createdLinkPosts.map((l) => ({ id: l.id })),
-			},
-		},
+	await db.transaction(async (tx) => {
+		await tx.insert(actor).values(actors).onConflictDoNothing();
+		await tx.insert(post).values(quotedPosts).onConflictDoNothing();
+		await tx.insert(post).values(posts).onConflictDoNothing();
+		await tx.insert(link).values(links).onConflictDoNothing();
+		await tx.insert(postImage).values(images).onConflictDoNothing();
+		const createdLinkPosts = await tx
+			.insert(linkPost)
+			.values(linkPosts)
+			.onConflictDoNothing()
+			.returning({
+				id: linkPost.id,
+			});
+		await tx.insert(linkPostToUser).values(
+			createdLinkPosts.map((lp) => ({
+				userId,
+				linkPostId: lp.id,
+			})),
+		);
 	});
 };
 
@@ -609,10 +620,8 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			segment.link &&
 			AppBskyRichtextFacet.validateLink(segment.link).success
 		) {
-			const existingLink = await prisma.link.findFirst({
-				where: {
-					url: segment.link.uri,
-				},
+			const existingLink = await db.query.link.findFirst({
+				where: eq(link.url, segment.link.uri),
 			});
 
 			// if we already have data
@@ -638,10 +647,8 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 };
 
 export const fetchLinkMetadata = async (uri: string) => {
-	const foundLink = await prisma.link.findFirst({
-		where: {
-			url: uri,
-		},
+	const foundLink = await db.query.link.findFirst({
+		where: eq(link.url, uri),
 	});
 
 	// if we already have data
@@ -654,25 +661,25 @@ export const fetchLinkMetadata = async (uri: string) => {
 			timeout: 5000,
 		});
 		if (metadata) {
-			await prisma.link.upsert({
-				where: {
-					url: uri,
-				},
-				update: {
-					title: metadata["og:title"] || metadata.title,
-					description:
-						metadata["og:description"] || metadata.description || null,
-					imageUrl: metadata["og:image"] || null,
-				},
-				create: {
+			await db
+				.insert(link)
+				.values({
 					id: uuidv7(),
 					url: uri,
 					title: metadata["og:title"] || metadata.title,
 					description:
 						metadata["og:description"] || metadata.description || null,
 					imageUrl: metadata["og:image"] || null,
-				},
-			});
+				})
+				.onConflictDoUpdate({
+					target: link.url,
+					set: {
+						title: metadata["og:title"] || metadata.title,
+						description:
+							metadata["og:description"] || metadata.description || null,
+						imageUrl: metadata["og:image"] || null,
+					},
+				});
 		}
 	} catch (e) {
 		console.error(`Failed to fetch link ${uri}`, e);
@@ -703,151 +710,75 @@ export const countLinkOccurrences = async ({
 		]);
 	}
 
-	const mutePhrases = await prisma.mutePhrase.findMany({
-		where: {
-			userId,
-		},
+	const mutePhrases = await db.query.mutePhrase.findMany({
+		where: eq(mutePhrase.userId, userId),
 	});
 
-	const mutePhraseSearch = mutePhrases.map((p) => `${p.phrase}`).join(" | ");
-	const encodedQuery = query ? query.trim().split(" ").join(" & ") : undefined;
+	const start = new Date(Date.now() - time).toISOString();
 
-	const searchQuery: Prisma.LinkPostWhereInput[] | undefined = encodedQuery
-		? [
-				{
-					link: {
-						description: {
-							search: encodedQuery,
-							mode: "insensitive",
-						},
-					},
-				},
-				{
-					link: {
-						title: {
-							search: encodedQuery,
-							mode: "insensitive",
-						},
-					},
-				},
-				{
-					post: {
-						text: {
-							search: encodedQuery,
-							mode: "insensitive",
-						},
-					},
-				},
-				{
-					post: {
+	const mostRecentLinkPosts = await db.transaction(async (tx) => {
+		const linkPostsForUser = await tx.query.linkPostToUser.findMany({
+			where: eq(linkPostToUser.userId, userId),
+		});
+
+		return await db.query.linkPost.findMany({
+			where: inArray(
+				linkPost.id,
+				linkPostsForUser.map((lp) => lp.linkPostId),
+			),
+			with: {
+				link: true,
+				linkPostToUsers: true,
+				post: {
+					with: {
+						actor: true,
 						quoting: {
-							text: {
-								search: encodedQuery,
-								mode: "insensitive",
+							with: {
+								actor: true,
+								postImages: true,
 							},
 						},
+						postImages: true,
+						reposter: true,
 					},
 				},
-			]
-		: undefined;
-
-	const start = new Date(Date.now() - time);
-	const mostRecentLinkPosts = await prisma.linkPost.findMany({
-		where: {
-			users: {
-				some: {
-					id: userId,
-				},
 			},
-			OR: searchQuery,
-			NOT: {
-				OR: [
-					{
-						link: {
-							description: {
-								search: mutePhraseSearch,
-								mode: "insensitive",
-							},
-						},
-					},
-					{
-						link: {
-							title: {
-								search: mutePhraseSearch,
-								mode: "insensitive",
-							},
-						},
-					},
-					{
-						post: {
-							text: {
-								search: mutePhraseSearch,
-								mode: "insensitive",
-							},
-						},
-					},
-					{
-						post: {
-							quoting: {
-								text: {
-									search: mutePhraseSearch,
-									mode: "insensitive",
-								},
-							},
-						},
-					},
-					{
-						post: {
-							actor: {
-								name: {
-									search: mutePhraseSearch,
-									mode: "insensitive",
-								},
-							},
-						},
-					},
-					{
-						post: {
-							actor: {
-								handle: {
-									search: mutePhraseSearch,
-									mode: "insensitive",
-								},
-							},
-						},
-					},
-				],
-			},
-			post: {
-				postDate: {
-					gte: start,
-				},
-			},
-		},
-		include: {
-			link: true,
-			post: {
-				include: {
-					actor: true,
-					quoting: {
-						include: {
-							actor: true,
-							images: true,
-						},
-					},
-					images: true,
-					reposter: true,
-				},
-			},
-		},
-		orderBy: {
-			post: {
-				postDate: "desc",
-			},
-		},
+		});
 	});
 
-	const grouped = groupBy(mostRecentLinkPosts, (l) => {
+	let filtered = mostRecentLinkPosts
+		.filter((lp) => lp.post.postDate >= start)
+		.sort((a, b) => (a.post.postDate > b.post.postDate ? -1 : 1));
+
+	if (query) {
+		filtered = filtered.filter((lp) => {
+			return (
+				lp.link.title?.toLowerCase().includes(query.toLowerCase()) ||
+				lp.link.description?.toLowerCase().includes(query.toLowerCase()) ||
+				lp.post.text.toLowerCase().includes(query.toLowerCase()) ||
+				lp.post.actor.name?.toLowerCase().includes(query.toLowerCase()) ||
+				lp.post.actor.handle.toLowerCase().includes(query.toLowerCase())
+			);
+		});
+	}
+
+	for (const phrase of mutePhrases) {
+		filtered = filtered.filter((lp) => {
+			return !(
+				lp.link.title?.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
+				lp.link.description
+					?.toLowerCase()
+					.includes(phrase.phrase.toLowerCase()) ||
+				lp.post.text.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
+				lp.post.actor.name
+					?.toLowerCase()
+					.includes(phrase.phrase.toLowerCase()) ||
+				lp.post.actor.handle.toLowerCase().includes(phrase.phrase.toLowerCase())
+			);
+		});
+	}
+
+	const grouped = groupBy(filtered, (l) => {
 		return l.link.url;
 	});
 

@@ -1,11 +1,12 @@
 import { redirect } from "@remix-run/node";
 import { uuidv7 } from "uuidv7-js";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
+import { session, user, password } from "~/drizzle/schema.server";
+import { eq, and, gt } from "drizzle-orm";
 import { authSessionStorage } from "~/session.server";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { combineHeaders } from "./misc";
 import bcrypt from "bcryptjs";
-import type { User, Password } from "@prisma/client";
 
 export const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30;
 export const getSessionExpirationDate = () =>
@@ -17,20 +18,29 @@ export async function getUserId(request: Request) {
 	const authSession = await authSessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
-	const sessionId = authSession.get(sessionKey);
+	const sessionId = await authSession.get(sessionKey);
 	if (!sessionId) return null;
-	const session = await prisma.session.findUnique({
-		select: { user: { select: { id: true } } },
-		where: { id: sessionId, expirationDate: { gt: new Date() } },
+	const existingSession = await db.query.session.findFirst({
+		columns: {},
+		with: {
+			user: {
+				columns: { id: true },
+			},
+		},
+		where: and(
+			eq(session.id, sessionId),
+			gt(session.expirationDate, new Date().toISOString()),
+		),
 	});
-	if (!session?.user) {
+
+	if (!existingSession?.user) {
 		throw redirect("/", {
 			headers: {
 				"set-cookie": await authSessionStorage.destroySession(authSession),
 			},
 		});
 	}
-	return session.user.id;
+	return existingSession.user.id;
 }
 
 export async function requireUserId(
@@ -77,9 +87,7 @@ export async function logout(
 	// if this fails, we still need to delete the session from the user's browser
 	// and it doesn't do any harm staying in the db anyway.
 	if (sessionId) {
-		await prisma.session.deleteMany({
-			where: { id: sessionId },
-		});
+		await db.delete(session).where(eq(session.id, sessionId));
 	}
 	return redirect(safeRedirect(redirectTo), {
 		...responseInit,
@@ -94,57 +102,76 @@ export async function login({
 	username,
 	password,
 }: {
-	username: User["username"];
+	username: string;
 	password: string;
 }) {
 	const user = await verifyUserPassword({ username }, password);
 	if (!user) return null;
-	const session = await prisma.session.create({
-		select: { id: true, expirationDate: true, userId: true },
-		data: {
+	const newSession = await db
+		.insert(session)
+		.values({
 			id: uuidv7(),
-			expirationDate: getSessionExpirationDate(),
+			expirationDate: getSessionExpirationDate().toISOString(),
 			userId: user.id,
-		},
-	});
-	return session;
+		})
+		.returning({
+			id: session.id,
+			expirationDate: session.expirationDate,
+			userId: session.userId,
+		});
+	return newSession[0];
 }
 
 export async function signup({
 	email,
 	username,
-	password,
+	sentPassword,
 	name,
 }: {
-	email: User["email"];
-	username: User["username"];
-	name: User["name"];
-	password: string;
+	email: string;
+	username: string;
+	name: string;
+	sentPassword: string;
 }) {
-	const hashedPassword = await getPasswordHash(password);
+	const hashedPassword = await getPasswordHash(sentPassword);
 
-	const session = await prisma.session.create({
-		data: {
-			id: uuidv7(),
-			expirationDate: getSessionExpirationDate(),
-			user: {
-				create: {
-					id: uuidv7(),
-					email: email.toLowerCase(),
-					username: username.toLowerCase(),
-					name,
-					password: {
-						create: {
-							hash: hashedPassword,
-						},
-					},
-				},
-			},
-		},
-		select: { id: true, expirationDate: true },
+	const transaction = await db.transaction(async (tx) => {
+		const result = await tx
+			.insert(user)
+			.values({
+				id: uuidv7(),
+				email: email.toLowerCase(),
+				username: username.toLowerCase(),
+				name,
+			})
+			.returning({
+				id: user.id,
+			});
+
+		await tx.insert(password).values({
+			hash: hashedPassword,
+			userId: result[0].id,
+		});
+
+		const newSession = await tx
+			.insert(session)
+			.values({
+				id: uuidv7(),
+				expirationDate: getSessionExpirationDate().toISOString(),
+				userId: result[0].id,
+			})
+			.returning({
+				id: session.id,
+				expirationDate: session.expirationDate,
+				userId: session.userId,
+			});
+
+		return {
+			session: newSession[0],
+		};
 	});
 
-	return session;
+	return transaction.session;
 }
 
 export async function getPasswordHash(password: string) {
@@ -153,12 +180,31 @@ export async function getPasswordHash(password: string) {
 }
 
 export async function verifyUserPassword(
-	where: Pick<User, "username"> | Pick<User, "id">,
-	password: Password["hash"],
+	userInfo: { username?: string | undefined; userId?: string },
+	password: string,
 ) {
-	const userWithPassword = await prisma.user.findUnique({
-		where,
-		select: { id: true, password: { select: { hash: true } } },
+	let where = null;
+	if (userInfo.username) {
+		where = eq(user.username, userInfo.username);
+	}
+	if (userInfo.userId) {
+		where = eq(user.username, userInfo.userId);
+	}
+
+	if (!where) {
+		return null;
+	}
+
+	const userWithPassword = await db.query.user.findFirst({
+		where: where,
+		columns: { id: true },
+		with: {
+			password: {
+				columns: {
+					hash: true,
+				},
+			},
+		},
 	});
 
 	if (!userWithPassword || !userWithPassword.password) {
@@ -178,21 +224,17 @@ export async function verifyUserPassword(
 }
 
 export async function resetUserPassword({
-	username,
-	password,
+	userId,
+	newPassword,
 }: {
-	username: User["username"];
-	password: string;
+	userId: string;
+	newPassword: string;
 }) {
-	const hashedPassword = await getPasswordHash(password);
-	return prisma.user.update({
-		where: { username },
-		data: {
-			password: {
-				update: {
-					hash: hashedPassword,
-				},
-			},
-		},
-	});
+	const hashedPassword = await getPasswordHash(newPassword);
+	return db
+		.update(password)
+		.set({
+			hash: hashedPassword,
+		})
+		.where(eq(password.userId, userId));
 }

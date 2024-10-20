@@ -9,12 +9,15 @@ import {
 	type MetaFunction,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { db } from "~/drizzle/db.server";
 import ErrorList from "~/components/ErrorList";
 import Layout from "~/components/Layout";
 import TextInput from "~/components/TextInput";
 import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const resetPasswordUsernameSessionKey = "resetPasswordUsername";
 
@@ -53,7 +56,16 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 	const { password } = submission.value;
 
-	await resetUserPassword({ username: resetPasswordUsername, password });
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.username, resetPasswordUsername),
+		columns: { id: true },
+	});
+
+	if (!existingUser) {
+		throw new Error("Something went wrong");
+	}
+
+	await resetUserPassword({ userId: existingUser.id, newPassword: password });
 	const verifySession = await verifySessionStorage.getSession();
 	return redirect("/accounts/login", {
 		headers: {

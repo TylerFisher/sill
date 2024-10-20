@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { useLoaderData } from "@remix-run/react";
 import { Form } from "@remix-run/react";
 import {
@@ -12,15 +12,18 @@ import {
 	TextField,
 	Separator,
 } from "@radix-ui/themes";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
 
-	let user = null;
+	let existingUser = null;
 	if (userId) {
-		user = await prisma.user.findUnique({
-			where: { id: userId },
-			include: {
+		existingUser = await db.query.user.findFirst({
+			columns: {},
+			where: eq(user.id, userId),
+			with: {
 				mastodonAccounts: true,
 				blueskyAccounts: true,
 			},
@@ -28,7 +31,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	return json({
-		user,
+		user: existingUser,
 	});
 };
 

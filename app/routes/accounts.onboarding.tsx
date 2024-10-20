@@ -17,7 +17,7 @@ import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
 import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { authSessionStorage } from "~/session.server";
 import {
@@ -31,6 +31,8 @@ import Layout from "~/components/Layout";
 import TextInput from "~/components/TextInput";
 import CheckboxField from "~/components/CheckboxField";
 import ErrorList from "~/components/ErrorList";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 
@@ -71,9 +73,9 @@ export async function action({ request }: ActionFunctionArgs) {
 	const submission = await parseWithZod(formData, {
 		schema: (intent) =>
 			SignupFormSchema.superRefine(async (data, ctx) => {
-				const existingUser = await prisma.user.findUnique({
-					where: { username: data.username },
-					select: { id: true },
+				const existingUser = await db.query.user.findFirst({
+					where: eq(user.username, data.username),
+					columns: { id: true },
 				});
 				if (existingUser) {
 					ctx.addIssue({
@@ -86,7 +88,11 @@ export async function action({ request }: ActionFunctionArgs) {
 			}).transform(async (data) => {
 				if (intent !== null) return { ...data, session: null };
 
-				const session = await signup({ ...data, email });
+				const session = await signup({
+					...data,
+					email,
+					sentPassword: data.password,
+				});
 				return { ...data, session };
 			}),
 		async: true,
@@ -110,7 +116,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	headers.append(
 		"set-cookie",
 		await authSessionStorage.commitSession(authSession, {
-			expires: remember ? session.expirationDate : undefined,
+			expires: remember ? new Date(session.expirationDate) : undefined,
 		}),
 	);
 	headers.append(

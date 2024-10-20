@@ -7,21 +7,26 @@ import {
 } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { generateTOTP } from "~/utils/totp.server";
 import { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
 import { uuidv7 } from "uuidv7-js";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
+import { and, eq } from "drizzle-orm";
+import { verification } from "~/drizzle/schema.server";
 
 export const twoFAVerificationType = "2fa" satisfies VerificationTypes;
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
-	const verification = await prisma.verification.findUnique({
-		where: { target_type: { type: twoFAVerificationType, target: userId } },
-		select: { id: true },
+	const existingVerification = await db.query.verification.findFirst({
+		where: and(
+			eq(verification.target, userId),
+			eq(verification.type, twoFAVerificationType),
+		),
+		columns: { id: true },
 	});
-	return json({ is2FAEnabled: Boolean(verification) });
+	return json({ is2FAEnabled: Boolean(existingVerification) });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -32,16 +37,16 @@ export async function action({ request }: ActionFunctionArgs) {
 		type: twoFAVerifyVerificationType,
 		target: userId,
 	};
-	await prisma.verification.upsert({
-		where: {
-			target_type: { target: userId, type: twoFAVerifyVerificationType },
-		},
-		create: {
+	await db
+		.insert(verification)
+		.values({
 			id: uuidv7(),
 			...verificationData,
-		},
-		update: verificationData,
-	});
+		})
+		.onConflictDoUpdate({
+			target: [verification.target, verification.type],
+			set: verificationData,
+		});
 	return redirect("/settings/two-factor/verify");
 }
 

@@ -13,11 +13,13 @@ import {
 	requireUserId,
 	verifyUserPassword,
 } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { PasswordSchema } from "~/utils/userValidation";
 import TextInput from "~/components/TextInput";
 import { Button, Flex } from "@radix-ui/themes";
 import ErrorList from "~/components/ErrorList";
+import { password } from "~/drizzle/schema.server";
+import { eq } from "drizzle-orm";
 
 const ChangePasswordForm = z
 	.object({
@@ -48,10 +50,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		schema: ChangePasswordForm.superRefine(
 			async ({ currentPassword, newPassword }, ctx) => {
 				if (currentPassword && newPassword) {
-					const user = await verifyUserPassword(
-						{ id: userId },
-						currentPassword,
-					);
+					const user = await verifyUserPassword({ userId }, currentPassword);
 					if (!user) {
 						ctx.addIssue({
 							path: ["currentPassword"],
@@ -76,17 +75,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	const { newPassword } = submission.value;
 
-	await prisma.user.update({
-		select: { username: true },
-		where: { id: userId },
-		data: {
-			password: {
-				update: {
-					hash: await getPasswordHash(newPassword),
-				},
-			},
-		},
-	});
+	await db
+		.update(password)
+		.set({
+			hash: await getPasswordHash(newPassword),
+		})
+		.where(eq(password.userId, userId));
 
 	return redirect("/settings/profile", { status: 302 });
 }

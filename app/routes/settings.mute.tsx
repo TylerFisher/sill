@@ -13,12 +13,14 @@ import {
 } from "@remix-run/react";
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { Box, Button, Flex, IconButton, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput";
 import { uuidv7 } from "uuidv7-js";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import ErrorList from "~/components/ErrorList";
+import { eq } from "drizzle-orm";
+import { mutePhrase } from "~/drizzle/schema.server";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
@@ -26,11 +28,9 @@ const MutePhraseSchema = z.object({
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
-	const phrases = await prisma.mutePhrase.findMany({
-		where: {
-			userId,
-		},
-		select: {
+	const phrases = await db.query.mutePhrase.findMany({
+		where: eq(mutePhrase.userId, userId),
+		columns: {
 			phrase: true,
 		},
 	});
@@ -46,11 +46,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		schema: MutePhraseSchema.superRefine(async (data, ctx) => {
-			const existingPhrases = await prisma.mutePhrase.findMany({
-				where: {
-					userId,
-				},
-				select: {
+			const existingPhrases = await db.query.mutePhrase.findMany({
+				where: eq(mutePhrase.userId, userId),
+				columns: {
 					phrase: true,
 				},
 			});
@@ -77,12 +75,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		);
 	}
 
-	await prisma.mutePhrase.create({
-		data: {
-			id: uuidv7(),
-			phrase: submission.value.newPhrase,
-			userId,
-		},
+	await db.insert(mutePhrase).values({
+		id: uuidv7(),
+		phrase: submission.value.newPhrase,
+		userId,
 	});
 
 	return json({

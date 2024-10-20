@@ -13,7 +13,7 @@ import {
 	requireRecentVerification,
 } from "~/routes/accounts.verify.server";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
@@ -21,6 +21,8 @@ import EmailChange from "~/emails/emailChange";
 import { Box, Button, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput.js";
 import ErrorList from "~/components/ErrorList";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -31,15 +33,15 @@ const ChangeEmailSchema = z.object({
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireRecentVerification(request);
 	const userId = await requireUserId(request);
-	const user = await prisma.user.findUnique({
-		where: { id: userId },
-		select: { email: true },
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		columns: { email: true },
 	});
-	if (!user) {
+	if (!existingUser) {
 		const params = new URLSearchParams({ redirectTo: request.url });
 		throw redirect(`/login?${params}`);
 	}
-	return json({ user });
+	return json({ user: existingUser });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -47,8 +49,8 @@ export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		schema: ChangeEmailSchema.superRefine(async (data, ctx) => {
-			const existingUser = await prisma.user.findUnique({
-				where: { email: data.email },
+			const existingUser = await db.query.user.findFirst({
+				where: eq(user.email, data.email),
 			});
 			if (existingUser) {
 				ctx.addIssue({

@@ -16,7 +16,7 @@ import { Heading, Theme as RadixTheme } from "@radix-ui/themes";
 import { honeypot } from "~/utils/honeypot.server";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { makeTimings, time } from "./utils/timing.server";
-import { prisma } from "./db.server";
+import { db } from "./drizzle/db.server";
 import { logout, getUserId } from "./utils/auth.server";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getDomainUrl } from "./utils/misc";
@@ -24,6 +24,8 @@ import { type Theme, getTheme } from "./utils/theme.server";
 import { useNonce } from "./utils/nonce-provider";
 import { useOptionalUser, useUser } from "./utils/user";
 import { ThemeSwitch, useTheme } from "./routes/resources.theme-switch";
+import { eq } from "drizzle-orm";
+import { user } from "./drizzle/schema.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const timings = makeTimings("root loader");
@@ -33,21 +35,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		desc: "getUserId in root",
 	});
 
-	const user = userId
+	const existingUser = userId
 		? await time(
 				() =>
-					prisma.user.findUniqueOrThrow({
-						select: {
+					db.query.user.findFirst({
+						columns: {
 							id: true,
 							name: true,
 							username: true,
 						},
-						where: { id: userId },
+						where: eq(user.id, userId),
 					}),
 				{ timings, type: "find user", desc: "find user in root" },
 			)
 		: null;
-	if (userId && !user) {
+	if (userId && !existingUser) {
 		console.info("something weird happened");
 		// something weird happened... The user is authenticated but we can't find
 		// them in the database. Maybe they were deleted? Let's log them out.
@@ -57,7 +59,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	return json(
 		{
-			user,
+			user: existingUser,
 			requestInfo: {
 				hints: getHints(request),
 				origin: getDomainUrl(request),

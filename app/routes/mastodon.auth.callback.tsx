@@ -2,9 +2,10 @@ import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { getAccessToken } from "~/utils/mastodon.server";
 import { getInstanceCookie } from "~/session.server";
 import { getUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { uuidv7 } from "uuidv7-js";
 import { mastodonFetchQueue } from "~/queue.server";
+import { mastodonAccount } from "~/drizzle/schema.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const url = new URL(request.url);
@@ -18,20 +19,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const tokenData = await getAccessToken(instance, code);
 
-	await prisma.user.update({
-		where: {
-			id: userId,
-		},
-		data: {
-			mastodonAccounts: {
-				create: {
-					id: uuidv7(),
-					accessToken: tokenData.access_token,
-					tokenType: tokenData.token_type,
-					instance,
-				},
-			},
-		},
+	await db.insert(mastodonAccount).values({
+		id: uuidv7(),
+		accessToken: tokenData.access_token,
+		tokenType: tokenData.token_type,
+		instance,
+		userId: userId,
 	});
 
 	mastodonFetchQueue.add(`${userId}-mastodon-fetch`, {

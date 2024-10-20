@@ -4,11 +4,13 @@ import {
 	requireRecentVerification,
 	type VerifyFunctionArgs,
 } from "~/routes/accounts.verify.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChangeNotice from "~/emails/emailChangeNotice";
 import { newEmailAddressSessionKey } from "./settings.change-email";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export async function handleVerification({
 	request,
@@ -36,20 +38,31 @@ export async function handleVerification({
 			{ status: 400 },
 		);
 	}
-	const preUpdateUser = await prisma.user.findFirstOrThrow({
-		select: { email: true },
-		where: { id: submission.value.target },
+	const preUpdateUser = await db.query.user.findFirst({
+		columns: { email: true },
+		where: eq(user.id, submission.value.target),
 	});
-	const user = await prisma.user.update({
-		where: { id: submission.value.target },
-		select: { id: true, email: true, username: true },
-		data: { email: newEmail },
-	});
+
+	if (!preUpdateUser) {
+		throw new Error("Something went wrong");
+	}
+
+	const updatedUser = await db
+		.update(user)
+		.set({
+			email: newEmail,
+		})
+		.where(eq(user.id, submission.value.target))
+		.returning({
+			id: user.id,
+			email: user.email,
+			username: user.username,
+		});
 
 	await sendEmail({
 		to: preUpdateUser.email,
 		subject: "Sill email changed",
-		react: <EmailChangeNotice userId={user.id} />,
+		react: <EmailChangeNotice userId={updatedUser[0].id} />,
 	});
 
 	return redirect("/settings", {

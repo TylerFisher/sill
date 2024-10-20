@@ -9,7 +9,9 @@ import {
 import { Form, Link, useFetcher } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
-import { prisma } from "~/db.server";
+import { eq, or } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema, UsernameSchema } from "~/utils/userValidation";
@@ -29,16 +31,14 @@ export async function action({ request }: ActionFunctionArgs) {
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
 		schema: ForgotPasswordSchema.superRefine(async (data, ctx) => {
-			const user = await prisma.user.findFirst({
-				where: {
-					OR: [
-						{ email: data.usernameOrEmail },
-						{ username: data.usernameOrEmail },
-					],
-				},
-				select: { id: true },
+			const existingUser = await db.query.user.findFirst({
+				where: or(
+					eq(user.email, usernameOrEmail),
+					eq(user.username, usernameOrEmail),
+				),
+				columns: { id: true },
 			});
-			if (!user) {
+			if (!existingUser) {
 				ctx.addIssue({
 					path: ["usernameOrEmail"],
 					code: z.ZodIssueCode.custom,
@@ -57,10 +57,17 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 	const { usernameOrEmail } = submission.value;
 
-	const user = await prisma.user.findFirstOrThrow({
-		where: { OR: [{ email: usernameOrEmail }, { username: usernameOrEmail }] },
-		select: { email: true, username: true },
+	const existingUser = await db.query.user.findFirst({
+		where: or(
+			eq(user.email, usernameOrEmail),
+			eq(user.username, usernameOrEmail),
+		),
+		columns: { email: true, username: true },
 	});
+
+	if (!existingUser) {
+		throw new Error("Something went wrong");
+	}
 
 	const { verifyUrl, redirectTo, otp } = await prepareVerification({
 		period: 10 * 60,
@@ -70,7 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	});
 
 	const response = await sendEmail({
-		to: user.email,
+		to: existingUser.email,
 		subject: "Sill Password Reset",
 		react: (
 			<ForgotPasswordEmail onboardingUrl={verifyUrl.toString()} otp={otp} />

@@ -1,6 +1,8 @@
-import { type ActionFunctionArgs, json, redirect } from "@remix-run/node";
-import { prisma } from "~/db.server"; // Adjust based on your project structure
-import { requireUserId } from "~/utils/auth.server"; // Adjust based on your session setup
+import { type ActionFunctionArgs, redirect } from "@remix-run/node";
+import { eq } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
+import { blueskyAccount } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -9,10 +11,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		throw new Error("User not authenticated.");
 	}
 
-	// Fetch the user's tokens
-	await prisma.blueskyAccount.deleteMany({
-		where: { userId: userId },
-	});
+	await db.delete(blueskyAccount).where(eq(blueskyAccount.userId, userId));
 
 	return redirect("/settings/connect");
 };

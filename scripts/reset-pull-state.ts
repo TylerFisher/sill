@@ -1,33 +1,39 @@
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
+import {
+	actor,
+	blueskyAccount,
+	link,
+	linkPost,
+	mastodonAccount,
+} from "~/drizzle/schema.server";
 
 const removeCursors = async () => {
-	await prisma.blueskyAccount.updateMany({
-		where: {},
-		data: {
+	try {
+		console.log("Starting database operations...");
+
+		await db.update(blueskyAccount).set({
 			mostRecentPostDate: null,
-		},
-	});
+		});
+		console.log("Updated blueskyAccount");
 
-	await prisma.mastodonAccount.updateMany({
-		where: {},
-		data: {
+		await db.update(mastodonAccount).set({
 			mostRecentPostId: null,
-		},
-	});
+		});
+		console.log("Updated mastodonAccount");
 
-	await prisma.linkPost.deleteMany({
-		where: {},
-	});
+		await db.delete(linkPost);
+		console.log("Deleted linkPost");
 
-	await prisma.actor.deleteMany({
-		where: {},
-	});
+		await db.delete(actor);
+		console.log("Deleted actor");
 
-	await prisma.link.deleteMany({
-		where: {},
-	});
+		await db.delete(link);
+		console.log("Deleted link");
 
-	console.log("Finished");
+		console.log("Finished");
+	} catch (error) {
+		console.error("Error occurred:", error);
+	}
 };
 
 removeCursors();

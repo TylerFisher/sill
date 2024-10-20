@@ -15,10 +15,12 @@ import Verify from "~/emails/verify";
 import TextInput from "~/components/TextInput";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
 import { prepareVerification } from "./accounts.verify.server";
 import { sendEmail } from "~/utils/email.server";
 import ErrorList from "~/components/ErrorList";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
@@ -31,11 +33,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
 		schema: SignupSchema.superRefine(async (data, ctx) => {
-			const existingUser = await prisma.user.findUnique({
-				where: {
-					email: data.email,
-				},
-				select: { id: true },
+			const existingUser = await db.query.user.findFirst({
+				where: eq(user.email, data.email),
+				columns: { id: true },
 			});
 			if (existingUser) {
 				ctx.addIssue({

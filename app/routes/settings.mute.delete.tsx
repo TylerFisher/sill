@@ -2,7 +2,9 @@ import { type ActionFunctionArgs, json } from "@remix-run/node";
 import { parseWithZod } from "@conform-to/zod";
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";
-import { prisma } from "~/db.server";
+import { db } from "~/drizzle/db.server";
+import { mutePhrase } from "~/drizzle/schema.server";
+import { and, eq } from "drizzle-orm";
 
 const MuteDeleteSchema = z.object({
 	phrase: z.string(),
@@ -27,14 +29,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		);
 	}
 
-	await prisma.mutePhrase.delete({
-		where: {
-			userId_phrase: {
-				userId,
-				phrase: submission.value.phrase,
-			},
-		},
-	});
+	await db
+		.delete(mutePhrase)
+		.where(
+			and(
+				eq(mutePhrase.userId, userId),
+				eq(mutePhrase.phrase, submission.value.phrase),
+			),
+		);
 
 	return json({});
 };
