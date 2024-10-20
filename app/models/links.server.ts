@@ -158,7 +158,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 		});
 		const timeline = response.data.feed;
 		const checkDate = account?.mostRecentPostDate
-			? new Date(account.mostRecentPostDate)
+			? account.mostRecentPostDate
 			: new Date(Date.now() - ONE_DAY_MS);
 
 		let reachedEnd = false;
@@ -188,8 +188,8 @@ export const getBlueskyTimeline = async (userId: string) => {
 			.update(blueskyAccount)
 			.set({
 				mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-					? firstPost.reason.indexedAt
-					: firstPost.post.indexedAt,
+					? new Date(firstPost.reason.indexedAt)
+					: new Date(firstPost.post.indexedAt),
 				accessJwt: tokenSet.access_token,
 				refreshJwt: tokenSet.refresh_token,
 			})
@@ -281,7 +281,7 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		id: uuidv7(),
 		url,
 		text: original.content,
-		postDate: original.createdAt,
+		postDate: new Date(original.createdAt),
 		postType: PostType.mastodon,
 		actorHandle: original.account.username,
 		repostHandle: t.reblog ? t.account.username : undefined,
@@ -299,7 +299,7 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		id: uuidv7(),
 		linkUrl: card.url,
 		postId: post.id,
-		date: original.createdAt,
+		date: new Date(original.createdAt),
 	};
 
 	return {
@@ -487,7 +487,7 @@ const processBlueskyLink = async (
 					id: uuidv7(),
 					url: quotedPostUrl || "",
 					text: quotedValue.text,
-					postDate: quotedRecord.indexedAt,
+					postDate: new Date(quotedRecord.indexedAt),
 					postType: PostType.bluesky,
 					actorHandle: quotedRecord.author.handle,
 				}
@@ -507,7 +507,7 @@ const processBlueskyLink = async (
 		id: uuidv7(),
 		url: postUrl,
 		text: record.text,
-		postDate: t.post.indexedAt,
+		postDate: new Date(t.post.indexedAt),
 		postType: PostType.bluesky,
 		actorHandle: t.post.author.handle,
 		quotingId: quotedPost ? quotedPost.id : undefined,
@@ -546,7 +546,7 @@ const processBlueskyLink = async (
 		id: uuidv7(),
 		linkUrl: link.url,
 		postId: post.id,
-		date: t.post.indexedAt,
+		date: new Date(t.post.indexedAt),
 	};
 
 	return {
@@ -705,7 +705,7 @@ export const countLinkOccurrences = async ({
 		where: eq(mutePhrase.userId, userId),
 	});
 
-	const start = new Date(Date.now() - time).toISOString();
+	const start = new Date(Date.now() - time);
 
 	let mostRecentLinkPosts = await db.transaction(async (tx) => {
 		const linkPostsForUser = await tx.query.linkPostToUser.findMany({

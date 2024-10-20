@@ -102,13 +102,13 @@ export async function prepareVerification({
 		.values({
 			id: uuidv7(),
 			...verificationData,
-			expiresAt: verificationData.expiresAt.toISOString(),
+			expiresAt: verificationData.expiresAt,
 		})
 		.onConflictDoUpdate({
 			target: [verification.target, verification.type],
 			set: {
 				...verificationData,
-				expiresAt: verificationData.expiresAt.toISOString(),
+				expiresAt: verificationData.expiresAt,
 			},
 		});
 
@@ -135,7 +135,7 @@ export async function isCodeValid({
 
 			// Second condition: OR clause for expiresAt
 			or(
-				gt(verification.expiresAt, new Date().toISOString()), // expiresAt is greater than the current date
+				gt(verification.expiresAt, new Date()), // expiresAt is greater than the current date
 				isNull(verification.expiresAt), // or expiresAt is null
 			),
 		),

@@ -116,7 +116,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	headers.append(
 		"set-cookie",
 		await authSessionStorage.commitSession(authSession, {
-			expires: remember ? new Date(session.expirationDate) : undefined,
+			expires: remember ? session.expirationDate : undefined,
 		}),
 	);
 	headers.append(

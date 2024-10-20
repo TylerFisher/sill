@@ -42,7 +42,7 @@ export const verification = pgTable(
 	"verification",
 	{
 		id: uuid().primaryKey().notNull(),
-		createdAt: timestamp({ precision: 3, mode: "string" })
+		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		type: text().notNull(),
@@ -52,7 +52,7 @@ export const verification = pgTable(
 		digits: integer().notNull(),
 		period: integer().notNull(),
 		charSet: text().notNull(),
-		expiresAt: timestamp({ precision: 3, mode: "string" }),
+		expiresAt: timestamp({ precision: 3, mode: "date" }),
 	},
 	(table) => {
 		return {
@@ -76,7 +76,7 @@ export const linkPost = pgTable(
 		postId: uuid()
 			.notNull()
 			.references(() => post.id),
-		date: timestamp({ precision: 3, mode: "string" }).notNull(),
+		date: timestamp({ precision: 3, mode: "date" }).notNull(),
 	},
 	(table) => {
 		return {
@@ -96,7 +96,7 @@ export const post = pgTable(
 		id: uuid().primaryKey().notNull(),
 		url: text().notNull(),
 		text: text().notNull(),
-		postDate: timestamp({ precision: 3, mode: "string" }).notNull(),
+		postDate: timestamp({ precision: 3, mode: "date" }).notNull(),
 		postType: postType().notNull(),
 		actorHandle: text()
 			.notNull()
@@ -133,8 +133,8 @@ export const session = pgTable(
 	"session",
 	{
 		id: uuid().primaryKey().notNull(),
-		expirationDate: timestamp({ precision: 3, mode: "string" }).notNull(),
-		createdAt: timestamp({ precision: 3, mode: "string" })
+		expirationDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()
@@ -158,7 +158,7 @@ export const mastodonAccount = pgTable("mastodon_account", {
 	tokenType: text().notNull(),
 	expiresIn: integer(),
 	refreshToken: text(),
-	createdAt: timestamp({ precision: 3, mode: "string" })
+	createdAt: timestamp({ precision: 3, mode: "date" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 	mostRecentPostId: text(),
@@ -176,7 +176,7 @@ export const blueskyAccount = pgTable(
 		accessJwt: text().notNull(),
 		handle: text().notNull().unique(),
 		did: text().notNull().unique(),
-		mostRecentPostDate: timestamp({ precision: 3, mode: "string" }),
+		mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
 		userId: uuid()
 			.notNull()
 			.references(() => user.id),
@@ -252,7 +252,7 @@ export const emailToken = pgTable(
 	"email_token",
 	{
 		token: text().notNull(),
-		createdAt: timestamp({ precision: 3, mode: "string" })
+		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()
@@ -276,7 +276,7 @@ export const user = pgTable(
 		id: uuid().primaryKey().notNull(),
 		email: text().notNull().unique(),
 		name: text(),
-		createdAt: timestamp({ precision: 3, mode: "string" })
+		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		emailConfirmed: boolean("email_confirmed").default(false).notNull(),
@@ -312,7 +312,7 @@ export const mutePhrase = pgTable(
 		id: uuid().primaryKey().notNull(),
 		phrase: text().notNull(),
 		active: boolean().default(true).notNull(),
-		createdAt: timestamp({ precision: 3, mode: "string" })
+		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()

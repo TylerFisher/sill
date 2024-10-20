@@ -26,7 +26,7 @@ export async function handleNewSession(
 		remember,
 	}: {
 		request: Request;
-		session: { userId: string; id: string; expirationDate: string };
+		session: { userId: string; id: string; expirationDate: Date };
 		redirectTo?: string;
 		remember: boolean;
 	},
@@ -75,7 +75,7 @@ export async function handleNewSession(
 			{
 				headers: {
 					"set-cookie": await authSessionStorage.commitSession(authSession, {
-						expires: remember ? new Date(session.expirationDate) : undefined,
+						expires: remember ? session.expirationDate : undefined,
 					}),
 				},
 			},
@@ -118,9 +118,7 @@ export async function handleVerification({
 		headers.append(
 			"set-cookie",
 			await authSessionStorage.commitSession(authSession, {
-				expires: remember
-					? new Date(existingSession.expirationDate)
-					: undefined,
+				expires: remember ? existingSession.expirationDate : undefined,
 			}),
 		);
 	} else {

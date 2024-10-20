@@ -29,7 +29,7 @@ export async function getUserId(request: Request) {
 		},
 		where: and(
 			eq(session.id, sessionId),
-			gt(session.expirationDate, new Date().toISOString()),
+			gt(session.expirationDate, new Date()),
 		),
 	});
 
@@ -111,7 +111,7 @@ export async function login({
 		.insert(session)
 		.values({
 			id: uuidv7(),
-			expirationDate: getSessionExpirationDate().toISOString(),
+			expirationDate: getSessionExpirationDate(),
 			userId: user.id,
 		})
 		.returning({
@@ -157,7 +157,7 @@ export async function signup({
 			.insert(session)
 			.values({
 				id: uuidv7(),
-				expirationDate: getSessionExpirationDate().toISOString(),
+				expirationDate: getSessionExpirationDate(),
 				userId: result[0].id,
 			})
 			.returning({
