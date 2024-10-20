@@ -327,22 +327,27 @@ export const getLinksFromMastodon = async (userId: string) => {
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
 
 	await db.transaction(async (tx) => {
-		await tx.insert(actor).values(actors).onConflictDoNothing();
-		await tx.insert(post).values(posts).onConflictDoNothing();
-		await tx.insert(link).values(links).onConflictDoNothing();
-		const createdLinkPosts = await tx
-			.insert(linkPost)
-			.values(linkPosts)
-			.onConflictDoNothing()
-			.returning({
-				id: linkPost.id,
-			});
-		await tx.insert(linkPostToUser).values(
-			createdLinkPosts.map((lp) => ({
-				userId,
-				linkPostId: lp.id,
-			})),
-		);
+		if (actors.length > 0)
+			await tx.insert(actor).values(actors).onConflictDoNothing();
+		if (posts.length > 0)
+			await tx.insert(post).values(posts).onConflictDoNothing();
+		if (links.length > 0)
+			await tx.insert(link).values(links).onConflictDoNothing();
+		if (linkPosts.length > 0) {
+			const createdLinkPosts = await tx
+				.insert(linkPost)
+				.values(linkPosts)
+				.onConflictDoNothing()
+				.returning({
+					id: linkPost.id,
+				});
+			await tx.insert(linkPostToUser).values(
+				createdLinkPosts.map((lp) => ({
+					userId,
+					linkPostId: lp.id,
+				})),
+			);
+		}
 	});
 };
 
@@ -579,24 +584,31 @@ export const getLinksFromBluesky = async (userId: string) => {
 	const images = processedResults.flatMap((p) => p.images);
 
 	await db.transaction(async (tx) => {
-		await tx.insert(actor).values(actors).onConflictDoNothing();
-		await tx.insert(post).values(quotedPosts).onConflictDoNothing();
-		await tx.insert(post).values(posts).onConflictDoNothing();
-		await tx.insert(link).values(links).onConflictDoNothing();
-		await tx.insert(postImage).values(images).onConflictDoNothing();
-		const createdLinkPosts = await tx
-			.insert(linkPost)
-			.values(linkPosts)
-			.onConflictDoNothing()
-			.returning({
-				id: linkPost.id,
-			});
-		await tx.insert(linkPostToUser).values(
-			createdLinkPosts.map((lp) => ({
-				userId,
-				linkPostId: lp.id,
-			})),
-		);
+		if (actors.length > 0)
+			await tx.insert(actor).values(actors).onConflictDoNothing();
+		if (quotedPosts.length > 0)
+			await tx.insert(post).values(quotedPosts).onConflictDoNothing();
+		if (posts.length > 0)
+			await tx.insert(post).values(posts).onConflictDoNothing();
+		if (links.length > 0)
+			await tx.insert(link).values(links).onConflictDoNothing();
+		if (images.length > 0)
+			await tx.insert(postImage).values(images).onConflictDoNothing();
+		if (linkPosts.length > 0) {
+			const createdLinkPosts = await tx
+				.insert(linkPost)
+				.values(linkPosts)
+				.onConflictDoNothing()
+				.returning({
+					id: linkPost.id,
+				});
+			await tx.insert(linkPostToUser).values(
+				createdLinkPosts.map((lp) => ({
+					userId,
+					linkPostId: lp.id,
+				})),
+			);
+		}
 	});
 };
 
