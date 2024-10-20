@@ -12,7 +12,7 @@ import {
 	ChevronUpIcon,
 	MagnifyingGlassIcon,
 } from "@radix-ui/react-icons";
-import { countLinkOccurrences } from "~/models/links.server";
+import { countLinkOccurrences } from "~/routes/links.server";
 import { requireUserId } from "~/utils/auth.server";
 import LinkPostRep from "~/components/LinkPostRep";
 import FilterButtonGroup, {

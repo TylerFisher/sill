@@ -4,7 +4,7 @@ import { Queue, Worker } from "bullmq";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { connection } from "~/utils/redis.server";
-import { fetchLinkMetadata } from "~/models/links.server";
+import { fetchLinkMetadata } from "~/utils/bluesky.server";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

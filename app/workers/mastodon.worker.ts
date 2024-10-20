@@ -1,5 +1,5 @@
 import type { SandboxedJob } from "bullmq";
-import { getMastodonTimeline } from "~/models/links.server";
+import { getMastodonTimeline } from "~/utils/mastodon.server";
 
 interface MastodonFetchQueueJob {
 	userId: string;
