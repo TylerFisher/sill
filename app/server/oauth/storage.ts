@@ -8,6 +8,9 @@ import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { atprotoAuthSession, atprotoAuthState } from "~/drizzle/schema.server";
 
+/**
+ * State store for Bluesky OAuth client
+ */
 export class StateStore implements NodeSavedStateStore {
 	async get(key: string): Promise<NodeSavedState | undefined> {
 		const authState = await db.query.atprotoAuthState.findFirst({
@@ -30,6 +33,9 @@ export class StateStore implements NodeSavedStateStore {
 	}
 }
 
+/**
+ * Session store for Bluesky OAuth client
+ */
 export class SessionStore implements NodeSavedSessionStore {
 	async get(key: string): Promise<NodeSavedSession | undefined> {
 		const authSession = await db.query.atprotoAuthSession.findFirst({

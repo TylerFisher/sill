@@ -21,6 +21,10 @@ const resendSuccessSchema = z.object({
 	id: z.string(),
 });
 
+/**
+ * Sends an email using the Resend API
+ * @returns Resend API response
+ */
 export async function sendEmail({
 	react,
 	...options
@@ -90,6 +94,11 @@ export async function sendEmail({
 	} as const;
 }
 
+/**
+ * Renders a React element into HTML and plain text email content
+ * @param react React element to render
+ * @returns HTML and plain text email content
+ */
 async function renderReactEmail(react: ReactElement) {
 	const [html, text] = await Promise.all([
 		render(react),

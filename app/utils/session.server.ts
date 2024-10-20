@@ -37,6 +37,13 @@ Object.defineProperty(authSessionStorage, "commitSession", {
 	},
 });
 
+/**
+ * Sets the instance in a cookie so we can access it later in OAuth handshake and redirects to a URL
+ * @param request Request object
+ * @param instance Mastodon instance URL
+ * @param redirectTo URL to redirect to after setting the instance
+ * @returns Redirect response with instance cookie set
+ */
 export async function createInstanceCookie(
 	request: Request,
 	instance: string,
@@ -52,6 +59,12 @@ export async function createInstanceCookie(
 		},
 	});
 }
+
+/**
+ * Gets the instance from the session cookie
+ * @param request Request object
+ * @returns Instance URL from session
+ */
 export async function getInstanceCookie(request: Request) {
 	const session = await authSessionStorage.getSession(
 		request.headers.get("cookie"),

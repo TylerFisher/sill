@@ -23,6 +23,11 @@ export const resetPasswordUsernameSessionKey = "resetPasswordUsername";
 
 const ResetPasswordSchema = PasswordAndConfirmPasswordSchema;
 
+/**
+ * Requires the reset password username from the session, otherwise redirects to login
+ * @param request Request object
+ * @returns Username from reset password session
+ */
 async function requireResetPasswordUsername(request: Request) {
 	await requireAnonymous(request);
 	const verifySession = await verifySessionStorage.getSession(

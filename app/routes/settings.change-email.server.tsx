@@ -12,6 +12,11 @@ import { newEmailAddressSessionKey } from "./settings.change-email";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
+/**
+ * Handles verification of email change and sends email change notice
+ * @param param0 Parameters for function including request and submission data
+ * @returns Redirect response to settings page
+ */
 export async function handleVerification({
 	request,
 	submission,

@@ -39,6 +39,12 @@ interface BskyDetectedLink {
 
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
+/**
+ * Restores Bluesky OAuth session based on account did.
+ * Handles OAuthResponseError (for DPoP nonce) by attempting to restore session again.
+ * @param account Account object with did
+ * @returns Bluesky OAuth session
+ */
 const handleBlueskyOAuth = async (account: { did: string }) => {
 	let oauthSession: OAuthSession | null = null;
 	try {
@@ -53,6 +59,11 @@ const handleBlueskyOAuth = async (account: { did: string }) => {
 	return oauthSession;
 };
 
+/**
+ * Fetches new posts from Bluesky timeline and updates account with most recent post date.
+ * @param userId ID for logged in user
+ * @returns New posts from Bluesky timeline
+ */
 export const getBlueskyTimeline = async (userId: string) => {
 	const account = await db.query.blueskyAccount.findFirst({
 		where: eq(blueskyAccount.userId, userId),
@@ -111,6 +122,12 @@ export const getBlueskyTimeline = async (userId: string) => {
 	return timeline;
 };
 
+/**
+ * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
+ * @param userId ID for logged in user
+ * @param t Post object from Bluesky timeline
+ * @returns Actors, quoted post, images, post, link, and new link post to insert into database
+ */
 const processBlueskyLink = async (
 	userId: string,
 	t: AppBskyFeedDefs.FeedViewPost,
@@ -324,6 +341,11 @@ const processBlueskyLink = async (
 	};
 };
 
+/**
+ * Gets Bluesky timeline, processes posts, and inserts data into database
+ * @param userId ID for logged in user
+ * @returns void
+ */
 export const getLinksFromBluesky = async (userId: string) => {
 	const timeline = await getBlueskyTimeline(userId);
 	const processedResults = (
@@ -372,6 +394,12 @@ export const getLinksFromBluesky = async (userId: string) => {
 	});
 };
 
+/**
+ * Searches for a link facet in a Bluesky post record
+ * If found, passes the link to the metadata fetcher
+ * @param record Bluesky Post Record
+ * @returns Detected link from post record
+ */
 const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	let foundLink: BskyDetectedLink | null = null;
 	const rt = new RichText({
@@ -409,6 +437,12 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	return foundLink;
 };
 
+/**
+ * Fetches metadata for a link and inserts it into the database
+ * Used by the link metadata fetcher queue in Redis
+ * @param uri URI to fetch metadata for
+ * @returns void
+ */
 export const fetchLinkMetadata = async (uri: string) => {
 	const foundLink = await db.query.link.findFirst({
 		where: eq(link.url, uri),

@@ -6,6 +6,10 @@ import { SessionStore, StateStore } from "./storage";
 let oauthClient: NodeOAuthClient | null = null;
 const isProduction = process.env.NODE_ENV === "production";
 
+/**
+ * Creates an OAuth client for Bluesky
+ * @returns OAuth client for Bluesky
+ */
 export const createOAuthClient = async () => {
 	if (oauthClient) {
 		return oauthClient;

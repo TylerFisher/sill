@@ -18,6 +18,12 @@ const verifiedTimeKey = "verified-time";
 const unverifiedSessionIdKey = "unverified-session-id";
 const rememberKey = "remember";
 
+/**
+ * Handles new session creation and determines whether to request 2FA verification
+ * @param param0 Parameters for new session including request, session data, redirect URL, and remember boolean
+ * @param responseInit
+ * @returns Redirect response for given redirect URL
+ */
 export async function handleNewSession(
 	{
 		request,
@@ -84,6 +90,11 @@ export async function handleNewSession(
 	);
 }
 
+/**
+ * Handles verification of a session and redirects to the appropriate URL
+ * @param param0 Parameters for verification including request and submission data
+ * @returns Redirect response for given redirect URL
+ */
 export async function handleVerification({
 	request,
 	submission,
@@ -136,6 +147,11 @@ export async function handleVerification({
 	return redirect(safeRedirect(redirectTo), { headers });
 }
 
+/**
+ * Determines whether to request 2FA verification based on session data
+ * @param request Request object
+ * @returns Whether to request 2FA verification
+ */
 export async function shouldRequestTwoFA(request: Request) {
 	const authSession = await authSessionStorage.getSession(
 		request.headers.get("cookie"),

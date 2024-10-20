@@ -7,6 +7,11 @@ import type { VerifyFunctionArgs } from "./accounts.verify.server.ts";
 import { eq, or } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
+/**
+ * Verifies verification code and redirects to reset password page
+ * @param param0 Parameters for verification including submission data
+ * @returns Redirect response to reset password page
+ */
 export async function handleVerification({ submission }: VerifyFunctionArgs) {
 	invariant(
 		submission.status === "success",

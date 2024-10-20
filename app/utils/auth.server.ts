@@ -14,6 +14,11 @@ export const getSessionExpirationDate = () =>
 
 export const sessionKey = "sessionId";
 
+/**
+ * Fetches the user ID from the session cookie, or redirects to the home page
+ * @param request Request object
+ * @returns User ID from session
+ */
 export async function getUserId(request: Request) {
 	const authSession = await authSessionStorage.getSession(
 		request.headers.get("cookie"),
@@ -43,6 +48,12 @@ export async function getUserId(request: Request) {
 	return existingSession.user.id;
 }
 
+/**
+ * Gets the user ID from the session, or redirects to the login page
+ * @param request Request object
+ * @param redirectTo URL to redirect to after login if user is not logged in
+ * @returns User ID from session
+ */
 export async function requireUserId(
 	request: Request,
 	{ redirectTo }: { redirectTo?: string | null } = {},
@@ -63,6 +74,10 @@ export async function requireUserId(
 	return userId;
 }
 
+/**
+ * Ensures that the user is not logged in, otherwise redirects to the home page
+ * @param request Request object
+ */
 export async function requireAnonymous(request: Request) {
 	const userId = await getUserId(request);
 	if (userId) {
@@ -70,6 +85,12 @@ export async function requireAnonymous(request: Request) {
 	}
 }
 
+/**
+ * Handles the logout process by deleting the session from the database and the user's browser
+ * @param param0 Object with request and optional redirectTo URL
+ * @param responseInit ResponseInit object
+ * @returns Redirect response to the given URL
+ */
 export async function logout(
 	{
 		request,
@@ -98,6 +119,11 @@ export async function logout(
 	});
 }
 
+/**
+ * Handles the login process by verifying the user's credentials and creating a new session
+ * @param param0 Object with username and password
+ * @returns New session object
+ */
 export async function login({
 	username,
 	password,
@@ -122,6 +148,11 @@ export async function login({
 	return newSession[0];
 }
 
+/**
+ * Handles the signup process by creating a new user, hashing the password, and returning a new session
+ * @param param0 Object with email, username, password, and name
+ * @returns New session object
+ */
 export async function signup({
 	email,
 	username,
@@ -174,11 +205,22 @@ export async function signup({
 	return transaction.session;
 }
 
+/**
+ * Hashes a plaintext password
+ * @param password Plaintext password
+ * @returns Hashed password
+ */
 export async function getPasswordHash(password: string) {
 	const hash = await bcrypt.hash(password, 10);
 	return hash;
 }
 
+/**
+ * Verifies a user's password by checking the stored hash against the plaintext password
+ * @param userInfo Either username or userId
+ * @param password Plaintext password
+ * @returns User ID if the password is valid, otherwise null
+ */
 export async function verifyUserPassword(
 	userInfo: { username?: string | undefined; userId?: string },
 	password: string,
@@ -223,6 +265,11 @@ export async function verifyUserPassword(
 	return { id: userWithPassword.id };
 }
 
+/**
+ * Resets a user's password by updating the stored hash
+ * @param param0 Object with user ID and new password
+ * @returns Updated password object
+ */
 export async function resetUserPassword({
 	userId,
 	newPassword,
@@ -231,7 +278,7 @@ export async function resetUserPassword({
 	newPassword: string;
 }) {
 	const hashedPassword = await getPasswordHash(newPassword);
-	return db
+	return await db
 		.update(password)
 		.set({
 			hash: hashedPassword,

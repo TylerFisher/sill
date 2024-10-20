@@ -49,6 +49,11 @@ const SignupFormSchema = z
 	})
 	.and(PasswordAndConfirmPasswordSchema);
 
+/**
+ * Gets email address from onboarding session
+ * @param request Request object
+ * @returns Email address from onboarding session
+ */
 async function requireOnboardingEmail(request: Request) {
 	await requireAnonymous(request);
 	const verifySession = await verifySessionStorage.getSession(

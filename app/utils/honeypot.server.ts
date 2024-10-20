@@ -5,6 +5,10 @@ export const honeypot = new Honeypot({
 	encryptionSeed: process.env.HONEYPOT_SECRET,
 });
 
+/**
+ * Helper function to check for honeypot in form data
+ * @param formData Form data to check for honeypot
+ */
 export function checkHoneypot(formData: FormData) {
 	try {
 		honeypot.check(formData);

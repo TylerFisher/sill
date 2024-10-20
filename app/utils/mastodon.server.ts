@@ -18,10 +18,21 @@ const CLIENT_SECRET = process.env.MASTODON_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI as string; // e.g., 'http://localhost:3000/auth
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
+/**
+ * Constructs the authorization URL for a given Mastodon instance
+ * @param instance Mastodon instance URL
+ * @returns Authorization URL for the Mastodon instance
+ */
 export const getAuthorizationUrl = (instance: string) => {
 	return `${instance}/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
 };
 
+/**
+ * Fetches the OAuth token from a Mastodon instance given an authorization code
+ * @param instance Mastodon instance URL
+ * @param code Authorization code
+ * @returns OAuth token data
+ */
 export const getAccessToken = async (instance: string, code: string) => {
 	const response = await fetch(`${instance}/oauth/token`, {
 		method: "POST",
@@ -36,9 +47,16 @@ export const getAccessToken = async (instance: string, code: string) => {
 			grant_type: "authorization_code",
 		}),
 	});
-	return response.json(); // This will include access_token, token_type, etc.
+	return await response.json(); // This will include access_token, token_type, etc.
 };
 
+/**
+ * Mastodon does not return reblogs in the home timeline if you follow the original poster.
+ * This function fetches reblogs for a given status.
+ * @param client Masto.js client
+ * @param status Original status to search for reblogs
+ * @returns List of reblogs for the original status
+ */
 const fetchRebloggedPosts = async (
 	client: mastodon.rest.Client,
 	status: mastodon.v1.Status,
@@ -69,6 +87,12 @@ const fetchRebloggedPosts = async (
 	return rebloggedPosts;
 };
 
+/**
+ * Fetches the Mastodon timeline for a given user
+ * Either fetches all statuses since the last fetch, or all statuses from the last 24 hours
+ * @param userId ID for the logged-in user
+ * @returns List of statuses from the user's Mastodon timeline since last fetch
+ */
 export const getMastodonTimeline = async (userId: string) => {
 	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
@@ -99,9 +123,6 @@ export const getMastodonTimeline = async (userId: string) => {
 				break;
 			}
 
-			// NASTY. Mastodon doesn't return reblogs if you follow the original poster.
-			// We need those reblogs. So we have to find the rebloggers and search their
-			// timelines for the reblog post.
 			if (status.reblogsCount > 0) {
 				const rebloggedPosts = await fetchRebloggedPosts(client, status);
 				timeline.push(...rebloggedPosts);
@@ -122,6 +143,12 @@ export const getMastodonTimeline = async (userId: string) => {
 	return timeline;
 };
 
+/**
+ * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
+ * @param userId ID for logged in user
+ * @param t Status object from Mastodon timeline
+ * @returns Actors, post, link, and new link post to insert into database
+ */
 const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 	const original = t.reblog || t;
 	const url = original.url;
@@ -234,6 +261,11 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 	};
 };
 
+/**
+ * Gets Mastodon timeline, processes posts, and inserts data into database
+ * @param userId ID for logged in user
+ * @returns void
+ */
 export const getLinksFromMastodon = async (userId: string) => {
 	const timeline = await getMastodonTimeline(userId);
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);

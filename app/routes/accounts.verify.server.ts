@@ -37,6 +37,10 @@ export type VerifyFunctionArgs = {
 	body: FormData | URLSearchParams;
 };
 
+/**
+ * Ensures that the user has recently verified their account if 2FA is enabled
+ * @param request Request object
+ */
 export async function requireRecentVerification(request: Request) {
 	const userId = await requireUserId(request);
 	const shouldReverify = await shouldRequestTwoFA(request);
@@ -51,7 +55,11 @@ export async function requireRecentVerification(request: Request) {
 		throw redirect(redirectUrl.toString());
 	}
 }
-
+/**
+ * Gets the redirect URL for verification and sets search parameters for verification type, target, and redirect URL
+ * @param param0 Parameters for function including request, verification type, verification target, and redirect URL
+ * @returns Redirect URL for verification
+ */
 export function getRedirectToUrl({
 	request,
 	type,
@@ -72,6 +80,12 @@ export function getRedirectToUrl({
 	return redirectToUrl;
 }
 
+/**
+ * Prepares verification by generating an OTP, creating a verification record, and setting the redirect URL
+ * @param param0 Parameters for verification including time period,
+ * request, verification type, and verification target
+ * @returns Object with OTP, redirect URL, and verification URL
+ */
 export async function prepareVerification({
 	period,
 	request,
@@ -118,6 +132,11 @@ export async function prepareVerification({
 	return { otp, redirectTo, verifyUrl };
 }
 
+/**
+ * Assesses validity of OTP code
+ * @param param0 Parameters for function including OTP code, verification type, and verification target
+ * @returns Boolean indicating if the OTP code is valid
+ */
 export async function isCodeValid({
 	code,
 	type,
@@ -151,6 +170,13 @@ export async function isCodeValid({
 	return true;
 }
 
+/**
+ * Determines the type of verification requested and handles the verification process
+ * Also parses the submission with Zod and validates the submission
+ * @param request Request object
+ * @param body Body of the submission to validate
+ * @returns Verification response
+ */
 export async function validateRequest(
 	request: Request,
 	body: URLSearchParams | FormData,
@@ -184,12 +210,14 @@ export async function validateRequest(
 	const { value: submissionValue } = submission;
 
 	async function deleteVerification() {
-		await db.delete(verification).where(
-			and(
-				eq(verification.type, submissionValue[typeQueryParam]), // Match the type
-				eq(verification.target, submissionValue[targetQueryParam]), // Match the target
-			),
-		);
+		await db
+			.delete(verification)
+			.where(
+				and(
+					eq(verification.type, submissionValue[typeQueryParam]),
+					eq(verification.target, submissionValue[targetQueryParam]),
+				),
+			);
 	}
 
 	switch (submissionValue[typeQueryParam]) {
