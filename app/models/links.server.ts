@@ -31,19 +31,8 @@ import {
 	post,
 	postImage,
 	post as schemaPost,
-	user,
 } from "~/drizzle/schema.server";
-import {
-	and,
-	eq,
-	not,
-	or,
-	sql,
-	gte,
-	desc,
-	aliasedTable,
-	inArray,
-} from "drizzle-orm";
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -310,6 +299,7 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		id: uuidv7(),
 		linkUrl: card.url,
 		postId: post.id,
+		date: original.createdAt,
 	};
 
 	return {
@@ -556,6 +546,7 @@ const processBlueskyLink = async (
 		id: uuidv7(),
 		linkUrl: link.url,
 		postId: post.id,
+		date: t.post.indexedAt,
 	};
 
 	return {
@@ -716,15 +707,18 @@ export const countLinkOccurrences = async ({
 
 	const start = new Date(Date.now() - time).toISOString();
 
-	const mostRecentLinkPosts = await db.transaction(async (tx) => {
+	let mostRecentLinkPosts = await db.transaction(async (tx) => {
 		const linkPostsForUser = await tx.query.linkPostToUser.findMany({
 			where: eq(linkPostToUser.userId, userId),
 		});
 
 		return await db.query.linkPost.findMany({
-			where: inArray(
-				linkPost.id,
-				linkPostsForUser.map((lp) => lp.linkPostId),
+			where: and(
+				inArray(
+					linkPost.id,
+					linkPostsForUser.map((lp) => lp.linkPostId),
+				),
+				gte(linkPost.date, start),
 			),
 			with: {
 				link: true,
@@ -743,15 +737,12 @@ export const countLinkOccurrences = async ({
 					},
 				},
 			},
+			orderBy: desc(linkPost.date),
 		});
 	});
 
-	let filtered = mostRecentLinkPosts
-		.filter((lp) => lp.post.postDate >= start)
-		.sort((a, b) => (a.post.postDate > b.post.postDate ? -1 : 1));
-
 	if (query) {
-		filtered = filtered.filter((lp) => {
+		mostRecentLinkPosts = mostRecentLinkPosts.filter((lp) => {
 			return (
 				lp.link.title?.toLowerCase().includes(query.toLowerCase()) ||
 				lp.link.description?.toLowerCase().includes(query.toLowerCase()) ||
@@ -763,7 +754,7 @@ export const countLinkOccurrences = async ({
 	}
 
 	for (const phrase of mutePhrases) {
-		filtered = filtered.filter((lp) => {
+		mostRecentLinkPosts = mostRecentLinkPosts.filter((lp) => {
 			return !(
 				lp.link.title?.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
 				lp.link.description
@@ -778,7 +769,7 @@ export const countLinkOccurrences = async ({
 		});
 	}
 
-	const grouped = groupBy(filtered, (l) => {
+	const grouped = groupBy(mostRecentLinkPosts, (l) => {
 		return l.link.url;
 	});
 

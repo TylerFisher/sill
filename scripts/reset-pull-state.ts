@@ -4,7 +4,10 @@ import {
 	blueskyAccount,
 	link,
 	linkPost,
+	linkPostToUser,
 	mastodonAccount,
+	post,
+	postImage,
 } from "~/drizzle/schema.server";
 
 const removeCursors = async () => {
@@ -21,8 +24,17 @@ const removeCursors = async () => {
 		});
 		console.log("Updated mastodonAccount");
 
+		await db.delete(linkPostToUser);
+		console.log("Deleted linkPostToUser");
+
 		await db.delete(linkPost);
 		console.log("Deleted linkPost");
+
+		await db.delete(postImage);
+		console.log("Deleted postImage");
+
+		await db.delete(post);
+		console.log("Deleted post");
 
 		await db.delete(actor);
 		console.log("Deleted actor");

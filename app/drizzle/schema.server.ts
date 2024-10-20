@@ -76,6 +76,7 @@ export const linkPost = pgTable(
 		postId: uuid()
 			.notNull()
 			.references(() => post.id),
+		date: timestamp({ precision: 3, mode: "string" }).notNull(),
 	},
 	(table) => {
 		return {
