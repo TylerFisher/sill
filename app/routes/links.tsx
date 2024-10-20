@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	json,
+	defer,
 } from "@remix-run/node";
-import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Form, useLoaderData, useSearchParams, Await } from "@remix-run/react";
 import { Box, Separator, Button, Flex, TextField } from "@radix-ui/themes";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import {
@@ -29,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const hideReposts = url.searchParams.get("reposts") === "true";
 	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
-	const links = await countLinkOccurrences({
+	const links = countLinkOccurrences({
 		userId,
 		time: Number.parseInt(time),
 		hideReposts,
@@ -38,7 +39,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		fetch: true,
 	});
 
-	return json({ links });
+	return defer({ links });
 };
 
 const Links = () => {
@@ -160,14 +161,22 @@ const Links = () => {
 					</Form>
 				</Box>
 			</Box>
-			{data.links.map((link, i) => (
-				<div key={link[0]}>
-					<LinkPostRep link={link[0]} linkPosts={link[1]} />
-					{i < data.links.length - 1 && (
-						<Separator my="7" size="4" orientation="horizontal" />
+			<Suspense fallback={<div>Loading...</div>}>
+				<Await resolve={data.links}>
+					{(links) => (
+						<div>
+							{links.map((link, i) => (
+								<div key={link[0]}>
+									<LinkPostRep link={link[0]} linkPosts={link[1]} />
+									{i < links.length - 1 && (
+										<Separator my="7" size="4" orientation="horizontal" />
+									)}
+								</div>
+							))}
+						</div>
 					)}
-				</div>
-			))}
+				</Await>
+			</Suspense>
 		</Layout>
 	);
 };
