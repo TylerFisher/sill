@@ -3,7 +3,7 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { session, user, password } from "~/drizzle/schema.server";
 import { eq, and, gt } from "drizzle-orm";
-import { authSessionStorage } from "~/session.server";
+import { authSessionStorage } from "~/utils/session.server";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { combineHeaders } from "./misc";
 import bcrypt from "bcryptjs";

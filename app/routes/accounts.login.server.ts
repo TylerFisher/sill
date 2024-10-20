@@ -5,7 +5,7 @@ import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
 import { getUserId, sessionKey } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { combineResponseInits } from "~/utils/misc";
-import { authSessionStorage } from "~/session.server";
+import { authSessionStorage } from "~/utils/session.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import {
 	getRedirectToUrl,

@@ -1,10 +1,10 @@
 import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { getAccessToken } from "~/utils/mastodon.server";
-import { getInstanceCookie } from "~/session.server";
+import { getInstanceCookie } from "~/utils/session.server";
 import { getUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { uuidv7 } from "uuidv7-js";
-import { mastodonFetchQueue } from "~/queue.server";
+import { mastodonFetchQueue } from "~/utils/queue.server";
 import { mastodonAccount } from "~/drizzle/schema.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

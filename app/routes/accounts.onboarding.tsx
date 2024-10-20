@@ -19,7 +19,7 @@ import { z } from "zod";
 import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { authSessionStorage } from "~/session.server";
+import { authSessionStorage } from "~/utils/session.server";
 import {
 	NameSchema,
 	PasswordAndConfirmPasswordSchema,

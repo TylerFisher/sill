@@ -3,8 +3,8 @@ import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { connection } from "./redis.server";
-import { fetchLinkMetadata } from "./models/links.server";
+import { connection } from "~/utils/redis.server";
+import { fetchLinkMetadata } from "~/models/links.server";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,10 +66,10 @@ export const linksQueue = registerQueue("links", async (job: LinksQueueJob) => {
 
 export const blueskyFetchQueue = registerQueue(
 	"bluesky",
-	path.join(__dirname, "./workers/bluesky.worker.ts"),
+	path.join(__dirname, "../workers/bluesky.worker.ts"),
 );
 
 export const mastodonFetchQueue = registerQueue(
 	"mastodon",
-	path.join(__dirname, "./workers/mastodon.worker.ts"),
+	path.join(__dirname, "../workers/mastodon.worker.ts"),
 );

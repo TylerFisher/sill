@@ -19,7 +19,7 @@ import groupBy from "object.groupby";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { createOAuthClient } from "~/server/oauth/client";
 import { db } from "~/drizzle/db.server";
-import { linksQueue } from "~/queue.server";
+import { linksQueue } from "~/utils/queue.server";
 import {
 	actor,
 	blueskyAccount,

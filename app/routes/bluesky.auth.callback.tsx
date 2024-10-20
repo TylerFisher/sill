@@ -5,7 +5,7 @@ import { Agent } from "@atproto/api";
 import { db } from "~/drizzle/db.server";
 import { uuidv7 } from "uuidv7-js";
 import { requireUserId } from "~/utils/auth.server";
-import { blueskyFetchQueue } from "~/queue.server";
+import { blueskyFetchQueue } from "~/utils/queue.server";
 import { blueskyAccount } from "~/drizzle/schema.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
