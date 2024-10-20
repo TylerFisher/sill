@@ -29,25 +29,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const hideReposts = url.searchParams.get("reposts") === "true";
 	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
-	const params = {
+
+	const links = countLinkOccurrences({
 		userId,
 		time: Number.parseInt(time),
 		hideReposts,
 		sort,
 		query,
-	};
-
-	const newData = countLinkOccurrences({
-		...params,
 		fetch: true,
 	});
 
-	const initialData = await countLinkOccurrences({
-		...params,
-		fetch: false,
-	});
-
-	return defer({ initialData, links: newData });
+	return defer({ links });
 };
 
 const Links = () => {
@@ -169,20 +161,7 @@ const Links = () => {
 					</Form>
 				</Box>
 			</Box>
-			<Suspense
-				fallback={
-					<div>
-						{data.initialData.map((link, i) => (
-							<div key={link[0]}>
-								<LinkPostRep link={link[0]} linkPosts={link[1]} />
-								{i < data.initialData.length - 1 && (
-									<Separator my="7" size="4" orientation="horizontal" />
-								)}
-							</div>
-						))}
-					</div>
-				}
-			>
+			<Suspense fallback={<div>Loading...</div>}>
 				<Await resolve={data.links}>
 					{(links) => (
 						<div>
