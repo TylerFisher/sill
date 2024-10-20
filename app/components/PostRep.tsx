@@ -12,7 +12,7 @@ type PostWithActor = Overwrite<
 	{
 		actor: Actor;
 		postDate: string;
-		images: PostImage[];
+		postImages: PostImage[];
 	}
 >;
 

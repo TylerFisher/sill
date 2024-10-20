@@ -5,7 +5,7 @@ import styles from "./PostContent.module.css";
 type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
 type PostWithStringDate = Overwrite<
 	Post,
-	{ postDate: string; images: PostImage[] }
+	{ postDate: string; postImages: PostImage[] }
 >;
 
 interface PostContentProps {
@@ -31,8 +31,8 @@ const PostContent = ({ post }: PostContentProps) => (
 				{post.text}
 			</Text>
 		)}
-		{post.images ? (
-			post.images.map((image) => (
+		{post.postImages ? (
+			post.postImages.map((image) => (
 				<Card key={image.url} mt="2">
 					<Inset>
 						<img
