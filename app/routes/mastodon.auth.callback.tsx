@@ -31,5 +31,5 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		userId,
 	});
 
-	return redirect("/settings/connect");
+	return redirect("/connect");
 };

@@ -1,19 +1,17 @@
-import { Container, Heading } from "@radix-ui/themes";
-import { Link } from "@remix-run/react";
+import { Container, Grid } from "@radix-ui/themes";
 import type { PropsWithChildren } from "react";
+import Header from "./Header";
+import Nav from "./Nav";
+import styles from "./Layout.module.css";
 
 const Layout = ({ children }: PropsWithChildren) => (
-	<Container size="2">
-		<div
-			style={{
-				backgroundColor: "var(--accent-1)",
-				padding: "1em",
-				boxShadow: "var(--base-card-surface-box-shadow)",
-				borderRadius: "1em",
-				minHeight: "100vh",
-			}}
-		>
-			{children}
+	<Container size="4">
+		<div className={styles.wrapper}>
+			<Header />
+			<aside className={styles.side}>
+				<Nav />
+			</aside>
+			<main className={styles.content}>{children}</main>
 		</div>
 	</Container>
 );

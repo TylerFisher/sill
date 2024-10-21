@@ -1,0 +1,28 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(12, [col-start] 1fr);
+  gap: 20px;
+}
+
+.wrapper > * {
+  grid-column: col-start / span 12;
+}
+
+@media (min-width: 500px) {
+  .side {
+    grid-column: col-start / span 3;
+  }
+  .content {
+    grid-column: col-start 4 / span 6;
+  }
+}
+
+.content {
+  background-color: var(--accent-1);
+  padding: 1em;
+  box-shadow: var(--base-card-surface-box-shadow);
+  border-radius: 1em;
+  min-height: 100vh;
+  margin: 0 auto;
+  width: 100%;
+}

@@ -21,7 +21,7 @@ const Index = () => {
 					<Link href="/links">Top Links</Link>
 				</li>
 				<li>
-					<Link href="/settings/connect">Connect to your accounts</Link>
+					<Link href="/connect">Connect to your accounts</Link>
 				</li>
 				<li>
 					<Link href="/accounts/logout">Log out</Link>

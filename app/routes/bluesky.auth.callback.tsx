@@ -34,9 +34,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			userId,
 		});
 
-		return redirect("/settings/connect");
+		return redirect("/connect");
 	} catch (error) {
 		console.error("Bluesky OAuth Error", { error: String(error) });
-		return redirect("/settings/connect");
+		return redirect("/connect");
 	}
 }

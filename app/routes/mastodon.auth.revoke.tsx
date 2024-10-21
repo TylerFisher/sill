@@ -39,7 +39,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		// Delete tokens from the database
 		await db.delete(mastodonAccount).where(eq(user.id, userId));
 
-		return redirect("/settings/connect");
+		return redirect("/connect");
 	}
 
 	return json({ message: "No tokens to revoke." });

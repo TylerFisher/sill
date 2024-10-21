@@ -14,6 +14,7 @@ import {
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
+import Layout from "~/components/Layout";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -38,7 +39,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
-		<Box>
+		<Layout>
 			{user && user.mastodonAccounts.length > 0 ? (
 				<Box>
 					<Heading size="4" mb="1">
@@ -111,6 +112,6 @@ export default function Index() {
 					</Form>
 				</Box>
 			)}
-		</Box>
+		</Layout>
 	);
 }

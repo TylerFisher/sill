@@ -13,5 +13,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 	await db.delete(blueskyAccount).where(eq(blueskyAccount.userId, userId));
 
-	return redirect("/settings/connect");
+	return redirect("/connect");
 };

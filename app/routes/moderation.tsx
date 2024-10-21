@@ -14,13 +14,14 @@ import {
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
-import { Box, Button, Flex, IconButton, Text } from "@radix-ui/themes";
+import { Button, Flex, IconButton, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput";
 import { uuidv7 } from "uuidv7-js";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import ErrorList from "~/components/ErrorList";
 import { eq } from "drizzle-orm";
 import { mutePhrase } from "~/drizzle/schema.server";
+import Layout from "~/components/Layout";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
@@ -101,7 +102,7 @@ const MutePhraseSettings = () => {
 	});
 
 	return (
-		<Box>
+		<Layout>
 			<ul
 				style={{
 					listStyle: "none",
@@ -110,7 +111,7 @@ const MutePhraseSettings = () => {
 			>
 				{data.phrases.map((phrase) => (
 					<li key={phrase.phrase}>
-						<fetcher.Form method="DELETE" action="/settings/mute/delete">
+						<fetcher.Form method="DELETE" action="/moderation/mute/delete">
 							<Flex my="4" align="center">
 								<input
 									name="phrase"
@@ -137,7 +138,7 @@ const MutePhraseSettings = () => {
 				/>
 				<Button type="submit">Submit</Button>
 			</Form>
-		</Box>
+		</Layout>
 	);
 };
 

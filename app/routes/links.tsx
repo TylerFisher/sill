@@ -5,7 +5,14 @@ import {
 	defer,
 } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams, Await } from "@remix-run/react";
-import { Box, Separator, Button, Flex, TextField } from "@radix-ui/themes";
+import {
+	Box,
+	Separator,
+	Button,
+	Flex,
+	TextField,
+	Spinner,
+} from "@radix-ui/themes";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import {
 	ChevronDownIcon,
@@ -103,46 +110,46 @@ const Links = () => {
 	return (
 		<Layout>
 			<Box mb="6">
-				<Collapsible.Root
-					className="CollapsibleRoot"
-					open={open}
-					onOpenChange={setOpen}
-				>
-					<Collapsible.Trigger asChild>
-						<Button variant="ghost" size="2">
-							Filters
-							{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
-						</Button>
-					</Collapsible.Trigger>
-					<Collapsible.Content>
-						<Box mt="4">
-							<FilterButtonGroup
-								heading="Hide reposts"
-								param="reposts"
-								buttonData={repostButtons}
-								setter={setSearchParam}
-								variantCheck={currentRepost}
-							/>
-							<FilterButtonGroup
-								heading="Sort by"
-								param="sort"
-								buttonData={sortButtons}
-								setter={setSearchParam}
-								variantCheck={currentSort}
-							/>
-							<FilterButtonGroup
-								heading="Show posts from the last"
-								param="time"
-								buttonData={timeButtons}
-								setter={setSearchParam}
-								variantCheck={currentTime}
-							/>
-						</Box>
-					</Collapsible.Content>
-				</Collapsible.Root>
-				<Box my="2">
-					<Form method="GET">
-						<Flex align="center" content="center">
+				<Flex justify="between" align="start">
+					<Collapsible.Root
+						className="CollapsibleRoot"
+						open={open}
+						onOpenChange={setOpen}
+					>
+						<Collapsible.Trigger asChild>
+							<Button variant="ghost" size="2">
+								Filters
+								{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+							</Button>
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							<Box mt="4">
+								<FilterButtonGroup
+									heading="Hide reposts"
+									param="reposts"
+									buttonData={repostButtons}
+									setter={setSearchParam}
+									variantCheck={currentRepost}
+								/>
+								<FilterButtonGroup
+									heading="Sort by"
+									param="sort"
+									buttonData={sortButtons}
+									setter={setSearchParam}
+									variantCheck={currentSort}
+								/>
+								<FilterButtonGroup
+									heading="Show posts from the last"
+									param="time"
+									buttonData={timeButtons}
+									setter={setSearchParam}
+									variantCheck={currentTime}
+								/>
+							</Box>
+						</Collapsible.Content>
+					</Collapsible.Root>
+					<Box width="50%">
+						<Form method="GET">
 							<TextField.Root
 								name="query"
 								type="text"
@@ -157,11 +164,17 @@ const Links = () => {
 									</Button>
 								</TextField.Slot>
 							</TextField.Root>
-						</Flex>
-					</Form>
-				</Box>
+						</Form>
+					</Box>
+				</Flex>
 			</Box>
-			<Suspense fallback={<div>Loading...</div>}>
+			<Suspense
+				fallback={
+					<Flex justify="center">
+						<Spinner size="3" />
+					</Flex>
+				}
+			>
 				<Await resolve={data.links}>
 					{(links) => (
 						<div>
