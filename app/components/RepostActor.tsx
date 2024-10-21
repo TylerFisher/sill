@@ -1,4 +1,4 @@
-import { Button, Dialog, Link, Text } from "@radix-ui/themes";
+import { Button, Popover, Link, Text, Heading } from "@radix-ui/themes";
 import PostAuthor from "./PostAuthor";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
 
@@ -26,21 +26,20 @@ const SingleActor = ({ actor }: SingleActorProps) => (
 );
 
 const MultipleActors = ({ actors }: RepostActorProps) => (
-	<Dialog.Root>
+	<Popover.Root>
 		<Text size="1" as="p" color="gray">
-			<Dialog.Trigger>
+			<Popover.Trigger>
 				<Button variant="ghost" size="1">
 					Reposted by {actors.length} people
 				</Button>
-			</Dialog.Trigger>
+			</Popover.Trigger>
 		</Text>
-		<Dialog.Content maxWidth="450px">
-			<Dialog.Title>Reposted by {actors.length} people</Dialog.Title>
+		<Popover.Content size="1">
 			{actors.map((actor) => (
 				<PostAuthor actor={actor} key={actor.id} />
 			))}
-		</Dialog.Content>
-	</Dialog.Root>
+		</Popover.Content>
+	</Popover.Root>
 );
 
 const RepostActor = ({ actors }: RepostActorProps) => (
