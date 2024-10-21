@@ -1,0 +1,14 @@
+.logo-header {
+  font-weight: 900;
+  font-style: italic;
+  text-align: center;
+  color: var(--accent-11);
+  text-transform: lowercase;
+  padding-top: 1rem;
+  margin-left: 10px;
+}
+
+.logo-link {
+  color: inherit;
+  text-decoration: none;
+}

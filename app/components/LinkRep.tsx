@@ -9,6 +9,7 @@ import {
 } from "@radix-ui/themes";
 import type { Link as DbLink } from "@prisma/client";
 import Youtube from "react-youtube";
+import styles from "./LinkRep.module.css";
 
 interface LinkRepProps {
 	link: DbLink;
@@ -33,12 +34,7 @@ const LinkRep = ({ link }: LinkRepProps) => {
 	return (
 		<Card mb="5">
 			{link.imageUrl && (
-				<Inset
-					mb="4"
-					style={{
-						borderRadius: 0,
-					}}
-				>
+				<Inset mb="4" className={styles.inset}>
 					<AspectRatio ratio={16 / 9}>
 						<Link target="_blank" rel="noreferrer" href={link.url}>
 							<img
@@ -48,9 +44,7 @@ const LinkRep = ({ link }: LinkRepProps) => {
 								decoding="async"
 								width="100%"
 								height="100%"
-								style={{
-									objectFit: "cover",
-								}}
+								className={styles["link-image"]}
 							/>
 						</Link>
 					</AspectRatio>

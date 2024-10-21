@@ -25,7 +25,7 @@ const navLinks = [
 const Nav = () => {
 	return (
 		<nav className={styles.nav}>
-			<ul className={styles.ul}>
+			<ul className={styles["nav-list"]}>
 				{navLinks.map((link) => (
 					<NavLink key={link.to} {...link} />
 				))}
@@ -41,14 +41,13 @@ const NavLink = ({
 }: { to: string; label: string; icon: ReactElement }) => {
 	const location = useLocation();
 	return (
-		<li>
+		<li className={styles["nav-list-item"]}>
 			<Link to={to}>
 				<Button
 					variant="ghost"
 					size="4"
+					className={styles["nav-list-item-btn"]}
 					style={{
-						width: "100%",
-						justifyContent: "flex-start",
 						fontWeight: location.pathname === to ? "bold" : "normal",
 					}}
 				>

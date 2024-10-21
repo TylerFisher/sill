@@ -41,15 +41,17 @@ const PostRep = ({ post, group }: PostRepProps) => {
 	return (
 		<Card key={post.id} mt="5">
 			<Flex gap="3" align="start" mb="1">
-				<Avatar
-					size="3"
-					src={post.actor.avatarUrl || undefined}
-					radius="full"
-					fallback={post.actorHandle[0]}
-					mt={reposters.length > 0 ? "4" : "1"}
-					loading="lazy"
-					decoding="async"
-				/>
+				<a href={post.actor.url} target="_blank" rel="noreferrer">
+					<Avatar
+						size="3"
+						src={post.actor.avatarUrl || undefined}
+						radius="full"
+						fallback={post.actorHandle[0]}
+						mt={reposters.length > 0 ? "4" : "1"}
+						loading="lazy"
+						decoding="async"
+					/>
+				</a>
 				<Box>
 					{reposters.length > 0 && <RepostActor actors={reposters} />}
 					<PostAuthor

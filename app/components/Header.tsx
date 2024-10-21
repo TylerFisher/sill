@@ -1,28 +1,12 @@
 import { Heading } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
+import styles from "./Header.module.css";
 
 const Header = () => {
 	return (
 		<header>
-			<Heading
-				size="9"
-				style={{
-					fontWeight: 900,
-					fontStyle: "italic",
-					textAlign: "center",
-					color: "var(--accent-11)",
-					textTransform: "lowercase",
-					paddingTop: "1rem",
-				}}
-				mb="4"
-			>
-				<Link
-					to="/"
-					style={{
-						color: "inherit",
-						textDecoration: "none",
-					}}
-				>
+			<Heading size="9" className={styles["logo-header"]} mb="4">
+				<Link to="/" className={styles["logo-link"]}>
 					Sill
 				</Link>
 			</Heading>

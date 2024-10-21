@@ -22,12 +22,7 @@ const PostContent = ({ post }: PostContentProps) => (
 				className={styles["mastodon-post-content"]}
 			/>
 		) : (
-			<Text
-				as="p"
-				style={{
-					whiteSpace: "pre-line",
-				}}
-			>
+			<Text as="p" className={styles["bluesky-post-content"]}>
 				{post.text}
 			</Text>
 		)}

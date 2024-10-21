@@ -1,8 +1,13 @@
-ul {
+.nav-list {
   list-style: none;
 }
 
-ul > li {
+.nav-list-item {
   margin-bottom: 0.75rem;
   width: 100%;
+}
+
+.nav-list-item-btn {
+  width: 100%;
+  justify-content: flex-start;
 }
