@@ -17,11 +17,12 @@ interface LinkRepProps {
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
 	const id = url.searchParams.get("v") || url.pathname;
+	const opts = {
+		width: "100%",
+	};
 	return (
-		<Box mb="5">
-			<AspectRatio ratio={16 / 9}>
-				<Youtube videoId={id} />
-			</AspectRatio>
+		<Box mb="5" width="100%">
+			<Youtube videoId={id} opts={opts} />
 		</Box>
 	);
 };
