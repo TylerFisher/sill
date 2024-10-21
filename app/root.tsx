@@ -1,5 +1,4 @@
 import {
-	Link,
 	Links,
 	Meta,
 	Outlet,
@@ -19,7 +18,7 @@ import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getDomainUrl } from "./utils/misc";
 import { type Theme, getTheme } from "./utils/theme.server";
 import { useNonce } from "./utils/nonce-provider";
-import { ThemeSwitch, useTheme } from "./routes/resources.theme-switch";
+import { useTheme } from "./routes/resources.theme-switch";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps();
@@ -60,7 +59,6 @@ export function Document({
 				>
 					{children}
 				</RadixTheme>
-				<ThemeSwitch />
 				<ScrollRestoration />
 				<Scripts />
 			</body>

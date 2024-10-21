@@ -11,15 +11,27 @@ import {
 } from "@radix-ui/react-icons";
 
 const navLinks = [
-	{ to: "/links", label: "Home", icon: <HomeIcon /> },
+	{ to: "/links", label: "Home", icon: <HomeIcon width="18" height="18" /> },
 	{
 		to: "/connect",
 		label: "Connect",
-		icon: <LightningBoltIcon />,
+		icon: <LightningBoltIcon width="18" height="18" />,
 	},
-	{ to: "/email", label: "Daily Email", icon: <EnvelopeClosedIcon /> },
-	{ to: "/moderation", label: "Moderation", icon: <EyeOpenIcon /> },
-	{ to: "/settings/", label: "Profile", icon: <PersonIcon /> },
+	{
+		to: "/email",
+		label: "Daily Email",
+		icon: <EnvelopeClosedIcon width="18" height="18" />,
+	},
+	{
+		to: "/moderation",
+		label: "Moderation",
+		icon: <EyeOpenIcon width="18" height="18" />,
+	},
+	{
+		to: "/settings/",
+		label: "Profile",
+		icon: <PersonIcon width="18" height="18" />,
+	},
 ];
 
 const Nav = () => {

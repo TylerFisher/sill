@@ -5,14 +5,14 @@ import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { redirect, useFetcher, useFetchers } from "@remix-run/react";
 import { ServerOnly } from "remix-utils/server-only";
 import { z } from "zod";
-import { SunIcon, MoonIcon, LaptopIcon } from "@radix-ui/react-icons";
+import { SunIcon, MoonIcon } from "@radix-ui/react-icons";
 import { useHints } from "~/utils/client-hints";
 import { useRequestInfo } from "~/utils/request-info";
 import { type Theme, setTheme } from "~/utils/theme.server";
-import { Button, Flex } from "@radix-ui/themes";
+import { Button, IconButton } from "@radix-ui/themes";
 
 const ThemeFormSchema = z.object({
-	theme: z.enum(["system", "light", "dark"]),
+	theme: z.enum(["light", "dark"]),
 	// this is useful for progressive enhancement
 	redirectTo: z.string().optional(),
 });
@@ -50,13 +50,11 @@ export function ThemeSwitch({
 	});
 
 	const optimisticMode = useOptimisticThemeMode();
-	const mode = optimisticMode ?? userPreference ?? "system";
-	const nextMode =
-		mode === "system" ? "light" : mode === "light" ? "dark" : "system";
+	const mode = optimisticMode ?? userPreference ?? "light";
+	const nextMode = mode === "light" ? "dark" : "light";
 	const modeLabel = {
-		light: <SunIcon />,
-		dark: <MoonIcon />,
-		system: <LaptopIcon />,
+		light: <SunIcon width="22" height="22" />,
+		dark: <MoonIcon width="22" height="22" />,
 	};
 
 	return (
@@ -71,9 +69,9 @@ export function ThemeSwitch({
 				)}
 			</ServerOnly>
 			<input type="hidden" name="theme" value={nextMode} />
-			<Flex gap="2">
-				<Button type="submit">{modeLabel[mode]}</Button>
-			</Flex>
+			<IconButton type="submit" variant="ghost" size="3">
+				{modeLabel[mode]}
+			</IconButton>
 		</fetcher.Form>
 	);
 }
@@ -107,8 +105,5 @@ export function useTheme() {
 	const hints = useHints();
 	const requestInfo = useRequestInfo();
 	const optimisticMode = useOptimisticThemeMode();
-	if (optimisticMode) {
-		return optimisticMode === "system" ? hints.theme : optimisticMode;
-	}
 	return requestInfo.userPrefs.theme ?? hints.theme;
 }

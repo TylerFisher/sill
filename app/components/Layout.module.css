@@ -11,10 +11,18 @@
 @media (min-width: 768px) {
   .side {
     grid-column: col-start / span 3;
-    position: fixed;
+    position: sticky;
+    top: 0;
+    height: 100vh;
   }
   .content {
-    grid-column: col-start 4 / span 7;
+    grid-column: col-start 4 / span 6;
+  }
+  .right {
+    grid-column: col-start 10 / span 3;
+    position: sticky;
+    top: 0;
+    height: 100vh;
   }
 }
 

@@ -1,11 +1,10 @@
 .logo-header {
   font-weight: 900;
   font-style: italic;
-  text-align: center;
+  text-align: left;
   color: var(--accent-11);
   text-transform: lowercase;
   padding-top: 1rem;
-  margin-left: 10px;
 }
 
 .logo-link {
