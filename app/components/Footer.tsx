@@ -6,7 +6,7 @@ import { GitHubLogoIcon } from "@radix-ui/react-icons";
 const Footer = () => {
 	const theme = useTheme();
 	return (
-		<Flex mb="4" gap="4" align="center" wrap="wrap">
+		<Flex mb="4" gap="4" align="center" wrap="wrap" justify="end">
 			<ThemeSwitch userPreference={theme} />
 			<Link
 				to="https://github.com/TylerFisher/sill"

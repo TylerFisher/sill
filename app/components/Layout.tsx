@@ -7,7 +7,7 @@ import styles from "./Layout.module.css";
 
 const Layout = ({ children }: PropsWithChildren) => {
 	return (
-		<Container size="4">
+		<Container size="4" px="5">
 			<div className={styles.wrapper}>
 				<aside className={styles.side}>
 					<Header />
