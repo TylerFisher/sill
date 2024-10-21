@@ -1,33 +1,11 @@
 import { Card, Box, Avatar, Flex } from "@radix-ui/themes";
-import type { Post, Actor, LinkPost, Link, PostImage } from "@prisma/client";
-
 import RepostActor from "~/components/RepostActor";
 import PostAuthor from "~/components/PostAuthor";
 import PostContent from "~/components/PostContent";
-
-type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
-
-type PostWithActor = Overwrite<
-	Post,
-	{
-		actor: Actor;
-		postDate: string;
-		postImages: PostImage[];
-	}
->;
-
-export interface PostProp extends PostWithActor {
-	quoting: PostWithActor | null;
-	reposter: Actor | null;
-}
-
-export interface ExtendedLinkPost extends LinkPost {
-	post: PostProp;
-	link: Link;
-}
+import type { MostRecentLinkPosts } from "~/routes/links.server";
 interface PostRepProps {
-	post: PostProp;
-	group: ExtendedLinkPost[];
+	post: MostRecentLinkPosts["post"];
+	group: MostRecentLinkPosts[];
 }
 
 const PostRep = ({ post, group }: PostRepProps) => {

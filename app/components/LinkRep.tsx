@@ -7,12 +7,12 @@ import {
 	Link,
 	Text,
 } from "@radix-ui/themes";
-import type { Link as DbLink } from "@prisma/client";
 import Youtube from "react-youtube";
 import styles from "./LinkRep.module.css";
+import type { MostRecentLinkPosts } from "~/routes/links.server";
 
 interface LinkRepProps {
-	link: DbLink;
+	link: MostRecentLinkPosts["link"];
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {

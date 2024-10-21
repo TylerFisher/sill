@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Avatar, Box, Button } from "@radix-ui/themes";
 import LinkRep from "./LinkRep";
-import PostRep, { type ExtendedLinkPost } from "./PostRep";
+import PostRep from "./PostRep";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import type { MostRecentLinkPosts } from "~/routes/links.server";
 
 export interface LinkPostRepProps {
 	link: string;
-	linkPosts: ExtendedLinkPost[];
+	linkPosts: MostRecentLinkPosts[];
 }
 
 const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {

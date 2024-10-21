@@ -1,13 +1,13 @@
-import type { Actor } from "@prisma/client";
 import { Button, Dialog, Link, Text } from "@radix-ui/themes";
 import PostAuthor from "./PostAuthor";
+import type { MostRecentLinkPosts } from "~/routes/links.server";
 
 interface RepostActorProps {
-	actors: Actor[];
+	actors: MostRecentLinkPosts["post"]["actor"][];
 }
 
 interface SingleActorProps {
-	actor: Actor;
+	actor: MostRecentLinkPosts["post"]["actor"];
 }
 
 const SingleActor = ({ actor }: SingleActorProps) => (

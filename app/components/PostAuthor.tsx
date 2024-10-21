@@ -1,13 +1,13 @@
 import { Link, Text } from "@radix-ui/themes";
-import type { Actor } from "@prisma/client";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
+import type { MostRecentLinkPosts } from "~/routes/links.server";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
 interface PostAuthor {
-	actor: Actor;
+	actor: MostRecentLinkPosts["post"]["actor"];
 	postUrl?: string;
 	postDate?: Date;
 }
