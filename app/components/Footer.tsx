@@ -1,6 +1,5 @@
-import { Flex, IconButton, Text } from "@radix-ui/themes";
+import { Flex, IconButton, Text, Link } from "@radix-ui/themes";
 import { ThemeSwitch, useTheme } from "~/routes/resources.theme-switch";
-import { Link } from "@remix-run/react";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 const Footer = () => {
@@ -9,7 +8,7 @@ const Footer = () => {
 		<Flex mb="4" gap="4" align="center" wrap="wrap" justify="end">
 			<ThemeSwitch userPreference={theme} />
 			<Link
-				to="https://github.com/TylerFisher/sill"
+				href="https://github.com/TylerFisher/sill"
 				target="_blank"
 				rel="noreferrer"
 			>
@@ -19,7 +18,7 @@ const Footer = () => {
 			</Link>
 			<Text size="1">
 				Built by{" "}
-				<Link to="https://tylerjfisher.com" target="_blank" rel="noreferrer">
+				<Link href="https://tylerjfisher.com" target="_blank" rel="noreferrer">
 					Tyler Fisher
 				</Link>
 			</Text>
