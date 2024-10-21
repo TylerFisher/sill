@@ -1,4 +1,4 @@
-import { Link } from "@remix-run/react";
+import { Link, useLocation } from "@remix-run/react";
 import styles from "./Nav.module.css";
 import { Button } from "@radix-ui/themes";
 import type { ReactElement } from "react";
@@ -39,6 +39,7 @@ const NavLink = ({
 	label,
 	icon,
 }: { to: string; label: string; icon: ReactElement }) => {
+	const location = useLocation();
 	return (
 		<li>
 			<Link to={to}>
@@ -48,6 +49,7 @@ const NavLink = ({
 					style={{
 						width: "100%",
 						justifyContent: "flex-start",
+						fontWeight: location.pathname === to ? "bold" : "normal",
 					}}
 				>
 					{icon} {label}
