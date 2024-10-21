@@ -3,6 +3,7 @@ import styles from "./Nav.module.css";
 import { Button } from "@radix-ui/themes";
 import type { ReactElement } from "react";
 import {
+	EnvelopeClosedIcon,
 	EyeOpenIcon,
 	HomeIcon,
 	LightningBoltIcon,
@@ -13,10 +14,11 @@ const navLinks = [
 	{ to: "/links", label: "Home", icon: <HomeIcon /> },
 	{
 		to: "/connect",
-		label: "Connect your socials",
+		label: "Connect",
 		icon: <LightningBoltIcon />,
 	},
-	{ to: "/moderation", label: "Moderation settings", icon: <EyeOpenIcon /> },
+	{ to: "/email", label: "Daily Email", icon: <EnvelopeClosedIcon /> },
+	{ to: "/moderation", label: "Moderation", icon: <EyeOpenIcon /> },
 	{ to: "/settings/", label: "Profile", icon: <PersonIcon /> },
 ];
 

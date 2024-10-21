@@ -27,7 +27,7 @@ import FilterButtonGroup, {
 } from "~/components/FilterButtonGroup";
 import Layout from "~/components/Layout";
 
-export const meta: MetaFunction = () => [{ title: "Links" }];
+export const meta: MetaFunction = () => [{ title: "Sill" }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);

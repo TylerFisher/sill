@@ -1,4 +1,8 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+	json,
+	type MetaFunction,
+	type LoaderFunctionArgs,
+} from "@remix-run/node";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { useLoaderData } from "@remix-run/react";
@@ -15,6 +19,10 @@ import {
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import Layout from "~/components/Layout";
+
+export const meta: MetaFunction = () => [
+	{ title: "Sill | Connect Your Socials" },
+];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);

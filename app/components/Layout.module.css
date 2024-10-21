@@ -8,12 +8,13 @@
   grid-column: col-start / span 12;
 }
 
-@media (min-width: 500px) {
+@media (min-width: 768px) {
   .side {
     grid-column: col-start / span 3;
+    position: fixed;
   }
   .content {
-    grid-column: col-start 4 / span 6;
+    grid-column: col-start 4 / span 7;
   }
 }
 
@@ -23,6 +24,6 @@
   box-shadow: var(--base-card-surface-box-shadow);
   border-radius: 1em;
   min-height: 100vh;
-  margin: 0 auto;
+  margin: 1em auto 0;
   width: 100%;
 }
