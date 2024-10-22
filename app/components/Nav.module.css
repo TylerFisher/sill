@@ -1,15 +1,40 @@
 .nav-list {
   list-style: none;
-  width: 100%;
   padding: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
 }
 
-.nav-list-item {
-  margin-bottom: 0.75rem;
-  width: 100%;
+.nav-list-item-label {
+  display: none;
 }
 
-.nav-list-item-btn {
-  width: 100%;
-  justify-content: flex-start;
+.nav-list-item-icon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (min-width: 768px) {
+  .nav-list {
+    width: 100%;
+  }
+
+  .nav-list-item-label {
+    display: inline;
+  }
+
+  .nav-list-item-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-list-item {
+    margin-bottom: 0.75rem;
+    width: 100%;
+  }
+  .nav-list-item-icon {
+    width: 18px;
+    height: 18px;
+  }
 }

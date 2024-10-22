@@ -1,10 +1,29 @@
-.logo-header {
+.mobile-logo {
+  display: block;
+  text-align: center;
+}
+
+.desktop-logo {
+  display: none;
+  text-align: left;
+}
+
+.logo-heading {
   font-weight: 900;
   font-style: italic;
-  text-align: left;
   color: var(--accent-11);
   text-transform: lowercase;
   padding-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-logo {
+    display: none;
+  }
+
+  .desktop-logo {
+    display: block;
+  }
 }
 
 .logo-link {

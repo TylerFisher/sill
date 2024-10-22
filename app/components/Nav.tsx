@@ -11,26 +11,30 @@ import {
 } from "@radix-ui/react-icons";
 
 const navLinks = [
-	{ to: "/links", label: "Home", icon: <HomeIcon width="18" height="18" /> },
+	{
+		to: "/links",
+		label: "Home",
+		icon: <HomeIcon className={styles["nav-list-item-icon"]} />,
+	},
 	{
 		to: "/connect",
 		label: "Connect",
-		icon: <LightningBoltIcon width="18" height="18" />,
+		icon: <LightningBoltIcon className={styles["nav-list-item-icon"]} />,
 	},
 	{
 		to: "/email",
 		label: "Daily Email",
-		icon: <EnvelopeClosedIcon width="18" height="18" />,
+		icon: <EnvelopeClosedIcon className={styles["nav-list-item-icon"]} />,
 	},
 	{
 		to: "/moderation",
 		label: "Moderation",
-		icon: <EyeOpenIcon width="18" height="18" />,
+		icon: <EyeOpenIcon className={styles["nav-list-item-icon"]} />,
 	},
 	{
 		to: "/settings/",
 		label: "Profile",
-		icon: <PersonIcon width="18" height="18" />,
+		icon: <PersonIcon className={styles["nav-list-item-icon"]} />,
 	},
 ];
 
@@ -63,7 +67,7 @@ const NavLink = ({
 						fontWeight: location.pathname === to ? "bold" : "normal",
 					}}
 				>
-					{icon} {label}
+					{icon} <span className={styles["nav-list-item-label"]}>{label}</span>
 				</Button>
 			</Link>
 		</li>

@@ -9,8 +9,9 @@ const Layout = ({ children }: PropsWithChildren) => {
 	return (
 		<Container size="4" px="5">
 			<div className={styles.wrapper}>
+				<Header headerClass="mobile-logo" />
 				<aside className={styles.side}>
-					<Header />
+					<Header headerClass="desktop-logo" />
 					<Nav />
 				</aside>
 				<main className={styles.content}>{children}</main>

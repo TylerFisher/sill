@@ -8,15 +8,32 @@
   grid-column: col-start / span 12;
 }
 
+.side {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1;
+  background-color: var(--accent-1);
+  padding: 1em 0;
+}
+
 @media (min-width: 768px) {
   .side {
     grid-column: col-start / span 3;
     position: sticky;
     top: 0;
     height: 100vh;
+    background-color: transparent;
   }
+
+  .side > nav > ul {
+    display: block;
+  }
+
   .content {
     grid-column: col-start 4 / span 6;
+    margin-top: 2em !important;
   }
   .right {
     grid-column: col-start 10 / span 3;
@@ -32,6 +49,6 @@
   box-shadow: var(--base-card-surface-box-shadow);
   border-radius: 1em;
   min-height: 100vh;
-  margin: 1em auto 0;
+  margin: 0 auto;
   width: 100%;
 }
