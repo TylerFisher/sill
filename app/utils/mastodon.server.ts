@@ -24,7 +24,7 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  * @returns Authorization URL for the Mastodon instance
  */
 export const getAuthorizationUrl = (instance: string) => {
-	return `${instance}/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
+	return `https://  /oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
 };
 
 /**
@@ -34,7 +34,7 @@ export const getAuthorizationUrl = (instance: string) => {
  * @returns OAuth token data
  */
 export const getAccessToken = async (instance: string, code: string) => {
-	const response = await fetch(`${instance}/oauth/token`, {
+	const response = await fetch(`https://${instance}/oauth/token`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -103,7 +103,7 @@ export const getMastodonTimeline = async (userId: string) => {
 	if (!account) return [];
 
 	const client = createRestAPIClient({
-		url: account.instance,
+		url: `https://${account.instance}`,
 		accessToken: account.accessToken,
 	});
 

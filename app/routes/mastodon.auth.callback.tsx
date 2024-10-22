@@ -17,7 +17,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		throw new Error("Could not retrieve instance or code");
 	}
 
-	const tokenData = await getAccessToken(instance, code);
+	const instanceUrl = `https://${instance}`;
+
+	const tokenData = await getAccessToken(instanceUrl, code);
 
 	await db.insert(mastodonAccount).values({
 		id: uuidv7(),

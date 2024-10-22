@@ -37,7 +37,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		});
 
 		// Delete tokens from the database
-		await db.delete(mastodonAccount).where(eq(user.id, userId));
+		await db.delete(mastodonAccount).where(eq(mastodonAccount.userId, userId));
 
 		return redirect("/connect");
 	}
