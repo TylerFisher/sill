@@ -181,7 +181,7 @@ const filterByReposts = async (linkPosts: MostRecentLinkPosts[]) => {
  */
 const groupByLink = async (linkPosts: MostRecentLinkPosts[]) => {
 	return groupBy(linkPosts, (l) => {
-		return l.link.url;
+		return l.link.url.endsWith("/") ? l.link.url.slice(0, -1) : l.link.url;
 	});
 };
 
