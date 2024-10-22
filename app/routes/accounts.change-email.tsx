@@ -18,11 +18,12 @@ import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChange from "~/emails/emailChange";
-import { Box, Button, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Heading, Text } from "@radix-ui/themes";
 import TextInput from "~/components/TextInput.js";
 import ErrorList from "~/components/ErrorList";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
+import Layout from "~/components/Layout";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -111,31 +112,36 @@ export default function ChangeEmailIndex() {
 	});
 
 	return (
-		<Box>
-			<Box mb="5">
-				<Text as="p">
-					You will receive an email at the new email address to confirm.
-				</Text>
-				<Text as="p">
-					An email notice will also be sent to your old address{" "}
-					{data.user.email}.
-				</Text>
-			</Box>
+		<Layout>
+			<Box>
+				<Box mb="5">
+					<Heading as="h2" mb="4">
+						Change your email
+					</Heading>
+					<Text as="p">
+						You will receive an email at the new email address to confirm.
+					</Text>
+					<Text as="p">
+						An email notice will also be sent to your old address:{" "}
+						<Badge>{data.user.email}</Badge>.
+					</Text>
+				</Box>
 
-			<Form method="POST" {...getFormProps(form)}>
-				<ErrorList errors={form.errors} id={form.errorId} />
-				<TextInput
-					labelProps={{ children: "New Email" }}
-					inputProps={{
-						...getInputProps(fields.email, { type: "email" }),
-						autoComplete: "email",
-					}}
-					errors={fields.email.errors}
-				/>
-				<div>
-					<Button type="submit">Send Confirmation</Button>
-				</div>
-			</Form>
-		</Box>
+				<Form method="POST" {...getFormProps(form)}>
+					<ErrorList errors={form.errors} id={form.errorId} />
+					<TextInput
+						labelProps={{ children: "New Email" }}
+						inputProps={{
+							...getInputProps(fields.email, { type: "email" }),
+							autoComplete: "email",
+						}}
+						errors={fields.email.errors}
+					/>
+					<div>
+						<Button type="submit">Send Confirmation</Button>
+					</div>
+				</Form>
+			</Box>
+		</Layout>
 	);
 }

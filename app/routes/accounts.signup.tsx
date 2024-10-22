@@ -24,7 +24,7 @@ import { user } from "~/drizzle/schema.server";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 
-const SignupSchema = z.object({
+export const SignupSchema = z.object({
 	email: EmailSchema,
 });
 

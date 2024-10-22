@@ -16,10 +16,11 @@ import {
 import { db } from "~/drizzle/db.server";
 import { PasswordSchema } from "~/utils/userValidation";
 import TextInput from "~/components/TextInput";
-import { Button, Flex } from "@radix-ui/themes";
+import { Button, Flex, Heading } from "@radix-ui/themes";
 import ErrorList from "~/components/ErrorList";
 import { password } from "~/drizzle/schema.server";
 import { eq } from "drizzle-orm";
+import Layout from "~/components/Layout";
 
 const ChangePasswordForm = z
 	.object({
@@ -99,40 +100,45 @@ export default function ChangePasswordRoute() {
 	});
 
 	return (
-		<Form method="POST" {...getFormProps(form)} className="mx-auto max-w-md">
-			<ErrorList errors={form.errors} id={form.errorId} />
-			<TextInput
-				labelProps={{ children: "Current Password" }}
-				inputProps={{
-					...getInputProps(fields.currentPassword, { type: "password" }),
-					autoComplete: "current-password",
-				}}
-				errors={fields.currentPassword.errors}
-			/>
-			<TextInput
-				labelProps={{ children: "New Password" }}
-				inputProps={{
-					...getInputProps(fields.newPassword, { type: "password" }),
-					autoComplete: "new-password",
-				}}
-				errors={fields.newPassword.errors}
-			/>
-			<TextInput
-				labelProps={{ children: "Confirm New Password" }}
-				inputProps={{
-					...getInputProps(fields.confirmNewPassword, {
-						type: "password",
-					}),
-					autoComplete: "new-password",
-				}}
-				errors={fields.confirmNewPassword.errors}
-			/>
-			<Flex gap="6">
-				<Button asChild variant="soft">
-					<Link to="..">Cancel</Link>
-				</Button>
-				<Button type="submit">Change Password</Button>
-			</Flex>
-		</Form>
+		<Layout>
+			<Heading as="h2" mb="4">
+				Change password
+			</Heading>
+			<Form method="POST" {...getFormProps(form)} className="mx-auto max-w-md">
+				<ErrorList errors={form.errors} id={form.errorId} />
+				<TextInput
+					labelProps={{ children: "Current Password" }}
+					inputProps={{
+						...getInputProps(fields.currentPassword, { type: "password" }),
+						autoComplete: "current-password",
+					}}
+					errors={fields.currentPassword.errors}
+				/>
+				<TextInput
+					labelProps={{ children: "New Password" }}
+					inputProps={{
+						...getInputProps(fields.newPassword, { type: "password" }),
+						autoComplete: "new-password",
+					}}
+					errors={fields.newPassword.errors}
+				/>
+				<TextInput
+					labelProps={{ children: "Confirm New Password" }}
+					inputProps={{
+						...getInputProps(fields.confirmNewPassword, {
+							type: "password",
+						}),
+						autoComplete: "new-password",
+					}}
+					errors={fields.confirmNewPassword.errors}
+				/>
+				<Flex gap="6">
+					<Button asChild variant="soft">
+						<Link to="..">Cancel</Link>
+					</Button>
+					<Button type="submit">Change Password</Button>
+				</Flex>
+			</Form>
+		</Layout>
 	);
 }

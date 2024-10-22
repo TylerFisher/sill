@@ -5,8 +5,8 @@ import { db } from "~/drizzle/db.server";
 import Layout from "~/components/Layout";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
-import { Box, Heading } from "@radix-ui/themes";
-import { useLoaderData } from "@remix-run/react";
+import { Box, Button, Flex, Heading } from "@radix-ui/themes";
+import { Form, Link, useLoaderData } from "@remix-run/react";
 import { DataList } from "@radix-ui/themes";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -40,6 +40,17 @@ export default function EditUserProfile() {
 						<DataList.Value>{data.user.createdAt}</DataList.Value>
 					</DataList.Item>
 				</DataList.Root>
+				<Flex mt="4" gap="4">
+					<Form method="get" action="/accounts/logout">
+						<Button type="submit">Log out</Button>
+					</Form>
+					<Link to="/accounts/change-email">
+						<Button type="submit">Change your email</Button>
+					</Link>
+					<Link to="/accounts/password">
+						<Button type="submit">Change your password</Button>
+					</Link>
+				</Flex>
 			</Box>
 		</Layout>
 	);

@@ -23,7 +23,7 @@ import {
 } from "./accounts.verify";
 import { handleVerification as handleOnboardingVerification } from "./accounts.onboarding.server";
 import { handleVerification as handleResetPasswordVerification } from "./accounts.reset-password.server";
-import { handleVerification as handleChangeEmailVerification } from "~/routes/settings.change-email.server";
+import { handleVerification as handleChangeEmailVerification } from "~/routes/accounts.change-email.server";
 import { requireUserId } from "~/utils/auth.server";
 import { verification } from "~/drizzle/schema.server";
 

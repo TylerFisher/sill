@@ -8,7 +8,7 @@ import { db } from "~/drizzle/db.server";
 import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChangeNotice from "~/emails/emailChangeNotice";
-import { newEmailAddressSessionKey } from "./settings.change-email";
+import { newEmailAddressSessionKey } from "./accounts.change-email";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
