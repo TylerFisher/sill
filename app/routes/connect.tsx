@@ -53,7 +53,7 @@ export default function Index() {
 	const { user } = useLoaderData<typeof loader>();
 	return (
 		<Layout>
-			<Box mb="8">
+			<Box mb="6">
 				<Heading as="h2" size="6" mb="1">
 					Connect your accounts
 				</Heading>

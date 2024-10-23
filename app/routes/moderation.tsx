@@ -14,7 +14,15 @@ import {
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
-import { Button, Flex, IconButton, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Flex,
+	Heading,
+	IconButton,
+	Separator,
+	Text,
+} from "@radix-ui/themes";
 import TextInput from "~/components/TextInput";
 import { uuidv7 } from "uuidv7-js";
 import { Cross2Icon } from "@radix-ui/react-icons";
@@ -103,6 +111,23 @@ const MutePhraseSettings = () => {
 
 	return (
 		<Layout>
+			<Box mb="6">
+				<Heading as="h2" size="6" mb="1">
+					Moderation
+				</Heading>
+				<Text as="p">
+					Mute phrases in order to keep any links, posts, or accounts with these
+					phrases from appearing in your timeline.
+				</Text>
+			</Box>
+
+			{data.phrases.length > 0 && (
+				<Box mb="2">
+					<Heading as="h3" size="4">
+						Muted phrases
+					</Heading>
+				</Box>
+			)}
 			<ul
 				style={{
 					listStyle: "none",
@@ -118,6 +143,12 @@ const MutePhraseSettings = () => {
 									readOnly={true}
 									aria-readonly={true}
 									value={phrase.phrase}
+									style={{
+										border: "none",
+										padding: "0",
+										background: "none",
+										width: "100%",
+									}}
 								/>
 								<IconButton size="1" variant="soft">
 									<Cross2Icon />
@@ -127,6 +158,7 @@ const MutePhraseSettings = () => {
 					</li>
 				))}
 			</ul>
+			<Separator size="4" my="6" />
 			<Form method="POST" {...getFormProps(addForm)}>
 				<ErrorList errors={addForm.errors} id={addForm.errorId} />
 				<TextInput
