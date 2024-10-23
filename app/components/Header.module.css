@@ -12,6 +12,10 @@
   text-align: center;
 }
 
+.marketing-logo > h1 {
+  font-size: 120px;
+}
+
 .logo-heading {
   font-weight: 900;
   font-style: italic;

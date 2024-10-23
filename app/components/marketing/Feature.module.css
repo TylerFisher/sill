@@ -1,0 +1,14 @@
+.feature-wrapper {
+  width: 100%;
+  margin-bottom: 8rem;
+}
+
+.feature-heading {
+  color: var(--accent-11);
+}
+
+@media (min-width: 768px) {
+  .feature-wrapper {
+    width: 50%;
+  }
+}

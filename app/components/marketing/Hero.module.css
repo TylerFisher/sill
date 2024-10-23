@@ -1,0 +1,9 @@
+.hero-wrapper {
+  height: 100vh;
+  margin: 0 auto;
+  max-width: 688px;
+}
+
+.lede {
+  color: var(--accent-11);
+}
