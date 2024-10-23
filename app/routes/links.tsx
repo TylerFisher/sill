@@ -3,6 +3,7 @@ import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	defer,
+	redirect,
 } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams, Await } from "@remix-run/react";
 import {
@@ -26,6 +27,15 @@ import FilterButtonGroup, {
 	type ButtonProps,
 } from "~/components/FilterButtonGroup";
 import Layout from "~/components/Layout";
+import {
+	OAuthResponseError,
+	type OAuthSession,
+	TokenRefreshError,
+} from "@atproto/oauth-client-node";
+import { createOAuthClient } from "~/server/oauth/client";
+import { db } from "~/drizzle/db.server";
+import { eq } from "drizzle-orm";
+import { blueskyAccount } from "~/drizzle/schema.server";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -36,6 +46,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const hideReposts = url.searchParams.get("reposts") === "true";
 	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
+
+	const bsky = await db.query.blueskyAccount.findFirst({
+		where: eq(blueskyAccount.userId, userId),
+	});
+	if (bsky) {
+		let oauthSession: OAuthSession | null = null;
+		try {
+			const client = await createOAuthClient();
+			oauthSession = await client.restore(bsky.did);
+		} catch (error) {
+			if (error instanceof OAuthResponseError) {
+				const client = await createOAuthClient();
+				oauthSession = await client.restore(bsky.did);
+			}
+			if (error instanceof TokenRefreshError) {
+				const client = await createOAuthClient();
+				const url = await client.authorize(bsky.handle, {
+					scope: "atproto transition:generic",
+					state: JSON.stringify(bsky),
+				});
+				return redirect(url.toString());
+			}
+		}
+	}
 
 	const links = countLinkOccurrences({
 		userId,
