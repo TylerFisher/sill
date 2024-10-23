@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Text, Link as RLink } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
 import Header from "~/components/Header";
 import styles from "./Hero.module.css";
@@ -19,8 +19,9 @@ const Hero = () => {
 					Get news from the <strong>people you trust</strong>.
 				</Text>
 				<Text as="p" size="6" align="center">
-					Sill connects to your Bluesky and Mastodon accounts and collects the
-					links shared by the people you follow.
+					Sill connects to your <RLink href="https://bsky.app">Bluesky</RLink>{" "}
+					and <RLink href="https://joinmastodon.org">Mastodon</RLink> accounts
+					and collects the links shared by the people you follow.
 				</Text>
 			</Box>
 

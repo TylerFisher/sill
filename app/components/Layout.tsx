@@ -16,7 +16,7 @@ const Layout = ({ children }: PropsWithChildren) => {
 				</aside>
 				<main className={styles.content}>{children}</main>
 				<Flex direction="column" justify="end" className={styles.right}>
-					<Footer />
+					<Footer align="end" />
 				</Flex>
 			</div>
 		</Container>

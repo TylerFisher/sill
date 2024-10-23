@@ -3,11 +3,21 @@ import {
 	type MetaFunction,
 	json,
 } from "@remix-run/node";
-import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Container,
+	Flex,
+	Heading,
+	IconButton,
+	Link,
+	Text,
+} from "@radix-ui/themes";
 import { requireAnonymous } from "~/utils/auth.server";
 import Hero from "~/components/marketing/Hero";
 import Feature from "~/components/marketing/Feature";
 import { desc } from "drizzle-orm";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
+import Footer from "~/components/Footer";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -39,7 +49,7 @@ const Index = () => {
 	];
 
 	return (
-		<>
+		<Box px="4">
 			<Hero />
 			<Container size="3">
 				{features.map((feature, i) => (
@@ -51,8 +61,9 @@ const Index = () => {
 						align={i % 2 === 0 ? "left" : "right"}
 					/>
 				))}
+				<Footer align="center" />
 			</Container>
-		</>
+		</Box>
 	);
 };
 
