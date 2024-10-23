@@ -7,3 +7,7 @@
 .lede {
   color: var(--accent-11);
 }
+
+.intro-video-wrapper {
+  max-height: 90vh;
+}
