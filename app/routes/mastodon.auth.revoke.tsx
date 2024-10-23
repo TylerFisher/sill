@@ -14,7 +14,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const existingUser = await db.query.user.findFirst({
 		where: eq(user.id, userId),
 		with: {
-			mastodonAccounts: true,
+			mastodonAccounts: {
+				with: {
+					mastodonInstance: true,
+				},
+			},
 		},
 	});
 
@@ -22,17 +26,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		const token = existingUser.mastodonAccounts[0];
 
 		const accessToken = token.accessToken;
-		const instance = token.instance;
+		const instance = token.mastodonInstance.instance;
 
 		// Revoke the token
-		await fetch(`${instance}/oauth/revoke`, {
+		await fetch(`https://${instance}/oauth/revoke`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 			},
 			body: JSON.stringify({
-				client_id: process.env.MASTODON_CLIENT_ID,
-				client_secret: process.env.MASTODON_CLIENT_SECRET,
+				client_id: token.mastodonInstance.clientId,
+				client_secret: token.mastodonInstance.clientSecret,
 			}),
 		});
 

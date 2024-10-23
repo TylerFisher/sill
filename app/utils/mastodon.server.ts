@@ -13,8 +13,6 @@ import {
 	post as schemaPost,
 } from "~/drizzle/schema.server";
 
-const CLIENT_ID = process.env.MASTODON_CLIENT_ID;
-const CLIENT_SECRET = process.env.MASTODON_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI as string; // e.g., 'http://localhost:3000/auth
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
@@ -23,8 +21,8 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  * @param instance Mastodon instance URL
  * @returns Authorization URL for the Mastodon instance
  */
-export const getAuthorizationUrl = (instance: string) => {
-	return `https://  /oauth/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
+export const getAuthorizationUrl = (instance: string, clientId: string) => {
+	return `https://${instance}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
 };
 
 /**
@@ -33,15 +31,20 @@ export const getAuthorizationUrl = (instance: string) => {
  * @param code Authorization code
  * @returns OAuth token data
  */
-export const getAccessToken = async (instance: string, code: string) => {
+export const getAccessToken = async (
+	instance: string,
+	code: string,
+	clientId: string,
+	clientSecret: string,
+) => {
 	const response = await fetch(`https://${instance}/oauth/token`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({
-			client_id: CLIENT_ID,
-			client_secret: CLIENT_SECRET,
+			client_id: clientId,
+			client_secret: clientSecret,
 			redirect_uri: REDIRECT_URI,
 			code,
 			grant_type: "authorization_code",
@@ -98,12 +101,15 @@ export const getMastodonTimeline = async (userId: string) => {
 
 	const account = await db.query.mastodonAccount.findFirst({
 		where: eq(mastodonAccount.userId, userId),
+		with: {
+			mastodonInstance: true,
+		},
 	});
 
 	if (!account) return [];
 
 	const client = createRestAPIClient({
-		url: `https://${account.instance}`,
+		url: `https://${account.mastodonInstance.instance}`,
 		accessToken: account.accessToken,
 	});
 

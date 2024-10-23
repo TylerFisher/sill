@@ -34,7 +34,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			columns: {},
 			where: eq(user.id, userId),
 			with: {
-				mastodonAccounts: true,
+				mastodonAccounts: {
+					with: {
+						mastodonInstance: true,
+					},
+				},
 				blueskyAccounts: true,
 			},
 		});
@@ -65,7 +69,7 @@ export default function Index() {
 					</Heading>
 					<Text size="2" as="p" mb="3">
 						You are connected to{" "}
-						<Badge>{user.mastodonAccounts[0].instance}</Badge>.
+						<Badge>{user.mastodonAccounts[0].mastodonInstance.instance}</Badge>.
 					</Text>
 					<Form action="/mastodon/auth/revoke" method="post">
 						<Button type="submit" size="1">

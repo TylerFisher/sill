@@ -69,6 +69,6 @@ export async function getInstanceCookie(request: Request) {
 	const session = await authSessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
-	const instance = session.get("instance");
+	const instance: string = session.get("instance");
 	return instance;
 }

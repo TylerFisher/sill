@@ -151,9 +151,21 @@ export const session = pgTable(
 	},
 );
 
+export const mastodonInstance = pgTable("mastodon_instance", {
+	id: uuid().primaryKey().notNull(),
+	instance: text().notNull().unique(),
+	clientId: text().notNull(),
+	clientSecret: text().notNull(),
+	createdAt: timestamp({ precision: 3, mode: "date" })
+		.default(sql`CURRENT_TIMESTAMP`)
+		.notNull(),
+});
+
 export const mastodonAccount = pgTable("mastodon_account", {
 	id: uuid().primaryKey().notNull(),
-	instance: text().notNull(),
+	instanceId: uuid()
+		.notNull()
+		.references(() => mastodonInstance.id),
 	accessToken: text().notNull(),
 	tokenType: text().notNull(),
 	expiresIn: integer(),
@@ -414,12 +426,23 @@ export const sessionRelations = relations(session, ({ one }) => ({
 	}),
 }));
 
+export const mastodonInstanceRelations = relations(
+	mastodonInstance,
+	({ many }) => ({
+		mastodonAccounts: many(mastodonAccount),
+	}),
+);
+
 export const mastodonAccountRelations = relations(
 	mastodonAccount,
 	({ one }) => ({
 		user: one(user, {
 			fields: [mastodonAccount.userId],
 			references: [user.id],
+		}),
+		mastodonInstance: one(mastodonInstance, {
+			fields: [mastodonAccount.instanceId],
+			references: [mastodonInstance.id],
 		}),
 	}),
 );

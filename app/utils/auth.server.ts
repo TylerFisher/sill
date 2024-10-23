@@ -79,7 +79,6 @@ export async function requireUserId(
  * @param request Request object
  */
 export async function requireAnonymous(request: Request) {
-	console.log("anonymous");
 	const userId = await getUserId(request);
 	if (userId) {
 		throw redirect("/links");

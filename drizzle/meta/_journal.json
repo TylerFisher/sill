@@ -15,6 +15,34 @@
       "when": 1729396109653,
       "tag": "0001_mysterious_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1729649195793,
+      "tag": "0002_goofy_shinko_yamashiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1729649340485,
+      "tag": "0003_giant_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1729649754849,
+      "tag": "0004_aspiring_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1729652248637,
+      "tag": "0005_chubby_nick_fury",
+      "breakpoints": true
     }
   ]
 }
