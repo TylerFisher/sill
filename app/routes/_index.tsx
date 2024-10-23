@@ -51,7 +51,7 @@ const Index = () => {
 	return (
 		<Box px="4">
 			<Hero />
-			<Container size="3">
+			<Container mt="8" size="3">
 				{features.map((feature, i) => (
 					<Feature
 						title={feature.title}

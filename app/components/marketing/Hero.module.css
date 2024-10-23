@@ -1,7 +1,7 @@
 .hero-wrapper {
   height: 100vh;
   margin: 0 auto;
-  max-width: 688px;
+  padding: 0 1rem;
 }
 
 .lede {
