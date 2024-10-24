@@ -29,7 +29,6 @@ import FilterButtonGroup, {
 import Layout from "~/components/Layout";
 import {
 	OAuthResponseError,
-	type OAuthSession,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { createOAuthClient } from "~/server/oauth/client";
@@ -47,18 +46,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
 
+	// check if we need to reauthenticate with bluesky
 	const bsky = await db.query.blueskyAccount.findFirst({
 		where: eq(blueskyAccount.userId, userId),
 	});
 	if (bsky) {
-		let oauthSession: OAuthSession | null = null;
 		try {
 			const client = await createOAuthClient();
-			oauthSession = await client.restore(bsky.did);
+			await client.restore(bsky.did);
 		} catch (error) {
 			if (error instanceof OAuthResponseError) {
 				const client = await createOAuthClient();
-				oauthSession = await client.restore(bsky.did);
+				await client.restore(bsky.did);
 			}
 			if (error instanceof TokenRefreshError) {
 				const client = await createOAuthClient();
