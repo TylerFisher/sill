@@ -1,6 +1,7 @@
 import FilterButton from "./FilterButton";
 import { RadioCards } from "@radix-ui/themes";
 import { Box, Flex, Heading } from "@radix-ui/themes";
+import styles from "./FilterButtonGroup.module.css";
 
 export interface ButtonGroup {
 	heading: string;
@@ -31,14 +32,7 @@ const FilterButtonGroup = ({
 }: FilterButtonGroupProps) => {
 	return (
 		<Box mb="4">
-			<Heading
-				mb="1"
-				size="1"
-				as="h5"
-				style={{
-					textTransform: "uppercase",
-				}}
-			>
+			<Heading mb="1" size="1" as="h5" className={styles["filter-heading"]}>
 				{heading}
 			</Heading>
 			<RadioCards.Root defaultValue={variantCheck} size="1">

@@ -74,21 +74,9 @@ const Links = () => {
 	const data = useLoaderData<typeof loader>();
 	return (
 		<Layout>
-			<Box
-				mb="6"
-				style={{
-					position: "relative",
-				}}
-			>
+			<Box mb="6" position="relative">
 				<LinkFilters />
-				<Box
-					style={{
-						position: "absolute",
-						right: "0",
-						top: "0",
-					}}
-					width="50%"
-				>
+				<Box position="absolute" right="0" top="0" width="50%">
 					<Form method="GET">
 						<SearchField />
 					</Form>
