@@ -7,7 +7,7 @@ const Footer = ({
 }: { align: "center" | "start" | "end" | "between" }) => {
 	const theme = useTheme();
 	return (
-		<Flex gap="4" align="center" wrap="wrap" justify={align}>
+		<Flex mt="-4" gap="4" align="center" wrap="wrap" justify={align}>
 			<ThemeSwitch userPreference={theme} />
 			<Link
 				href="https://github.com/TylerFisher/sill"

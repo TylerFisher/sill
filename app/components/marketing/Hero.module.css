@@ -1,7 +1,11 @@
 .hero-wrapper {
   height: 100vh;
-  margin: 0 auto;
+  margin: 1rem auto 0;
   padding: 0 1rem;
+}
+
+.language {
+  width: 100%;
 }
 
 .lede {

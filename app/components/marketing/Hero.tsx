@@ -16,17 +16,23 @@ const Hero = () => {
 	return (
 		<Box className={styles["hero-wrapper"]}>
 			<Flex mb="8" direction="row" justify="center" align="center" gap="8">
-				<Flex direction="column" justify="center" align="center" gap="8">
+				<Flex
+					direction="column"
+					justify="center"
+					align="center"
+					gap="6"
+					className={styles.language}
+				>
 					<Header headerClass="marketing-logo" />
 					<Box>
-						<Text as="p" size="8" align="center" mb="4" className={styles.lede}>
-							Get news from the <strong>people you trust</strong>.
+						<Text as="p" size="7" align="center" mb="4" className={styles.lede}>
+							Top news shared by <strong>the people you trust</strong>
 						</Text>
-						<Text as="p" size="6" align="center">
-							Sill connects to your{" "}
+						<Text as="p" size="4" align="center">
+							Sill streamlines your{" "}
 							<RLink href="https://bsky.app">Bluesky</RLink> and{" "}
-							<RLink href="https://joinmastodon.org">Mastodon</RLink> accounts
-							and collects the links shared by the people you follow.
+							<RLink href="https://joinmastodon.org">Mastodon</RLink> feeds to
+							give you a clear picture of what&rsquo;s happening.
 						</Text>
 					</Box>
 					<Flex gap="3">
