@@ -17,10 +17,10 @@ import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema, UsernameSchema } from "~/utils/userValidation";
 import { prepareVerification } from "./accounts.verify.server";
 import ForgotPasswordEmail from "~/emails/forgotPassword";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
-import TextInput from "~/components/TextInput";
-import ErrorList from "~/components/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import ErrorList from "~/components/forms/ErrorList";
 
 const ForgotPasswordSchema = z.object({
 	usernameOrEmail: z.union([EmailSchema, UsernameSchema]),

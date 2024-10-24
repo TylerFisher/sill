@@ -8,9 +8,9 @@ import {
 	Inset,
 } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
-import Header from "~/components/Header";
+import Header from "~/components/nav/Header";
 import styles from "./Hero.module.css";
-import Footer from "../Footer";
+import Footer from "../nav/Footer";
 
 const Hero = () => {
 	return (

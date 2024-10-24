@@ -16,8 +16,8 @@ import { getDomainUrl, useIsPending } from "~/utils/misc";
 import { getTOTPAuthUri } from "~/utils/totp.server";
 import { twoFAVerificationType } from "./settings.two-factor._index";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
-import { OTPField } from "~/components/OTPField";
-import ErrorList from "~/components/ErrorList";
+import { OTPField } from "~/components/forms/OTPField";
+import ErrorList from "~/components/forms/ErrorList";
 import { and, eq } from "drizzle-orm";
 import { user, verification } from "~/drizzle/schema.server";
 

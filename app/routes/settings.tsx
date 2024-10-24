@@ -2,7 +2,7 @@ import { invariantResponse } from "@epic-web/invariant";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";

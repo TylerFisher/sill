@@ -17,10 +17,10 @@ import { requireUserId } from "~/utils/auth.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount } from "~/drizzle/schema.server";
-import LinkFilters from "~/components/LinkFilters";
-import SearchField from "~/components/SearchField";
-import LinkPostRep from "~/components/LinkPostRep";
-import Layout from "~/components/Layout";
+import LinkFilters from "~/components/forms/LinkFilters";
+import SearchField from "~/components/forms/SearchField";
+import LinkPostRep from "~/components/linkPosts/LinkPostRep";
+import Layout from "~/components/nav/Layout";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 

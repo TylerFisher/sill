@@ -18,7 +18,7 @@ import Hero from "~/components/marketing/Hero";
 import Feature from "~/components/marketing/Feature";
 import { desc } from "drizzle-orm";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import Footer from "~/components/Footer";
+import Footer from "~/components/nav/Footer";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 

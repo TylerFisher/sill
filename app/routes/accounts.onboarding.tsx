@@ -27,10 +27,10 @@ import {
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
-import Layout from "~/components/Layout";
-import TextInput from "~/components/TextInput";
-import CheckboxField from "~/components/CheckboxField";
-import ErrorList from "~/components/ErrorList";
+import Layout from "~/components/nav/Layout";
+import TextInput from "~/components/forms/TextInput";
+import CheckboxField from "~/components/forms/CheckboxField";
+import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 

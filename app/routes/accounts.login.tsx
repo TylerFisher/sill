@@ -10,15 +10,15 @@ import {
 import { Form, Link, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
-import TextInput from "~/components/TextInput";
-import CheckboxField from "~/components/CheckboxField";
+import TextInput from "~/components/forms/TextInput";
+import CheckboxField from "~/components/forms/CheckboxField";
 import { login, requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { PasswordSchema, UsernameSchema } from "~/utils/userValidation";
 import { handleNewSession } from "./accounts.login.server";
 
-import Layout from "~/components/Layout";
-import ErrorList from "~/components/ErrorList";
+import Layout from "~/components/nav/Layout";
+import ErrorList from "~/components/forms/ErrorList";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 

@@ -1,12 +1,12 @@
 import { useState } from "react";
+import type { SerializeFrom } from "@remix-run/node";
 import { Avatar, Box, Button } from "@radix-ui/themes";
-import LinkRep from "./LinkRep";
-import PostRep from "./PostRep";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
-import type { SerializeFrom } from "@remix-run/node";
+import LinkRep from "~/components/linkPosts/LinkRep";
+import PostRep from "~/components/linkPosts/PostRep";
 
 export interface LinkPostRepProps {
 	link: string;

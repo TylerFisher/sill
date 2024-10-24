@@ -5,7 +5,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { Box, Button } from "@radix-ui/themes";
 import FilterButtonGroup, {
 	type ButtonGroup,
-} from "~/components/FilterButtonGroup";
+} from "~/components/forms/FilterButtonGroup";
 
 const LinkFilters = () => {
 	const [open, setOpen] = useState(false);

@@ -6,10 +6,10 @@ import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { validateRequest } from "./accounts.verify.server";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";
-import { OTPField } from "~/components/OTPField";
-import ErrorList from "~/components/ErrorList";
+import { OTPField } from "~/components/forms/OTPField";
+import ErrorList from "~/components/forms/ErrorList";
 
 export const codeQueryParam = "code";
 export const targetQueryParam = "target";

@@ -10,9 +10,9 @@ import {
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { db } from "~/drizzle/db.server";
-import ErrorList from "~/components/ErrorList";
-import Layout from "~/components/Layout";
-import TextInput from "~/components/TextInput";
+import ErrorList from "~/components/forms/ErrorList";
+import Layout from "~/components/nav/Layout";
+import TextInput from "~/components/forms/TextInput";
 import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";

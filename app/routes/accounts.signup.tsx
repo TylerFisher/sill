@@ -10,15 +10,15 @@ import { z } from "zod";
 import { parseWithZod } from "@conform-to/zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { EmailSchema } from "~/utils/userValidation";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 import Verify from "~/emails/verify";
-import TextInput from "~/components/TextInput";
+import TextInput from "~/components/forms/TextInput";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { db } from "~/drizzle/db.server";
 import { prepareVerification } from "./accounts.verify.server";
 import { sendEmail } from "~/utils/email.server";
-import ErrorList from "~/components/ErrorList";
+import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 

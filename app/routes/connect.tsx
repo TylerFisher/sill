@@ -19,7 +19,7 @@ import {
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Socials" },

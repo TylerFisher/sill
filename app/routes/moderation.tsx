@@ -23,13 +23,13 @@ import {
 	Separator,
 	Text,
 } from "@radix-ui/themes";
-import TextInput from "~/components/TextInput";
+import TextInput from "~/components/forms/TextInput";
 import { uuidv7 } from "uuidv7-js";
 import { Cross2Icon } from "@radix-ui/react-icons";
-import ErrorList from "~/components/ErrorList";
+import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
 import { mutePhrase } from "~/drizzle/schema.server";
-import Layout from "~/components/Layout";
+import Layout from "~/components/nav/Layout";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),

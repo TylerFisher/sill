@@ -1,5 +1,5 @@
-import { Button, Popover, Link, Text, Heading } from "@radix-ui/themes";
-import PostAuthor from "./PostAuthor";
+import { Button, Popover, Link, Text } from "@radix-ui/themes";
+import PostAuthor from "~/components/linkPosts/PostAuthor";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
 
 interface RepostActorProps {

@@ -1,6 +1,6 @@
 import { Container, Heading, Html } from "@react-email/components";
-import type { ExtendedLinkPost } from "~/components/PostRep";
-import LinkPostRep from "~/components/LinkPostRep";
+import type { ExtendedLinkPost } from "~/components/linkPosts/PostRep";
+import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import { Separator } from "@radix-ui/themes";
 
 interface TopLinksProps {
