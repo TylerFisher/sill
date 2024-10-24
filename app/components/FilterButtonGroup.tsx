@@ -2,6 +2,13 @@ import FilterButton from "./FilterButton";
 import { RadioCards } from "@radix-ui/themes";
 import { Box, Flex, Heading } from "@radix-ui/themes";
 
+export interface ButtonGroup {
+	heading: string;
+	defaultValue: string;
+	param: string;
+	buttons: ButtonProps[];
+}
+
 export interface ButtonProps {
 	value: string;
 	label: string;
