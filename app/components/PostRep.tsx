@@ -3,9 +3,10 @@ import RepostActor from "~/components/RepostActor";
 import PostAuthor from "~/components/PostAuthor";
 import PostContent from "~/components/PostContent";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { SerializeFrom } from "@remix-run/node";
 interface PostRepProps {
-	post: MostRecentLinkPosts["post"];
-	group: MostRecentLinkPosts[];
+	post: SerializeFrom<MostRecentLinkPosts["post"]>;
+	group: SerializeFrom<MostRecentLinkPosts>[];
 }
 
 const PostRep = ({ post, group }: PostRepProps) => {

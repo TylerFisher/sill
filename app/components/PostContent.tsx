@@ -1,9 +1,12 @@
 import { Card, Inset, Text } from "@radix-ui/themes";
 import styles from "./PostContent.module.css";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { SerializeFrom } from "@remix-run/node";
 
 interface PostContentProps {
-	post: MostRecentLinkPosts["post"] | MostRecentLinkPosts["post"]["quoting"];
+	post:
+		| SerializeFrom<MostRecentLinkPosts["post"]>
+		| SerializeFrom<MostRecentLinkPosts["post"]["quoting"]>;
 }
 
 const PostContent = ({ post }: PostContentProps) => {

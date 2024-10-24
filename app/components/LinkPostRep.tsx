@@ -6,10 +6,11 @@ import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { SerializeFrom } from "@remix-run/node";
 
 export interface LinkPostRepProps {
 	link: string;
-	linkPosts: MostRecentLinkPosts[];
+	linkPosts: SerializeFrom<MostRecentLinkPosts>[];
 }
 
 const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
