@@ -1,5 +1,5 @@
-import { Button } from "@radix-ui/themes";
 import type { ButtonProps } from "@radix-ui/themes";
+import { RadioCards } from "@radix-ui/themes";
 interface FilterButtonProps {
 	param: string;
 	value: string;
@@ -12,14 +12,13 @@ const FilterButton = ({
 	value,
 	setter,
 	label,
-	variant,
 }: ButtonProps &
 	React.RefAttributes<HTMLButtonElement> &
 	FilterButtonProps) => {
 	return (
-		<Button onClick={() => setter(param, value)} variant={variant} size="1">
+		<RadioCards.Item onClick={() => setter(param, value)} value={value}>
 			{label}
-		</Button>
+		</RadioCards.Item>
 	);
 };
 

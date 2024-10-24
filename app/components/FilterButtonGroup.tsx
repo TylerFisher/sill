@@ -1,4 +1,5 @@
 import FilterButton from "./FilterButton";
+import { RadioCards } from "@radix-ui/themes";
 import { Box, Flex, Heading } from "@radix-ui/themes";
 
 export interface ButtonProps {
@@ -33,19 +34,19 @@ const FilterButtonGroup = ({
 			>
 				{heading}
 			</Heading>
-			<Flex gap="3">
-				{buttonData.map((button) => (
-					<FilterButton
-						key={button.value}
-						param={param}
-						value={button.value}
-						setter={setter}
-						label={button.label}
-						variant={variantCheck === button.value ? "solid" : "outline"}
-						size="2"
-					/>
-				))}
-			</Flex>
+			<RadioCards.Root defaultValue={variantCheck} size="1">
+				<Flex gap="3">
+					{buttonData.map((button) => (
+						<FilterButton
+							key={button.value}
+							param={param}
+							value={button.value}
+							setter={setter}
+							label={button.label}
+						/>
+					))}
+				</Flex>
+			</RadioCards.Root>
 		</Box>
 	);
 };
