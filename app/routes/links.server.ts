@@ -18,6 +18,7 @@ interface LinkOccurrenceArgs {
 	hideReposts?: boolean;
 	sort?: string;
 	query?: string | undefined;
+	service?: string;
 	fetch?: boolean;
 }
 
@@ -225,6 +226,7 @@ export const countLinkOccurrences = async ({
 	hideReposts = DEFAULT_HIDE_REPOSTS,
 	sort = DEFAULT_SORT,
 	query = DEFAULT_QUERY,
+	service = "all",
 	fetch = DEFAULT_FETCH,
 }: LinkOccurrenceArgs) => {
 	if (fetch) {
@@ -241,6 +243,15 @@ export const countLinkOccurrences = async ({
 	);
 	if (hideReposts) {
 		mostRecentLinkPosts = await filterByReposts(mostRecentLinkPosts);
+	}
+	if (service === "mastodon") {
+		mostRecentLinkPosts = mostRecentLinkPosts.filter(
+			(lp) => lp.post.postType === "mastodon",
+		);
+	} else if (service === "bluesky") {
+		mostRecentLinkPosts = mostRecentLinkPosts.filter(
+			(lp) => lp.post.postType === "bluesky",
+		);
 	}
 	const grouped = await groupByLink(mostRecentLinkPosts);
 

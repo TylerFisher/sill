@@ -45,6 +45,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const hideReposts = url.searchParams.get("reposts") === "true";
 	const sort = url.searchParams.get("sort") || "popularity";
 	const query = url.searchParams.get("query") || undefined;
+	const service = url.searchParams.get("service") || "all";
 
 	// check if we need to reauthenticate with bluesky
 	const bsky = await db.query.blueskyAccount.findFirst({
@@ -76,6 +77,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		hideReposts,
 		sort,
 		query,
+		service,
 		fetch: true,
 	});
 
@@ -136,6 +138,21 @@ const Links = () => {
 		},
 	];
 
+	const serviceButtons: ButtonProps[] = [
+		{
+			value: "bluesky",
+			label: "Bluesky",
+		},
+		{
+			value: "mastodon",
+			label: "Mastodon",
+		},
+		{
+			value: "all",
+			label: "All",
+		},
+	];
+
 	const currentTime = searchParams.get("time") || "86400000";
 	const currentRepost = searchParams.get("reposts") || "false";
 	const currentSort = searchParams.get("sort") || "popularity";
@@ -177,6 +194,13 @@ const Links = () => {
 									buttonData={timeButtons}
 									setter={setSearchParam}
 									variantCheck={currentTime}
+								/>
+								<FilterButtonGroup
+									heading="Service"
+									param="service"
+									buttonData={serviceButtons}
+									setter={setSearchParam}
+									variantCheck={searchParams.get("service") || "all"}
 								/>
 							</Box>
 						</Collapsible.Content>
