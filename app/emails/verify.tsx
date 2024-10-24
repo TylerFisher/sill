@@ -1,26 +1,20 @@
-import { Container, Link, Heading, Html, Text } from "@react-email/components";
+import EmailLayout from "~/components/emails/Layout";
+import EmailHeading from "~/components/emails/Heading";
+import Lede from "~/components/emails/Lede";
+import OTPBlock from "~/components/emails/OTPBlock";
 
-interface VerifyProps {
-	link: string;
+const VerifyEmail = ({
+	otp,
+}: {
 	otp: string;
-}
+}) => {
+	return (
+		<EmailLayout preview="Verify your email">
+			<EmailHeading>Verify your email for your new Sill account</EmailHeading>
+			<Lede>Here's your verification code:</Lede>
+			<OTPBlock>{otp}</OTPBlock>
+		</EmailLayout>
+	);
+};
 
-const Verify = ({ link, otp }: VerifyProps) => (
-	<Html>
-		<Container>
-			<Heading as="h1">Verify your email</Heading>
-			<p>
-				<Text>
-					You signed up for Sill with this email. Here's your verification code:{" "}
-					{otp}
-				</Text>
-			</p>
-			<p>
-				<Text>Or click the link to get started:</Text>
-				<Link href={link}>{link}</Link>
-			</p>
-		</Container>
-	</Html>
-);
-
-export default Verify;
+export default VerifyEmail;

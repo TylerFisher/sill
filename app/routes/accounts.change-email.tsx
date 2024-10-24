@@ -80,7 +80,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const response = await sendEmail({
 		to: submission.value.email,
 		subject: "Sill Email Change Notification",
-		react: <EmailChange verifyUrl={verifyUrl.toString()} otp={otp} />,
+		react: <EmailChange otp={otp} />,
 	});
 
 	if (response.status === "success") {

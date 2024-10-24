@@ -1,30 +1,23 @@
-import { Html, Container, Text, Link } from "@react-email/components";
+import EmailLayout from "~/components/emails/Layout";
+import EmailHeading from "~/components/emails/Heading";
+import Lede from "~/components/emails/Lede";
+import OTPBlock from "~/components/emails/OTPBlock";
 
-const ForgotPasswordEmail = ({
-	onboardingUrl,
+const PasswordResetEmail = ({
 	otp,
 }: {
-	onboardingUrl: string;
 	otp: string;
 }) => {
 	return (
-		<Html lang="en" dir="ltr">
-			<Container>
-				<h1>
-					<Text>Sill Password Reset</Text>
-				</h1>
-				<p>
-					<Text>
-						Here's your verification code: <strong>{otp}</strong>
-					</Text>
-				</p>
-				<p>
-					<Text>Or click the link:</Text>
-				</p>
-				<Link href={onboardingUrl}>{onboardingUrl}</Link>
-			</Container>
-		</Html>
+		<EmailLayout preview="Confirm your password reset request">
+			<EmailHeading>Password reset request</EmailHeading>
+			<Lede>
+				Someone, hopefully you, requested a password reset. If this was you, use
+				the verification code below to confirm your request:
+			</Lede>
+			<OTPBlock>{otp}</OTPBlock>
+		</EmailLayout>
 	);
 };
 
-export default ForgotPasswordEmail;
+export default PasswordResetEmail;

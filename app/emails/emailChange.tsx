@@ -1,29 +1,19 @@
-import { Html, Container, Text, Link } from "@react-email/components";
+import EmailLayout from "~/components/emails/Layout";
+import EmailHeading from "~/components/emails/Heading";
+import Lede from "~/components/emails/Lede";
+import OTPBlock from "~/components/emails/OTPBlock";
 
 const EmailChangeEmail = ({
-	verifyUrl,
 	otp,
 }: {
-	verifyUrl: string;
 	otp: string;
 }) => {
 	return (
-		<Html lang="en" dir="ltr">
-			<Container>
-				<h1>
-					<Text>Sill Email Change</Text>
-				</h1>
-				<p>
-					<Text>
-						Here's your verification code: <strong>{otp}</strong>
-					</Text>
-				</p>
-				<p>
-					<Text>Or click the link:</Text>
-				</p>
-				<Link href={verifyUrl}>{verifyUrl}</Link>
-			</Container>
-		</Html>
+		<EmailLayout preview="Confirm your email change request">
+			<EmailHeading>Confirm your email change request</EmailHeading>
+			<Lede>Here's your verification code:</Lede>
+			<OTPBlock>{otp}</OTPBlock>
+		</EmailLayout>
 	);
 };
 
