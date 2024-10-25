@@ -10,6 +10,7 @@ import {
 	boolean,
 	pgEnum,
 	unique,
+	time,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
 import { sql } from "drizzle-orm";
@@ -150,6 +151,15 @@ export const session = pgTable(
 		};
 	},
 );
+
+export const emailSettings = pgTable("email_settings", {
+	id: uuid().primaryKey().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id)
+		.unique(),
+	scheduledTime: time().notNull(),
+});
 
 export const mastodonInstance = pgTable("mastodon_instance", {
 	id: uuid().primaryKey().notNull(),
@@ -374,6 +384,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	blueskyAccounts: many(blueskyAccount),
 	emailTokens: many(emailToken),
 	mutePhrases: many(mutePhrase),
+	emailSettings: one(emailSettings),
 }));
 
 export const linkRelations = relations(link, ({ many }) => ({
@@ -471,6 +482,13 @@ export const emailTokenRelations = relations(emailToken, ({ one }) => ({
 export const mutePhraseRelations = relations(mutePhrase, ({ one }) => ({
 	user: one(user, {
 		fields: [mutePhrase.userId],
+		references: [user.id],
+	}),
+}));
+
+export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
+	user: one(user, {
+		fields: [emailSettings.userId],
 		references: [user.id],
 	}),
 }));
