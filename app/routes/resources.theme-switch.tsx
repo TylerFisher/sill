@@ -5,11 +5,11 @@ import { json, type ActionFunctionArgs } from "@vercel/remix";
 import { redirect, useFetcher, useFetchers } from "@remix-run/react";
 import { ServerOnly } from "remix-utils/server-only";
 import { z } from "zod";
-import { SunIcon, MoonIcon } from "@radix-ui/react-icons";
 import { useHints } from "~/utils/client-hints";
 import { useRequestInfo } from "~/utils/request-info";
 import { type Theme, setTheme } from "~/utils/theme.server";
-import { Button, IconButton } from "@radix-ui/themes";
+import { IconButton } from "@radix-ui/themes";
+import { Moon, Sun } from "lucide-react";
 
 const ThemeFormSchema = z.object({
 	theme: z.enum(["light", "dark"]),
@@ -53,8 +53,8 @@ export function ThemeSwitch({
 	const mode = optimisticMode ?? userPreference ?? "light";
 	const nextMode = mode === "light" ? "dark" : "light";
 	const modeLabel = {
-		light: <SunIcon width="22" height="22" />,
-		dark: <MoonIcon width="22" height="22" />,
+		light: <Sun width="22" height="22" />,
+		dark: <Moon width="22" height="22" />,
 	};
 
 	return (

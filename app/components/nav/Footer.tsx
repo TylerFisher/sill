@@ -1,6 +1,6 @@
 import { Flex, IconButton, Text, Link } from "@radix-ui/themes";
 import { ThemeSwitch, useTheme } from "~/routes/resources.theme-switch";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
+import { Github } from "lucide-react";
 
 const Footer = ({
 	align,
@@ -15,7 +15,7 @@ const Footer = ({
 				rel="noreferrer"
 			>
 				<IconButton size="3" variant="ghost">
-					<GitHubLogoIcon width="22" height="22" />
+					<Github />
 				</IconButton>
 			</Link>
 			<Text size="1">

@@ -1,6 +1,6 @@
 import { Button, TextField } from "@radix-ui/themes";
 import { useSearchParams } from "@remix-run/react";
-import { Cross2Icon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { Search, X } from "lucide-react";
 
 const SearchField = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -16,11 +16,13 @@ const SearchField = () => {
 	return (
 		<TextField.Root name="query" type="text" defaultValue={query}>
 			<TextField.Slot>
-				<MagnifyingGlassIcon height="16" width="16" />
+				<Search height="16" width="16" />
 			</TextField.Slot>
 			{query && (
 				<TextField.Slot>
-					<Cross2Icon
+					<X
+						width="18"
+						height="18"
 						cursor="pointer"
 						onClick={() => setSearchParam("query", "")}
 					/>

@@ -15,12 +15,11 @@ import {
 	Button,
 	TextField,
 	Card,
-	Callout,
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import Layout from "~/components/nav/Layout";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
+import PageHeading from "~/components/nav/PageHeading";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Socials" },
@@ -55,20 +54,10 @@ export default function Index() {
 	return (
 		<Layout>
 			<Box mb="6">
-				<Heading as="h2" size="6" mb="4">
-					Connect your accounts
-				</Heading>
-				<Callout.Root size="3" variant="outline">
-					<Callout.Icon>
-						<InfoCircledIcon />
-					</Callout.Icon>
-					<Callout.Text>
-						Sill connects to your Mastodon and Bluesky accounts and gathers all
-						of the links posted to your timeline. Then, Sill aggregates those
-						links to show you the most popular links in your network. You can
-						connect to one or both of these services.
-					</Callout.Text>
-				</Callout.Root>
+				<PageHeading
+					title="Connect your accounts"
+					dek="Sill connects to your Mastodon and Bluesky accounts and gathers all of the links posted to your timeline. Then, Sill aggregates those links to show you the most popular links in your network. You can connect to one or both of these services."
+				/>
 			</Box>
 
 			{user && user.mastodonAccounts.length > 0 ? (

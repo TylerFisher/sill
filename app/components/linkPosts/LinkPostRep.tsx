@@ -3,10 +3,10 @@ import type { SerializeFrom } from "@vercel/remix";
 import { Avatar, Box, Button } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export interface LinkPostRepProps {
 	link: string;
@@ -47,7 +47,11 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 						))}
 						Posted by {uniqueActors.length}{" "}
 						{uniqueActors.length === 1 ? "account" : "accounts"} you follow
-						{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+						{open ? (
+							<ChevronUp width="14" height="14" />
+						) : (
+							<ChevronDown width="14" height="14" />
+						)}
 					</Button>
 				</Collapsible.Trigger>
 				<Collapsible.Content>

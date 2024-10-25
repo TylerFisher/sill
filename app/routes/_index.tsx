@@ -3,22 +3,9 @@ import {
 	type MetaFunction,
 	json,
 } from "@vercel/remix";
-import {
-	Box,
-	Container,
-	Flex,
-	Grid,
-	Heading,
-	IconButton,
-	Link,
-	Text,
-} from "@radix-ui/themes";
+import { Box } from "@radix-ui/themes";
 import { requireAnonymous } from "~/utils/auth.server";
 import Hero from "~/components/marketing/Hero";
-import Feature from "~/components/marketing/Feature";
-import { desc } from "drizzle-orm";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import Footer from "~/components/nav/Footer";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 

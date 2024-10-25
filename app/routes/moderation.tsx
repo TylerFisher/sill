@@ -21,15 +21,15 @@ import {
 	Heading,
 	IconButton,
 	Separator,
-	Callout,
 } from "@radix-ui/themes";
 import TextInput from "~/components/forms/TextInput";
 import { uuidv7 } from "uuidv7-js";
-import { Cross2Icon, InfoCircledIcon } from "@radix-ui/react-icons";
 import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
 import { mutePhrase } from "~/drizzle/schema.server";
 import Layout from "~/components/nav/Layout";
+import { X } from "lucide-react";
+import PageHeading from "~/components/nav/PageHeading";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
@@ -111,21 +111,11 @@ const MutePhraseSettings = () => {
 
 	return (
 		<Layout>
-			<Box mb="6">
-				<Heading as="h2" size="6" mb="4">
-					Moderation
-				</Heading>
-				<Callout.Root size="3" variant="outline">
-					<Callout.Icon>
-						<InfoCircledIcon />
-					</Callout.Icon>
-					<Callout.Text>
-						Mute phrases in order to keep any links, posts, or accounts with
-						these phrases from appearing in your timeline.
-					</Callout.Text>
-				</Callout.Root>
-			</Box>
-
+			<PageHeading
+				title="Moderation"
+				dek="Mute phrases in order to keep any links, posts, or accounts with
+						these phrases from appearing in your timeline."
+			/>
 			{data.phrases.length > 0 && (
 				<Box mb="2">
 					<Heading as="h3" size="4">
@@ -156,7 +146,7 @@ const MutePhraseSettings = () => {
 									}}
 								/>
 								<IconButton size="1" variant="soft">
-									<Cross2Icon />
+									<X width="12" height="12" />
 								</IconButton>
 							</Flex>
 						</fetcher.Form>

@@ -10,11 +10,12 @@ import { requireUserId } from "~/utils/auth.server";
 import { eq } from "drizzle-orm";
 import { emailSettings } from "~/drizzle/schema.server";
 import { Form, useLoaderData, useActionData } from "@remix-run/react";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { uuidv7 } from "uuidv7-js";
+import { Info } from "lucide-react";
+import PageHeading from "~/components/nav/PageHeading";
 
 const EmailSettingsSchema = z.object({
 	time: z.string(),
@@ -88,21 +89,12 @@ const EmailSettings = () => {
 
 	return (
 		<Layout>
-			<Box mb="6">
-				<Heading as="h2" size="6" mb="4">
-					Daily email settings
-				</Heading>
-				<Callout.Root size="3" variant="outline">
-					<Callout.Icon>
-						<InfoCircledIcon />
-					</Callout.Icon>
-					<Callout.Text>
-						Sill can send you a daily email with the top links from the past 24
+			<PageHeading
+				title="Email Settings"
+				dek="Sill can send you a daily email with the top links from the past 24
 						hours. Here, you can schedule the hour you'd like to receive the
-						email each day.
-					</Callout.Text>
-				</Callout.Root>
-			</Box>
+						email each day."
+			/>
 			<Form method="POST" {...getFormProps(form)}>
 				<Box>
 					<label htmlFor="time">Time</label>

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useSearchParams } from "@remix-run/react";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { Box, Button } from "@radix-ui/themes";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const LinkFilters = () => {
 	const [open, setOpen] = useState(false);
@@ -102,7 +102,11 @@ const LinkFilters = () => {
 			<Collapsible.Trigger asChild>
 				<Button variant="ghost" size="2">
 					Filters
-					{open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+					{open ? (
+						<ChevronUp width="18" height="18" />
+					) : (
+						<ChevronDown width="18" height="18" />
+					)}
 				</Button>
 			</Collapsible.Trigger>
 			<Collapsible.Content>

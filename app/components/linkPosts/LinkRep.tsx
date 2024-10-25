@@ -12,8 +12,8 @@ import {
 import Youtube from "react-youtube";
 import styles from "./LinkRep.module.css";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useFetcher } from "@remix-run/react";
+import { Ellipsis } from "lucide-react";
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
@@ -83,7 +83,7 @@ const LinkRep = ({ link }: LinkRepProps) => {
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							<IconButton variant="ghost">
-								<DotsHorizontalIcon />
+								<Ellipsis />
 							</IconButton>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content>
