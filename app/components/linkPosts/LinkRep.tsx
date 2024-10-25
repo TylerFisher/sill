@@ -83,7 +83,7 @@ const LinkRep = ({ link }: LinkRepProps) => {
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							<IconButton variant="ghost">
-								<Ellipsis />
+								<Ellipsis width="18" height="18" />
 							</IconButton>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content>
