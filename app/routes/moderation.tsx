@@ -4,7 +4,7 @@ import {
 	json,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import {
 	Form,
 	useActionData,

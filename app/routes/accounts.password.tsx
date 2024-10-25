@@ -5,7 +5,7 @@ import {
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	redirect,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Form, Link, useActionData } from "@remix-run/react";
 import { z } from "zod";
 import {

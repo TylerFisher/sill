@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, json, redirect } from "@remix-run/node";
+import { type ActionFunctionArgs, json, redirect } from "@vercel/remix";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { mastodonAccount, user } from "~/drizzle/schema.server";

@@ -4,7 +4,7 @@ import {
 	type MetaFunction,
 	defer,
 	redirect,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Form, useLoaderData, Await } from "@remix-run/react";
 import { Box, Separator, Flex, Spinner } from "@radix-ui/themes";
 import {

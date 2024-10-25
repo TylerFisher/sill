@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, redirect } from "@remix-run/node";
+import { type ActionFunctionArgs, redirect } from "@vercel/remix";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount } from "~/drizzle/schema.server";

@@ -2,7 +2,7 @@ import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	json,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import {
 	Box,
 	Container,

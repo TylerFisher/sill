@@ -1,4 +1,4 @@
-import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
+import { redirect, type LoaderFunctionArgs } from "@vercel/remix";
 import { eq } from "drizzle-orm";
 import { create } from "qrcode";
 import { uuidv7 } from "uuidv7-js";

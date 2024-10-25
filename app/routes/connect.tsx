@@ -2,7 +2,7 @@ import {
 	json,
 	type MetaFunction,
 	type LoaderFunctionArgs,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { useLoaderData } from "@remix-run/react";

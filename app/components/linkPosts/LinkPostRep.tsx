@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SerializeFrom } from "@remix-run/node";
+import type { SerializeFrom } from "@vercel/remix";
 import { Avatar, Box, Button } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";

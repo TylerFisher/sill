@@ -1,7 +1,7 @@
 import { useForm, getFormProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@vercel/remix";
 import { redirect, useFetcher, useFetchers } from "@remix-run/react";
 import { ServerOnly } from "remix-utils/server-only";
 import { z } from "zod";

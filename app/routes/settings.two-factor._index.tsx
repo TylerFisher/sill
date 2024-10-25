@@ -4,7 +4,7 @@ import {
 	redirect,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";

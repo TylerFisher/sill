@@ -6,7 +6,7 @@ import {
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	type MetaFunction,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import {
 	Form,
 	useActionData,

@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { json, redirect } from "@remix-run/node";
+import { json, redirect } from "@vercel/remix";
 import {
 	requireRecentVerification,
 	type VerifyFunctionArgs,

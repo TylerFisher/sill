@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, redirect } from "@remix-run/node";
+import { type ActionFunctionArgs, redirect } from "@vercel/remix";
 import { OAuthResponseError } from "@atproto/oauth-client-node";
 import { createOAuthClient } from "~/server/oauth/client";
 

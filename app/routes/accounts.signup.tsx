@@ -3,7 +3,7 @@ import {
 	type MetaFunction,
 	json,
 	redirect,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Form, useActionData } from "@remix-run/react";
 import { Heading, Text, Button, Box, Flex } from "@radix-ui/themes";
 import { z } from "zod";

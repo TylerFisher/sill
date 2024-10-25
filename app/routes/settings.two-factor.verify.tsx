@@ -5,7 +5,7 @@ import {
 	redirect,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import * as QRCode from "qrcode";
 import { z } from "zod";

@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { redirect } from "@remix-run/node";
+import { redirect } from "@vercel/remix";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { onboardingEmailSessionKey } from "./accounts.onboarding";
 import type { VerifyFunctionArgs } from "./accounts.verify.server";

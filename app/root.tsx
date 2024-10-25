@@ -6,7 +6,7 @@ import {
 	ScrollRestoration,
 	useLoaderData,
 } from "@remix-run/react";
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs } from "@vercel/remix";
 import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";

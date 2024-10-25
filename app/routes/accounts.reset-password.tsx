@@ -7,7 +7,7 @@ import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	type MetaFunction,
-} from "@remix-run/node";
+} from "@vercel/remix";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { db } from "~/drizzle/db.server";
 import ErrorList from "~/components/forms/ErrorList";

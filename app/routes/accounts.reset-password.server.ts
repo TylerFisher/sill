@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { json, redirect } from "@remix-run/node";
+import { json, redirect } from "@vercel/remix";
 import { db } from "~/drizzle/db.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { resetPasswordUsernameSessionKey } from "./accounts.reset-password";

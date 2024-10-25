@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, json } from "@remix-run/node";
+import { type ActionFunctionArgs, json } from "@vercel/remix";
 import { parseWithZod } from "@conform-to/zod";
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";

@@ -1,5 +1,5 @@
 import { invariantResponse } from "@epic-web/invariant";
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs } from "@vercel/remix";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import Layout from "~/components/nav/Layout";

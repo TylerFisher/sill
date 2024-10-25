@@ -4,6 +4,7 @@ import { installGlobals } from "@remix-run/node";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { vercelPreset } from "@vercel/remix/vite";
 
 installGlobals();
 
@@ -19,10 +20,14 @@ export default defineConfig({
 						v3_relativeSplatPath: true,
 						v3_throwAbortReason: true,
 					},
+					presets: [vercelPreset()],
 				})
 			: react(),
 		tsconfigPaths(),
 	],
+	server: {
+		port: 3000,
+	},
 	test: {
 		environment: "happy-dom",
 		// Additionally, this is to load ".env.test" during vitest
