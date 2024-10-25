@@ -87,19 +87,18 @@ const LinkRep = ({ link }: LinkRepProps) => {
 							</IconButton>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content>
-							<DropdownMenu.Item>
-								<a
-									href={`https://shareopenly.org/share/?url=${link.url}`}
-									target="_blank"
-									rel="noreferrer"
-									style={{
-										color: "inherit",
-										textDecoration: "none",
-									}}
-								>
-									Share
-								</a>
-							</DropdownMenu.Item>
+							<a
+								href={`https://shareopenly.org/share/?url=${link.url}`}
+								target="_blank"
+								rel="noreferrer"
+								style={{
+									color: "inherit",
+									textDecoration: "none",
+								}}
+							>
+								<DropdownMenu.Item>Share</DropdownMenu.Item>
+							</a>
+
 							<DropdownMenu.Item>
 								<fetcher.Form method="POST" action="/moderation">
 									<input type="hidden" name="newPhrase" value={host} />

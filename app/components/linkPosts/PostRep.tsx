@@ -1,9 +1,10 @@
-import { Card, Box, Avatar, Flex } from "@radix-ui/themes";
+import { Card, Box, Avatar, Flex, Separator } from "@radix-ui/themes";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import type { SerializeFrom } from "@vercel/remix";
+import PostToolbar from "./PostToolbar";
 interface PostRepProps {
 	post: SerializeFrom<MostRecentLinkPosts["post"]>;
 	group: SerializeFrom<MostRecentLinkPosts>[];
@@ -56,10 +57,11 @@ const PostRep = ({ post, group }: PostRepProps) => {
 							postDate={new Date(post.quoting.postDate)}
 						/>
 					</Flex>
-
 					<PostContent post={post.quoting} />
 				</Card>
 			)}
+			<Separator size="4" my="4" />
+			<PostToolbar post={post} />
 		</Card>
 	);
 };

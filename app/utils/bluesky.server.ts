@@ -47,7 +47,7 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  * @param account Account object with did
  * @returns Bluesky OAuth session
  */
-const handleBlueskyOAuth = async (account: { did: string }) => {
+export const handleBlueskyOAuth = async (account: { did: string }) => {
 	let oauthSession: OAuthSession | null = null;
 	try {
 		const client = await createOAuthClient();
