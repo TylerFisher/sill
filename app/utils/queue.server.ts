@@ -4,7 +4,8 @@ import { Queue, Worker } from "bullmq";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { connection } from "~/utils/redis.server";
-import { fetchLinkMetadata } from "~/utils/bluesky.server";
+import { fetchLinkMetadata, getBlueskyTimeline } from "~/utils/bluesky.server";
+import { getMastodonTimeline } from "./mastodon.server";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,12 +65,28 @@ export const linksQueue = registerQueue("links", async (job: LinksQueueJob) => {
 	await fetchLinkMetadata(job.data.uri);
 });
 
+interface BlueskyFetchQueueJob {
+	data: {
+		userId: string;
+	};
+}
+
 export const blueskyFetchQueue = registerQueue(
 	"bluesky",
-	path.join(__dirname, "../workers/bluesky.worker.ts"),
+	async (job: BlueskyFetchQueueJob) => {
+		await getBlueskyTimeline(job.data.userId);
+	},
 );
+
+interface MastodonFetchQueueJob {
+	data: {
+		userId: string;
+	};
+}
 
 export const mastodonFetchQueue = registerQueue(
 	"mastodon",
-	path.join(__dirname, "../workers/mastodon.worker.ts"),
+	async (job: MastodonFetchQueueJob) => {
+		await getMastodonTimeline(job.data.userId);
+	},
 );
