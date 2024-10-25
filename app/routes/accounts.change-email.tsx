@@ -11,7 +11,7 @@ import { z } from "zod";
 import {
 	prepareVerification,
 	requireRecentVerification,
-} from "~/routes/accounts.verify.server";
+} from "~/utils/verify.server";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { sendEmail } from "~/utils/email.server";

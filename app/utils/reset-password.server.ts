@@ -2,8 +2,8 @@ import { invariant } from "@epic-web/invariant";
 import { json, redirect } from "@vercel/remix";
 import { db } from "~/drizzle/db.server";
 import { verifySessionStorage } from "~/utils/verification.server";
-import { resetPasswordUsernameSessionKey } from "./accounts.reset-password";
-import type { VerifyFunctionArgs } from "./accounts.verify.server.ts";
+import { resetPasswordUsernameSessionKey } from "~/routes/accounts.reset-password";
+import type { VerifyFunctionArgs } from "~/utils/verify.server.ts";
 import { eq, or } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 

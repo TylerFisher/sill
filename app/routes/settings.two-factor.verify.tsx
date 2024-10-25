@@ -9,7 +9,7 @@ import {
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import * as QRCode from "qrcode";
 import { z } from "zod";
-import { isCodeValid } from "~/routes/accounts.verify.server";
+import { isCodeValid } from "~/utils/verify.server";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { getDomainUrl, useIsPending } from "~/utils/misc";

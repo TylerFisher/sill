@@ -9,7 +9,7 @@ import {
 } from "@radix-ui/themes";
 import Youtube from "react-youtube";
 import styles from "./LinkRep.module.css";
-import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];

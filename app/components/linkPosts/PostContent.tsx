@@ -1,6 +1,6 @@
 import { Card, Inset, Text } from "@radix-ui/themes";
 import styles from "./PostContent.module.css";
-import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 import type { SerializeFrom } from "@vercel/remix";
 
 interface PostContentProps {

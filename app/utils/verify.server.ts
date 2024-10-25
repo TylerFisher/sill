@@ -12,7 +12,7 @@ import type { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.v
 import {
 	handleVerification as handleLoginTwoFactorVerification,
 	shouldRequestTwoFA,
-} from "~/routes/accounts.login.server";
+} from "~/utils/login.server";
 import {
 	VerifySchema,
 	codeQueryParam,
@@ -20,10 +20,10 @@ import {
 	targetQueryParam,
 	typeQueryParam,
 	type VerificationTypes,
-} from "./accounts.verify";
-import { handleVerification as handleOnboardingVerification } from "./accounts.onboarding.server";
-import { handleVerification as handleResetPasswordVerification } from "./accounts.reset-password.server";
-import { handleVerification as handleChangeEmailVerification } from "~/routes/accounts.change-email.server";
+} from "~/routes/accounts.verify";
+import { handleVerification as handleOnboardingVerification } from "~/utils/onboarding.server";
+import { handleVerification as handleResetPasswordVerification } from "~/utils/reset-password.server";
+import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
 import { requireUserId } from "~/utils/auth.server";
 import { verification } from "~/drizzle/schema.server";
 

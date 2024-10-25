@@ -10,7 +10,7 @@ import { verifySessionStorage } from "~/utils/verification.server";
 import {
 	getRedirectToUrl,
 	type VerifyFunctionArgs,
-} from "./accounts.verify.server";
+} from "~/utils/verify.server";
 import { and, eq } from "drizzle-orm";
 import { verification, session } from "~/drizzle/schema.server";
 

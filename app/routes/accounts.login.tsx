@@ -15,7 +15,7 @@ import CheckboxField from "~/components/forms/CheckboxField";
 import { login, requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { PasswordSchema, UsernameSchema } from "~/utils/userValidation";
-import { handleNewSession } from "./accounts.login.server";
+import { handleNewSession } from "~/utils/login.server";
 
 import Layout from "~/components/nav/Layout";
 import ErrorList from "~/components/forms/ErrorList";

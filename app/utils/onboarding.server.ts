@@ -1,8 +1,8 @@
 import { invariant } from "@epic-web/invariant";
 import { redirect } from "@vercel/remix";
 import { verifySessionStorage } from "~/utils/verification.server";
-import { onboardingEmailSessionKey } from "./accounts.onboarding";
-import type { VerifyFunctionArgs } from "./accounts.verify.server";
+import { onboardingEmailSessionKey } from "~/routes/accounts.onboarding";
+import type { VerifyFunctionArgs } from "~/utils/verify.server";
 
 /**
  * Handles verification of email and redirects to onboarding page

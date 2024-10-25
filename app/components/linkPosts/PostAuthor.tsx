@@ -1,7 +1,7 @@
 import { Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");

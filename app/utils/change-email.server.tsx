@@ -3,12 +3,12 @@ import { json, redirect } from "@vercel/remix";
 import {
 	requireRecentVerification,
 	type VerifyFunctionArgs,
-} from "~/routes/accounts.verify.server";
+} from "~/utils/verify.server";
 import { db } from "~/drizzle/db.server";
 import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import EmailChangeNotice from "~/emails/emailChangeNotice";
-import { newEmailAddressSessionKey } from "./accounts.change-email";
+import { newEmailAddressSessionKey } from "~/routes/accounts.change-email";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 

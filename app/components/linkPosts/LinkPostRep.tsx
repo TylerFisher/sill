@@ -4,7 +4,7 @@ import { Avatar, Box, Button } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
-import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
 

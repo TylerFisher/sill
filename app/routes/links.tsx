@@ -12,7 +12,7 @@ import {
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
-import { countLinkOccurrences } from "~/routes/links.server";
+import { countLinkOccurrences } from "~/utils/links.server";
 import { requireUserId } from "~/utils/auth.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { db } from "~/drizzle/db.server";

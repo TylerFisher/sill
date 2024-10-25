@@ -2,7 +2,7 @@ import { Card, Box, Avatar, Flex } from "@radix-ui/themes";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
-import type { MostRecentLinkPosts } from "~/routes/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 import type { SerializeFrom } from "@vercel/remix";
 interface PostRepProps {
 	post: SerializeFrom<MostRecentLinkPosts["post"]>;

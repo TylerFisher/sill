@@ -1,4 +1,4 @@
-import { countLinkOccurrences } from "~/routes/links.server";
+import { countLinkOccurrences } from "~/utils/links.server";
 import { sendEmail } from "~/utils/email.server";
 import { db } from "~/drizzle/db.server";
 import TopLinks from "~/emails/topLinks";

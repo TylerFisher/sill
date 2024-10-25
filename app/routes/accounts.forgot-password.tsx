@@ -15,7 +15,7 @@ import { user } from "~/drizzle/schema.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema, UsernameSchema } from "~/utils/userValidation";
-import { prepareVerification } from "./accounts.verify.server";
+import { prepareVerification } from "~/utils/verify.server";
 import ForgotPasswordEmail from "~/emails/forgotPassword";
 import Layout from "~/components/nav/Layout";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
@@ -79,9 +79,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const response = await sendEmail({
 		to: existingUser.email,
 		subject: "Sill Password Reset",
-		react: (
-			<ForgotPasswordEmail onboardingUrl={verifyUrl.toString()} otp={otp} />
-		),
+		react: <ForgotPasswordEmail otp={otp} />,
 	});
 
 	if (response.status === "success") {

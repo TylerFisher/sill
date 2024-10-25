@@ -16,7 +16,7 @@ import TextInput from "~/components/forms/TextInput";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { db } from "~/drizzle/db.server";
-import { prepareVerification } from "./accounts.verify.server";
+import { prepareVerification } from "~/utils/verify.server";
 import { sendEmail } from "~/utils/email.server";
 import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
@@ -70,7 +70,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const response = await sendEmail({
 		to: email,
 		subject: "Verify your email",
-		react: <Verify link={verifyUrl.toString()} otp={otp} />,
+		react: <Verify otp={otp} />,
 	});
 
 	if (response.error) {

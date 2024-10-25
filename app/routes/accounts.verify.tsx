@@ -5,7 +5,7 @@ import type { ActionFunctionArgs } from "@vercel/remix";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { validateRequest } from "./accounts.verify.server";
+import { validateRequest } from "~/utils/verify.server";
 import Layout from "~/components/nav/Layout";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { OTPField } from "~/components/forms/OTPField";
