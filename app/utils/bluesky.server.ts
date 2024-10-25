@@ -13,7 +13,7 @@ import {
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
 import { uuidv7 } from "uuidv7-js";
-import { and, eq } from "drizzle-orm";
+import { and, eq, getTableColumns, type SQL, sql } from "drizzle-orm";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { createOAuthClient } from "~/server/oauth/client";
 import { db } from "~/drizzle/db.server";
@@ -30,6 +30,7 @@ import {
 	post as schemaPost,
 } from "~/drizzle/schema.server";
 import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import type { PgTable } from "drizzle-orm/pg-core";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -495,7 +496,24 @@ export const getLinksFromBluesky = async (userId: string) => {
 		.map((p) => p.quotedPost)
 		.filter((p) => p !== undefined);
 	const posts = processedResults.map((p) => p.post);
-	const links = processedResults.map((p) => p.link);
+
+	const links = Object.values(
+		processedResults.reduce(
+			(acc, p) => {
+				const existing = acc[p.link.url];
+				if (
+					!existing ||
+					(p.link.title && !existing.title) ||
+					(p.link.description && !existing.description) ||
+					(p.link.imageUrl && !existing.imageUrl)
+				) {
+					acc[p.link.url] = p.link;
+				}
+				return acc;
+			},
+			{} as Record<string, (typeof processedResults)[0]["link"]>,
+		),
+	);
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
 	const images = processedResults.flatMap((p) => p.images);
 
@@ -507,7 +525,13 @@ export const getLinksFromBluesky = async (userId: string) => {
 		if (posts.length > 0)
 			await tx.insert(post).values(posts).onConflictDoNothing();
 		if (links.length > 0)
-			await tx.insert(link).values(links).onConflictDoNothing();
+			await tx
+				.insert(link)
+				.values(links)
+				.onConflictDoUpdate({
+					target: [link.url],
+					set: buildConflictUpdateColumns(link, ["title", "description"]),
+				});
 		if (images.length > 0)
 			await tx.insert(postImage).values(images).onConflictDoNothing();
 		if (linkPosts.length > 0) {
@@ -615,4 +639,22 @@ export const fetchLinkMetadata = async (uri: string) => {
 	} catch (e) {
 		console.error(`Failed to fetch link ${uri}`, e);
 	}
+};
+
+const buildConflictUpdateColumns = <
+	T extends PgTable,
+	Q extends keyof T["_"]["columns"],
+>(
+	table: T,
+	columns: Q[],
+) => {
+	const cls = getTableColumns(table);
+	return columns.reduce(
+		(acc, column) => {
+			const colName = cls[column].name;
+			acc[column] = sql.raw(`excluded.${colName}`);
+			return acc;
+		},
+		{} as Record<Q, SQL>,
+	);
 };
