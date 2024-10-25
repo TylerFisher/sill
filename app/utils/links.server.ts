@@ -156,6 +156,7 @@ const filterByMutePhrases = async (
 				lp.link.description
 					?.toLowerCase()
 					.includes(phrase.phrase.toLowerCase()) ||
+				new URL(lp.link.url).host === phrase.phrase ||
 				lp.post.text.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
 				lp.post.actor.name
 					?.toLowerCase()
