@@ -21,11 +21,11 @@ import {
 	Heading,
 	IconButton,
 	Separator,
-	Text,
+	Callout,
 } from "@radix-ui/themes";
 import TextInput from "~/components/forms/TextInput";
 import { uuidv7 } from "uuidv7-js";
-import { Cross2Icon } from "@radix-ui/react-icons";
+import { Cross2Icon, InfoCircledIcon } from "@radix-ui/react-icons";
 import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
 import { mutePhrase } from "~/drizzle/schema.server";
@@ -112,13 +112,18 @@ const MutePhraseSettings = () => {
 	return (
 		<Layout>
 			<Box mb="6">
-				<Heading as="h2" size="6" mb="1">
+				<Heading as="h2" size="6" mb="4">
 					Moderation
 				</Heading>
-				<Text as="p">
-					Mute phrases in order to keep any links, posts, or accounts with these
-					phrases from appearing in your timeline.
-				</Text>
+				<Callout.Root size="3" variant="outline">
+					<Callout.Icon>
+						<InfoCircledIcon />
+					</Callout.Icon>
+					<Callout.Text>
+						Mute phrases in order to keep any links, posts, or accounts with
+						these phrases from appearing in your timeline.
+					</Callout.Text>
+				</Callout.Root>
 			</Box>
 
 			{data.phrases.length > 0 && (

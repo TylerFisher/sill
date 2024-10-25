@@ -14,12 +14,13 @@ import {
 	Text,
 	Button,
 	TextField,
-	Separator,
 	Card,
+	Callout,
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import Layout from "~/components/nav/Layout";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Socials" },
@@ -54,12 +55,20 @@ export default function Index() {
 	return (
 		<Layout>
 			<Box mb="6">
-				<Heading as="h2" size="6" mb="1">
+				<Heading as="h2" size="6" mb="4">
 					Connect your accounts
 				</Heading>
-				<Text size="3" as="p">
-					Here you can connect your Mastodon and Bluesky accounts.
-				</Text>
+				<Callout.Root size="3" variant="outline">
+					<Callout.Icon>
+						<InfoCircledIcon />
+					</Callout.Icon>
+					<Callout.Text>
+						Sill connects to your Mastodon and Bluesky accounts and gathers all
+						of the links posted to your timeline. Then, Sill aggregates those
+						links to show you the most popular links in your network. You can
+						connect to one or both of these services.
+					</Callout.Text>
+				</Callout.Root>
 			</Box>
 
 			{user && user.mastodonAccounts.length > 0 ? (
@@ -72,9 +81,7 @@ export default function Index() {
 						<Badge>{user.mastodonAccounts[0].mastodonInstance.instance}</Badge>.
 					</Text>
 					<Form action="/mastodon/auth/revoke" method="post">
-						<Button type="submit" size="1">
-							Disconnect from Mastodon
-						</Button>
+						<Button type="submit">Disconnect</Button>
 					</Form>
 				</Card>
 			) : (
@@ -92,9 +99,7 @@ export default function Index() {
 						>
 							<TextField.Slot>https://</TextField.Slot>
 						</TextField.Root>
-						<Button type="submit" size="1">
-							Connect to Mastodon
-						</Button>
+						<Button type="submit">Connect</Button>
 					</Form>
 				</Card>
 			)}
@@ -108,9 +113,7 @@ export default function Index() {
 						.
 					</Text>
 					<Form action="/bluesky/auth/revoke" method="post">
-						<Button type="submit" size="1">
-							Disconnect from Bluesky
-						</Button>
+						<Button type="submit">Disconnect</Button>
 					</Form>
 				</Card>
 			) : (
@@ -127,9 +130,7 @@ export default function Index() {
 						>
 							<TextField.Slot />
 						</TextField.Root>
-						<Button type="submit" size="1">
-							Connect to Bluesky
-						</Button>
+						<Button type="submit">Connect</Button>
 					</Form>
 				</Card>
 			)}
