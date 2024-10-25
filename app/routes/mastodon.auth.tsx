@@ -26,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				},
 				body: JSON.stringify({
 					client_name: "Sill",
-					redirect_uris: process.env.REDIRECT_URI,
+					redirect_uris: process.env.MASTODON_REDIRECT_URI,
 					scopes: "read",
 				}),
 			});

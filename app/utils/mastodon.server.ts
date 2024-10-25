@@ -13,7 +13,7 @@ import {
 	post as schemaPost,
 } from "~/drizzle/schema.server";
 
-const REDIRECT_URI = process.env.REDIRECT_URI as string; // e.g., 'http://localhost:3000/auth
+const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 /**
