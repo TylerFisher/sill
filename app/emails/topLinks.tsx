@@ -1,28 +1,36 @@
-import { Container, Heading, Html } from "@react-email/components";
-import type { ExtendedLinkPost } from "~/components/linkPosts/PostRep";
-import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import { Separator } from "@radix-ui/themes";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
+import EmailLayout from "~/components/emails/Layout";
+import EmailHeading from "~/components/emails/Heading";
+import LinkPost from "~/components/emails/LinkPost";
+import { Hr } from "@react-email/components";
 
 interface TopLinksProps {
-	links: [string, ExtendedLinkPost[]][];
+	links: [string, MostRecentLinkPosts[]][];
 }
 
 const TopLinks = ({ links }: TopLinksProps) => {
+	const today = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(new Date());
+
 	return (
-		<Html>
-			<Container>
-				<Heading>Your top links</Heading>
-				{links.map((link, i) => (
-					<div key={link[0]}>
-						<LinkPostRep link={link[0]} linkPosts={link[1]} />
-						{i < links.length - 1 && (
-							<Separator my="7" size="4" orientation="horizontal" />
-						)}
-					</div>
-				))}
-			</Container>
-		</Html>
+		<EmailLayout preview="The top links from across your network">
+			<EmailHeading>Your Top Links for {today}</EmailHeading>
+			{links.map(([link, linkPosts], i) => (
+				<>
+					<LinkPost key={link} linkPosts={linkPosts} />
+					{i < links.length - 1 && <Hr style={hr} />}
+				</>
+			))}
+		</EmailLayout>
 	);
+};
+
+const hr = {
+	margin: "40px 0",
 };
 
 export default TopLinks;

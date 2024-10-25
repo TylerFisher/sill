@@ -28,4 +28,4 @@ const sendNewsletter = async (userId: string) => {
 	});
 };
 
-sendNewsletter("019272d2-6f1a-7ecb-99b5-f3a57fb6f7a8");
+sendNewsletter("0192c0d8-e5d6-7752-bb13-e8dc0df021b4");
