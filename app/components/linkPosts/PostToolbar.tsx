@@ -1,7 +1,7 @@
 import { DropdownMenu, Flex, IconButton, Link } from "@radix-ui/themes";
 import type { SerializeFrom } from "@vercel/remix";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import { Ellipsis, Copy, ExternalLink } from "lucide-react";
+import { Ellipsis, Copy, ExternalLink, Share } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
 import CopyToClipboard from "react-copy-to-clipboard";
 
@@ -14,9 +14,17 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 
 	return (
 		<Flex justify="between" mr="2">
-			<Link href={post.url} target="_blank" rel="noreferrer">
-				<IconButton aria-label="Open in new tab" variant="ghost" size="1">
-					<ExternalLink width="18" height="18" />
+			<Link
+				href={`https://shareopenly.org/share/?url=${post.url}`}
+				target="_blank"
+				rel="noreferrer"
+			>
+				<IconButton
+					aria-label="Share with ShareOpenly"
+					variant="ghost"
+					size="1"
+				>
+					<Share width="18" height="18" />
 				</IconButton>
 			</Link>
 			<IconButton aria-label="Copy" variant="ghost" size="1">
@@ -24,6 +32,11 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 					<Copy width="18" height="18" />
 				</CopyToClipboard>
 			</IconButton>
+			<Link href={post.url} target="_blank" rel="noreferrer">
+				<IconButton aria-label="Open in new tab" variant="ghost" size="1">
+					<ExternalLink width="18" height="18" />
+				</IconButton>
+			</Link>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					<IconButton aria-label="More" variant="ghost" size="1">
