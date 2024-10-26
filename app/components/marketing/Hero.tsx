@@ -20,7 +20,10 @@ const Hero = () => {
 					direction="column"
 					justify="center"
 					align="center"
-					gap="6"
+					gap={{
+						initial: "4",
+						md: "6",
+					}}
 					className={styles.language}
 				>
 					<Header headerClass="marketing-logo" />

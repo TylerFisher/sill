@@ -14,4 +14,11 @@
 
 .intro-video-wrapper {
   max-height: 90vh;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .intro-video-wrapper {
+    display: block;
+  }
 }
