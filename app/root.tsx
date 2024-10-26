@@ -44,8 +44,8 @@ export function Document({
 	return (
 		<html lang="en">
 			<head>
-				<ClientHintCheck nonce={nonce} />
 				<meta charSet="utf-8" />
+				<ClientHintCheck nonce={nonce} />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<link
 					rel="apple-touch-icon"

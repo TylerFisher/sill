@@ -21,7 +21,12 @@ const PostRep = ({ post, group }: PostRepProps) => {
 	return (
 		<Card key={post.id} mt="5">
 			<Flex gap="3" align="start" mb="1">
-				<a href={post.actor.url} target="_blank" rel="noreferrer">
+				<a
+					href={post.actor.url}
+					target="_blank"
+					rel="noreferrer"
+					aria-label={`Link to ${post.actor.name}'s profile page`}
+				>
 					<Avatar
 						size="3"
 						src={post.actor.avatarUrl || undefined}

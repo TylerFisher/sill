@@ -13,8 +13,9 @@ const Footer = ({
 				href="https://github.com/TylerFisher/sill"
 				target="_blank"
 				rel="noreferrer"
+				aria-label="Link to Github repository for Sill"
 			>
-				<IconButton size="3" variant="ghost">
+				<IconButton size="3" variant="ghost" aria-label="Github icon">
 					<Github />
 				</IconButton>
 			</Link>

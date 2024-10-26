@@ -82,7 +82,7 @@ const LinkRep = ({ link }: LinkRepProps) => {
 				<Box position="absolute" top="0" right="0">
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
-							<IconButton variant="ghost">
+							<IconButton variant="ghost" aria-label="Link options">
 								<Ellipsis width="18" height="18" />
 							</IconButton>
 						</DropdownMenu.Trigger>

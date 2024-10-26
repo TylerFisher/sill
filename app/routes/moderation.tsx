@@ -145,7 +145,7 @@ const MutePhraseSettings = () => {
 										width: "100%",
 									}}
 								/>
-								<IconButton size="1" variant="soft">
+								<IconButton size="1" variant="soft" aria-label="Delete phrase">
 									<X width="12" height="12" />
 								</IconButton>
 							</Flex>

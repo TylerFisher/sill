@@ -69,7 +69,12 @@ export function ThemeSwitch({
 				)}
 			</ServerOnly>
 			<input type="hidden" name="theme" value={nextMode} />
-			<IconButton type="submit" variant="ghost" size="3">
+			<IconButton
+				type="submit"
+				variant="ghost"
+				size="3"
+				aria-label="Theme switcher"
+			>
 				{modeLabel[mode]}
 			</IconButton>
 		</fetcher.Form>

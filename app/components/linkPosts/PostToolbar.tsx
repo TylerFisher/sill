@@ -18,6 +18,7 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 				href={`https://shareopenly.org/share/?url=${post.url}`}
 				target="_blank"
 				rel="noreferrer"
+				aria-label="Share with ShareOpenly"
 			>
 				<IconButton
 					aria-label="Share with ShareOpenly"
@@ -27,19 +28,24 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 					<Share width="18" height="18" />
 				</IconButton>
 			</Link>
-			<IconButton aria-label="Copy" variant="ghost" size="1">
+			<IconButton aria-label="Copy URL" variant="ghost" size="1">
 				<CopyToClipboard text={post.url}>
 					<Copy width="18" height="18" />
 				</CopyToClipboard>
 			</IconButton>
-			<Link href={post.url} target="_blank" rel="noreferrer">
+			<Link
+				href={post.url}
+				target="_blank"
+				rel="noreferrer"
+				aria-label="Open in new tab"
+			>
 				<IconButton aria-label="Open in new tab" variant="ghost" size="1">
 					<ExternalLink width="18" height="18" />
 				</IconButton>
 			</Link>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
-					<IconButton aria-label="More" variant="ghost" size="1">
+					<IconButton aria-label="More options" variant="ghost" size="1">
 						<Ellipsis width="18" height="18" />
 					</IconButton>
 				</DropdownMenu.Trigger>
