@@ -47,7 +47,7 @@ const Hero = () => {
 						</Link>
 					</Flex>
 				</Flex>
-				<Box>
+				<Box className={styles["right-box"]}>
 					<Card className={styles["intro-video-wrapper"]}>
 						<Inset>
 							<video
