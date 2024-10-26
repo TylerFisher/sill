@@ -11,7 +11,13 @@ interface LayoutProps extends PropsWithChildren {
 
 const Layout = ({ children, hideNav }: LayoutProps) => {
 	return (
-		<Container size="4" px="5">
+		<Container
+			size="4"
+			px={{
+				initial: "0",
+				sm: "5",
+			}}
+		>
 			<div className={styles.wrapper}>
 				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
 				{!hideNav && (
