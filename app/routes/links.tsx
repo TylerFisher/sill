@@ -10,9 +10,9 @@ import {
 	Await,
 	useFetcher,
 	useSearchParams,
-	useSubmit,
 } from "@remix-run/react";
-import { Box, Separator, Flex, Spinner, Button } from "@radix-ui/themes";
+import { Box, Separator, Flex, Spinner } from "@radix-ui/themes";
+import { debounce } from "ts-debounce";
 import {
 	OAuthResponseError,
 	TokenRefreshError,
@@ -84,38 +84,60 @@ const Links = () => {
 	const data = useLoaderData<typeof loader>();
 	const [searchParams] = useSearchParams();
 	const page = Number.parseInt(searchParams.get("page") || "1");
-	const [fetchedPage, setFetchedPage] = useState(page);
+	const [nextPage, setNextPage] = useState(page + 1);
+	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
 	const [fetchedLinks, setFetchedLinks] = useState<
 		[string, MostRecentLinkPosts[]][]
 	>([]);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
 
+	function setupIntersectionObserver() {
+		const $form = formRef.current;
+		if (!$form) return;
+		const debouncedSubmit = debounce(submitForm, 1000, {
+			isImmediate: true,
+		});
+		const observer = new IntersectionObserver((entries) => {
+			if (entries[0].isIntersecting) {
+				debouncedSubmit();
+				observer.unobserve($form);
+			}
+		});
+		observer.observe($form);
+		setObserver(observer);
+	}
+
+	function submitForm() {
+		const $form = formRef.current;
+		if (!$form) return;
+		fetcher.submit(formRef.current, { preventScrollReset: true });
+		setNextPage(nextPage + 1);
+	}
+
+	const debouncedObserver = debounce(setupIntersectionObserver, 100, {
+		isImmediate: true,
+	});
+
+	useEffect(() => {
+		data.links.then(() => {
+			if (!observer) {
+				debouncedObserver();
+			}
+		});
+	});
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
-			fetcher.data.links.then((links) =>
-				setFetchedLinks(fetchedLinks.concat(links)),
-			);
+			fetcher.data.links.then((links) => {
+				if (links.length > 0) {
+					setFetchedLinks(fetchedLinks.concat(links));
+					setupIntersectionObserver();
+				}
+			});
 		}
 	}, [fetcher, fetchedLinks.concat]);
-
-	// useEffect(() => {
-	// 	const $form = formRef.current;
-	// 	if (!$form) return;
-
-	// 	const observer = new IntersectionObserver((entries) => {
-	// 		if (entries[0].isIntersecting) {
-	// 			fetcher.submit($form, { preventScrollReset: true });
-	// 		}
-	// 	});
-
-	// 	observer.observe($form);
-	// 	return () => observer.disconnect();
-	// }, [fetcher.submit]);
-
-	function onLoadMoreClick() {
-		setFetchedPage(fetchedPage + 1);
-	}
 
 	return (
 		<Layout>
@@ -137,40 +159,38 @@ const Links = () => {
 				<Await resolve={data.links}>
 					{(links) => (
 						<div>
-							{links.map((link, i) => (
+							{links.map((link) => (
 								<div key={link[0]}>
-									<LinkPostRep link={link[0]} linkPosts={link[1]} />
-									<Separator my="7" size="4" orientation="horizontal" />
+									<LinkPost key={link[0]} linkPost={link} />
 								</div>
 							))}
+							{fetchedLinks && (
+								<div>
+									{fetchedLinks.map((link) => (
+										<LinkPost key={link[0]} linkPost={link} />
+									))}
+								</div>
+							)}
+							<Box mt="4">
+								<fetcher.Form method="GET" preventScrollReset ref={formRef}>
+									<input type="hidden" name="page" value={nextPage} />
+								</fetcher.Form>
+							</Box>
 						</div>
 					)}
 				</Await>
-				{fetchedLinks && (
-					<Await resolve={fetchedLinks}>
-						{(links) => (
-							<Box mt="4">
-								{links.map((link, i) => (
-									<div key={link[0]}>
-										<LinkPostRep link={link[0]} linkPosts={link[1]} />
-										<Separator my="7" size="4" orientation="horizontal" />
-									</div>
-								))}
-							</Box>
-						)}
-					</Await>
-				)}
-				<Box mt="4">
-					<fetcher.Form method="GET" preventScrollReset ref={formRef}>
-						<input type="hidden" name="page" value={fetchedPage} />
-						<Button type="submit" onClick={onLoadMoreClick}>
-							Load More
-						</Button>
-					</fetcher.Form>
-				</Box>
 			</Suspense>
 		</Layout>
 	);
 };
+
+const LinkPost = ({
+	linkPost,
+}: { linkPost: [string, MostRecentLinkPosts[]] }) => (
+	<div>
+		<LinkPostRep link={linkPost[0]} linkPosts={linkPost[1]} />
+		<Separator my="7" size="4" orientation="horizontal" />
+	</div>
+);
 
 export default Links;
