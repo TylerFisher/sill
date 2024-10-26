@@ -259,7 +259,6 @@ export const countLinkOccurrences = async ({
 	const grouped = await groupByLink(mostRecentLinkPosts);
 
 	const start = (page - 1) * 20;
-	console.log(page, start);
 
 	if (sort === "popularity") {
 		const sorted = await sortByPopularity(grouped);
