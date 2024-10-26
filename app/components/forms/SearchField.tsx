@@ -14,7 +14,12 @@ const SearchField = () => {
 	}
 
 	return (
-		<TextField.Root name="query" type="text" defaultValue={query}>
+		<TextField.Root
+			name="query"
+			type="text"
+			defaultValue={query}
+			aria-label="Search"
+		>
 			<TextField.Slot>
 				<Search height="16" width="16" />
 			</TextField.Slot>

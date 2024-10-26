@@ -43,7 +43,12 @@ const LinkRep = ({ link }: LinkRepProps) => {
 			{link.imageUrl && (
 				<Inset mb="4" className={styles.inset}>
 					<AspectRatio ratio={16 / 9}>
-						<Link target="_blank" rel="noreferrer" href={link.url}>
+						<Link
+							target="_blank"
+							rel="noreferrer"
+							href={link.url}
+							aria-label={link.title}
+						>
 							<img
 								src={link.imageUrl}
 								loading="lazy"
