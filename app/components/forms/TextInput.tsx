@@ -28,6 +28,7 @@ const TextInput = ({ labelProps, inputProps, errors }: FieldProps) => {
 				{...inputProps}
 				aria-invalid={errorId ? true : undefined}
 				aria-describedby={errorId}
+				size="3"
 			>
 				<TextField.Slot />
 			</TextField.Root>
