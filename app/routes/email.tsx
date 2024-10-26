@@ -26,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		where: eq(emailSettings?.userId, userId),
 	});
 
-	return currentSettings;
+	return currentSettings || {};
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
