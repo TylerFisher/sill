@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
-	defer,
 	redirect,
 } from "@vercel/remix";
 import { Form, useLoaderData, Await } from "@remix-run/react";
@@ -67,7 +66,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		...options,
 	});
 
-	return defer({ links });
+	return { links };
 };
 
 const Links = () => {

@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 } from "@vercel/remix";
@@ -44,10 +44,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return json({
+	return {
 		phrases,
 		newPhrase: "",
-	});
+	};
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -74,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply(),
 			},
@@ -90,9 +90,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		userId,
 	});
 
-	return json({
+	return {
 		result: submission.reply(),
-	});
+	};
 };
 
 const MutePhraseSettings = () => {

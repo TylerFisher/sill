@@ -2,7 +2,7 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
-	json,
+	data,
 	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
@@ -42,7 +42,7 @@ async function requireResetPasswordEmail(request: Request) {
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const resetPasswordEmail = await requireResetPasswordEmail(request);
-	return json({ resetPasswordEmail });
+	return { resetPasswordEmail };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -52,7 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		schema: ResetPasswordSchema,
 	});
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);

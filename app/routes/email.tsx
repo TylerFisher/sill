@@ -1,26 +1,19 @@
-import { Box, Heading, Callout, Select, Button } from "@radix-ui/themes";
+import { Box, Select, Button } from "@radix-ui/themes";
 import {
-	json,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	data,
 } from "@vercel/remix";
 import { db } from "~/drizzle/db.server";
 import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
 import { eq } from "drizzle-orm";
 import { emailSettings } from "~/drizzle/schema.server";
-import {
-	Form,
-	useLoaderData,
-	useActionData,
-	useSearchParams,
-	Link,
-} from "@remix-run/react";
+import { Form, useActionData, useSearchParams, Link } from "@remix-run/react";
 import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { uuidv7 } from "uuidv7-js";
-import { Info } from "lucide-react";
 import PageHeading from "~/components/nav/PageHeading";
 
 const EmailSettingsSchema = z.object({
@@ -33,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		where: eq(emailSettings?.userId, userId),
 	});
 
-	return json({ currentSettings });
+	return currentSettings;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -45,7 +38,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply(),
 			},
@@ -69,9 +62,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			},
 		});
 
-	return json({
+	return {
 		result: submission.reply(),
-	});
+	};
 };
 
 const EmailSettings = () => {

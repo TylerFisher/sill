@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	redirect,
 	type ActionFunctionArgs,
 	type MetaFunction,
@@ -47,7 +47,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		async: true,
 	});
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);
@@ -79,7 +79,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	if (response.status === "success") {
 		return redirect(redirectTo.toString());
 	}
-	return json(
+	return data(
 		{ result: submission.reply({ formErrors: [response.error.message] }) },
 		{ status: 500 },
 	);

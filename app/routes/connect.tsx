@@ -1,5 +1,4 @@
 import {
-	json,
 	type MetaFunction,
 	type LoaderFunctionArgs,
 	redirect,
@@ -44,9 +43,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return json({
-		user: existingUser,
-	});
+	return { user: existingUser };
 };
 
 const Connect = () => {

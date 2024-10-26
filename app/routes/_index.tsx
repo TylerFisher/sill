@@ -11,7 +11,7 @@ export const meta: MetaFunction = () => [{ title: "Sill" }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireAnonymous(request);
-	return json({});
+	return {};
 };
 
 const Index = () => {

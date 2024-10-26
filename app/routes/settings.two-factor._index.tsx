@@ -1,6 +1,5 @@
 import type { VerificationTypes } from "~/routes/accounts.verify";
 import {
-	json,
 	redirect,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
@@ -26,7 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		),
 		columns: { id: true },
 	});
-	return json({ is2FAEnabled: Boolean(existingVerification) });
+	return { is2FAEnabled: Boolean(existingVerification) };
 }
 
 export async function action({ request }: ActionFunctionArgs) {

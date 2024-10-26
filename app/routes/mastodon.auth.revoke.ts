@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, json, redirect } from "@vercel/remix";
+import { type ActionFunctionArgs, redirect } from "@vercel/remix";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { mastodonAccount, user } from "~/drizzle/schema.server";
@@ -46,5 +46,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		return redirect("/connect");
 	}
 
-	return json({ message: "No tokens to revoke." });
+	return { message: "No tokens to revoke." };
 };

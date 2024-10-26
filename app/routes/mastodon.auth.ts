@@ -1,6 +1,5 @@
-import { redirect, type LoaderFunctionArgs } from "@vercel/remix";
+import type { LoaderFunctionArgs } from "@vercel/remix";
 import { eq } from "drizzle-orm";
-import { create } from "qrcode";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { mastodonInstance } from "~/drizzle/schema.server";
