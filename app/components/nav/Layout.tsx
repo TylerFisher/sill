@@ -5,16 +5,29 @@ import Nav from "./Nav";
 import Footer from "./Footer";
 import styles from "./Layout.module.css";
 
-const Layout = ({ children }: PropsWithChildren) => {
+interface LayoutProps extends PropsWithChildren {
+	hideNav?: boolean;
+}
+
+const Layout = ({ children, hideNav }: LayoutProps) => {
 	return (
 		<Container size="4" px="5">
 			<div className={styles.wrapper}>
-				<Header headerClass="mobile-logo" />
-				<aside className={styles.side}>
-					<Header headerClass="desktop-logo" />
-					<Nav />
-				</aside>
-				<main className={styles.content}>{children}</main>
+				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
+				{!hideNav && (
+					<aside className={styles.side}>
+						<Header headerClass="desktop-logo" />
+						<Nav />
+					</aside>
+				)}
+				<main
+					className={styles.content}
+					style={{
+						marginTop: hideNav ? "0" : "2rem",
+					}}
+				>
+					{children}
+				</main>
 				<Flex direction="column" justify="end" className={styles.right}>
 					<Footer align="end" />
 				</Flex>

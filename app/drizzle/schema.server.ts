@@ -302,17 +302,12 @@ export const user = pgTable(
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		emailConfirmed: boolean("email_confirmed").default(false).notNull(),
-		username: text().notNull().unique(),
 	},
 	(table) => {
 		return {
 			emailKey: uniqueIndex("user_email_key").using(
 				"btree",
 				table.email.asc().nullsLast(),
-			),
-			usernameKey: uniqueIndex("user_username_key").using(
-				"btree",
-				table.username.asc().nullsLast(),
 			),
 		};
 	},

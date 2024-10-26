@@ -20,6 +20,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function EditUserProfile() {
 	const data = useLoaderData<typeof loader>();
+	const signedUpOn = new Intl.DateTimeFormat("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(new Date(data.user.createdAt));
+
 	return (
 		<Layout>
 			<Box>
@@ -28,16 +34,12 @@ export default function EditUserProfile() {
 				</Heading>
 				<DataList.Root>
 					<DataList.Item align="center">
-						<DataList.Label>Username</DataList.Label>
-						<DataList.Value>{data.user.username}</DataList.Value>
-					</DataList.Item>
-					<DataList.Item align="center">
 						<DataList.Label>Email</DataList.Label>
 						<DataList.Value>{data.user.email}</DataList.Value>
 					</DataList.Item>
 					<DataList.Item align="center">
 						<DataList.Label>Signed up on</DataList.Label>
-						<DataList.Value>{data.user.createdAt}</DataList.Value>
+						<DataList.Value>{signedUpOn}</DataList.Value>
 					</DataList.Item>
 				</DataList.Root>
 				<Flex mt="4" gap="4">

@@ -19,36 +19,34 @@ import { verifySessionStorage } from "~/utils/verification.server";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
-export const resetPasswordUsernameSessionKey = "resetPasswordUsername";
+export const resetPasswordEmailSessionKey = "resetPasswordEmail";
 
 const ResetPasswordSchema = PasswordAndConfirmPasswordSchema;
 
 /**
- * Requires the reset password username from the session, otherwise redirects to login
+ * Requires the reset password email from the session, otherwise redirects to login
  * @param request Request object
- * @returns Username from reset password session
+ * @returns Email from reset password session
  */
-async function requireResetPasswordUsername(request: Request) {
+async function requireResetPasswordEmail(request: Request) {
 	await requireAnonymous(request);
 	const verifySession = await verifySessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
-	const resetPasswordUsername = verifySession.get(
-		resetPasswordUsernameSessionKey,
-	);
-	if (typeof resetPasswordUsername !== "string" || !resetPasswordUsername) {
+	const resetPasswordEmail = verifySession.get(resetPasswordEmailSessionKey);
+	if (typeof resetPasswordEmail !== "string" || !resetPasswordEmail) {
 		throw redirect("/login");
 	}
-	return resetPasswordUsername;
+	return resetPasswordEmail;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-	const resetPasswordUsername = await requireResetPasswordUsername(request);
-	return json({ resetPasswordUsername });
+	const resetPasswordEmail = await requireResetPasswordEmail(request);
+	return json({ resetPasswordEmail });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	const resetPasswordUsername = await requireResetPasswordUsername(request);
+	const resetPasswordEmail = await requireResetPasswordEmail(request);
 	const formData = await request.formData();
 	const submission = parseWithZod(formData, {
 		schema: ResetPasswordSchema,
@@ -62,7 +60,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const { password } = submission.value;
 
 	const existingUser = await db.query.user.findFirst({
-		where: eq(user.username, resetPasswordUsername),
+		where: eq(user.email, resetPasswordEmail),
 		columns: { id: true },
 	});
 
@@ -104,7 +102,7 @@ export default function ResetPasswordPage() {
 					Password Reset
 				</Heading>
 				<Text as="p" size="3">
-					Hi, {data.resetPasswordUsername}. No worries. It happens all the time.
+					Hi, {data.resetPasswordEmail}. No worries. It happens all the time.
 				</Text>
 			</Box>
 			<Form method="POST" {...getFormProps(form)}>

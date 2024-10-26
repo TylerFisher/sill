@@ -33,13 +33,13 @@
 
   .content {
     grid-column: col-start 4 / span 6;
-    margin-top: 2em !important;
   }
   .right {
     grid-column: col-start 10 / span 3;
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    position: fixed;
+    bottom: 0;
+    right: 1em;
+    width: 100%;
   }
 }
 
@@ -48,7 +48,12 @@
   padding: 1em;
   box-shadow: var(--base-card-surface-box-shadow);
   border-radius: 1em;
-  min-height: 100vh;
-  margin: 0 auto;
+  margin: 0 0 1rem;
   width: 100%;
+}
+
+@media (max-width: 767px) {
+  .content {
+    margin-top: 0 !important;
+  }
 }

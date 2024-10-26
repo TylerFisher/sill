@@ -61,7 +61,6 @@ export async function handleVerification({
 		.returning({
 			id: user.id,
 			email: user.email,
-			username: user.username,
 		});
 
 	await sendEmail({

@@ -121,17 +121,17 @@ export async function logout(
 
 /**
  * Handles the login process by verifying the user's credentials and creating a new session
- * @param param0 Object with username and password
+ * @param param0 Object with email and password
  * @returns New session object
  */
 export async function login({
-	username,
+	email,
 	password,
 }: {
-	username: string;
+	email: string;
 	password: string;
 }) {
-	const user = await verifyUserPassword({ username }, password);
+	const user = await verifyUserPassword({ email }, password);
 	if (!user) return null;
 	const newSession = await db
 		.insert(session)
@@ -150,17 +150,15 @@ export async function login({
 
 /**
  * Handles the signup process by creating a new user, hashing the password, and returning a new session
- * @param param0 Object with email, username, password, and name
+ * @param param0 Object with email, password, and name
  * @returns New session object
  */
 export async function signup({
 	email,
-	username,
 	sentPassword,
 	name,
 }: {
 	email: string;
-	username: string;
 	name: string;
 	sentPassword: string;
 }) {
@@ -172,7 +170,6 @@ export async function signup({
 			.values({
 				id: uuidv7(),
 				email: email.toLowerCase(),
-				username: username.toLowerCase(),
 				name,
 			})
 			.returning({
@@ -217,20 +214,20 @@ export async function getPasswordHash(password: string) {
 
 /**
  * Verifies a user's password by checking the stored hash against the plaintext password
- * @param userInfo Either username or userId
+ * @param userInfo Either email or userId
  * @param password Plaintext password
  * @returns User ID if the password is valid, otherwise null
  */
 export async function verifyUserPassword(
-	userInfo: { username?: string | undefined; userId?: string },
+	userInfo: { email?: string | undefined; userId?: string },
 	password: string,
 ) {
 	let where = null;
-	if (userInfo.username) {
-		where = eq(user.username, userInfo.username);
+	if (userInfo.email) {
+		where = eq(user.email, userInfo.email);
 	}
 	if (userInfo.userId) {
-		where = eq(user.username, userInfo.userId);
+		where = eq(user.id, userInfo.userId);
 	}
 
 	if (!where) {

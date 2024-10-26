@@ -2,10 +2,11 @@ import {
 	json,
 	type MetaFunction,
 	type LoaderFunctionArgs,
+	redirect,
 } from "@vercel/remix";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { Form } from "@remix-run/react";
 import {
 	Badge,
@@ -27,32 +28,34 @@ export const meta: MetaFunction = () => [
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
-
-	let existingUser = null;
-	if (userId) {
-		existingUser = await db.query.user.findFirst({
-			columns: {},
-			where: eq(user.id, userId),
-			with: {
-				mastodonAccounts: {
-					with: {
-						mastodonInstance: true,
-					},
-				},
-				blueskyAccounts: true,
-			},
-		});
+	if (!userId) {
+		return redirect("accounts/login");
 	}
+	const existingUser = await db.query.user.findFirst({
+		columns: {},
+		where: eq(user.id, userId),
+		with: {
+			mastodonAccounts: {
+				with: {
+					mastodonInstance: true,
+				},
+			},
+			blueskyAccounts: true,
+		},
+	});
 
 	return json({
 		user: existingUser,
 	});
 };
 
-export default function Index() {
+const Connect = () => {
 	const { user } = useLoaderData<typeof loader>();
+	if (!user) return null;
+	const [searchParams] = useSearchParams();
+	const onboarding = searchParams.get("onboarding");
 	return (
-		<Layout>
+		<Layout hideNav={!!onboarding}>
 			<Box mb="6">
 				<PageHeading
 					title="Connect your accounts"
@@ -60,7 +63,7 @@ export default function Index() {
 				/>
 			</Box>
 
-			{user && user.mastodonAccounts.length > 0 ? (
+			{user.mastodonAccounts.length > 0 ? (
 				<Card mb="6">
 					<Heading as="h3" size="5" mb="1">
 						Mastodon
@@ -92,7 +95,7 @@ export default function Index() {
 					</Form>
 				</Card>
 			)}
-			{user && user.blueskyAccounts.length > 0 ? (
+			{user.blueskyAccounts.length > 0 ? (
 				<Card>
 					<Heading size="5" mb="1">
 						Bluesky
@@ -123,6 +126,17 @@ export default function Index() {
 					</Form>
 				</Card>
 			)}
+			{onboarding &&
+				(user.blueskyAccounts.length > 0 ||
+					user.mastodonAccounts.length > 0) && (
+					<Box mt="4">
+						<Link to="/email?onboarding=true">
+							<Button>Set up daily email</Button>
+						</Link>
+					</Box>
+				)}
 		</Layout>
 	);
-}
+};
+
+export default Connect;

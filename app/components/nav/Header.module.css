@@ -1,4 +1,5 @@
-.mobile-logo {
+.mobile-logo,
+.onboarding-logo {
   display: block;
   text-align: center;
 }

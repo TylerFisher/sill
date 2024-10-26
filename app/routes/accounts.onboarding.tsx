@@ -23,7 +23,6 @@ import { authSessionStorage } from "~/utils/session.server";
 import {
 	NameSchema,
 	PasswordAndConfirmPasswordSchema,
-	UsernameSchema,
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
@@ -38,7 +37,6 @@ export const onboardingEmailSessionKey = "onboardingEmail";
 
 const SignupFormSchema = z
 	.object({
-		username: UsernameSchema,
 		name: NameSchema,
 		agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
 			required_error:
@@ -77,20 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
 		schema: (intent) =>
-			SignupFormSchema.superRefine(async (data, ctx) => {
-				const existingUser = await db.query.user.findFirst({
-					where: eq(user.username, data.username),
-					columns: { id: true },
-				});
-				if (existingUser) {
-					ctx.addIssue({
-						path: ["username"],
-						code: z.ZodIssueCode.custom,
-						message: "A user already exists with this username",
-					});
-					return;
-				}
-			}).transform(async (data) => {
+			SignupFormSchema.transform(async (data) => {
 				if (intent !== null) return { ...data, session: null };
 
 				const session = await signup({
@@ -137,10 +122,10 @@ export const meta: MetaFunction = () => {
 };
 
 export default function OnboardingRoute() {
-	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const [searchParams] = useSearchParams();
-	const redirectTo = searchParams.get("redirectTo");
+	const redirectTo =
+		searchParams.get("redirectTo") || "/connect?onboarding=true";
 
 	const [form, fields] = useForm({
 		id: "onboarding-form",
@@ -154,7 +139,7 @@ export default function OnboardingRoute() {
 	});
 
 	return (
-		<Layout>
+		<Layout hideNav>
 			<Box mb="5">
 				<Heading size="8">Welcome</Heading>
 				<Text as="p">Please enter your account details.</Text>
@@ -162,16 +147,6 @@ export default function OnboardingRoute() {
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
 				<ErrorList errors={form.errors} id={form.errorId} />
-				<TextInput
-					labelProps={{
-						htmlFor: fields.username.name,
-						children: "Username",
-					}}
-					inputProps={{
-						...getInputProps(fields.username, { type: "text" }),
-					}}
-					errors={fields.username.errors}
-				/>
 				<TextInput
 					labelProps={{
 						htmlFor: fields.name.name,

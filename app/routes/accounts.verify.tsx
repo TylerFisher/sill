@@ -76,7 +76,7 @@ const Verify = () => {
 	});
 
 	return (
-		<Layout>
+		<Layout hideNav>
 			<Box mb="5">
 				<Heading size="8">Sign up</Heading>
 			</Box>

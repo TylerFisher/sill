@@ -9,7 +9,13 @@ import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
 import { eq } from "drizzle-orm";
 import { emailSettings } from "~/drizzle/schema.server";
-import { Form, useLoaderData, useActionData } from "@remix-run/react";
+import {
+	Form,
+	useLoaderData,
+	useActionData,
+	useSearchParams,
+	Link,
+} from "@remix-run/react";
 import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
@@ -69,8 +75,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 const EmailSettings = () => {
-	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
+	const [searchParams] = useSearchParams();
+	const onboarding = searchParams.get("onboarding");
 
 	const [form, fields] = useForm({
 		lastResult: actionData?.result,
@@ -88,7 +95,7 @@ const EmailSettings = () => {
 	});
 
 	return (
-		<Layout>
+		<Layout hideNav={!!onboarding}>
 			<PageHeading
 				title="Email Settings"
 				dek="Sill can send you a daily email with the top links from the past 24
@@ -114,10 +121,18 @@ const EmailSettings = () => {
 							})}
 						</Select.Content>
 					</Select.Root>
+					<Button type="submit" ml="4">
+						Save
+					</Button>
 				</Box>
-				<br />
-				<Button type="submit">Save</Button>
 			</Form>
+			{onboarding && (
+				<Box mt="8">
+					<Link to="/links">
+						<Button>See your top links</Button>
+					</Link>
+				</Box>
+			)}
 		</Layout>
 	);
 };

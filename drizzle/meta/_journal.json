@@ -50,6 +50,13 @@
       "when": 1729878244366,
       "tag": "0006_fantastic_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1729902582348,
+      "tag": "0007_slippery_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

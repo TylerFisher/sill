@@ -14,7 +14,7 @@ import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { EmailSchema, UsernameSchema } from "~/utils/userValidation";
+import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
 import ForgotPasswordEmail from "~/emails/forgotPassword";
 import Layout from "~/components/nav/Layout";
@@ -23,7 +23,7 @@ import TextInput from "~/components/forms/TextInput";
 import ErrorList from "~/components/forms/ErrorList";
 
 const ForgotPasswordSchema = z.object({
-	usernameOrEmail: z.union([EmailSchema, UsernameSchema]),
+	email: EmailSchema,
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -32,17 +32,14 @@ export async function action({ request }: ActionFunctionArgs) {
 	const submission = await parseWithZod(formData, {
 		schema: ForgotPasswordSchema.superRefine(async (data, ctx) => {
 			const existingUser = await db.query.user.findFirst({
-				where: or(
-					eq(user.email, usernameOrEmail),
-					eq(user.username, usernameOrEmail),
-				),
+				where: eq(user.email, data.email),
 				columns: { id: true },
 			});
 			if (!existingUser) {
 				ctx.addIssue({
-					path: ["usernameOrEmail"],
+					path: ["email"],
 					code: z.ZodIssueCode.custom,
-					message: "No user exists with this username or email",
+					message: "No user exists with this email",
 				});
 				return;
 			}
@@ -55,25 +52,22 @@ export async function action({ request }: ActionFunctionArgs) {
 			{ status: submission.status === "error" ? 400 : 200 },
 		);
 	}
-	const { usernameOrEmail } = submission.value;
+	const { email } = submission.value;
 
 	const existingUser = await db.query.user.findFirst({
-		where: or(
-			eq(user.email, usernameOrEmail),
-			eq(user.username, usernameOrEmail),
-		),
-		columns: { email: true, username: true },
+		where: eq(user.email, email),
+		columns: { email: true },
 	});
 
 	if (!existingUser) {
 		throw new Error("Something went wrong");
 	}
 
-	const { verifyUrl, redirectTo, otp } = await prepareVerification({
+	const { redirectTo, otp } = await prepareVerification({
 		period: 10 * 60,
 		request,
 		type: "reset-password",
-		target: usernameOrEmail,
+		target: email,
 	});
 
 	const response = await sendEmail({
@@ -109,7 +103,7 @@ export default function ForgotPasswordRoute() {
 	});
 
 	return (
-		<Layout>
+		<Layout hideNav>
 			<Box mb="6">
 				<Heading size="8" mb="3">
 					Forgot your password?
@@ -124,13 +118,13 @@ export default function ForgotPasswordRoute() {
 				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
-						htmlFor: fields.usernameOrEmail.id,
-						children: "Username or Email",
+						htmlFor: fields.email.id,
+						children: "Email address",
 					}}
 					inputProps={{
-						...getInputProps(fields.usernameOrEmail, { type: "text" }),
+						...getInputProps(fields.email, { type: "text" }),
 					}}
-					errors={fields.usernameOrEmail.errors}
+					errors={fields.email.errors}
 				/>
 				<Box mb="5">
 					<Button type="submit">Reset password</Button>

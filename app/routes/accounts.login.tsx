@@ -14,7 +14,7 @@ import TextInput from "~/components/forms/TextInput";
 import CheckboxField from "~/components/forms/CheckboxField";
 import { login, requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { PasswordSchema, UsernameSchema } from "~/utils/userValidation";
+import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
 import { handleNewSession } from "~/utils/login.server";
 
 import Layout from "~/components/nav/Layout";
@@ -23,7 +23,7 @@ import ErrorList from "~/components/forms/ErrorList";
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
 const LoginFormSchema = z.object({
-	username: UsernameSchema,
+	email: EmailSchema,
 	password: PasswordSchema,
 	redirectTo: z.string().optional(),
 	remember: z.boolean().optional(),
@@ -47,7 +47,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				if (!session) {
 					ctx.addIssue({
 						code: z.ZodIssueCode.custom,
-						message: "Invalid username or password",
+						message: "Invalid email or password",
 					});
 					return z.NEVER;
 				}
@@ -91,7 +91,7 @@ const Login = () => {
 	});
 
 	return (
-		<Layout>
+		<Layout hideNav>
 			<Box mb="5">
 				<Heading size="8">Login</Heading>
 			</Box>
@@ -100,11 +100,11 @@ const Login = () => {
 				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
-						htmlFor: fields.username.name,
-						children: "Username",
+						htmlFor: fields.email.name,
+						children: "Email address",
 					}}
-					inputProps={{ ...getInputProps(fields.username, { type: "text" }) }}
-					errors={fields.username.errors}
+					inputProps={{ ...getInputProps(fields.email, { type: "email" }) }}
+					errors={fields.email.errors}
 				/>
 				<TextInput
 					labelProps={{
