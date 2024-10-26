@@ -1,17 +1,27 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
 } from "@vercel/remix";
-import { Form, useLoaderData, Await } from "@remix-run/react";
-import { Box, Separator, Flex, Spinner } from "@radix-ui/themes";
+import {
+	Form,
+	useLoaderData,
+	Await,
+	useFetcher,
+	useSearchParams,
+	useSubmit,
+} from "@remix-run/react";
+import { Box, Separator, Flex, Spinner, Button } from "@radix-ui/themes";
 import {
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
-import { countLinkOccurrences } from "~/utils/links.server";
+import {
+	countLinkOccurrences,
+	type MostRecentLinkPosts,
+} from "~/utils/links.server";
 import { requireUserId } from "~/utils/auth.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { db } from "~/drizzle/db.server";
@@ -58,6 +68,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		sort: url.searchParams.get("sort") || "popularity",
 		query: url.searchParams.get("query") || undefined,
 		service: url.searchParams.get("service") || "all",
+		page: Number.parseInt(url.searchParams.get("page") || "1"),
 	};
 
 	const links = countLinkOccurrences({
@@ -71,6 +82,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Links = () => {
 	const data = useLoaderData<typeof loader>();
+	const [searchParams] = useSearchParams();
+	const page = Number.parseInt(searchParams.get("page") || "1");
+	const [fetchedPage, setFetchedPage] = useState(page);
+	const [fetchedLinks, setFetchedLinks] = useState<
+		[string, MostRecentLinkPosts[]][]
+	>([]);
+	const fetcher = useFetcher<typeof loader>();
+	const formRef = useRef<HTMLFormElement>(null);
+
+	useEffect(() => {
+		if (fetcher.state === "idle" && fetcher.data?.links) {
+			fetcher.data.links.then((links) =>
+				setFetchedLinks(fetchedLinks.concat(links)),
+			);
+		}
+	}, [fetcher, fetchedLinks.concat]);
+
+	// useEffect(() => {
+	// 	const $form = formRef.current;
+	// 	if (!$form) return;
+
+	// 	const observer = new IntersectionObserver((entries) => {
+	// 		if (entries[0].isIntersecting) {
+	// 			fetcher.submit($form, { preventScrollReset: true });
+	// 		}
+	// 	});
+
+	// 	observer.observe($form);
+	// 	return () => observer.disconnect();
+	// }, [fetcher.submit]);
+
+	function onLoadMoreClick() {
+		setFetchedPage(fetchedPage + 1);
+	}
+
 	return (
 		<Layout>
 			<Box mb="6" position="relative">
@@ -94,14 +140,34 @@ const Links = () => {
 							{links.map((link, i) => (
 								<div key={link[0]}>
 									<LinkPostRep link={link[0]} linkPosts={link[1]} />
-									{i < links.length - 1 && (
-										<Separator my="7" size="4" orientation="horizontal" />
-									)}
+									<Separator my="7" size="4" orientation="horizontal" />
 								</div>
 							))}
 						</div>
 					)}
 				</Await>
+				{fetchedLinks && (
+					<Await resolve={fetchedLinks}>
+						{(links) => (
+							<Box mt="4">
+								{links.map((link, i) => (
+									<div key={link[0]}>
+										<LinkPostRep link={link[0]} linkPosts={link[1]} />
+										<Separator my="7" size="4" orientation="horizontal" />
+									</div>
+								))}
+							</Box>
+						)}
+					</Await>
+				)}
+				<Box mt="4">
+					<fetcher.Form method="GET" preventScrollReset ref={formRef}>
+						<input type="hidden" name="page" value={fetchedPage} />
+						<Button type="submit" onClick={onLoadMoreClick}>
+							Load More
+						</Button>
+					</fetcher.Form>
+				</Box>
 			</Suspense>
 		</Layout>
 	);

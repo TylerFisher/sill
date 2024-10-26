@@ -20,6 +20,7 @@ interface LinkOccurrenceArgs {
 	query?: string | undefined;
 	service?: string;
 	fetch?: boolean;
+	page?: number;
 }
 
 /**
@@ -229,6 +230,7 @@ export const countLinkOccurrences = async ({
 	query = DEFAULT_QUERY,
 	service = "all",
 	fetch = DEFAULT_FETCH,
+	page = 1,
 }: LinkOccurrenceArgs) => {
 	if (fetch) {
 		await fetchLinks(userId);
@@ -256,10 +258,13 @@ export const countLinkOccurrences = async ({
 	}
 	const grouped = await groupByLink(mostRecentLinkPosts);
 
+	const start = (page - 1) * 20;
+	console.log(page, start);
+
 	if (sort === "popularity") {
 		const sorted = await sortByPopularity(grouped);
-		return sorted.slice(0, 20);
+		return sorted.slice(start, start + 20);
 	}
 
-	return Object.entries(grouped).slice(0, 20);
+	return Object.entries(grouped).slice(start, start + 20);
 };
