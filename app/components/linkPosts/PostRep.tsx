@@ -19,8 +19,15 @@ const PostRep = ({ post, group }: PostRepProps) => {
 		.filter((l) => l !== null);
 
 	return (
-		<Card key={post.id} mt="5">
-			<Flex gap="3" align="start" mb="1">
+		<Card key={post.id} mt="5" size="1">
+			<Flex
+				gap={{
+					initial: "2",
+					sm: "3",
+				}}
+				align="start"
+				mb="1"
+			>
 				<a
 					href={post.actor.url}
 					target="_blank"
@@ -28,7 +35,10 @@ const PostRep = ({ post, group }: PostRepProps) => {
 					aria-label={`Link to ${post.actor.name}'s profile page`}
 				>
 					<Avatar
-						size="3"
+						size={{
+							initial: "2",
+							sm: "3",
+						}}
 						src={post.actor.avatarUrl || undefined}
 						radius="full"
 						fallback={post.actorHandle[0]}
@@ -48,14 +58,32 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				</Box>
 			</Flex>
 			{post.quoting && (
-				<Card ml="8" mt="2">
-					<Flex gap="1" mb="1">
-						<Avatar
-							size="1"
-							src={post.quoting.actor.avatarUrl || undefined}
-							radius="full"
-							fallback={post.quoting.actorHandle[0]}
-						/>
+				<Card
+					ml={{
+						initial: "6",
+						sm: "8",
+					}}
+					mt="2"
+					size="1"
+				>
+					<Flex gap="1" mb="1" align="center">
+						<a
+							href={post.quoting.actor.url}
+							target="_blank"
+							rel="noreferrer"
+							aria-label={`Link to ${post.quoting.actor.name}'s profile page`}
+						>
+							<Avatar
+								src={post.quoting.actor.avatarUrl || undefined}
+								radius="full"
+								fallback={post.quoting.actorHandle[0]}
+								style={{
+									width: "20px",
+									height: "20px",
+									verticalAlign: "text-bottom",
+								}}
+							/>
+						</a>
 						<PostAuthor
 							actor={post.quoting.actor}
 							postUrl={post.quoting.url}

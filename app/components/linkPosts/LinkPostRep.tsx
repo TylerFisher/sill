@@ -17,7 +17,7 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 	const [open, setOpen] = useState(false);
 	const groupedLinkPosts = groupBy(linkPosts, (l) => l.post.url);
 	const allActors = linkPosts.map((l) =>
-		l.post.reposter ? l.post.reposter : l.post.actor,
+		l.post.reposter ? l.post.reposter.avatarUrl : l.post.actor.avatarUrl,
 	);
 	const uniqueActors = [...new Set(allActors)];
 
@@ -39,12 +39,12 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 					>
 						{uniqueActors.slice(0, 3).map((actor, i) => (
 							<Avatar
-								src={actor.avatarUrl || undefined}
-								alt={actor.name || ""}
+								src={actor || undefined}
+								alt=""
 								loading="lazy"
 								decoding="async"
 								fallback="T"
-								key={actor.avatarUrl}
+								key={actor}
 								radius="full"
 								size="1"
 								style={{

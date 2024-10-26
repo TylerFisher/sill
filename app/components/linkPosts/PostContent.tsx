@@ -14,14 +14,25 @@ const PostContent = ({ post }: PostContentProps) => {
 	return (
 		<>
 			{post.postType === "mastodon" ? (
-				<div
+				<Text
 					dangerouslySetInnerHTML={{
 						__html: post.text,
 					}}
 					className={styles["mastodon-post-content"]}
+					size={{
+						initial: "2",
+						sm: "3",
+					}}
 				/>
 			) : (
-				<Text as="p" className={styles["bluesky-post-content"]}>
+				<Text
+					as="p"
+					className={styles["bluesky-post-content"]}
+					size={{
+						initial: "2",
+						sm: "3",
+					}}
+				>
 					{post.text}
 				</Text>
 			)}

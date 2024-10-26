@@ -72,18 +72,20 @@ const LinkRep = ({ link }: LinkRepProps) => {
 				>
 					{host}
 				</Text>
-				<Heading as="h3" size="3">
-					<Link
-						target="_blank"
-						rel="noreferrer"
-						href={link.url}
-						size="4"
-						weight="bold"
-					>
+				<Heading
+					as="h3"
+					size={{
+						initial: "3",
+						sm: "4",
+					}}
+				>
+					<Link target="_blank" rel="noreferrer" href={link.url} weight="bold">
 						{link.title || link.url}
 					</Link>
 				</Heading>
-				<Text as="p">{link.description}</Text>
+				<Text as="p" size="2">
+					{link.description}
+				</Text>
 				<Box position="absolute" top="0" right="0">
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>

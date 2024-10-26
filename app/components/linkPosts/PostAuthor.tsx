@@ -13,7 +13,18 @@ interface PostAuthor {
 }
 
 const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
-	<Text size="3" weight="bold" as="p">
+	<Text
+		size={{
+			initial: "2",
+			sm: "3",
+		}}
+		weight="bold"
+		as="p"
+		style={{
+			marginBottom: "2px",
+		}}
+		truncate
+	>
 		<Link href={actor.url} target="_blank" rel="noreferrer" underline="hover">
 			{actor.name}{" "}
 		</Link>
