@@ -19,8 +19,8 @@ import {
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
 import {
-	countLinkOccurrences,
 	type MostRecentLinkPosts,
+	filterLinkOccurrences,
 } from "~/utils/links.server";
 import { requireUserId } from "~/utils/auth.server";
 import { createOAuthClient } from "~/server/oauth/client";
@@ -30,6 +30,7 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import SearchField from "~/components/forms/SearchField";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
+import { connection, getUserCacheKey } from "~/utils/redis.server";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -63,7 +64,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const url = new URL(request.url);
 
 	const options = {
-		time: Number.parseInt(url.searchParams.get("time") || "86400000"),
 		hideReposts: url.searchParams.get("reposts") === "true",
 		sort: url.searchParams.get("sort") || "popularity",
 		query: url.searchParams.get("query") || undefined,
@@ -71,13 +71,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
 	};
 
-	const links = countLinkOccurrences({
+	const redis = connection();
+
+	const cache = await redis.get(await getUserCacheKey(userId));
+	let cachedData: [string, MostRecentLinkPosts[]][] | null = null;
+
+	if (cache) {
+		cachedData = await filterLinkOccurrences({
+			userId,
+			mostRecentLinkPosts: JSON.parse(cache),
+			...options,
+		});
+	}
+
+	const time = Number.parseInt(url.searchParams.get("time") || "86400000");
+
+	const links = filterLinkOccurrences({
 		userId,
-		fetch: true,
+		time,
 		...options,
 	});
 
-	return { links };
+	return { cachedData, links };
 };
 
 const Links = () => {
@@ -151,9 +166,14 @@ const Links = () => {
 			</Box>
 			<Suspense
 				fallback={
-					<Flex justify="center">
-						<Spinner size="3" />
-					</Flex>
+					<div>
+						<Flex justify="center">
+							<Spinner size="3" />
+						</Flex>
+						{data.cachedData?.map((link) => (
+							<LinkPost key={link[0]} linkPost={link} />
+						))}
+					</div>
 				}
 			>
 				<Await resolve={data.links}>

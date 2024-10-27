@@ -1,14 +1,10 @@
 import type { Processor } from "bullmq";
 import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
-import path, { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { connection } from "~/utils/redis.server";
 import { fetchLinkMetadata, getBlueskyTimeline } from "~/utils/bluesky.server";
 import { getMastodonTimeline } from "./mastodon.server";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 const redis = connection();
 
 type AugmentedQueue<T> = Queue<T> & {

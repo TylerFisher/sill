@@ -171,6 +171,7 @@ export async function signup({
 				id: uuidv7(),
 				email: email.toLowerCase(),
 				name,
+				emailConfirmed: true,
 			})
 			.returning({
 				id: user.id,

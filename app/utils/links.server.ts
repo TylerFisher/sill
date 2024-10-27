@@ -12,14 +12,21 @@ import { linkPost, linkPostToUser, mutePhrase } from "~/drizzle/schema.server";
 import type { InferResultType } from "~/drizzle/types.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import { connection, getUserCacheKey } from "./redis.server";
 interface LinkOccurrenceArgs {
 	userId: string;
+	time?: number;
+	fetch?: boolean;
+}
+
+interface FilterArgs {
+	userId: string;
+	mostRecentLinkPosts?: MostRecentLinkPosts[];
 	time?: number;
 	hideReposts?: boolean;
 	sort?: string;
 	query?: string | undefined;
 	service?: string;
-	fetch?: boolean;
 	page?: number;
 }
 
@@ -225,18 +232,36 @@ const sortByPopularity = async (
 export const countLinkOccurrences = async ({
 	userId,
 	time = ONE_DAY_MS,
-	hideReposts = DEFAULT_HIDE_REPOSTS,
-	sort = DEFAULT_SORT,
-	query = DEFAULT_QUERY,
-	service = "all",
 	fetch = DEFAULT_FETCH,
-	page = 1,
 }: LinkOccurrenceArgs) => {
 	if (fetch) {
 		await fetchLinks(userId);
 	}
+	const linkPosts = await getMostRecentLinkPosts(userId, time);
+	const redis = connection();
+	redis.set(await getUserCacheKey(userId), JSON.stringify(linkPosts));
+	return linkPosts;
+};
+
+export const filterLinkOccurrences = async ({
+	userId,
+	mostRecentLinkPosts = [],
+	time = ONE_DAY_MS,
+	hideReposts = DEFAULT_HIDE_REPOSTS,
+	sort = DEFAULT_SORT,
+	query = DEFAULT_QUERY,
+	service = "all",
+	page = 1,
+}: FilterArgs) => {
+	if (mostRecentLinkPosts.length === 0) {
+		mostRecentLinkPosts = await countLinkOccurrences({
+			userId,
+			time,
+			fetch: true,
+		});
+	}
+
 	const mutePhrases = await getMutePhrases(userId);
-	let mostRecentLinkPosts = await getMostRecentLinkPosts(userId, time);
 	if (query) {
 		mostRecentLinkPosts = await filterByQuery(query, mostRecentLinkPosts);
 	}

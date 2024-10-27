@@ -12,7 +12,6 @@ import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
 import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { authSessionStorage } from "~/utils/session.server";
 import {
@@ -25,8 +24,6 @@ import Layout from "~/components/nav/Layout";
 import TextInput from "~/components/forms/TextInput";
 import CheckboxField from "~/components/forms/CheckboxField";
 import ErrorList from "~/components/forms/ErrorList";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 
