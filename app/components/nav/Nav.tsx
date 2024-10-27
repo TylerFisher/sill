@@ -52,7 +52,7 @@ const NavLink = ({
 }: { to: string; label: string; icon: ReactElement; location: string }) => {
 	return (
 		<li className={styles["nav-list-item"]}>
-			<Link to={to}>
+			<Link to={to} aria-label={label}>
 				<Button
 					variant="ghost"
 					size="4"
@@ -61,6 +61,7 @@ const NavLink = ({
 						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
 						fontWeight: location === to ? "bold" : "normal",
 					}}
+					aria-label={label}
 				>
 					{icon} <span className={styles["nav-list-item-label"]}>{label}</span>
 				</Button>
