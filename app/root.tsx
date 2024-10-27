@@ -20,6 +20,8 @@ import { type Theme, getTheme } from "./utils/theme.server";
 import { useNonce } from "./utils/nonce-provider";
 import { useTheme } from "./routes/resources.theme-switch";
 
+export const config = { runtime: "edge " };
+
 export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps();
 
