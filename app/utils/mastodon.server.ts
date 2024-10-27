@@ -120,7 +120,11 @@ export const getMastodonTimeline = async (userId: string) => {
 	})) {
 		if (ended) break;
 		for await (const status of statuses) {
-			if (new Date(status.createdAt) <= yesterday) {
+			// Flipboard is real weird about timestamps
+			if (
+				new Date(status.createdAt) <= yesterday &&
+				status.account.acct.split("@")[1] !== "flipboard.com"
+			) {
 				ended = true;
 				break;
 			}
