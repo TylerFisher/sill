@@ -58,6 +58,7 @@ const NavLink = ({
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
+						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
 						fontWeight: location === to ? "bold" : "normal",
 					}}
 				>

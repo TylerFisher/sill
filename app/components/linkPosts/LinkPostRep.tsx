@@ -30,13 +30,7 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 				onOpenChange={setOpen}
 			>
 				<Collapsible.Trigger asChild>
-					<Button
-						variant="soft"
-						size={{
-							initial: "1",
-							md: "2",
-						}}
-					>
+					<Button variant="soft" size="2">
 						{uniqueActors.slice(0, 3).map((actor, i) => (
 							<Avatar
 								src={actor || undefined}
@@ -52,8 +46,8 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 								}}
 							/>
 						))}
-						Posted by {uniqueActors.length}{" "}
-						{uniqueActors.length === 1 ? "account" : "accounts"} you follow
+						Shared by {uniqueActors.length}{" "}
+						{uniqueActors.length === 1 ? "account" : "accounts"}
 						{open ? (
 							<ChevronUp width="14" height="14" />
 						) : (
