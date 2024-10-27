@@ -1,8 +1,4 @@
-import {
-	type LoaderFunctionArgs,
-	type MetaFunction,
-	json,
-} from "@vercel/remix";
+import type { LoaderFunctionArgs, MetaFunction } from "@vercel/remix";
 import { Box } from "@radix-ui/themes";
 import { requireAnonymous } from "~/utils/auth.server";
 import Hero from "~/components/marketing/Hero";
