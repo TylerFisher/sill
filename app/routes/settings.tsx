@@ -42,7 +42,7 @@ export default function EditUserProfile() {
 						<DataList.Value>{signedUpOn}</DataList.Value>
 					</DataList.Item>
 				</DataList.Root>
-				<Flex mt="4" gap="4">
+				<Flex mt="4" gap="4" wrap="wrap">
 					<Form method="get" action="/accounts/logout">
 						<Button type="submit">Log out</Button>
 					</Form>

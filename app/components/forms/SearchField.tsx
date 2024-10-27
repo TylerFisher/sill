@@ -19,6 +19,7 @@ const SearchField = () => {
 			type="text"
 			defaultValue={query}
 			aria-label="Search"
+			size="3"
 		>
 			<TextField.Slot>
 				<Search height="16" width="16" />

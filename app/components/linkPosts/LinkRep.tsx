@@ -83,7 +83,14 @@ const LinkRep = ({ link }: LinkRepProps) => {
 						{link.title || link.url}
 					</Link>
 				</Heading>
-				<Text as="p" size="2">
+				<Text
+					as="p"
+					size={{
+						initial: "2",
+						sm: "3",
+					}}
+					mt="1"
+				>
 					{link.description}
 				</Text>
 				<Box position="absolute" top="0" right="0">

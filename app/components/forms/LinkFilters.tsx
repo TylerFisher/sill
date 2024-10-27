@@ -110,7 +110,7 @@ const LinkFilters = () => {
 				</Button>
 			</Collapsible.Trigger>
 			<Collapsible.Content>
-				<Box mt="4">
+				<Box mt="6">
 					{buttonGroups.map((group, index) => (
 						<FilterButtonGroup
 							key={group.heading}

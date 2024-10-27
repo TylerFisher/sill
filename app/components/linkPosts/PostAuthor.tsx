@@ -22,8 +22,8 @@ const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
 		as="p"
 		style={{
 			marginBottom: "2px",
+			whiteSpace: "pre-wrap",
 		}}
-		truncate
 	>
 		<Link href={actor.url} target="_blank" rel="noreferrer" underline="hover">
 			{actor.name}{" "}
