@@ -30,10 +30,6 @@ export const onboardingEmailSessionKey = "onboardingEmail";
 const SignupFormSchema = z
 	.object({
 		name: NameSchema,
-		agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
-			required_error:
-				"You must agree to the terms of service and privacy policy",
-		}),
 		remember: z.boolean().optional(),
 		redirectTo: z.string().optional(),
 	})
