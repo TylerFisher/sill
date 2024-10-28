@@ -35,7 +35,7 @@ export async function sendEmail({
 	| { html: string; text: string; react?: never }
 	| { react: ReactElement; html?: never; text?: never }
 )) {
-	const from = "noreply@mail.sill.social";
+	const from = "Sill <noreply@mail.sill.social>";
 
 	const email = {
 		from,

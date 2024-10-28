@@ -1,4 +1,11 @@
-import { Html, Head, Preview, Body, Container } from "@react-email/components";
+import {
+	Html,
+	Head,
+	Preview,
+	Body,
+	Container,
+	Img,
+} from "@react-email/components";
 import type { PropsWithChildren } from "react";
 
 interface EmailLayoutProps extends PropsWithChildren {
@@ -11,6 +18,11 @@ const EmailLayout = ({ children, preview }: EmailLayoutProps) => {
 			<Head />
 			<Preview>{preview}</Preview>
 			<Body style={bodyStyles}>
+				<Img
+					src="https://sill.social/emailbanner.png"
+					alt="Sill logo"
+					style={imgStyles}
+				/>
 				<Container style={containerStyles}>{children}</Container>
 			</Body>
 		</Html>
@@ -28,5 +40,7 @@ const containerStyles = {
 	margin: "0 auto",
 	padding: "0px 20px",
 };
+
+const imgStyles = { width: "100%", height: "auto" };
 
 export default EmailLayout;

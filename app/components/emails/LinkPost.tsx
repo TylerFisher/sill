@@ -8,7 +8,6 @@ import {
 	Link,
 } from "@react-email/components";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import groupBy from "object.groupby";
 
 interface LinkPostProps {
 	linkPosts: MostRecentLinkPosts[];
@@ -43,7 +42,7 @@ const LinkPost = ({ linkPosts }: LinkPostProps) => {
 					</Row>
 				</Section>
 			</Link>
-			{uniqueActors.slice(0, 3).map((actor, i) => (
+			{uniqueActors.map((actor, i) => (
 				<Img
 					src={actor}
 					loading="lazy"
@@ -53,8 +52,8 @@ const LinkPost = ({ linkPosts }: LinkPostProps) => {
 				/>
 			))}
 			<Text style={accounts}>
-				Posted by {uniqueActors.length}{" "}
-				{uniqueActors.length === 1 ? "account" : "accounts"} you follow
+				Shared by {uniqueActors.length}{" "}
+				{uniqueActors.length === 1 ? "account" : "accounts"}
 			</Text>
 		</>
 	);
@@ -64,7 +63,7 @@ const wrapper = {
 	maxWidth: "100%",
 	margin: "0 0 20px 0",
 	borderRadius: "12px",
-	border: "gray 1px solid",
+	border: "#D9D9E0 1px solid",
 };
 
 const row = {
@@ -86,12 +85,15 @@ const host = {
 	lineHeight: 1,
 };
 const heading = {
-	color: "black",
+	color: "#9E6C00",
 	lineHeight: 1.2,
+	marginTop: "0.33em",
+	marginBottom: "0.33em",
 };
 
 const text = {
 	color: "black",
+	marginTop: "0.33em",
 };
 
 const avatar = (i: number) => ({

@@ -31,6 +31,8 @@ const TopLinks = ({ links }: TopLinksProps) => {
 
 const hr = {
 	margin: "40px 0",
+	border: "none",
+	borderTop: "1px solid #D9D9E0",
 };
 
 export default TopLinks;
