@@ -3,6 +3,10 @@
     {
       "path": "/api/update-accounts",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/send-newsletter",
+      "schedule": "0 * * * *"
     }
   ]
 }

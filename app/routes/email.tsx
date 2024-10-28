@@ -9,7 +9,13 @@ import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
 import { eq } from "drizzle-orm";
 import { emailSettings } from "~/drizzle/schema.server";
-import { Form, useActionData, useSearchParams, Link } from "@remix-run/react";
+import {
+	Form,
+	useActionData,
+	useSearchParams,
+	Link,
+	useLoaderData,
+} from "@remix-run/react";
 import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
@@ -26,7 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		where: eq(emailSettings?.userId, userId),
 	});
 
-	return currentSettings || {};
+	return { currentSettings };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -68,6 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 const EmailSettings = () => {
+	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
@@ -87,6 +94,8 @@ const EmailSettings = () => {
 		return `${hour.toString().padStart(2, "0")}:00 ${period}`;
 	});
 
+	const defaultValue = data.currentSettings?.scheduledTime.substring(0, 5);
+
 	return (
 		<Layout hideNav={!!onboarding}>
 			<PageHeading
@@ -99,7 +108,10 @@ const EmailSettings = () => {
 				<Box>
 					<label htmlFor="time">Time</label>
 					<br />
-					<Select.Root {...getInputProps(fields.time, { type: "time" })}>
+					<Select.Root
+						{...getInputProps(fields.time, { type: "time" })}
+						defaultValue={defaultValue}
+					>
 						<Select.Trigger placeholder="Select a time" />
 						<Select.Content>
 							{hours.map((hour, index) => {
