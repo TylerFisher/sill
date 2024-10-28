@@ -9,24 +9,26 @@ import {
 	Link,
 	Text,
 } from "@radix-ui/themes";
-import Youtube from "react-youtube";
 import styles from "./LinkRep.module.css";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
+import { ClientOnly } from "remix-utils/client-only";
+import Youtube from "react-youtube";
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
-	const id = url.searchParams.get("v") || url.pathname;
+	const id = url.searchParams.get("v") || url.pathname.split("/").pop();
 	const opts = {
 		width: "100%",
 	};
+	console.log(id);
 	return (
 		<Box mb="5" width="100%">
-			<Youtube videoId={id} opts={opts} />
+			<ClientOnly>{() => <Youtube videoId={id} opts={opts} />}</ClientOnly>
 		</Box>
 	);
 };
