@@ -595,7 +595,8 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	for await (const segment of rt.segments()) {
 		if (
 			segment.link &&
-			AppBskyRichtextFacet.validateLink(segment.link).success
+			AppBskyRichtextFacet.validateLink(segment.link).success &&
+			!segment.link.uri.includes("bsky.app")
 		) {
 			const existingLink = await db.query.link.findFirst({
 				where: eq(link.url, segment.link.uri),
