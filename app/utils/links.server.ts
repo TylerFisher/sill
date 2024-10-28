@@ -7,6 +7,7 @@ import {
 	inArray,
 	type InferSelectModel,
 } from "drizzle-orm";
+import LZString from "lz-string";
 import { db } from "~/drizzle/db.server";
 import { linkPost, linkPostToUser, mutePhrase } from "~/drizzle/schema.server";
 import type { InferResultType } from "~/drizzle/types.server";
@@ -239,7 +240,9 @@ export const countLinkOccurrences = async ({
 	}
 	const linkPosts = await getMostRecentLinkPosts(userId, time);
 	const redis = connection();
-	redis.set(await getUserCacheKey(userId), JSON.stringify(linkPosts));
+
+	const compressed = LZString.compressToUTF16(JSON.stringify(linkPosts));
+	redis.set(await getUserCacheKey(userId), compressed);
 	return linkPosts;
 };
 

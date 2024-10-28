@@ -32,6 +32,7 @@ import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { uuidv7 } from "uuidv7-js";
+import LZString from "lz-string";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -74,10 +75,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const redis = connection();
 
-	const cache = await redis.get(await getUserCacheKey(userId));
+	const compressedCache = await redis.get(await getUserCacheKey(userId));
 	let cachedData: [string, MostRecentLinkPosts[]][] | null = null;
 
-	if (cache) {
+	if (compressedCache) {
+		const cache = LZString.decompressFromUTF16(compressedCache);
 		cachedData = await filterLinkOccurrences({
 			userId,
 			mostRecentLinkPosts: JSON.parse(cache),
