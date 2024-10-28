@@ -19,7 +19,7 @@ const EmailLayout = ({ children, preview }: EmailLayoutProps) => {
 			<Preview>{preview}</Preview>
 			<Body style={bodyStyles}>
 				<Img
-					src="https://sill.social/emailbanner.png"
+					src="https://sill.social/email-banner.png"
 					alt="Sill logo"
 					style={imgStyles}
 				/>
