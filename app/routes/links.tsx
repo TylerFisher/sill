@@ -85,7 +85,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		});
 	}
 
-	const time = Number.parseInt(url.searchParams.get("time") || "86400000");
+	const timeParam = url.searchParams.get("time") || "24h";
+	let time = 86400000;
+
+	if (timeParam === "3h") {
+		time = 10800000;
+	} else if (timeParam === "6h") {
+		time = 21600000;
+	} else if (timeParam === "12h") {
+		time = 43200000;
+	}
 
 	const links = filterLinkOccurrences({
 		userId,

@@ -21,23 +21,23 @@ const LinkFilters = () => {
 	const buttonGroups: ButtonGroup[] = [
 		{
 			heading: "Show posts from the last",
-			defaultValue: searchParams.get("time") || "86400000",
+			defaultValue: searchParams.get("time") || "24h",
 			param: "time",
 			buttons: [
 				{
-					value: "10800000",
+					value: "3h",
 					label: "3 hours",
 				},
 				{
-					value: "21600000",
+					value: "6h",
 					label: "6 hours",
 				},
 				{
-					value: "43200000",
+					value: "12h",
 					label: "12 hours",
 				},
 				{
-					value: "86400000",
+					value: "24h",
 					label: "24 hours",
 				},
 			],
