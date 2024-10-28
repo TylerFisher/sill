@@ -169,21 +169,6 @@ export default function OnboardingRoute() {
 					}}
 					errors={fields.confirmPassword.errors}
 				/>
-
-				<Box mb="5">
-					<CheckboxField
-						labelProps={{
-							htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.name,
-							children:
-								"Do you agree to our Terms of Service and Privacy Policy?",
-						}}
-						inputProps={{
-							id: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
-							name: fields.agreeToTermsOfServiceAndPrivacyPolicy.name,
-						}}
-						errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
-					/>
-				</Box>
 				<Box mb="5">
 					<CheckboxField
 						labelProps={{
