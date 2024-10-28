@@ -148,11 +148,18 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 	let quotedImageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	let detectedLink: BskyDetectedLink | null = null;
 	let quotedPostUrl: string | null = null;
+	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
 
 	if (AppBskyEmbedRecord.isView(embed)) {
 		quoted = embed;
 	} else if (AppBskyEmbedRecordWithMedia.isView(embed)) {
 		quoted = embed.record;
+		if (AppBskyEmbedExternal.isView(embed.media)) {
+			externalRecord = embed.media;
+		}
+		if (AppBskyEmbedImages.isView(embed.media)) {
+			imageGroup = embed.media.images;
+		}
 	}
 	if (quoted) {
 		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
@@ -196,21 +203,18 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 	if (AppBskyEmbedExternal.isView(embed)) {
 		externalRecord = embed;
 	}
-
-	if (AppBskyEmbedRecordWithMedia.isView(embed)) {
-		if (AppBskyEmbedExternal.isView(embed.media)) {
-			externalRecord = embed.media;
-		}
+	if (AppBskyEmbedImages.isView(embed)) {
+		imageGroup = embed.images;
 	}
 
 	return {
-		quoted,
 		quotedRecord,
 		quotedValue,
 		externalRecord,
 		quotedImageGroup,
 		detectedLink,
 		quotedPostUrl,
+		imageGroup,
 	};
 };
 
@@ -414,6 +418,7 @@ const processBlueskyLink = async (
 		quotedPostUrl,
 		externalRecord,
 		detectedLink: initialDetectedLink,
+		imageGroup,
 	} = await handleEmbeds(t.post.embed);
 
 	const detectedLink = await getDetectedLink(
@@ -424,17 +429,6 @@ const processBlueskyLink = async (
 
 	if (!detectedLink) {
 		return null;
-	}
-
-	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
-	if (AppBskyEmbedImages.isView(t.post.embed)) {
-		imageGroup = t.post.embed.images;
-	}
-
-	if (AppBskyEmbedRecordWithMedia.isView(t.post.embed)) {
-		if (AppBskyEmbedImages.isView(t.post.embed.media)) {
-			imageGroup = t.post.embed.media.images;
-		}
 	}
 
 	const linkPostSearch = await searchForLinkPost(postUrl, detectedLink.uri, t);
