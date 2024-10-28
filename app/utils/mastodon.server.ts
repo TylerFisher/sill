@@ -54,43 +54,6 @@ export const getAccessToken = async (
 };
 
 /**
- * Mastodon does not return reblogs in the home timeline if you follow the original poster.
- * This function fetches reblogs for a given status.
- * @param client Masto.js client
- * @param status Original status to search for reblogs
- * @returns List of reblogs for the original status
- */
-const fetchRebloggedPosts = async (
-	client: mastodon.rest.Client,
-	status: mastodon.v1.Status,
-) => {
-	const rebloggedPosts: mastodon.v1.Status[] = [];
-	for await (const rebloggerGroup of client.v1.statuses
-		.$select(status.id)
-		.rebloggedBy.list()) {
-		for await (const reblogger of rebloggerGroup) {
-			for await (const rebloggerStatuses of client.v1.accounts
-				.$select(reblogger.id)
-				.statuses.list()) {
-				let foundStatus = false;
-				for await (const rebloggerStatus of rebloggerStatuses) {
-					if (rebloggerStatus.reblog?.id === status.id) {
-						rebloggedPosts.push(rebloggerStatus);
-						foundStatus = true;
-						break;
-					}
-				}
-				if (foundStatus) {
-					break;
-				}
-			}
-		}
-	}
-
-	return rebloggedPosts;
-};
-
-/**
  * Fetches the Mastodon timeline for a given user
  * Either fetches all statuses since the last fetch, or all statuses from the last 24 hours
  * @param userId ID for the logged-in user
@@ -117,6 +80,7 @@ export const getMastodonTimeline = async (userId: string) => {
 	let ended = false;
 	for await (const statuses of client.v1.timelines.home.list({
 		sinceId: account.mostRecentPostId,
+		limit: 40,
 	})) {
 		if (ended) break;
 		for await (const status of statuses) {
@@ -133,10 +97,6 @@ export const getMastodonTimeline = async (userId: string) => {
 				break;
 			}
 
-			if (status.reblogsCount > 0) {
-				const rebloggedPosts = await fetchRebloggedPosts(client, status);
-				timeline.push(...rebloggedPosts);
-			}
 			timeline.push(status);
 		}
 	}
@@ -216,7 +176,7 @@ const getActors = async (
 		{
 			id: uuidv7(),
 			name: original.account.displayName,
-			handle: original.account.username,
+			handle: original.account.acct,
 			url: original.account.url,
 			avatarUrl: original.account.avatar,
 		},
@@ -225,7 +185,7 @@ const getActors = async (
 	if (t.reblog) {
 		actors.push({
 			id: uuidv7(),
-			handle: t.account.username,
+			handle: t.account.acct,
 			url: t.account.url,
 			name: t.account.displayName,
 			avatarUrl: t.account.avatar,
@@ -253,8 +213,8 @@ const createPost = async (
 		text: original.content,
 		postDate: new Date(original.createdAt),
 		postType: postType.enumValues[1],
-		actorHandle: original.account.username,
-		repostHandle: t.reblog ? t.account.username : undefined,
+		actorHandle: original.account.acct,
+		repostHandle: t.reblog ? t.account.acct : undefined,
 	};
 };
 
@@ -363,10 +323,17 @@ export const getLinksFromMastodon = async (userId: string) => {
 		return null;
 	}
 
-	const actors = processedResults.flatMap((p) => p.actors);
+	const actors = processedResults
+		.flatMap((p) => p.actors)
+		.filter(
+			(obj1, i, arr) =>
+				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
+		);
 	const posts = processedResults.map((p) => p.post);
 	const links = processedResults.map((p) => p.link);
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
+
+	console.log(actors);
 
 	await db.transaction(async (tx) => {
 		if (actors.length > 0)
