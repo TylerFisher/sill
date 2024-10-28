@@ -7,6 +7,7 @@ import {
 	AppBskyEmbedImages,
 	AppBskyRichtextFacet,
 	RichText,
+	AppBskyEmbedRecordWithMedia,
 } from "@atproto/api";
 import {
 	OAuthResponseError,
@@ -150,6 +151,10 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 
 	if (AppBskyEmbedRecord.isView(embed)) {
 		quoted = embed;
+	} else if (AppBskyEmbedRecordWithMedia.isView(embed)) {
+		quoted = embed.record;
+	}
+	if (quoted) {
 		if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
 			quotedRecord = quoted.record;
 			quotedPostUrl = await getPostUrl(
@@ -168,6 +173,17 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 			if (imageGroup) {
 				quotedImageGroup = imageGroup.images;
 			}
+			const quotedRecordWithMedia = quotedRecord?.embeds?.find((embed) =>
+				AppBskyEmbedRecordWithMedia.isView(embed),
+			);
+			if (quotedRecordWithMedia) {
+				if (AppBskyEmbedImages.isView(quotedRecordWithMedia.media)) {
+					quotedImageGroup = quotedRecordWithMedia.media.images;
+				}
+				if (AppBskyEmbedExternal.isView(quotedRecordWithMedia.media)) {
+					externalRecord = quotedRecordWithMedia.media;
+				}
+			}
 		}
 		if (AppBskyFeedPost.isRecord(quoted.record.value)) {
 			quotedValue = quoted.record.value;
@@ -179,6 +195,12 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 
 	if (AppBskyEmbedExternal.isView(embed)) {
 		externalRecord = embed;
+	}
+
+	if (AppBskyEmbedRecordWithMedia.isView(embed)) {
+		if (AppBskyEmbedExternal.isView(embed.media)) {
+			externalRecord = embed.media;
+		}
 	}
 
 	return {
@@ -407,6 +429,12 @@ const processBlueskyLink = async (
 	let imageGroup: AppBskyEmbedImages.ViewImage[] = [];
 	if (AppBskyEmbedImages.isView(t.post.embed)) {
 		imageGroup = t.post.embed.images;
+	}
+
+	if (AppBskyEmbedRecordWithMedia.isView(t.post.embed)) {
+		if (AppBskyEmbedImages.isView(t.post.embed.media)) {
+			imageGroup = t.post.embed.media.images;
+		}
 	}
 
 	const linkPostSearch = await searchForLinkPost(postUrl, detectedLink.uri, t);
