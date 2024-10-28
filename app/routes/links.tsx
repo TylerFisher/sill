@@ -31,6 +31,7 @@ import SearchField from "~/components/forms/SearchField";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
+import { uuidv7 } from "uuidv7-js";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -92,7 +93,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		...options,
 	});
 
-	return { cachedData, links };
+	return { cachedData, links, key: uuidv7() };
 };
 
 const Links = () => {
@@ -104,6 +105,7 @@ const Links = () => {
 	const [fetchedLinks, setFetchedLinks] = useState<
 		[string, MostRecentLinkPosts[]][]
 	>([]);
+	const [key, setKey] = useState(data.key);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
 
@@ -126,7 +128,7 @@ const Links = () => {
 	function submitForm() {
 		const $form = formRef.current;
 		if (!$form) return;
-		fetcher.submit(formRef.current, { preventScrollReset: true });
+		fetcher.submit($form, { preventScrollReset: true });
 		setNextPage(nextPage + 1);
 	}
 
@@ -134,6 +136,7 @@ const Links = () => {
 		isImmediate: true,
 	});
 
+	// Setup intersection observer after promise is resolved
 	useEffect(() => {
 		data.links.then(() => {
 			if (!observer) {
@@ -142,6 +145,7 @@ const Links = () => {
 		});
 	});
 
+	// When the fetcher has returned new links, set the state and reset the observer
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
@@ -153,6 +157,14 @@ const Links = () => {
 			});
 		}
 	}, [fetcher, fetchedLinks.concat]);
+
+	// A new key signifies the server loader got new data. Clear the pagination state.
+	useEffect(() => {
+		if (key !== data.key) {
+			setKey(data.key);
+			setFetchedLinks([]);
+		}
+	}, [key, data.key]);
 
 	return (
 		<Layout>
@@ -184,7 +196,7 @@ const Links = () => {
 									<LinkPost key={link[0]} linkPost={link} />
 								</div>
 							))}
-							{fetchedLinks && (
+							{fetchedLinks.length > 0 && (
 								<div>
 									{fetchedLinks.map((link) => (
 										<LinkPost key={link[0]} linkPost={link} />

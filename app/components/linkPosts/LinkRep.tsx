@@ -25,7 +25,6 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 	const opts = {
 		width: "100%",
 	};
-	console.log(id);
 	return (
 		<Box mb="5" width="100%">
 			<ClientOnly>{() => <Youtube videoId={id} opts={opts} />}</ClientOnly>
