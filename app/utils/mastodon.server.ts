@@ -333,8 +333,6 @@ export const getLinksFromMastodon = async (userId: string) => {
 	const links = processedResults.map((p) => p.link);
 	const linkPosts = processedResults.map((p) => p.newLinkPost);
 
-	console.log(actors);
-
 	await db.transaction(async (tx) => {
 		if (actors.length > 0)
 			await tx.insert(actor).values(actors).onConflictDoNothing();

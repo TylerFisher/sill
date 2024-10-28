@@ -8,16 +8,16 @@ You can find the official production version of Sill at [sill.social](https://si
 
 ## How it works
 
-Sill is a [Remix](https://remix.run) application with a [Redis](https://redis.io) cache layer and a [Postgresql](https://www.postgresql.org) database. 
+Sill is a [Remix](https://remix.run) application with a [Redis](https://redis.io) cache layer and a [Postgres](https://www.postgresql.org) database. 
 
 Currently, Sill is built to be deployed on [Vercel](https://vercel.com). To adapt to other infrastructure, you would need to install and setup the proper Remix adapter. See the [Remix docs](https://remix.run/docs/en/main/other-api/adapter) for more information.
 
-In production, Sill connects to [Upstash](https://upstash.com) for serverless Redis and [Neon](https://neon.tech) for serverless Postgresql, though you could choose other providers, or provision both yourself.
+In production, Sill connects to [Upstash](https://upstash.com) for serverless Redis and [Neon](https://neon.tech) for serverless Postgres, though you could choose other providers, or provision both yourself.
 
 ## Prerequisites
 
-- Node.js > 20
-- Postgresql
+- Node.js >= 20
+- Postgres
 - Redis
 - [Resend](https://resend.com) account
 
@@ -55,9 +55,9 @@ If you take this approach, you can set `REDIS_URL` in your .env to `redis://loca
 
 You could also use [Docker](https://redis.io/learn/operate/orchestration/docker).
 
-### Postgresql
+### Postgres
 
-To run Postgresql locally, you can take a few approaches. 
+To run Postgres locally, you can take a few approaches. 
 
 - On a Mac, you can download [Postgres.app](https://postgresapp.com)
 - On a Mac, you can also install via Homebrew: `brew install postgresql`.

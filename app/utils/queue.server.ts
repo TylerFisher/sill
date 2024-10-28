@@ -4,6 +4,7 @@ import { Queue, Worker } from "bullmq";
 import { connection } from "~/utils/redis.server";
 import { fetchLinkMetadata, getBlueskyTimeline } from "~/utils/bluesky.server";
 import { getMastodonTimeline } from "./mastodon.server";
+import { filterLinkOccurrences } from "./links.server";
 
 const redis = connection();
 
@@ -70,7 +71,7 @@ interface BlueskyFetchQueueJob {
 export const blueskyFetchQueue = registerQueue(
 	"bluesky",
 	async (job: BlueskyFetchQueueJob) => {
-		await getBlueskyTimeline(job.data.userId);
+		await filterLinkOccurrences({ userId: job.data.userId });
 	},
 );
 
@@ -83,6 +84,6 @@ interface MastodonFetchQueueJob {
 export const mastodonFetchQueue = registerQueue(
 	"mastodon",
 	async (job: MastodonFetchQueueJob) => {
-		await getMastodonTimeline(job.data.userId);
+		await filterLinkOccurrences({ userId: job.data.userId });
 	},
 );
