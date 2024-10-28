@@ -13,9 +13,6 @@ const PageHeading = ({ title, dek }: PageHeadingProps) => {
 				{title}
 			</Heading>
 			<Callout.Root size="3" variant="outline">
-				<Callout.Icon>
-					<Info width="18" height="18" />
-				</Callout.Icon>
 				<Callout.Text>{dek}</Callout.Text>
 			</Callout.Root>
 		</Box>

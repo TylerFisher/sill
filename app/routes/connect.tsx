@@ -15,11 +15,14 @@ import {
 	Button,
 	TextField,
 	Card,
+	Callout,
+	Link as RLink,
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
+import { mastodonAccount, user } from "~/drizzle/schema.server";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
+import { CircleAlert, Info } from "lucide-react";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Socials" },
@@ -72,6 +75,25 @@ const Connect = () => {
 					<Form action="/mastodon/auth/revoke" method="post">
 						<Button type="submit">Disconnect</Button>
 					</Form>
+					<Callout.Root mt="4">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text>
+							For best performance with Sill, we recommend that you turn off the
+							"Group boosts in timelines" setting in your Mastodon preferences.
+							Turning this off allows us to show you everyone who posted or
+							reposted a particular link. You can go{" "}
+							<RLink
+								href={`https://${user.mastodonAccounts[0].mastodonInstance.instance}/settings/preferences/other`}
+								target="_blank"
+								rel="noreferrer"
+							>
+								to this page
+							</RLink>{" "}
+							to change the setting.
+						</Callout.Text>
+					</Callout.Root>
 				</Card>
 			) : (
 				<Card mb="6">
@@ -82,7 +104,7 @@ const Connect = () => {
 						<TextField.Root
 							type="text"
 							name="instance"
-							placeholder="Enter your Mastodon instance (e.g., mastodon.social)"
+							placeholder="Enter your Mastodon instance (e.g. mastodon.social)"
 							required
 							mb="3"
 						>
@@ -90,6 +112,19 @@ const Connect = () => {
 						</TextField.Root>
 						<Button type="submit">Connect</Button>
 					</Form>
+					<Callout.Root mt="4">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text>
+							For best performance with Sill, we recommend that you turn off the
+							"Group boosts in timelines" setting in your Mastodon preferences{" "}
+							<strong>before you connect</strong>. Turning this off allows us to
+							show you everyone who posted or reposted a particular link. Go to{" "}
+							<code>https://your-instance/settings/preferences/other</code> to
+							turn off the setting.
+						</Callout.Text>
+					</Callout.Root>
 				</Card>
 			)}
 			{user.blueskyAccounts.length > 0 ? (
@@ -113,11 +148,11 @@ const Connect = () => {
 					<Form action="/bluesky/auth" method="POST">
 						<TextField.Root
 							name="handle"
-							placeholder="Enter your Bluesky handle (e.g., tyler.bsky.social)"
+							placeholder="Enter your Bluesky handle (e.g. tyler.bsky.social)"
 							required
 							mb="3"
 						>
-							<TextField.Slot />
+							<TextField.Slot>@</TextField.Slot>
 						</TextField.Root>
 						<Button type="submit">Connect</Button>
 					</Form>
