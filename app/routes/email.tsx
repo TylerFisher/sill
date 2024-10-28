@@ -1,4 +1,4 @@
-import { Box, Select, Button } from "@radix-ui/themes";
+import { Box, Select, Button, Text } from "@radix-ui/themes";
 import {
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
@@ -105,6 +105,11 @@ const EmailSettings = () => {
 						email each day."
 			/>
 			<Form method="POST" {...getFormProps(form)}>
+				{actionData?.result?.status === "success" && (
+					<Box mb="4">
+						<Text as="p">Your email settings have been saved.</Text>
+					</Box>
+				)}
 				<Box>
 					<label htmlFor="time">Time</label>
 					<br />
