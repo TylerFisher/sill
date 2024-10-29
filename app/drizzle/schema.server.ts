@@ -194,8 +194,6 @@ export const blueskyAccount = pgTable(
 	{
 		id: uuid().primaryKey().notNull(),
 		service: text().notNull(),
-		refreshJwt: text(),
-		accessJwt: text().notNull(),
 		handle: text().notNull().unique(),
 		did: text().notNull().unique(),
 		mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),

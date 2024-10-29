@@ -57,6 +57,13 @@
       "when": 1729902582348,
       "tag": "0007_slippery_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1730242016306,
+      "tag": "0008_last_romulus",
+      "breakpoints": true
     }
   ]
 }
