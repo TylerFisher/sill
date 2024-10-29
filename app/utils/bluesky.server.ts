@@ -109,7 +109,6 @@ export const getBlueskyTimeline = async (userId: string) => {
 
 	if (timeline.length > 0) {
 		const firstPost = timeline[0];
-		const tokenSet = await oauthSession.getTokenSet();
 
 		await db
 			.update(blueskyAccount)
@@ -117,8 +116,6 @@ export const getBlueskyTimeline = async (userId: string) => {
 				mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
 					? new Date(firstPost.reason.indexedAt)
 					: new Date(firstPost.post.indexedAt),
-				accessJwt: tokenSet.access_token,
-				refreshJwt: tokenSet.refresh_token,
 			})
 			.where(eq(blueskyAccount.userId, userId));
 	}
