@@ -181,7 +181,7 @@ export const filterLinkOccurrences = async ({
 								ilike(link.url, `%${query}%`),
 								ilike(post.text, `%${query}%`),
 								ilike(actor.name, `%${query}%`),
-								ilike(actor.handle, `%${query}%`),
+								// ilike(actor.handle, `%${query}%`),
 							)
 						: undefined,
 				),

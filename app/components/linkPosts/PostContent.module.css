@@ -1,9 +1,4 @@
-.mastodon-post-content > p {
-  overflow-wrap: anywhere;
-  white-space: pre-line;
-}
-
-.bluesky-post-content {
+.post-content > p {
   overflow-wrap: anywhere;
   white-space: pre-line;
 }
