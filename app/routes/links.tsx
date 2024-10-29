@@ -32,6 +32,7 @@ import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { uuidv7 } from "uuidv7-js";
+import { ClientOnly } from "remix-utils/client-only";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -216,14 +217,23 @@ const Links = () => {
 									))}
 								</div>
 							)}
-							<Box mt="4">
-								<fetcher.Form method="GET" preventScrollReset ref={formRef}>
-									<input type="hidden" name="page" value={nextPage} />
-									{[...searchParams.entries()].map(([key, value]) => (
-										<input key={key} type="hidden" name={key} value={value} />
-									))}
-								</fetcher.Form>
-							</Box>
+							<ClientOnly>
+								{() => (
+									<Box position="absolute" top="90%">
+										<fetcher.Form method="GET" preventScrollReset ref={formRef}>
+											<input type="hidden" name="page" value={nextPage} />
+											{[...searchParams.entries()].map(([key, value]) => (
+												<input
+													key={key}
+													type="hidden"
+													name={key}
+													value={value}
+												/>
+											))}
+										</fetcher.Form>
+									</Box>
+								)}
+							</ClientOnly>
 						</div>
 					)}
 				</Await>
