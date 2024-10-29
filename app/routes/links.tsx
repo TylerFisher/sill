@@ -32,7 +32,6 @@ import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { uuidv7 } from "uuidv7-js";
-import LZString from "lz-string";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -69,23 +68,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		hideReposts: url.searchParams.get("reposts") === "true",
 		sort: url.searchParams.get("sort") || "popularity",
 		query: url.searchParams.get("query") || undefined,
-		service: url.searchParams.get("service") || "all",
+		// eugh, clean this up
+		service: ["mastodon", "bluesky", "all"].includes(
+			url.searchParams.get("service") || "",
+		)
+			? (url.searchParams.get("service") as "mastodon" | "bluesky" | "all")
+			: "all",
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
 	};
-
-	const redis = connection();
-
-	const compressedCache = await redis.get(await getUserCacheKey(userId));
-	let cachedData: [string, MostRecentLinkPosts[]][] | null = null;
-
-	if (compressedCache) {
-		const cache = LZString.decompressFromUTF16(compressedCache);
-		cachedData = await filterLinkOccurrences({
-			userId,
-			mostRecentLinkPosts: JSON.parse(cache),
-			...options,
-		});
-	}
 
 	const timeParam = url.searchParams.get("time") || "24h";
 	let time = 86400000;
@@ -101,8 +91,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
+		fetch: true,
 		...options,
 	});
+
+	// If we're not using any filters, use the cache
+	let cachedData: MostRecentLinkPosts[] = [];
+	if (url.search === "") {
+		const redis = connection();
+		const cache = await redis.get(await getUserCacheKey(userId));
+		if (cache) {
+			cachedData = JSON.parse(cache);
+		}
+		links.then(async (links) => {
+			redis.set(await getUserCacheKey(userId), JSON.stringify(links));
+		});
+	}
 
 	return { cachedData, links, key: uuidv7() };
 };
@@ -113,9 +117,7 @@ const Links = () => {
 	const page = Number.parseInt(searchParams.get("page") || "1");
 	const [nextPage, setNextPage] = useState(page + 1);
 	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
-	const [fetchedLinks, setFetchedLinks] = useState<
-		[string, MostRecentLinkPosts[]][]
-	>([]);
+	const [fetchedLinks, setFetchedLinks] = useState<MostRecentLinkPosts[]>([]);
 	const [key, setKey] = useState(data.key);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
@@ -194,7 +196,7 @@ const Links = () => {
 							<Spinner size="3" />
 						</Flex>
 						{data.cachedData?.map((link) => (
-							<LinkPost key={link[0]} linkPost={link} />
+							<LinkPost key={link.link?.url} linkPost={link} />
 						))}
 					</div>
 				}
@@ -203,14 +205,14 @@ const Links = () => {
 					{(links) => (
 						<div>
 							{links.map((link) => (
-								<div key={link[0]}>
-									<LinkPost key={link[0]} linkPost={link} />
+								<div key={link.link?.url}>
+									<LinkPost linkPost={link} />
 								</div>
 							))}
 							{fetchedLinks.length > 0 && (
 								<div>
 									{fetchedLinks.map((link) => (
-										<LinkPost key={link[0]} linkPost={link} />
+										<LinkPost key={link.link?.url} linkPost={link} />
 									))}
 								</div>
 							)}
@@ -230,11 +232,9 @@ const Links = () => {
 	);
 };
 
-const LinkPost = ({
-	linkPost,
-}: { linkPost: [string, MostRecentLinkPosts[]] }) => (
+const LinkPost = ({ linkPost }: { linkPost: MostRecentLinkPosts }) => (
 	<div>
-		<LinkPostRep link={linkPost[0]} linkPosts={linkPost[1]} />
+		<LinkPostRep linkPost={linkPost} />
 		<Separator my="7" size="4" orientation="horizontal" />
 	</div>
 );

@@ -1,54 +1,49 @@
-import groupBy from "object.groupby";
 import {
+	aliasedTable,
 	and,
 	desc,
 	eq,
 	gte,
+	ilike,
 	inArray,
-	type InferSelectModel,
+	isNull,
+	notIlike,
+	or,
+	sql,
 } from "drizzle-orm";
-import LZString from "lz-string";
 import { db } from "~/drizzle/db.server";
-import { linkPost, linkPostToUser, mutePhrase } from "~/drizzle/schema.server";
-import type { InferResultType } from "~/drizzle/types.server";
+import {
+	actor,
+	link,
+	linkPost,
+	linkPostToUser,
+	mutePhrase,
+	post,
+	postImage,
+} from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
-import { connection, getUserCacheKey } from "./redis.server";
-interface LinkOccurrenceArgs {
-	userId: string;
-	time?: number;
-	fetch?: boolean;
-}
 
-interface FilterArgs {
-	userId: string;
-	mostRecentLinkPosts?: MostRecentLinkPosts[];
-	time?: number;
-	hideReposts?: boolean;
-	sort?: string;
-	query?: string | undefined;
-	service?: string;
-	page?: number;
+export interface PostReturn {
+	post: typeof post.$inferSelect;
+	quote: {
+		post?: typeof post.$inferSelect;
+		actor?: typeof actor.$inferSelect;
+		image?: typeof postImage.$inferSelect;
+	};
+	reposter?: typeof actor.$inferSelect;
+	image?: typeof postImage.$inferSelect;
+	actor: typeof actor.$inferSelect;
 }
 
 /**
  * Type for the returned most recent link posts query
  */
-export type MostRecentLinkPosts = InferResultType<
-	"linkPost",
-	{
-		post: {
-			with: {
-				actor: true;
-				quoting: { with: { actor: true; postImages: true } };
-				postImages: true;
-				reposter: true;
-			};
-		};
-		link: true;
-		linkPostToUsers: true;
-	}
->;
+export type MostRecentLinkPosts = {
+	uniqueActorsCount: number;
+	link: typeof link.$inferSelect | null;
+	posts?: PostReturn[];
+};
 
 const DEFAULT_HIDE_REPOSTS = false;
 const DEFAULT_SORT = "popularity";
@@ -79,16 +74,53 @@ const getMutePhrases = async (userId: string) => {
 	});
 };
 
+interface FilterArgs {
+	userId: string;
+	time?: number;
+	hideReposts?: boolean;
+	sort?: string;
+	query?: string | undefined;
+	service?: "mastodon" | "bluesky" | "all";
+	page?: number;
+	fetch?: boolean;
+}
+
 /**
  * Retrieves most recent link posts for a user in a given time frame
  * @param userId ID for logged in user
  * @param time Time in milliseconds to get most recent link posts
  * @returns Most recent link posts for a user in a given time frame
  */
-const getMostRecentLinkPosts = async (userId: string, time: number) => {
+export const filterLinkOccurrences = async ({
+	userId,
+	time = ONE_DAY_MS,
+	hideReposts = DEFAULT_HIDE_REPOSTS,
+	sort = DEFAULT_SORT,
+	query = DEFAULT_QUERY,
+	service = "all",
+	page = 1,
+	fetch = DEFAULT_FETCH,
+}: FilterArgs) => {
+	if (fetch) {
+		await fetchLinks(userId);
+	}
+
+	const offset = (page - 1) * 20;
 	const start = new Date(Date.now() - time);
 
-	return await db.transaction(async (tx) => {
+	const mutePhrases = await getMutePhrases(userId);
+	const muteClauses = mutePhrases.flatMap((phrase) => {
+		return [
+			notIlike(link.url, `%${phrase.phrase}%`),
+			notIlike(link.title, `%${phrase.phrase}%`),
+			notIlike(link.description, `%${phrase.phrase}%`),
+			notIlike(post.text, `%${phrase.phrase}%`),
+			notIlike(actor.name, `%${phrase.phrase}%`),
+			notIlike(actor.handle, `%${phrase.phrase}%`),
+		];
+	});
+
+	const linkPosts = await db.transaction(async (tx) => {
 		const linkPostsForUser = await tx.query.linkPostToUser.findMany({
 			where: eq(linkPostToUser.userId, userId),
 			columns: {
@@ -96,202 +128,85 @@ const getMostRecentLinkPosts = async (userId: string, time: number) => {
 			},
 		});
 
-		return await db.query.linkPost.findMany({
-			where: and(
-				inArray(
-					linkPost.id,
-					linkPostsForUser.map((lp) => lp.linkPostId),
-				),
-				gte(linkPost.date, start),
-			),
-			with: {
-				link: true,
-				linkPostToUsers: true,
-				post: {
-					with: {
-						actor: true,
-						quoting: {
-							with: {
-								actor: true,
-								postImages: true,
-							},
-						},
-						postImages: true,
-						reposter: true,
-					},
-				},
-			},
-			orderBy: desc(linkPost.date),
-		});
-	});
-};
+		const quote = aliasedTable(post, "quote");
+		const reposter = aliasedTable(actor, "reposter");
+		const quoteActor = aliasedTable(actor, "quoteActor");
+		const quoteImage = aliasedTable(postImage, "quoteImage");
 
-/**
- * Filters link posts based on search query
- * @param query Search query string
- * @param linkPosts Link posts to search on
- * @returns Filtered list of link posts based on search query
- */
-const filterByQuery = async (
-	query: string,
-	linkPosts: MostRecentLinkPosts[],
-) => {
-	const lowerQuery = query.toLowerCase();
-	return linkPosts.filter((lp) => {
-		return (
-			lp.link.title?.toLowerCase().includes(lowerQuery) ||
-			lp.link.description?.toLowerCase().includes(lowerQuery) ||
-			lp.post.text.toLowerCase().includes(lowerQuery) ||
-			lp.post.actor.name?.toLowerCase().includes(lowerQuery) ||
-			lp.post.actor.handle.toLowerCase().includes(lowerQuery)
-		);
-	});
-};
-
-/**
- * Filters link posts based on mute phrases
- * @param mutePhrases List of mute phrases
- * @param linkPosts Link posts to search on
- * @returns Filtered list of link posts based on mute phrases
- */
-const filterByMutePhrases = async (
-	mutePhrases: InferSelectModel<typeof mutePhrase>[],
-	linkPosts: MostRecentLinkPosts[],
-) => {
-	return linkPosts.filter((lp) => {
-		return !mutePhrases.some((phrase) => {
-			return (
-				lp.link.title?.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
-				lp.link.description
-					?.toLowerCase()
-					.includes(phrase.phrase.toLowerCase()) ||
-				new URL(lp.link.url).host === phrase.phrase ||
-				lp.post.text.toLowerCase().includes(phrase.phrase.toLowerCase()) ||
-				lp.post.actor.name
-					?.toLowerCase()
-					.includes(phrase.phrase.toLowerCase()) ||
-				lp.post.actor.handle.toLowerCase().includes(phrase.phrase.toLowerCase())
-			);
-		});
-	});
-};
-
-/**
- * Removes posts with reposts from link posts
- * @param linkPosts Link posts to filter
- * @returns Link posts without reposts
- */
-const filterByReposts = async (linkPosts: MostRecentLinkPosts[]) => {
-	return linkPosts.filter((lp) => !lp.post.reposter);
-};
-
-/**
- * Groups link posts by link URL
- * @param linkPosts Link posts to group by link URL
- * @returns Grouped link posts by link URL
- */
-const groupByLink = async (linkPosts: MostRecentLinkPosts[]) => {
-	return groupBy(linkPosts, (l) => {
-		return l.link.url.endsWith("/") ? l.link.url.slice(0, -1) : l.link.url;
-	});
-};
-
-/**
- * Sorts link posts by popularity.
- * Popularity is determined by the number of unique users who have posted the link.
- * @param grouped Grouped link posts by link URL
- * @returns Sorted link posts by popularity
- */
-const sortByPopularity = async (
-	grouped: Record<string, MostRecentLinkPosts[]>,
-) => {
-	return Object.entries(grouped).sort(
-		(a, b) =>
-			[
-				...new Set(
-					b[1].map((l) =>
-						l.post.reposter ? l.post.reposter.handle : l.post.actor.handle,
+		const groupedLinks = tx
+			.select({
+				url: link.url,
+				uniqueActorsCount:
+					sql<number>`cast(count(distinct coalesce(${reposter.handle}, ${actor.handle})) as int)`.as(
+						"uniqueActorsCount",
 					),
+				posts: sql<PostReturn[]>`json_agg(json_build_object(
+          'post', ${post},
+          'quote', json_build_object(
+            'post', ${quote},
+            'actor', ${quoteActor},
+            'image', ${quoteImage}
+          ),
+          'reposter', ${reposter},
+          'image', ${postImage},
+          'actor', ${actor}
+        ) order by ${post.postDate} desc)`.as("posts"),
+				mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
+					"mostRecentPostDate",
 				),
-			].length -
-			[
-				...new Set(
-					a[1].map((l) =>
-						l.post.reposter ? l.post.reposter.handle : l.post.actor.handle,
+			})
+			.from(linkPost)
+			.leftJoin(link, eq(linkPost.linkUrl, link.url))
+			.leftJoin(post, eq(linkPost.postId, post.id))
+			.leftJoin(actor, eq(post.actorHandle, actor.handle))
+			.leftJoin(quote, eq(post.quotingId, quote.id))
+			.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
+			.leftJoin(quoteActor, eq(quote.actorHandle, quoteActor.handle))
+			.leftJoin(quoteImage, eq(quote.id, quoteImage.postId))
+			.leftJoin(postImage, eq(post.id, postImage.postId))
+			.where(
+				and(
+					inArray(
+						linkPost.id,
+						linkPostsForUser.map((lp) => lp.linkPostId),
 					),
+					gte(linkPost.date, start),
+					...muteClauses,
+					service !== "all" ? eq(post.postType, service) : undefined,
+					hideReposts ? isNull(post.repostHandle) : undefined,
+					query
+						? or(
+								ilike(link.title, `%${query}%`),
+								ilike(link.description, `%${query}%`),
+								ilike(link.url, `%${query}%`),
+								ilike(post.text, `%${query}%`),
+								ilike(actor.name, `%${query}%`),
+								ilike(actor.handle, `%${query}%`),
+							)
+						: undefined,
 				),
-			].length,
-	);
-};
+			)
+			.groupBy(link.url)
+			.as("groupedLinks");
 
-/**
- * Counts the number of occurrences of links in posts for a user
- * @param param0 Settings for the function, including user ID, time frame,
- * whether to hide reposts, sort order, search query, and whether to fetch links
- * @returns List of links and the number of occurrences in posts
- */
-export const countLinkOccurrences = async ({
-	userId,
-	time = ONE_DAY_MS,
-	fetch = DEFAULT_FETCH,
-}: LinkOccurrenceArgs) => {
-	if (fetch) {
-		await fetchLinks(userId);
-	}
-	const linkPosts = await getMostRecentLinkPosts(userId, time);
-	const redis = connection();
+		return await tx
+			.select({
+				uniqueActorsCount: groupedLinks.uniqueActorsCount,
+				link,
+				posts: groupedLinks.posts,
+				mostRecentPostDate: groupedLinks.mostRecentPostDate,
+			})
+			.from(groupedLinks)
+			.leftJoin(link, eq(groupedLinks.url, link.url))
+			.orderBy(
+				sort === "popularity"
+					? desc(groupedLinks.uniqueActorsCount)
+					: desc(groupedLinks.mostRecentPostDate),
+				desc(groupedLinks.mostRecentPostDate),
+			)
+			.limit(20)
+			.offset(offset);
+	});
 
-	const compressed = LZString.compressToUTF16(JSON.stringify(linkPosts));
-	redis.set(await getUserCacheKey(userId), compressed);
 	return linkPosts;
-};
-
-export const filterLinkOccurrences = async ({
-	userId,
-	mostRecentLinkPosts = [],
-	time = ONE_DAY_MS,
-	hideReposts = DEFAULT_HIDE_REPOSTS,
-	sort = DEFAULT_SORT,
-	query = DEFAULT_QUERY,
-	service = "all",
-	page = 1,
-}: FilterArgs) => {
-	if (mostRecentLinkPosts.length === 0) {
-		mostRecentLinkPosts = await countLinkOccurrences({
-			userId,
-			time,
-			fetch: true,
-		});
-	}
-
-	const mutePhrases = await getMutePhrases(userId);
-	if (query) {
-		mostRecentLinkPosts = await filterByQuery(query, mostRecentLinkPosts);
-	}
-	mostRecentLinkPosts = await filterByMutePhrases(
-		mutePhrases,
-		mostRecentLinkPosts,
-	);
-	if (hideReposts) {
-		mostRecentLinkPosts = await filterByReposts(mostRecentLinkPosts);
-	}
-	if (service === "mastodon") {
-		mostRecentLinkPosts = mostRecentLinkPosts.filter(
-			(lp) => lp.post.postType === "mastodon",
-		);
-	} else if (service === "bluesky") {
-		mostRecentLinkPosts = mostRecentLinkPosts.filter(
-			(lp) => lp.post.postType === "bluesky",
-		);
-	}
-	const grouped = await groupByLink(mostRecentLinkPosts);
-
-	const start = (page - 1) * 20;
-
-	if (sort === "popularity") {
-		const sorted = await sortByPopularity(grouped);
-		return sorted.slice(start, start + 20);
-	}
-
-	return Object.entries(grouped).slice(start, start + 20);
 };

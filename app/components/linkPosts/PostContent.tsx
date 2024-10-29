@@ -1,15 +1,14 @@
 import { Card, Inset, Text } from "@radix-ui/themes";
 import styles from "./PostContent.module.css";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { PostReturn } from "~/utils/links.server";
 import type { SerializeFrom } from "@vercel/remix";
 
 interface PostContentProps {
-	post:
-		| SerializeFrom<MostRecentLinkPosts["post"]>
-		| SerializeFrom<MostRecentLinkPosts["post"]["quoting"]>;
+	post: PostReturn["post"];
+	image: PostReturn["image"] | null;
 }
 
-const PostContent = ({ post }: PostContentProps) => {
+const PostContent = ({ post, image }: PostContentProps) => {
 	if (!post) return null;
 	return (
 		<>
@@ -36,20 +35,18 @@ const PostContent = ({ post }: PostContentProps) => {
 					{post.text}
 				</Text>
 			)}
-			{post.postImages ? (
-				post.postImages.map((image) => (
-					<Card key={image.url} mt="2">
-						<Inset>
-							<img
-								src={image.url}
-								alt={image.alt}
-								loading="lazy"
-								decoding="async"
-								width="100%"
-							/>
-						</Inset>
-					</Card>
-				))
+			{image ? (
+				<Card key={image.url} mt="2">
+					<Inset>
+						<img
+							src={image.url}
+							alt={image.alt}
+							loading="lazy"
+							decoding="async"
+							width="100%"
+						/>
+					</Inset>
+				</Card>
 			) : (
 				<></>
 			)}

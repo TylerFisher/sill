@@ -2,20 +2,20 @@ import { Card, Box, Avatar, Flex, Separator } from "@radix-ui/themes";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
-import type { SerializeFrom } from "@vercel/remix";
+import type { PostReturn } from "~/utils/links.server";
 import PostToolbar from "./PostToolbar";
 interface PostRepProps {
-	post: SerializeFrom<MostRecentLinkPosts["post"]>;
-	group: SerializeFrom<MostRecentLinkPosts>[];
+	post: PostReturn["post"];
+	group: PostReturn[];
+	actor: PostReturn["actor"];
+	quote: PostReturn["quote"];
+	image: PostReturn["image"];
 }
 
-const PostRep = ({ post, group }: PostRepProps) => {
+const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
 	const reposters = group
-		.filter(
-			(l) => l.post.repostHandle !== l.post.actorHandle && l.post.reposter,
-		)
-		.map((l) => l.post.reposter)
+		.filter((l) => l.post.repostHandle !== l.post.actorHandle && l.reposter)
+		.map((l) => l.reposter)
 		.filter((l) => l !== null);
 
 	return (
@@ -29,17 +29,17 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				mb="1"
 			>
 				<a
-					href={post.actor.url}
+					href={actor.url}
 					target="_blank"
 					rel="noreferrer"
-					aria-label={`Link to ${post.actor.name}'s profile page`}
+					aria-label={`Link to ${actor.name}'s profile page`}
 				>
 					<Avatar
 						size={{
 							initial: "2",
 							sm: "3",
 						}}
-						src={post.actor.avatarUrl || undefined}
+						src={actor.avatarUrl || undefined}
 						radius="full"
 						fallback={post.actorHandle[0]}
 						mt={reposters.length > 0 ? "4" : "1"}
@@ -50,14 +50,14 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				<Box>
 					{reposters.length > 0 && <RepostActor actors={reposters} />}
 					<PostAuthor
-						actor={post.actor}
+						actor={actor}
 						postUrl={post.url}
-						postDate={new Date(post.postDate)}
+						postDate={new Date(`${post.postDate}Z`)}
 					/>
-					<PostContent post={post} />
+					<PostContent post={post} image={image} />
 				</Box>
 			</Flex>
-			{post.quoting && (
+			{quote.post && quote.actor && (
 				<Card
 					ml={{
 						initial: "6",
@@ -68,15 +68,15 @@ const PostRep = ({ post, group }: PostRepProps) => {
 				>
 					<Flex gap="1" mb="1" align="center">
 						<a
-							href={post.quoting.actor.url}
+							href={quote.actor.url}
 							target="_blank"
 							rel="noreferrer"
-							aria-label={`Link to ${post.quoting.actor.name}'s profile page`}
+							aria-label={`Link to ${quote.actor.name}'s profile page`}
 						>
 							<Avatar
-								src={post.quoting.actor.avatarUrl || undefined}
+								src={quote.actor.avatarUrl || undefined}
 								radius="full"
-								fallback={post.quoting.actorHandle[0]}
+								fallback={quote.actor.handle[0]}
 								style={{
 									width: "20px",
 									height: "20px",
@@ -85,12 +85,12 @@ const PostRep = ({ post, group }: PostRepProps) => {
 							/>
 						</a>
 						<PostAuthor
-							actor={post.quoting.actor}
-							postUrl={post.quoting.url}
-							postDate={new Date(post.quoting.postDate)}
+							actor={quote.actor}
+							postUrl={quote.post.url}
+							postDate={new Date(quote.post.postDate)}
 						/>
 					</Flex>
-					<PostContent post={post.quoting} />
+					<PostContent post={quote.post} image={quote.image} />
 				</Card>
 			)}
 			<Separator size="4" my="4" />

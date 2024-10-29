@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { SerializeFrom } from "@vercel/remix";
 import { Avatar, Box, Button } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
@@ -9,21 +8,21 @@ import PostRep from "~/components/linkPosts/PostRep";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export interface LinkPostRepProps {
-	link: string;
-	linkPosts: SerializeFrom<MostRecentLinkPosts>[];
+	linkPost: MostRecentLinkPosts;
 }
 
-const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
+const LinkPostRep = ({ linkPost }: LinkPostRepProps) => {
+	if (!linkPost.posts || !linkPost.link) return null;
 	const [open, setOpen] = useState(false);
-	const groupedLinkPosts = groupBy(linkPosts, (l) => l.post.url);
-	const allActors = linkPosts.map((l) =>
-		l.post.reposter ? l.post.reposter.avatarUrl : l.post.actor.avatarUrl,
+	const groupedPosts = groupBy(linkPost.posts, (l) => l.post.url);
+	const allActors = linkPost.posts.map((p) =>
+		p.reposter ? p.reposter.avatarUrl : p.actor.avatarUrl,
 	);
 	const uniqueActors = [...new Set(allActors)];
 
 	return (
-		<Box key={link}>
-			<LinkRep link={linkPosts[0].link} />
+		<Box key={linkPost.link.url}>
+			<LinkRep link={linkPost.link} />
 			<Collapsible.Root
 				className="CollapsibleRoot"
 				open={open}
@@ -46,8 +45,8 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 								}}
 							/>
 						))}
-						Shared by {uniqueActors.length}{" "}
-						{uniqueActors.length === 1 ? "account" : "accounts"}
+						Shared by {linkPost.uniqueActorsCount}{" "}
+						{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}
 						{open ? (
 							<ChevronUp width="14" height="14" />
 						) : (
@@ -57,8 +56,15 @@ const LinkPostRep = ({ link, linkPosts }: LinkPostRepProps) => {
 				</Collapsible.Trigger>
 				<Collapsible.Content>
 					<Box mt="5">
-						{Object.entries(groupedLinkPosts).map(([postUrl, group]) => (
-							<PostRep key={postUrl} post={group[0].post} group={group} />
+						{Object.entries(groupedPosts).map(([postUrl, group]) => (
+							<PostRep
+								key={postUrl}
+								post={group[0].post}
+								group={group}
+								actor={group[0].actor}
+								quote={group[0].quote}
+								image={group[0].image}
+							/>
 						))}
 					</Box>
 				</Collapsible.Content>
