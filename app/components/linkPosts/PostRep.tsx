@@ -87,7 +87,7 @@ const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
 						<PostAuthor
 							actor={quote.actor}
 							postUrl={quote.post.url}
-							postDate={new Date(quote.post.postDate)}
+							postDate={new Date(`${quote.post.postDate}Z`)}
 						/>
 					</Flex>
 					<PostContent post={quote.post} image={quote.image} />
