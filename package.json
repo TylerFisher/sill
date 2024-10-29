@@ -15,7 +15,7 @@
   "dependencies": {
     "@atproto/api": "^0.13.7",
     "@atproto/jwk-jose": "^0.1.2",
-    "@atproto/oauth-client-node": "^0.1.4",
+    "@atproto/oauth-client-node": "^0.2.0",
     "@conform-to/react": "^1.2.2",
     "@conform-to/zod": "^1.2.2",
     "@epic-web/client-hints": "^1.3.5",
