@@ -1,8 +1,8 @@
 import { JoseKey } from "@atproto/jwk-jose";
 import { NodeOAuthClient, type RuntimeLock } from "@atproto/oauth-client-node";
-import Redlock from "redlock";
 import { SessionStore, StateStore } from "./storage";
 import { connection } from "~/utils/redis.server";
+import { Lock } from "@upstash/lock";
 
 let oauthClient: NodeOAuthClient | null = null;
 const isProduction = process.env.NODE_ENV === "production";
@@ -52,17 +52,17 @@ export const createOAuthClient = async () => {
 	return oauthClient;
 };
 
-const redis = connection();
-// @ts-expect-error
-const redlock = new Redlock(redis);
-
 const requestLock: RuntimeLock = async (key, fn) => {
 	// 30 seconds should be enough. Since we will be using one lock per user id
 	// we can be quite liberal with the lock duration here.
-	const lock = await redlock.lock(key, 45e3);
+	const lock = new Lock({
+		id: key,
+		lease: 30000,
+		redis: connection(),
+	});
 	try {
 		return await fn();
 	} finally {
-		await redlock.unlock(lock);
+		await lock.release();
 	}
 };

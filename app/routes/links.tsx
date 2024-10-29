@@ -99,10 +99,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	let cachedData: MostRecentLinkPosts[] = [];
 	if (url.search === "") {
 		const redis = connection();
-		const cache = await redis.get(await getUserCacheKey(userId));
-		if (cache) {
-			cachedData = JSON.parse(cache);
-		}
+		cachedData =
+			(await redis.get<MostRecentLinkPosts[]>(await getUserCacheKey(userId))) ||
+			[];
 		links.then(async (links) => {
 			redis.set(await getUserCacheKey(userId), JSON.stringify(links));
 		});

@@ -29,6 +29,8 @@
     "@remix-run/node": "^2.13.1",
     "@remix-run/react": "^2.13.1",
     "@remix-run/serve": "^2.13.1",
+    "@upstash/lock": "^0.2.1",
+    "@upstash/redis": "^1.34.3",
     "@vercel/remix": "^2.13.1",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.21.1",
