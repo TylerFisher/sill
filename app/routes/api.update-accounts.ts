@@ -1,14 +1,17 @@
 import { db } from "~/drizzle/db.server";
-import { countLinkOccurrences } from "~/utils/links.server";
+import { filterLinkOccurrences } from "~/utils/links.server";
+import { connection, getUserCacheKey } from "~/utils/redis.server";
 
 export const loader = async () => {
 	const users = await db.query.user.findMany();
 	const updatedData = await Promise.all(
 		users.map(async (user) => {
-			const linkCount = await countLinkOccurrences({
+			const linkCount = await filterLinkOccurrences({
 				userId: user.id,
 				fetch: true,
 			});
+			const redis = connection();
+			redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
 			return { ...user, linkCount };
 		}),
 	);
