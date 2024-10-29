@@ -14,7 +14,7 @@ type RegisteredQueue = {
 };
 
 const redis = {
-	host: process.env.UPSTASH_REDIS_REST_URL,
+	host: process.env.UPSTASH_REDIS_REST_URL?.split("https://")[1],
 	port: 6379,
 	password: process.env.UPSTASH_REDIS_REST_TOKEN,
 	tls: {},

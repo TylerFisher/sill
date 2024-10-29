@@ -30,7 +30,8 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import SearchField from "~/components/forms/SearchField";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
-import { connection, getUserCacheKey } from "~/utils/redis.server";
+import { Redis } from "@upstash/redis";
+import { getUserCacheKey } from "~/utils/redis.server";
 import { uuidv7 } from "uuidv7-js";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
@@ -98,7 +99,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	// If we're not using any filters, use the cache
 	let cachedData: MostRecentLinkPosts[] = [];
 	if (url.search === "") {
-		const redis = connection();
+		const redis = Redis.fromEnv();
 		cachedData =
 			(await redis.get<MostRecentLinkPosts[]>(await getUserCacheKey(userId))) ||
 			[];

@@ -1,7 +1,7 @@
 import { JoseKey } from "@atproto/jwk-jose";
 import { NodeOAuthClient, type RuntimeLock } from "@atproto/oauth-client-node";
 import { SessionStore, StateStore } from "./storage";
-import { connection } from "~/utils/redis.server";
+import { Redis } from "@upstash/redis";
 import { Lock } from "@upstash/lock";
 
 let oauthClient: NodeOAuthClient | null = null;
@@ -58,7 +58,7 @@ const requestLock: RuntimeLock = async (key, fn) => {
 	const lock = new Lock({
 		id: key,
 		lease: 30000,
-		redis: connection(),
+		redis: Redis.fromEnv(),
 	});
 	try {
 		return await fn();
