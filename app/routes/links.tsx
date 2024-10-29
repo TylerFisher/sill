@@ -91,7 +91,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
-		fetch: true,
+		fetch: url.search === "",
 		...options,
 	});
 
