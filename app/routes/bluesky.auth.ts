@@ -4,23 +4,23 @@ import { createOAuthClient } from "~/server/oauth/client";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const data = await request.formData();
-	const handle = String(data.get("handle"));
+	const handle = data.get("handle");
+	if (typeof handle !== "string") {
+		throw new Error("Invalid handle");
+	}
 	const oauthClient = await createOAuthClient();
-	const state = JSON.stringify({ handle });
 	try {
 		const url = await oauthClient.authorize(handle, {
 			scope: "atproto transition:generic",
-			state,
 		});
 		return redirect(url.toString());
 	} catch (error) {
-		console.error(error);
 		if (error instanceof OAuthResponseError) {
 			const url = await oauthClient.authorize(handle, {
 				scope: "atproto transition:generic",
-				state,
 			});
 			return redirect(url.toString());
 		}
+		throw error;
 	}
 };
