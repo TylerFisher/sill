@@ -24,6 +24,8 @@ import {
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
 
+const PAGE_SIZE = 10;
+
 export interface PostReturn {
 	post: typeof post.$inferSelect;
 	quote: {
@@ -105,7 +107,7 @@ export const filterLinkOccurrences = async ({
 		await fetchLinks(userId);
 	}
 
-	const offset = (page - 1) * 20;
+	const offset = (page - 1) * PAGE_SIZE;
 	const start = new Date(Date.now() - time);
 
 	const mutePhrases = await getMutePhrases(userId);
@@ -181,7 +183,7 @@ export const filterLinkOccurrences = async ({
 								ilike(link.url, `%${query}%`),
 								ilike(post.text, `%${query}%`),
 								ilike(actor.name, `%${query}%`),
-								// ilike(actor.handle, `%${query}%`),
+								ilike(actor.handle, `%${query}%`),
 							)
 						: undefined,
 				),
@@ -204,7 +206,7 @@ export const filterLinkOccurrences = async ({
 					: desc(groupedLinks.mostRecentPostDate),
 				desc(groupedLinks.mostRecentPostDate),
 			)
-			.limit(20)
+			.limit(PAGE_SIZE)
 			.offset(offset);
 	});
 

@@ -216,7 +216,7 @@ const Links = () => {
 									))}
 								</div>
 							)}
-							<Box mt="4">
+							<Box position="absolute" top="90%">
 								<fetcher.Form method="GET" preventScrollReset ref={formRef}>
 									<input type="hidden" name="page" value={nextPage} />
 									{[...searchParams.entries()].map(([key, value]) => (

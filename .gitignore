@@ -7,3 +7,4 @@ postgres-data
 redis-data
 .DS_Store
 .vercel
+public/sw.js
