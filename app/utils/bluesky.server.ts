@@ -709,13 +709,11 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
 				AppBskyRichtextFacet.isMention(f),
 			);
 			if (mentionFacet) {
-				console.log(segment, mentionFacet);
 				html.push(
 					`<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${segment.text}</a>`,
 				);
 			}
 		} else if (segment.isMention()) {
-			console.log(segment);
 			html.push(
 				`<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${segment.text}</a>`,
 			);
