@@ -157,7 +157,7 @@ const Links = () => {
 	useEffect(() => {
 		data.links.then(() => {
 			if (!observer) {
-				debouncedObserver();
+				setTimeout(debouncedObserver, 1000);
 			}
 		});
 	});
