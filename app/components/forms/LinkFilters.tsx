@@ -18,6 +18,10 @@ const LinkFilters = () => {
 		});
 	}
 
+	function clearSearchParams() {
+		setSearchParams([]);
+	}
+
 	const buttonGroups: ButtonGroup[] = [
 		{
 			heading: "Show posts from the last",
@@ -122,6 +126,7 @@ const LinkFilters = () => {
 						/>
 					))}
 				</Box>
+				<Button onClick={clearSearchParams}>Clear all filters</Button>
 			</Collapsible.Content>
 		</Collapsible.Root>
 	);

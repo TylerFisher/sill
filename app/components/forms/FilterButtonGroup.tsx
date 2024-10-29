@@ -35,7 +35,7 @@ const FilterButtonGroup = ({
 			<Heading mb="1" size="1" as="h5" className={styles["filter-heading"]}>
 				{heading}
 			</Heading>
-			<RadioCards.Root defaultValue={variantCheck} size="1">
+			<RadioCards.Root value={variantCheck} size="1">
 				<Flex gap="3">
 					{buttonData.map((button) => (
 						<FilterButton
