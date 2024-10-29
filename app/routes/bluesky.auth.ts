@@ -6,7 +6,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const data = await request.formData();
 	const handle = String(data.get("handle"));
 	const oauthClient = await createOAuthClient();
-	const state = "ahiewophw23";
+	const state = JSON.stringify({ handle });
 	try {
 		const url = await oauthClient.authorize(handle, {
 			scope: "atproto transition:generic",
