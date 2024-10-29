@@ -1,14 +1,16 @@
 import { Button, TextField } from "@radix-ui/themes";
 import { useSearchParams } from "@remix-run/react";
 import { Search, X } from "lucide-react";
+import { useState } from "react";
 
 const SearchField = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
-	const query = searchParams.get("query") || "";
+	const [query, setQuery] = useState(searchParams.get("query") || "");
 
 	function setSearchParam(param: string, value: string) {
+		setQuery(value);
 		setSearchParams((prev) => {
-			prev.set(param, value);
+			value ? prev.set(param, value) : prev.delete(param);
 			return prev;
 		});
 	}
@@ -17,9 +19,10 @@ const SearchField = () => {
 		<TextField.Root
 			name="query"
 			type="text"
-			defaultValue={query}
+			value={query}
 			aria-label="Search"
 			size="3"
+			onChange={(event) => setQuery(event.target.value)}
 		>
 			<TextField.Slot>
 				<Search height="16" width="16" />

@@ -33,6 +33,7 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 };
 
 const LinkRep = ({ link }: LinkRepProps) => {
+	if (!link) return null;
 	const fetcher = useFetcher();
 	const url = new URL(link.url);
 	if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
