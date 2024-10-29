@@ -125,22 +125,26 @@ const Links = () => {
 
 	function setupIntersectionObserver() {
 		const $form = formRef.current;
+		console.log("found form in intersection observer", $form);
 		if (!$form) return;
 		const debouncedSubmit = debounce(submitForm, 1000, {
 			isImmediate: true,
 		});
 		const observer = new IntersectionObserver((entries) => {
 			if (entries[0].isIntersecting) {
+				console.log("intersection observer is intersecting");
 				debouncedSubmit();
 				observer.unobserve($form);
 			}
 		});
 		observer.observe($form);
 		setObserver(observer);
+		console.log("set observer", observer);
 	}
 
 	function submitForm() {
 		const $form = formRef.current;
+		console.log("submitting form", $form);
 		if (!$form) return;
 		fetcher.submit($form, { preventScrollReset: true });
 		setNextPage(nextPage + 1);
