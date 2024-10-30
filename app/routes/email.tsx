@@ -44,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return data(
+		return json(
 			{
 				result: submission.reply(),
 			},

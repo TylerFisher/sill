@@ -1,4 +1,4 @@
-import type { HeadersFunction } from "@vercel/remix";
+import { type HeadersFunction, json } from "@vercel/remix";
 import { createOAuthClient } from "~/server/oauth/client";
 
 export const headers: HeadersFunction = () => ({
@@ -8,5 +8,5 @@ export const headers: HeadersFunction = () => ({
 
 export const loader = async () => {
 	const oauthClient = await createOAuthClient();
-	return oauthClient.clientMetadata;
+	return json(oauthClient.clientMetadata);
 };

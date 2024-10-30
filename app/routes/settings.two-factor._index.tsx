@@ -1,6 +1,7 @@
 import type { VerificationTypes } from "~/routes/accounts.verify";
 import {
 	redirect,
+	json,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 } from "@vercel/remix";
@@ -25,7 +26,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		),
 		columns: { id: true },
 	});
-	return { is2FAEnabled: Boolean(existingVerification) };
+	return json({ is2FAEnabled: Boolean(existingVerification) });
 }
 
 export async function action({ request }: ActionFunctionArgs) {

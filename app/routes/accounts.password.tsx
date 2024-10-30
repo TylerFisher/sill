@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	data,
+	json,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	redirect,
@@ -64,7 +64,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		),
 	});
 	if (submission.status !== "success") {
-		return data(
+		return json(
 			{
 				result: submission.reply({
 					hideFields: ["currentPassword", "newPassword", "confirmNewPassword"],

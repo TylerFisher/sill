@@ -51,7 +51,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 	if (submission.status !== "success") {
 		// If validation fails, return errors
-		return data(
+		return json(
 			{ result: submission.reply() },
 			{
 				status: submission.status === "error" ? 400 : 200,
@@ -74,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (response.error) {
-		return data(
+		return json(
 			{
 				result: submission.reply({ formErrors: [response.error.message] }),
 			},

@@ -2,7 +2,7 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
-	data,
+	json,
 	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
@@ -52,7 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		schema: ResetPasswordSchema,
 	});
 	if (submission.status !== "success") {
-		return data(
+		return json(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);

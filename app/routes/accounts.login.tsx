@@ -2,7 +2,7 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Button, Flex, Text, Heading } from "@radix-ui/themes";
 import {
-	data,
+	json,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	type MetaFunction,
@@ -58,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	});
 
 	if (submission.status !== "success" || !submission.value.session) {
-		return data(
+		return json(
 			{ result: submission.reply({ hideFields: ["password"] }) },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);

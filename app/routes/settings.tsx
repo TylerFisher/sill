@@ -1,5 +1,5 @@
 import { invariantResponse } from "@epic-web/invariant";
-import type { LoaderFunctionArgs } from "@vercel/remix";
+import { type LoaderFunctionArgs, json } from "@vercel/remix";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import Layout from "~/components/nav/Layout";
@@ -15,7 +15,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		where: eq(user.id, userId),
 	});
 	invariantResponse(existingUser, "User not found", { status: 404 });
-	return { user: existingUser };
+	return json({ user: existingUser });
 }
 
 export default function EditUserProfile() {

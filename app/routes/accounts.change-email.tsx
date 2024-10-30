@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	data,
+	json,
 	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
@@ -42,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const params = new URLSearchParams({ redirectTo: request.url });
 		throw redirect(`/login?${params}`);
 	}
-	return { user: existingUser };
+	return json({ user: existingUser });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -65,7 +65,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	});
 
 	if (submission.status !== "success") {
-		return data(
+		return json(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);
@@ -92,7 +92,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			},
 		});
 	}
-	return data(
+	return json(
 		{ result: submission.reply({ formErrors: [response.error.message] }) },
 		{ status: 500 },
 	);
