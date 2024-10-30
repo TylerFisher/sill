@@ -58,22 +58,22 @@ export function installAndLockGlobals() {
 	/* @vercel/remix doesn't set duplex when initializing a steaming body
      see: https://github.com/vercel/remix/blob/325c03d4c395b3c48aee88b1574c4688ee59251e/packages/vercel-remix/server.ts#L83-L94
    */
-	class PatchedRequest extends Request {
-		constructor(input: RequestInfo | URL, init: RequestInit = {}) {
-			let initPatched = init;
-			if (
-				init.body &&
-				init.body instanceof IncomingMessage &&
-				init.duplex === undefined
-			) {
-				initPatched = {
-					...init,
-					duplex: "half",
-				};
-			}
-			super(input, initPatched);
-		}
-	}
+	// class PatchedRequest extends Request {
+	// 	constructor(input: RequestInfo | URL, init: RequestInit = {}) {
+	// 		let initPatched = init;
+	// 		if (
+	// 			init.body &&
+	// 			init.body instanceof IncomingMessage &&
+	// 			init.duplex === undefined
+	// 		) {
+	// 			initPatched = {
+	// 				...init,
+	// 				duplex: "half",
+	// 			};
+	// 		}
+	// 		super(input, initPatched);
+	// 	}
+	// }
 
 	// Ignore future changes to these properties
 	Object.defineProperties(global, {
