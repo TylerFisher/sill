@@ -89,25 +89,28 @@ export const getBlueskyTimeline = async (userId: string) => {
 			: new Date(Date.now() - ONE_DAY_MS);
 
 		let reachedEnd = false;
-		let newPosts = timeline.filter((item) => {
-			if (item.post.author.handle === account?.handle) return false;
+		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
+		for (const item of timeline) {
+			if (item.post.author.handle === account?.handle) continue;
 			if (
 				AppBskyFeedDefs.isReasonRepost(item.reason) &&
 				item.reason.by.handle === account?.handle
 			)
-				return false;
+				continue;
 
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
 			if (postDate <= checkDate) {
 				reachedEnd = true;
+				break;
 			}
-			return postDate > checkDate;
-		});
+			newPosts.push(item);
+		}
 
-		if (!reachedEnd) {
-			newPosts = newPosts.concat(await getTimeline(response.data.cursor));
+		if (!reachedEnd && response.data.cursor) {
+			const nextPosts = await getTimeline(response.data.cursor);
+			newPosts.push(...nextPosts);
 		}
 		return newPosts;
 	}

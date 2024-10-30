@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "NODE_ENV=production remix vite:build",
-    "dev": "NODE_ENV=development remix vite:dev",
+    "dev": "NODE_ENV=development remix vite:dev --host",
     "generate-secrets": "sh ./scripts/generate-secrets.sh",
     "lint": "biome check",
     "start": "NODE_ENV=production node ./build/server/index.js",
