@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { emailSettings } from "~/drizzle/schema.server";
 import {
 	Form,
+	json,
 	useActionData,
 	useSearchParams,
 	Link,
@@ -32,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		where: eq(emailSettings?.userId, userId),
 	});
 
-	return { currentSettings };
+	return json({ currentSettings });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
