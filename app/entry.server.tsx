@@ -4,8 +4,8 @@ import { installAndLockGlobals } from "./single-fetch-compat";
 
 installAndLockGlobals();
 
-export const streamTimeout = 10_000;
-const ABORT_DELAY = 15_000;
+export const streamTimeout = 60_000;
+const ABORT_DELAY = 70_000;
 
 export default async function (
 	request: Request,
