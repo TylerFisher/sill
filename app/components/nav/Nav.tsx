@@ -24,7 +24,7 @@ const Nav = () => {
 		},
 		{
 			to: "/moderation",
-			label: "Moderation",
+			label: "Mute",
 			icon: <MessageSquareOff className={styles["nav-list-item-icon"]} />,
 		},
 		{

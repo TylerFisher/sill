@@ -112,9 +112,9 @@ const MutePhraseSettings = () => {
 	return (
 		<Layout>
 			<PageHeading
-				title="Moderation"
+				title="Mute settings"
 				dek="Mute phrases in order to keep any links, posts, or accounts with
-						these phrases from appearing in your timeline."
+						these phrases from appearing in your timeline. You can also mute domains or account handles."
 			/>
 			{data.phrases.length > 0 && (
 				<Box mb="2">
