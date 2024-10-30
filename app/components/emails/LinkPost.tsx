@@ -43,7 +43,7 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 					</Row>
 				</Section>
 			</Link>
-			{uniqueActors.map((actor, i) => (
+			{uniqueActors.slice(0, 3).map((actor, i) => (
 				<Img
 					src={actor}
 					loading="lazy"
