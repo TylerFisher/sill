@@ -7,8 +7,6 @@ export function installAndLockGlobals() {
 		return;
 	}
 
-	installGlobals({ nativeFetch: true });
-
 	const File = global.File;
 	const Headers = global.Headers;
 	const Request = global.Request;
@@ -76,44 +74,44 @@ export function installAndLockGlobals() {
 	// }
 
 	// Ignore future changes to these properties
-	Object.defineProperties(global, {
-		File: {
-			get() {
-				return File;
-			},
-			set() {},
-		},
-		Headers: {
-			get() {
-				return Headers;
-			},
-			set() {},
-		},
-		Request: {
-			get() {
-				return Request;
-			},
-			set() {},
-		},
-		Response: {
-			get() {
-				return Response;
-			},
-			set() {},
-		},
-		fetch: {
-			get() {
-				return fetch;
-			},
-			set() {},
-		},
-		FormData: {
-			get() {
-				return FormData;
-			},
-			set() {},
-		},
-	});
+	// Object.defineProperties(global, {
+	// 	File: {
+	// 		get() {
+	// 			return File;
+	// 		},
+	// 		set() {},
+	// 	},
+	// 	Headers: {
+	// 		get() {
+	// 			return Headers;
+	// 		},
+	// 		set() {},
+	// 	},
+	// 	Request: {
+	// 		get() {
+	// 			return Request;
+	// 		},
+	// 		set() {},
+	// 	},
+	// 	Response: {
+	// 		get() {
+	// 			return Response;
+	// 		},
+	// 		set() {},
+	// 	},
+	// 	fetch: {
+	// 		get() {
+	// 			return fetch;
+	// 		},
+	// 		set() {},
+	// 	},
+	// 	FormData: {
+	// 		get() {
+	// 			return FormData;
+	// 		},
+	// 		set() {},
+	// 	},
+	// });
 
 	// @ts-ignore
 	global.__installedAndLocked = true;
