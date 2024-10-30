@@ -13,11 +13,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	if (typeof handle !== "string") {
 		throw new Error("Invalid handle");
 	}
-	const did = await resolver.resolve(handle);
-	if (!did) {
-		throw new Error("Failed to resolve handle");
-	}
-	const state = JSON.stringify({ userId, did });
+	const state = JSON.stringify({ userId, handle });
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
@@ -29,6 +25,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		if (error instanceof OAuthResponseError) {
 			const url = await oauthClient.authorize(handle, {
 				scope: "atproto transition:generic",
+				state,
 			});
 			return redirect(url.toString());
 		}
