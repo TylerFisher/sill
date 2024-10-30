@@ -42,9 +42,8 @@ export const createOAuthClient = async () => {
 			dpop_bound_access_tokens: true,
 		},
 		keyset: [privateKey],
-		plcDirectoryUrl: "https://plc.directory",
 		// @ts-expect-error
-		handleResolver: "https://public.api.bsky.app",
+		handleResolver: "https://bsky.social",
 		stateStore: new StateStore(),
 		sessionStore: new SessionStore(),
 		requestLock,
