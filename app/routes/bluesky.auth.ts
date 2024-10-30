@@ -6,6 +6,8 @@ import { HandleResolver } from "@atproto/identity";
 
 const resolver = new HandleResolver();
 
+export const config = { runtime: "edge" };
+
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
 	const data = await request.formData();
@@ -20,18 +22,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const state = JSON.stringify({ userId, did });
 	const oauthClient = await createOAuthClient();
 	try {
-		const url = await oauthClient.authorize(did, {
+		const url = await oauthClient.authorize(handle, {
 			scope: "atproto transition:generic",
 			state,
 		});
 		return redirect(url.toString());
 	} catch (error) {
 		if (error instanceof OAuthResponseError) {
-			const url = await oauthClient.authorize(did, {
+			const url = await oauthClient.authorize(handle, {
 				scope: "atproto transition:generic",
 			});
 			return redirect(url.toString());
 		}
-		throw error;
 	}
 };
