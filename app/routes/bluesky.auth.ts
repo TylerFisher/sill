@@ -6,8 +6,6 @@ import { HandleResolver } from "@atproto/identity";
 
 const resolver = new HandleResolver();
 
-export const config = { runtime: "edge" };
-
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
 	const data = await request.formData();
