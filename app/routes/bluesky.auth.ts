@@ -32,5 +32,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			});
 			return redirect(url.toString());
 		}
+		throw error;
 	}
 };
