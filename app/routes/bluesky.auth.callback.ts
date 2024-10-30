@@ -28,8 +28,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					new URL(request.url).searchParams,
 				);
 				oauthSession = session.session;
-			} else {
-				throw error;
 			}
 		}
 

@@ -44,22 +44,6 @@ export const createOAuthClient = async () => {
 		keyset: [privateKey],
 		stateStore: new StateStore(),
 		sessionStore: new SessionStore(),
-		requestLock,
 	});
 	return oauthClient;
-};
-
-const requestLock: RuntimeLock = async (key, fn) => {
-	// 30 seconds should be enough. Since we will be using one lock per user id
-	// we can be quite liberal with the lock duration here.
-	const lock = new Lock({
-		id: key,
-		lease: 30000,
-		redis: Redis.fromEnv(),
-	});
-	try {
-		return await fn();
-	} finally {
-		await lock.release();
-	}
 };
