@@ -3,6 +3,10 @@ import { filterLinkOccurrences } from "~/utils/links.server";
 import { getUserCacheKey } from "~/utils/redis.server";
 import { Redis } from "@upstash/redis";
 
+export const config = {
+	maxDuration: 300,
+};
+
 export const loader = async () => {
 	const users = await db.query.user.findMany();
 	const updatedData = await Promise.all(

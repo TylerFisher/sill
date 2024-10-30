@@ -36,6 +36,10 @@ import { uuidv7 } from "uuidv7-js";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
+export const config = {
+	maxDuration: 300,
+};
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
 
