@@ -2,13 +2,14 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 import EmailLayout from "~/components/emails/Layout";
 import EmailHeading from "~/components/emails/Heading";
 import LinkPost from "~/components/emails/LinkPost";
-import { Hr } from "@react-email/components";
+import { Button, Hr, Text } from "@react-email/components";
 
 interface TopLinksProps {
-	links: [string, MostRecentLinkPosts[]][];
+	links: MostRecentLinkPosts[];
+	name: string | null;
 }
 
-const TopLinks = ({ links }: TopLinksProps) => {
+const TopLinks = ({ links, name }: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -19,12 +20,19 @@ const TopLinks = ({ links }: TopLinksProps) => {
 	return (
 		<EmailLayout preview="The top links from across your network">
 			<EmailHeading>Your Top Links for {today}</EmailHeading>
-			{links.map(([link, linkPosts], i) => (
+			<Text style={lede}>
+				Hello{name ? ` ${name}` : ""}, here are your top ten links from the past
+				24 hours across your social networks.
+			</Text>
+			{links.map((linkPost, i) => (
 				<>
-					<LinkPost key={link} linkPosts={linkPosts} />
+					<LinkPost key={linkPost.link?.url} linkPost={linkPost} />
 					{i < links.length - 1 && <Hr style={hr} />}
 				</>
 			))}
+			<Button href="https://sill.social/links" style={button}>
+				See all links on Sill
+			</Button>
 		</EmailLayout>
 	);
 };
@@ -33,6 +41,19 @@ const hr = {
 	margin: "40px 0",
 	border: "none",
 	borderTop: "1px solid #D9D9E0",
+};
+
+const button = {
+	margin: "40px 0",
+	borderRadius: "0.5em",
+	padding: "12px 24px",
+	backgroundColor: "#9E6C00",
+	color: "#FFFFFF",
+};
+
+const lede = {
+	fontSize: "18px",
+	marginBottom: "20px",
 };
 
 export default TopLinks;

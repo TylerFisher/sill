@@ -38,7 +38,7 @@ export const loader = async () => {
 				return sendEmail({
 					to: emailUser.email,
 					subject: "Your top links for today",
-					react: <TopLinks links={links} />,
+					react: <TopLinks links={links} name={emailUser.name} />,
 				});
 			}),
 	);

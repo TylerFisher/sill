@@ -10,13 +10,14 @@ import {
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface LinkPostProps {
-	linkPosts: MostRecentLinkPosts[];
+	linkPost: MostRecentLinkPosts;
 }
 
-const LinkPost = ({ linkPosts }: LinkPostProps) => {
-	const link = linkPosts[0].link;
-	const allActors = linkPosts.map((l) =>
-		l.post.reposter ? l.post.reposter.avatarUrl : l.post.actor.avatarUrl,
+const LinkPost = ({ linkPost }: LinkPostProps) => {
+	if (!linkPost.link || !linkPost.posts) return null;
+	const link = linkPost.link;
+	const allActors = linkPost.posts.map((l) =>
+		l.reposter ? l.reposter.avatarUrl : l.actor.avatarUrl,
 	);
 	const uniqueActors = [...new Set(allActors)].filter((a) => a !== null);
 
