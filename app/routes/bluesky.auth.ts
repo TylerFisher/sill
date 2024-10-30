@@ -2,9 +2,6 @@ import { type LoaderFunctionArgs, redirect } from "@vercel/remix";
 import { OAuthResponseError } from "@atproto/oauth-client-node";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
-import { HandleResolver } from "@atproto/identity";
-
-const resolver = new HandleResolver();
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
