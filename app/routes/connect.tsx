@@ -145,7 +145,7 @@ const Connect = () => {
 					<Heading size="5" mb="1">
 						Bluesky
 					</Heading>
-					<Form action="/bluesky/auth" method="POST">
+					<Form action="/bluesky/auth" method="GET">
 						<TextField.Root
 							name="handle"
 							placeholder="Enter your Bluesky handle (e.g. tyler.bsky.social)"
