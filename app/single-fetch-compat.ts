@@ -91,7 +91,7 @@ export function installAndLockGlobals() {
 		},
 		Request: {
 			get() {
-				return PatchedRequest;
+				return Request;
 			},
 			set() {},
 		},
