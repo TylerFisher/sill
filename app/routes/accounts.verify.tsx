@@ -7,7 +7,7 @@ import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { validateRequest } from "~/utils/verify.server";
 import Layout from "~/components/nav/Layout";
-import { Box, Button, Flex, Heading } from "@radix-ui/themes";
+import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
 import { OTPField } from "~/components/forms/OTPField";
 import ErrorList from "~/components/forms/ErrorList";
 
@@ -39,27 +39,6 @@ const Verify = () => {
 		searchParams.get(typeQueryParam),
 	);
 	const type = parseWithZodType.success ? parseWithZodType.data : null;
-	const checkEmail = (
-		<>
-			<h1 className="text-h1">Check your email</h1>
-			<p className="mt-3 text-body-md text-muted-foreground">
-				We've sent you a code to verify your email address.
-			</p>
-		</>
-	);
-	const headings: Record<VerificationTypes, React.ReactNode> = {
-		onboarding: checkEmail,
-		"reset-password": checkEmail,
-		"change-email": checkEmail,
-		"2fa": (
-			<>
-				<h1 className="text-h1">Check your 2FA app</h1>
-				<p className="mt-3 text-body-md text-muted-foreground">
-					Please enter your 2FA code to verify your identity.
-				</p>
-			</>
-		),
-	};
 	const [form, fields] = useForm({
 		id: "verify-form",
 		constraint: getZodConstraint(VerifySchema),
@@ -78,7 +57,11 @@ const Verify = () => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Sign up</Heading>
+				<Heading size="8">Check your email</Heading>
+				<Text as="p">
+					We sent an email to the address you signed up with to verify you own
+					that email. Please enter the code below.
+				</Text>
 			</Box>
 
 			<Form method="post" {...getFormProps(form)}>
