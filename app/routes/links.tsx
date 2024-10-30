@@ -167,12 +167,12 @@ const Links = () => {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
-			fetcher.data.links.then((links) => {
-				if (links.length > 0) {
-					setFetchedLinks(fetchedLinks.concat(links));
-					setupIntersectionObserver();
-				}
-			});
+			// @ts-ignore-error
+			if (fetcher.data.links.length > 0) {
+				// @ts-ignore-error
+				setFetchedLinks(fetchedLinks.concat(fetcher.data.links));
+				setupIntersectionObserver();
+			}
 		}
 	}, [fetcher, fetchedLinks.concat]);
 
