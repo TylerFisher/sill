@@ -2,6 +2,9 @@ import { type LoaderFunctionArgs, redirect } from "@vercel/remix";
 import { OAuthResponseError } from "@atproto/oauth-client-node";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
+import { HandleResolver } from "@atproto/identity";
+
+const resolver = new HandleResolver();
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -10,17 +13,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (typeof handle !== "string") {
 		throw new Error("Invalid handle");
 	}
-	const state = JSON.stringify({ userId, handle });
+	const did = await resolver.resolve(handle);
+	if (!did) {
+		throw new Error("couldn't resolve handle");
+	}
+	const state = JSON.stringify({ userId, did });
 	const oauthClient = await createOAuthClient();
 	try {
-		const url = await oauthClient.authorize(handle, {
+		const url = await oauthClient.authorize(did, {
 			scope: "atproto transition:generic",
 			state,
 		});
 		return redirect(url.toString());
 	} catch (error) {
 		if (error instanceof OAuthResponseError) {
-			const url = await oauthClient.authorize(handle, {
+			const url = await oauthClient.authorize(did, {
 				scope: "atproto transition:generic",
 				state,
 			});

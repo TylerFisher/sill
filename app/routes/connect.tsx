@@ -2,6 +2,7 @@ import {
 	type MetaFunction,
 	type LoaderFunctionArgs,
 	redirect,
+	json,
 } from "@vercel/remix";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
@@ -46,7 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return { user: existingUser };
+	return json({ user: existingUser });
 };
 
 const Connect = () => {

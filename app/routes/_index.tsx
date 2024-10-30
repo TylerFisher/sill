@@ -1,4 +1,8 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@vercel/remix";
+import {
+	json,
+	type LoaderFunctionArgs,
+	type MetaFunction,
+} from "@vercel/remix";
 import { Box } from "@radix-ui/themes";
 import { requireAnonymous } from "~/utils/auth.server";
 import Hero from "~/components/marketing/Hero";
@@ -7,7 +11,7 @@ export const meta: MetaFunction = () => [{ title: "Sill" }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireAnonymous(request);
-	return {};
+	return json({});
 };
 
 const Index = () => {

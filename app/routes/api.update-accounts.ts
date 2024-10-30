@@ -2,6 +2,7 @@ import { db } from "~/drizzle/db.server";
 import { filterLinkOccurrences } from "~/utils/links.server";
 import { getUserCacheKey } from "~/utils/redis.server";
 import { Redis } from "@upstash/redis";
+import { json } from "@vercel/remix";
 
 export const config = {
 	maxDuration: 300,
@@ -17,7 +18,7 @@ export const loader = async () => {
 			});
 			const redis = Redis.fromEnv();
 			redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
-			return { ...user, linkCount };
+			return json({ ...user, linkCount });
 		}),
 	);
 
