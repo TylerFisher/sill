@@ -20,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const state = JSON.stringify({ userId, did });
 	const oauthClient = await createOAuthClient();
 	try {
-		const url = await oauthClient.authorize(did, {
+		const url = await oauthClient.authorize(handle, {
 			scope: "atproto transition:generic",
 			state,
 		});
