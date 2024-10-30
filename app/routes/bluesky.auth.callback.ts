@@ -35,11 +35,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				)
 			) {
 				const client = await createOAuthClient();
-				const { userId, handle } = JSON.parse(error.state || "");
-				const url = await client.authorize(handle, {
+				const { userId, did } = JSON.parse(error.state || "");
+				const url = await client.authorize(did, {
 					state: JSON.stringify({
 						userId,
-						handle,
+						did,
 					}),
 				});
 
