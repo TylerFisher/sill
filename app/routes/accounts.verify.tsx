@@ -59,7 +59,7 @@ const Verify = () => {
 			<Box mb="5">
 				<Heading size="8">Check your email</Heading>
 				<Text as="p">
-					We sent an email to the address you signed up with to verify you own
+					We sent an email to {fields[targetQueryParam].value} to verify you own
 					that email. Please enter the code below.
 				</Text>
 			</Box>
