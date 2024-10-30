@@ -76,6 +76,8 @@ export const getMastodonTimeline = async (userId: string) => {
 		accessToken: account.accessToken,
 	});
 
+	const profile = await client.v1.accounts.verifyCredentials();
+
 	const timeline: mastodon.v1.Status[] = [];
 	let ended = false;
 	for await (const statuses of client.v1.timelines.home.list({
@@ -84,6 +86,9 @@ export const getMastodonTimeline = async (userId: string) => {
 	})) {
 		if (ended) break;
 		for await (const status of statuses) {
+			if (status.account.username === profile.username) continue;
+			if (status.reblog?.account.username === profile.username) continue;
+
 			// Flipboard is real weird about timestamps
 			if (
 				new Date(status.createdAt) <= yesterday &&

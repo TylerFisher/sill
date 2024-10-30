@@ -90,6 +90,13 @@ export const getBlueskyTimeline = async (userId: string) => {
 
 		let reachedEnd = false;
 		let newPosts = timeline.filter((item) => {
+			if (item.post.author.handle === account?.handle) return false;
+			if (
+				AppBskyFeedDefs.isReasonRepost(item.reason) &&
+				item.reason.by.handle === account?.handle
+			)
+				return false;
+
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
