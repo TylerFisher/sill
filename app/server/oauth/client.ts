@@ -3,7 +3,6 @@ import { NodeOAuthClient, type RuntimeLock } from "@atproto/oauth-client-node";
 import { SessionStore, StateStore } from "./storage";
 import { Redis } from "@upstash/redis";
 import { Lock } from "@upstash/lock";
-import { HandleResolver } from "@atproto/identity";
 
 let oauthClient: NodeOAuthClient | null = null;
 const isProduction = process.env.NODE_ENV === "production";
@@ -43,8 +42,6 @@ export const createOAuthClient = async () => {
 			dpop_bound_access_tokens: true,
 		},
 		keyset: [privateKey],
-		// @ts-expect-error
-		handleResolver: new HandleResolver(),
 		stateStore: new StateStore(),
 		sessionStore: new SessionStore(),
 		requestLock,

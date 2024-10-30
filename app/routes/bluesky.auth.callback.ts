@@ -28,22 +28,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					new URL(request.url).searchParams,
 				);
 				oauthSession = session.session;
-			} else if (
-				error instanceof OAuthCallbackError &&
-				["login_required", "consent_required"].includes(
-					error.params.get("error") || "",
-				)
-			) {
-				const client = await createOAuthClient();
-				const { userId, handle } = JSON.parse(error.state || "");
-				const url = await client.authorize(handle, {
-					state: JSON.stringify({
-						userId,
-						handle,
-					}),
-				});
-
-				return redirect(url.toString());
 			} else {
 				throw error;
 			}
