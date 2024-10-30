@@ -14,7 +14,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
-			prompt: "none",
 			scope: "atproto transition:generic",
 			state,
 		});
