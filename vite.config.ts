@@ -24,7 +24,8 @@ export default defineConfig({
 						v3_throwAbortReason: true,
 						v3_singleFetch: true,
 					},
-					presets: [vercelPreset()],
+					presets:
+						process.env.NODE_ENV === "production" ? [vercelPreset()] : [],
 				})
 			: react(),
 		tsconfigPaths(),
