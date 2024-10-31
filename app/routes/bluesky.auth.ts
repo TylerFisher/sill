@@ -17,19 +17,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (!did) {
 		throw new Error("couldn't resolve handle");
 	}
-	const state = JSON.stringify({ userId, did });
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(did, {
 			scope: "atproto transition:generic",
-			state,
 		});
 		return redirect(url.toString());
 	} catch (error) {
 		if (error instanceof OAuthResponseError) {
 			const url = await oauthClient.authorize(did, {
 				scope: "atproto transition:generic",
-				state,
 			});
 			return redirect(url.toString());
 		}
