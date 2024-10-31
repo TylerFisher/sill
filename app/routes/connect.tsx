@@ -156,6 +156,24 @@ const Connect = () => {
 							<TextField.Slot>@</TextField.Slot>
 						</TextField.Root>
 						<Button type="submit">Connect</Button>
+						<Callout.Root mt="4">
+							<Callout.Icon>
+								<CircleAlert width="18" height="18" />
+							</Callout.Icon>
+							<Callout.Text>
+								When you reach the login screen, your account name will appear
+								as a string that begins with <code>did:</code>. This is your{" "}
+								<RLink
+									href="https://atproto.com/specs/did"
+									target="_blank"
+									rel="noreferrer"
+								>
+									Decentralized Identifier
+								</RLink>
+								, which Bluesky uses as its account identifier. Your normal
+								password will work.
+							</Callout.Text>
+						</Callout.Root>
 					</Form>
 				</Card>
 			)}
