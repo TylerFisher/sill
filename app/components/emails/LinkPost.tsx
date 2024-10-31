@@ -27,7 +27,7 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 				<Section style={wrapper}>
 					{link.imageUrl && (
 						<Row>
-							<Column>
+							<Column style={imgWrapper}>
 								<Img src={link.imageUrl} style={img} />
 							</Column>
 						</Row>
@@ -71,12 +71,17 @@ const row = {
 	padding: "12px",
 };
 
+const imgWrapper = {
+	width: "100%",
+	aspectRatio: "16 / 9",
+};
+
 const img = {
 	width: "100%",
 	height: "auto",
 	borderTopLeftRadius: "12px",
 	borderTopRightRadius: "12px",
-	aspectRatio: "16 / 9",
+	objectFit: "cover" as const,
 };
 
 const host = {
