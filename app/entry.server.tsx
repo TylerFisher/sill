@@ -1,26 +1,124 @@
-import { type EntryContext, handleRequest } from "@vercel/remix";
+/**
+ * By default, Remix will handle generating the HTTP Response for you.
+ * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx remix reveal` ✨
+ * For more information, see https://remix.run/file-conventions/entry.server
+ */
+import { PassThrough } from "node:stream";
+import type { EntryContext } from "@remix-run/node";
+import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
-
-export const streamTimeout = 60_000;
-const ABORT_DELAY = 70_000;
-
-export default async function (
+import { isbot } from "isbot";
+import { renderToPipeableStream } from "react-dom/server";
+const ABORT_DELAY = 30_000;
+export default function handleRequest(
 	request: Request,
 	responseStatusCode: number,
 	responseHeaders: Headers,
 	remixContext: EntryContext,
 ) {
-	const remixServer = (
-		<RemixServer
-			abortDelay={ABORT_DELAY}
-			context={remixContext}
-			url={request.url}
-		/>
-	);
-	return handleRequest(
-		request,
-		responseStatusCode,
-		responseHeaders,
-		remixServer,
-	);
+	return isbot(request.headers.get("user-agent") || "")
+		? handleBotRequest(
+				request,
+				responseStatusCode,
+				responseHeaders,
+				remixContext,
+			)
+		: handleBrowserRequest(
+				request,
+				responseStatusCode,
+				responseHeaders,
+				remixContext,
+			);
+}
+function handleBotRequest(
+	request: Request,
+	responseStatusCode: number,
+	responseHeaders: Headers,
+	remixContext: EntryContext,
+) {
+	return new Promise((resolve, reject) => {
+		let shellRendered = false;
+		const { pipe, abort } = renderToPipeableStream(
+			<RemixServer
+				context={remixContext}
+				url={request.url}
+				abortDelay={ABORT_DELAY}
+			/>,
+			{
+				onAllReady() {
+					shellRendered = true;
+					const body = new PassThrough();
+					const stream = createReadableStreamFromReadable(body);
+					responseHeaders.set("Content-Type", "text/html");
+					resolve(
+						new Response(stream, {
+							headers: responseHeaders,
+							status: responseStatusCode,
+						}),
+					);
+					pipe(body);
+				},
+				onShellError(error: unknown) {
+					reject(error);
+				},
+				onError(error: unknown) {
+					// biome-ignore lint/style/noParameterAssign: remix just does this
+					responseStatusCode = 500;
+					// Log streaming rendering errors from inside the shell.  Don't log
+					// errors encountered during initial shell rendering since they'll
+					// reject and get logged in handleDocumentRequest.
+					if (shellRendered) {
+						console.error(error);
+					}
+				},
+			},
+		);
+		setTimeout(abort, ABORT_DELAY);
+	});
+}
+function handleBrowserRequest(
+	request: Request,
+	responseStatusCode: number,
+	responseHeaders: Headers,
+	remixContext: EntryContext,
+) {
+	return new Promise((resolve, reject) => {
+		let shellRendered = false;
+		const { pipe, abort } = renderToPipeableStream(
+			<RemixServer
+				context={remixContext}
+				url={request.url}
+				abortDelay={ABORT_DELAY}
+			/>,
+			{
+				onShellReady() {
+					shellRendered = true;
+					const body = new PassThrough();
+					const stream = createReadableStreamFromReadable(body);
+					responseHeaders.set("Content-Type", "text/html");
+					resolve(
+						new Response(stream, {
+							headers: responseHeaders,
+							status: responseStatusCode,
+						}),
+					);
+					pipe(body);
+				},
+				onShellError(error: unknown) {
+					reject(error);
+				},
+				onError(error: unknown) {
+					// biome-ignore lint/style/noParameterAssign: remix just does this
+					responseStatusCode = 500;
+					// Log streaming rendering errors from inside the shell.  Don't log
+					// errors encountered during initial shell rendering since they'll
+					// reject and get logged in handleDocumentRequest.
+					if (shellRendered) {
+						console.error(error);
+					}
+				},
+			},
+		);
+		setTimeout(abort, ABORT_DELAY);
+	});
 }

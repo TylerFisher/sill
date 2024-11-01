@@ -1,0 +1,39 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Run every night at 2 AM UTC
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  STORE_NUMBER_OF_DAYS_BACKUP: 7 # Default value, can be overridden in repository secrets
+  POSTGRES_CONTAINER: postgres_db # New environment variable for the container name
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run backup script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            TIMESTAMP=$(date +"%Y%m%d%H%M")
+            BACKUP_DIR="$HOME/pg_snapshots"
+            BACKUP_FILE="${BACKUP_DIR}/postgres_backup_${TIMESTAMP}.sql"
+            STORE_NUMBER_OF_DAYS_BACKUP=${STORE_NUMBER_OF_DAYS_BACKUP:-7}
+
+            mkdir -p $BACKUP_DIR
+            if ! docker exec -t ${{ env.POSTGRES_CONTAINER }} pg_dumpall -c -U "${{ secrets.POSTGRES_USER }}" > "$BACKUP_FILE"; then
+              echo "Database backup failed. Please check the logs for more information."
+              exit 1
+            fi
+
+            find $BACKUP_DIR -type f -name "*.sql" -mtime "+$STORE_NUMBER_OF_DAYS_BACKUP" -delete
+            echo "Backup completed at $TIMESTAMP"
