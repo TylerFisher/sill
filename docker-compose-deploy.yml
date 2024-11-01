@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.1.2
+    image: traefik:v3.2.0
     command:
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -45,7 +45,7 @@ services:
         max-file: "6"
 
   db:
-    image: postgres:latest
+    image: postgres:alpine
     container_name: postgres_db
     ports:
       - "5433:5432"
@@ -79,7 +79,7 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN:-app.localhost}`)"
+      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN:-localhost}`)"
       - "traefik.http.routers.web.tls=${USE_SSL:-false}"
       - "traefik.http.routers.web.tls.certresolver=myresolver"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
