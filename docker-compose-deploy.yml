@@ -89,29 +89,29 @@ services:
         max-size: "50m"
         max-file: "6"
 
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./dozzle/data:/data
-    networks:
-      - net
-    environment:
-      DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: simple
-    restart: always
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN:-dozzle.localhost}`)"
-      - "traefik.http.routers.dozzle.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
+  # dozzle:
+  #   image: amir20/dozzle:latest
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./dozzle/data:/data
+  #   networks:
+  #     - net
+  #   environment:
+  #     DOZZLE_NO_ANALYTICS: true
+  #     DOZZLE_AUTH_PROVIDER: simple
+  #   restart: always
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN:-dozzle.localhost}`)"
+  #     - "traefik.http.routers.dozzle.tls=${USE_SSL:-false}"
+  #     - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
+  #     - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+  #   healthcheck:
+  #     test: ["CMD", "/dozzle", "healthcheck"]
+  #     interval: 3s
+  #     timeout: 30s
+  #     retries: 5
+  #     start_period: 30s
 
 volumes:
   postgres_data:
