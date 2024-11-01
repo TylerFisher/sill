@@ -1,8 +1,11 @@
 import type { Processor } from "bullmq";
 import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
+import { connection } from "~/utils/redis.server";
 import { fetchLinkMetadata } from "~/utils/bluesky.server";
 import { filterLinkOccurrences } from "./links.server";
+
+const redis = connection();
 
 type AugmentedQueue<T> = Queue<T> & {
 	events: QueueEvents;
@@ -12,14 +15,6 @@ type RegisteredQueue = {
 	queueEvents: QueueEvents;
 	worker: Worker;
 };
-
-const redis = {
-	host: process.env.UPSTASH_REDIS_REST_URL?.split("https://")[1],
-	port: 6379,
-	password: process.env.UPSTASH_REDIS_REST_TOKEN,
-	tls: {},
-};
-
 declare global {
 	var __registeredQueues: Record<string, RegisteredQueue> | undefined;
 }
@@ -36,9 +31,7 @@ export function registerQueue<T>(
 	processor: Processor<T> | string,
 ) {
 	if (!registeredQueues[name]) {
-		const queue = new Queue(name, {
-			connection: redis,
-		});
+		const queue = new Queue(name, { connection: redis });
 		const queueEvents = new QueueEvents(name, {
 			connection: redis,
 		});

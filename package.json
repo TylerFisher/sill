@@ -8,7 +8,7 @@
     "dev": "NODE_ENV=development remix vite:dev --host",
     "generate-secrets": "sh ./scripts/generate-secrets.sh",
     "lint": "biome check",
-    "start": "NODE_ENV=production node ./build/server/index.js",
+    "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "test": "vitest"
   },
@@ -41,6 +41,7 @@
     "drizzle-orm": "^0.35.2",
     "input-otp": "^1.2.4",
     "ioredis": "^5.4.1",
+    "isbot": "^5.1.17",
     "javascript-time-ago": "^2.5.11",
     "lucide-react": "^0.453.0",
     "lz-string": "^1.5.0",
