@@ -71,7 +71,7 @@ services:
         max-file: "6"
 
   remix:
-    image: ghcr.io/tylerfisher/sill/remix:latest
+    image: ghcr.io/TylerFisher/sill/remix:latest
     env_file:
       - .env
     networks:
