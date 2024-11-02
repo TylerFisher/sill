@@ -16,7 +16,7 @@ const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
 	const reposters = group
 		.filter((l) => l.post.repostHandle !== l.post.actorHandle && l.reposter)
 		.map((l) => l.reposter)
-		.filter((l) => l !== null);
+		.filter((l) => l !== undefined);
 
 	return (
 		<Card key={post.id} mt="5" size="1">

@@ -1,13 +1,13 @@
 import { Button, Popover, Link, Text } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { MostRecentLinkPosts, PostReturn } from "~/utils/links.server";
 
 interface RepostActorProps {
-	actors: MostRecentLinkPosts["post"]["actor"][];
+	actors: PostReturn["actor"][];
 }
 
 interface SingleActorProps {
-	actor: MostRecentLinkPosts["post"]["actor"];
+	actor: PostReturn["actor"];
 }
 
 const SingleActor = ({ actor }: SingleActorProps) => (
