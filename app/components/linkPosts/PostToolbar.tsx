@@ -7,7 +7,7 @@ import {
 	Text,
 } from "@radix-ui/themes";
 import type { PostReturn } from "~/utils/links.server";
-import { Ellipsis, Copy, ExternalLink, Share } from "lucide-react";
+import { Ellipsis, Copy, ExternalLink, Share, Check } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { useEffect, useState } from "react";
@@ -48,15 +48,19 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 			<Box position="relative">
 				<IconButton aria-label="Copy URL" variant="ghost" size="1">
 					<CopyToClipboard text={post.url} onCopy={() => setCopied(true)}>
-						<Copy width="18" height="18" />
+						{copied ? (
+							<Check width="18" height="18" />
+						) : (
+							<Copy width="18" height="18" />
+						)}
 					</CopyToClipboard>
 				</IconButton>
 				{copied && (
 					<Text
 						style={{
 							position: "absolute",
-							top: "-2px",
-							left: "1.5em",
+							top: "-3.5px",
+							left: "1.8em",
 						}}
 					>
 						Copied!
