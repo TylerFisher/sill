@@ -15,6 +15,8 @@ import { useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
 import { ClientOnly } from "remix-utils/client-only";
 import Youtube from "react-youtube";
+import * as ReactTweet from "react-tweet";
+const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
@@ -32,12 +34,20 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 	);
 };
 
+const XEmbed = ({ url }: { url: URL }) => {
+	return <Tweet id={url.href.split("/").pop() || ""} />;
+};
+
 const LinkRep = ({ link }: LinkRepProps) => {
 	if (!link) return null;
 	const fetcher = useFetcher();
 	const url = new URL(link.url);
 	if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
 		return <YoutubeEmbed url={url} />;
+	}
+
+	if (url.hostname === "twitter.com" || url.hostname === "x.com") {
+		return <XEmbed url={url} />;
 	}
 
 	const host = url.host;

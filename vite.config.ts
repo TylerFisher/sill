@@ -30,6 +30,10 @@ export default defineConfig({
 	server: {
 		port: 3000,
 	},
+	ssr: {
+		target: "node",
+		noExternal: [/react-tweet.*/],
+	},
 	test: {
 		environment: "happy-dom",
 		// Additionally, this is to load ".env.test" during vitest
