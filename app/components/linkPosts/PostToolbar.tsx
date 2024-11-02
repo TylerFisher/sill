@@ -11,6 +11,7 @@ import { Ellipsis, Copy, ExternalLink, Share, Check } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { useEffect, useState } from "react";
+import ShareOpenly from "../icons/ShareOpenly";
 
 interface PostToolbarProps {
 	post: PostReturn["post"];
@@ -42,7 +43,7 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 					variant="ghost"
 					size="1"
 				>
-					<Share width="18" height="18" />
+					<ShareOpenly />
 				</IconButton>
 			</Link>
 			<Box position="relative">
