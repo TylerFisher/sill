@@ -47,6 +47,7 @@
     "react": "^18.2.0",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18.2.0",
+    "react-twitter-embed": "^4.0.4",
     "react-youtube": "^10.1.0",
     "remix-utils": "^7.7.0",
     "ts-debounce": "^4.0.0",
