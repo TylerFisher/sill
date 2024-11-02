@@ -61,7 +61,7 @@ jobs:
               print(f"Dockerfile for {service}: {dockerfile}")
               
               registry = os.environ['REGISTRY']
-              image_name = os.environ['IMAGE_NAME']
+              image_name = os.environ['IMAGE_NAME'].lower()
               
               build_cmd = f"docker build -t {registry}/{image_name}/{service}:latest -f {dockerfile} {context}"
               push_cmd = f"docker push {registry}/{image_name}/{service}:latest"
