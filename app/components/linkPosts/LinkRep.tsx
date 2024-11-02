@@ -36,11 +36,7 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 const TweetEmbed = ({ url }: { url: URL }) => {
 	return (
 		<Box mb="5" width="100%">
-			<ClientOnly>
-				{() => (
-					<TwitterTweetEmbed tweetId={url.pathname.split("/").pop() || ""} />
-				)}
-			</ClientOnly>
+			<TwitterTweetEmbed tweetId={url.pathname.split("/").pop() || ""} />
 		</Box>
 	);
 };
