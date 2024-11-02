@@ -77,7 +77,7 @@ services:
     environment:
       - NODE_ENV=production
     depends_on:
-      - postgres_db
+      - db
       - redis
       - traefik
     networks:
