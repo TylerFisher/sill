@@ -74,6 +74,8 @@ services:
     image: ghcr.io/tylerfisher/sill/remix:latest
     env_file:
       - .env
+    environment:
+      - NODE_ENV=production
     networks:
       - net
     restart: always
