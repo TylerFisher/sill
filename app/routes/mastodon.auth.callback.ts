@@ -1,4 +1,4 @@
-import { redirect, type LoaderFunctionArgs } from "@vercel/remix";
+import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { getAccessToken } from "~/utils/mastodon.server";
 import { getInstanceCookie } from "~/utils/session.server";
 import { getUserId } from "~/utils/auth.server";

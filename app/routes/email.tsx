@@ -3,7 +3,7 @@ import {
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	data,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { db } from "~/drizzle/db.server";
 import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
@@ -33,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		where: eq(emailSettings?.userId, userId),
 	});
 
-	return json({ currentSettings });
+	return data({ currentSettings });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -45,7 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply(),
 			},

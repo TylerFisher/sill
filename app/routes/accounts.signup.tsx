@@ -3,7 +3,7 @@ import {
 	type MetaFunction,
 	data,
 	redirect,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { Heading, Text, Button, Box, Flex } from "@radix-ui/themes";
 import { z } from "zod";
@@ -51,7 +51,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 	if (submission.status !== "success") {
 		// If validation fails, return errors
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{
 				status: submission.status === "error" ? 400 : 200,
@@ -74,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (response.error) {
-		return json(
+		return data(
 			{
 				result: submission.reply({ formErrors: [response.error.message] }),
 			},

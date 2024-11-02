@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { json, redirect } from "@vercel/remix";
+import { data, redirect } from "@remix-run/node";
 import { db } from "~/drizzle/db.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { resetPasswordEmailSessionKey } from "~/routes/accounts.reset-password";
@@ -25,7 +25,7 @@ export async function handleVerification({ submission }: VerifyFunctionArgs) {
 	// we don't want to say the user is not found if the email is not found
 	// because that would allow an attacker to check if an email is registered
 	if (!existingUser) {
-		return json(
+		return data(
 			{ result: submission.reply({ fieldErrors: { code: ["Invalid code"] } }) },
 			{ status: 400 },
 		);

@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, data } from "@vercel/remix";
+import { type ActionFunctionArgs, data } from "@remix-run/node";
 import { parseWithZod } from "@conform-to/zod";
 import { z } from "zod";
 import { requireUserId } from "~/utils/auth.server";
@@ -19,7 +19,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply(),
 			},

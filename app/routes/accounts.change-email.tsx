@@ -1,11 +1,11 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { z } from "zod";
 import {
@@ -42,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const params = new URLSearchParams({ redirectTo: request.url });
 		throw redirect(`/login?${params}`);
 	}
-	return json({ user: existingUser });
+	return { user: existingUser };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -65,7 +65,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);
@@ -92,7 +92,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			},
 		});
 	}
-	return json(
+	return data(
 		{ result: submission.reply({ formErrors: [response.error.message] }) },
 		{ status: 500 },
 	);

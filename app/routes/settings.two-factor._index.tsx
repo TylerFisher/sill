@@ -1,10 +1,9 @@
 import type { VerificationTypes } from "~/routes/accounts.verify";
 import {
 	redirect,
-	json,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
@@ -26,7 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		),
 		columns: { id: true },
 	});
-	return json({ is2FAEnabled: Boolean(existingVerification) });
+	return { is2FAEnabled: Boolean(existingVerification) };
 }
 
 export async function action({ request }: ActionFunctionArgs) {

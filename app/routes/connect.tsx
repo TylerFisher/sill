@@ -2,8 +2,7 @@ import {
 	type MetaFunction,
 	type LoaderFunctionArgs,
 	redirect,
-	json,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
@@ -20,10 +19,10 @@ import {
 	Link as RLink,
 } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
-import { mastodonAccount, user } from "~/drizzle/schema.server";
+import { user } from "~/drizzle/schema.server";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import { CircleAlert, Info } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Socials" },
@@ -47,7 +46,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return json({ user: existingUser });
+	return { user: existingUser };
 };
 
 const Connect = () => {

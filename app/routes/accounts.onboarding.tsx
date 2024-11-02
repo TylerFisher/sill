@@ -1,12 +1,12 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	redirect,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	type MetaFunction,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
@@ -77,7 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	});
 
 	if (submission.status !== "success" || !submission.value.session) {
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);

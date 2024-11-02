@@ -6,7 +6,7 @@ import {
 	ScrollRestoration,
 	useLoaderData,
 } from "@remix-run/react";
-import { json, type LoaderFunctionArgs } from "@vercel/remix";
+import { data, type LoaderFunctionArgs } from "@remix-run/node";
 import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
@@ -23,7 +23,7 @@ import { useTheme } from "./routes/resources.theme-switch";
 export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps();
 
-	return json({
+	return data({
 		requestInfo: {
 			hints: getHints(request),
 			origin: getDomainUrl(request),

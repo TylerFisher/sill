@@ -1,11 +1,11 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 	redirect,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import { Form, Link, useActionData } from "@remix-run/react";
 import { z } from "zod";
 import {
@@ -64,7 +64,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		),
 	});
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply({
 					hideFields: ["currentPassword", "newPassword", "confirmNewPassword"],

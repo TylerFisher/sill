@@ -1,4 +1,4 @@
-import { json, redirect } from "@vercel/remix";
+import { data, redirect } from "@remix-run/node";
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { z } from "zod";
@@ -201,7 +201,7 @@ export async function validateRequest(
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);

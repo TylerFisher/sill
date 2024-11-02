@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { json, redirect } from "@vercel/remix";
+import { data, redirect } from "@remix-run/node";
 import {
 	requireRecentVerification,
 	type VerifyFunctionArgs,
@@ -32,7 +32,7 @@ export async function handleVerification({
 	);
 	const newEmail = verifySession.get(newEmailAddressSessionKey);
 	if (!newEmail) {
-		return json(
+		return data(
 			{
 				result: submission.reply({
 					formErrors: [

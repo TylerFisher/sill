@@ -3,8 +3,7 @@ import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
-	defer,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import {
 	Form,
 	useLoaderData,
@@ -113,7 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		});
 	}
 
-	return defer({ cachedData, links, key: uuidv7() });
+	return { cachedData, links, key: uuidv7() };
 };
 
 const Links = () => {

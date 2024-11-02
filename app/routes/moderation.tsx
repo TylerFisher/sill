@@ -1,10 +1,10 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
-	json,
+	data,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
-} from "@vercel/remix";
+} from "@remix-run/node";
 import {
 	Form,
 	useActionData,
@@ -74,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	});
 
 	if (submission.status !== "success") {
-		return json(
+		return data(
 			{
 				result: submission.reply(),
 			},
@@ -90,7 +90,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		userId,
 	});
 
-	return json({
+	return data({
 		result: submission.reply(),
 	});
 };

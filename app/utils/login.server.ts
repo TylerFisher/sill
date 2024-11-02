@@ -1,5 +1,5 @@
 import { invariant } from "@epic-web/invariant";
-import { redirect } from "@vercel/remix";
+import { redirect } from "@remix-run/node";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
 import { getUserId, sessionKey } from "~/utils/auth.server";

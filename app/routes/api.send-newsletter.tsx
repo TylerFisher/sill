@@ -4,7 +4,6 @@ import { db } from "~/drizzle/db.server";
 import TopLinks from "~/emails/topLinks";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
-import { json } from "@vercel/remix";
 
 export const loader = async () => {
 	const scheduledEmails = await db.query.emailSettings.findMany();
@@ -43,5 +42,5 @@ export const loader = async () => {
 			}),
 	);
 
-	return json({ emailResponses });
+	return { emailResponses };
 };

@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, redirect } from "@vercel/remix";
+import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { OAuthResponseError } from "@atproto/oauth-client-node";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";

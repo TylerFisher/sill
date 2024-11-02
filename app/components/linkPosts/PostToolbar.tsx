@@ -1,12 +1,11 @@
 import { DropdownMenu, Flex, IconButton, Link } from "@radix-ui/themes";
-import type { SerializeFrom } from "@vercel/remix";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { PostReturn } from "~/utils/links.server";
 import { Ellipsis, Copy, ExternalLink, Share } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
 import CopyToClipboard from "react-copy-to-clipboard";
 
 interface PostToolbarProps {
-	post: SerializeFrom<MostRecentLinkPosts["post"]>;
+	post: PostReturn["post"];
 }
 
 const PostToolbar = ({ post }: PostToolbarProps) => {
