@@ -1,8 +1,6 @@
 import { JoseKey } from "@atproto/jwk-jose";
-import { NodeOAuthClient, type RuntimeLock } from "@atproto/oauth-client-node";
+import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import { SessionStore, StateStore } from "./storage";
-import { Redis } from "@upstash/redis";
-import { Lock } from "@upstash/lock";
 
 let oauthClient: NodeOAuthClient | null = null;
 const isProduction = process.env.NODE_ENV === "production";
