@@ -49,6 +49,7 @@ const button = {
 	padding: "12px 24px",
 	backgroundColor: "#9E6C00",
 	color: "#FFFFFF",
+	display: "block",
 };
 
 const lede = {
