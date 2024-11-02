@@ -76,6 +76,10 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+    depends_on:
+      - postgres_db
+      - redis
+      - traefik
     networks:
       - net
     restart: always
