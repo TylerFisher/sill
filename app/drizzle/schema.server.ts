@@ -25,7 +25,7 @@ export const linkPostToUser = pgTable(
 			.references(() => linkPost.id),
 		userId: uuid()
 			.notNull()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {
@@ -126,7 +126,7 @@ export const password = pgTable("password", {
 	hash: text().notNull(),
 	userId: uuid()
 		.notNull()
-		.references(() => user.id)
+		.references(() => user.id, { onDelete: "cascade" })
 		.unique(),
 });
 
@@ -140,7 +140,7 @@ export const session = pgTable(
 			.notNull(),
 		userId: uuid()
 			.notNull()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {
@@ -156,7 +156,7 @@ export const emailSettings = pgTable("email_settings", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid()
 		.notNull()
-		.references(() => user.id)
+		.references(() => user.id, { onDelete: "cascade" })
 		.unique(),
 	scheduledTime: time().notNull(),
 });
@@ -186,7 +186,7 @@ export const mastodonAccount = pgTable("mastodon_account", {
 	mostRecentPostId: text(),
 	userId: uuid()
 		.notNull()
-		.references(() => user.id),
+		.references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const blueskyAccount = pgTable(
@@ -199,7 +199,7 @@ export const blueskyAccount = pgTable(
 		mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
 		userId: uuid()
 			.notNull()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {
@@ -278,7 +278,7 @@ export const emailToken = pgTable(
 		userId: uuid()
 			.notNull()
 			.unique()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {
@@ -332,7 +332,7 @@ export const mutePhrase = pgTable(
 			.notNull(),
 		userId: uuid()
 			.notNull()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {

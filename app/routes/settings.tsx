@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { DataList } from "@radix-ui/themes";
+import { DataList, AlertDialog } from "@radix-ui/themes";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
@@ -42,16 +42,77 @@ export default function EditUserProfile() {
 						<DataList.Value>{signedUpOn}</DataList.Value>
 					</DataList.Item>
 				</DataList.Root>
-				<Flex mt="4" gap="4" wrap="wrap">
-					<Form method="get" action="/accounts/logout">
-						<Button type="submit">Log out</Button>
-					</Form>
-					<Link to="/accounts/change-email">
-						<Button type="submit">Change your email</Button>
-					</Link>
-					<Link to="/accounts/password">
-						<Button type="submit">Change your password</Button>
-					</Link>
+				<Heading as="h5" size="4" mt="6" mb="2">
+					Account actions
+				</Heading>
+				<Flex mt="4" gap="4" direction="column">
+					<Box width="100%">
+						<Form method="get" action="/accounts/logout">
+							<Button
+								type="submit"
+								variant="soft"
+								style={{
+									width: "100%",
+								}}
+							>
+								Log out
+							</Button>
+						</Form>
+					</Box>
+					<Box>
+						<Link to="/accounts/change-email">
+							<Button
+								type="submit"
+								variant="soft"
+								style={{
+									width: "100%",
+								}}
+							>
+								Change your email
+							</Button>
+						</Link>
+					</Box>
+					<Box>
+						<Link to="/accounts/password">
+							<Button
+								type="submit"
+								variant="soft"
+								style={{
+									width: "100%",
+								}}
+							>
+								Change your password
+							</Button>
+						</Link>
+					</Box>
+
+					<AlertDialog.Root>
+						<AlertDialog.Trigger>
+							<Button color="red" variant="soft">
+								Delete your account
+							</Button>
+						</AlertDialog.Trigger>
+						<AlertDialog.Content>
+							<AlertDialog.Description>
+								Are you sure you want to delete your account? This action is
+								irreversible.
+							</AlertDialog.Description>
+							<Flex gap="3" mt="4">
+								<AlertDialog.Cancel>
+									<Button variant="soft" color="gray">
+										No, keep my account
+									</Button>
+								</AlertDialog.Cancel>
+								<AlertDialog.Action>
+									<Form method="post" action="/accounts/user/delete">
+										<Button color="red" type="submit">
+											Yes, delete my account
+										</Button>
+									</Form>
+								</AlertDialog.Action>
+							</Flex>
+						</AlertDialog.Content>
+					</AlertDialog.Root>
 				</Flex>
 			</Box>
 		</Layout>
