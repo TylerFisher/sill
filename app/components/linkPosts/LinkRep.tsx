@@ -14,7 +14,8 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
 import { ClientOnly } from "remix-utils/client-only";
-import { XEmbed, YouTubeEmbed } from "react-social-media-embed";
+import Youtube from "react-youtube";
+
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
 }
@@ -26,17 +27,7 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 	};
 	return (
 		<Box mb="5" width="100%">
-			<ClientOnly>
-				{() => <YouTubeEmbed url={url.href} youTubeProps={{ opts }} />}
-			</ClientOnly>
-		</Box>
-	);
-};
-
-const TweetEmbed = ({ url }: { url: URL }) => {
-	return (
-		<Box mb="5" width="100%">
-			<ClientOnly>{() => <XEmbed url={url.href} />}</ClientOnly>
+			<ClientOnly>{() => <Youtube videoId={id} opts={opts} />}</ClientOnly>
 		</Box>
 	);
 };
@@ -47,9 +38,6 @@ const LinkRep = ({ link }: LinkRepProps) => {
 	const url = new URL(link.url);
 	if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
 		return <YoutubeEmbed url={url} />;
-	}
-	if (url.hostname === "twitter.com" || url.hostname === "x.com") {
-		return <TweetEmbed url={url} />;
 	}
 	const host = url.host;
 	return (
