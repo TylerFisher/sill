@@ -2,9 +2,9 @@ name: Build and Push Docker Images
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main  # or your default branch
+  push:
+    branches:
+      - main # or your default branch
 
 env:
   REGISTRY: ghcr.io
@@ -96,8 +96,8 @@ jobs:
           echo "ENVIRONMENT=PRODUCTION" >> .env
           echo "NODE_ENV=production" >> .env
           echo "USE_SSL=true" >> .env
-          echo "WEB_DOMAIN=docker.sill.social" >> .env
-          echo "PUBLIC_URL=https://docker.sill.social" >> .env
+          echo "WEB_DOMAIN=sill.social" >> .env
+          echo "PUBLIC_URL=https://sill.social" >> .env
           echo "TRAEFIK_DASHBOARD_DOMAIN=traefik.sill.social" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
