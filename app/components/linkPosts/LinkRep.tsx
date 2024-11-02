@@ -148,6 +148,19 @@ const LinkRep = ({ link }: LinkRepProps) => {
 									</button>
 								</fetcher.Form>
 							</DropdownMenu.Item>
+							<DropdownMenu.Item>
+								<fetcher.Form method="POST" action="/moderation">
+									<input type="hidden" name="newPhrase" value={link.url} />
+									<button
+										type="submit"
+										style={{
+											all: "unset",
+										}}
+									>
+										Mute this link
+									</button>
+								</fetcher.Form>
+							</DropdownMenu.Item>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</Box>
