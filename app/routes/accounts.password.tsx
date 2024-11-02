@@ -83,7 +83,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		})
 		.where(eq(password.userId, userId));
 
-	return redirect("/settings/profile", { status: 302 });
+	return redirect("/settings", { status: 302 });
 }
 
 export default function ChangePasswordRoute() {
