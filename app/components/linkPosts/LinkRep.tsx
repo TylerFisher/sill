@@ -35,7 +35,11 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 };
 
 const XEmbed = ({ url }: { url: URL }) => {
-	return <Tweet id={url.href.split("/").pop() || ""} />;
+	return (
+		<ClientOnly>
+			{() => <Tweet id={url.href.split("/").pop() || ""} />}
+		</ClientOnly>
+	);
 };
 
 const LinkRep = ({ link }: LinkRepProps) => {
