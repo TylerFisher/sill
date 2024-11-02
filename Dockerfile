@@ -19,14 +19,10 @@ RUN npm ci --include=dev
 ADD . .
 
 # Build application
-RUN if [ "$NODE_ENV" = "production" ]; then \
-  npm run build; \
-  fi
+RUN npm run build
 
 # Remove development dependencies
-RUN if [ "$NODE_ENV" = "production" ]; then \
-  npm prune --omit-dev; \
-  fi
+RUN npm prune --omit-dev
 
 # Final stage for app image
 FROM base
