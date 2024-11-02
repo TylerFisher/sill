@@ -1,8 +1,16 @@
-import { DropdownMenu, Flex, IconButton, Link } from "@radix-ui/themes";
+import {
+	DropdownMenu,
+	Flex,
+	IconButton,
+	Link,
+	Box,
+	Text,
+} from "@radix-ui/themes";
 import type { PostReturn } from "~/utils/links.server";
 import { Ellipsis, Copy, ExternalLink, Share } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
 import CopyToClipboard from "react-copy-to-clipboard";
+import { useEffect, useState } from "react";
 
 interface PostToolbarProps {
 	post: PostReturn["post"];
@@ -10,6 +18,16 @@ interface PostToolbarProps {
 
 const PostToolbar = ({ post }: PostToolbarProps) => {
 	const fetcher = useFetcher();
+	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		if (copied) {
+			const timeout = setTimeout(() => {
+				setCopied(false);
+			}, 2000);
+			return () => clearTimeout(timeout);
+		}
+	}, [copied]);
 
 	return (
 		<Flex justify="between" mr="2">
@@ -27,11 +45,25 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 					<Share width="18" height="18" />
 				</IconButton>
 			</Link>
-			<IconButton aria-label="Copy URL" variant="ghost" size="1">
-				<CopyToClipboard text={post.url}>
-					<Copy width="18" height="18" />
-				</CopyToClipboard>
-			</IconButton>
+			<Box position="relative">
+				<IconButton aria-label="Copy URL" variant="ghost" size="1">
+					<CopyToClipboard text={post.url} onCopy={() => setCopied(true)}>
+						<Copy width="18" height="18" />
+					</CopyToClipboard>
+				</IconButton>
+				{copied && (
+					<Text
+						style={{
+							position: "absolute",
+							top: "-2px",
+							left: "1.5em",
+						}}
+					>
+						Copied!
+					</Text>
+				)}
+			</Box>
+
 			<Link
 				href={post.url}
 				target="_blank"
