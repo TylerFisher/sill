@@ -11,7 +11,7 @@ import {
 } from "@radix-ui/themes";
 import styles from "./LinkRep.module.css";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import { Fetcher, useFetcher } from "@remix-run/react";
+import { useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
 import { ClientOnly } from "remix-utils/client-only";
 import Youtube from "react-youtube";
@@ -47,24 +47,6 @@ const LinkRep = ({ link }: LinkRepProps) => {
 	const fetcher = useFetcher();
 	const url = new URL(link.url);
 	const host = url.host;
-
-	// if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
-	// 	return (
-	// 		<>
-	// 			<YoutubeEmbed url={url} />
-	// 			<Menu link={link} />
-	// 		</>
-	// 	);
-	// }
-
-	// if (url.hostname === "twitter.com" || url.hostname === "x.com") {
-	// 	return (
-	// 		<Box position="relative">
-	// 			<XEmbed url={url} />
-	// 			<Menu link={link} />
-	// 		</Box>
-	// 	);
-	// }
 
 	return (
 		<Card mb="5">
