@@ -11,7 +11,7 @@ import {
 } from "@radix-ui/themes";
 import styles from "./LinkRep.module.css";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import { useFetcher } from "@remix-run/react";
+import { Fetcher, useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
 import { ClientOnly } from "remix-utils/client-only";
 import Youtube from "react-youtube";
@@ -46,37 +46,60 @@ const LinkRep = ({ link }: LinkRepProps) => {
 	if (!link) return null;
 	const fetcher = useFetcher();
 	const url = new URL(link.url);
-	if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
-		return <YoutubeEmbed url={url} />;
-	}
-
-	if (url.hostname === "twitter.com" || url.hostname === "x.com") {
-		return <XEmbed url={url} />;
-	}
-
 	const host = url.host;
+
+	// if (url.hostname === "www.youtube.com" || url.hostname === "youtu.be") {
+	// 	return (
+	// 		<>
+	// 			<YoutubeEmbed url={url} />
+	// 			<Menu link={link} />
+	// 		</>
+	// 	);
+	// }
+
+	// if (url.hostname === "twitter.com" || url.hostname === "x.com") {
+	// 	return (
+	// 		<Box position="relative">
+	// 			<XEmbed url={url} />
+	// 			<Menu link={link} />
+	// 		</Box>
+	// 	);
+	// }
+
 	return (
 		<Card mb="5">
-			{link.imageUrl && (
+			{link.imageUrl &&
+				url.hostname !== "www.youtube.com" &&
+				url.hostname !== "youtu.be" && (
+					<Inset mb="4" className={styles.inset}>
+						<AspectRatio ratio={16 / 9}>
+							<Link
+								target="_blank"
+								rel="noreferrer"
+								href={link.url}
+								aria-label={link.title}
+							>
+								<img
+									src={link.imageUrl}
+									loading="lazy"
+									alt=""
+									decoding="async"
+									width="100%"
+									height="100%"
+									className={styles["link-image"]}
+								/>
+							</Link>
+						</AspectRatio>
+					</Inset>
+				)}
+			{(url.hostname === "www.youtube.com" || url.hostname === "youtu.be") && (
 				<Inset mb="4" className={styles.inset}>
-					<AspectRatio ratio={16 / 9}>
-						<Link
-							target="_blank"
-							rel="noreferrer"
-							href={link.url}
-							aria-label={link.title}
-						>
-							<img
-								src={link.imageUrl}
-								loading="lazy"
-								alt=""
-								decoding="async"
-								width="100%"
-								height="100%"
-								className={styles["link-image"]}
-							/>
-						</Link>
-					</AspectRatio>
+					<YoutubeEmbed url={url} />
+				</Inset>
+			)}
+			{(url.hostname === "twitter.com" || url.hostname === "x.com") && (
+				<Inset mb="4" mt="-5" className={styles.inset}>
+					<XEmbed url={url} />
 				</Inset>
 			)}
 			<Box position="relative">
