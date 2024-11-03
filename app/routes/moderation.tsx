@@ -153,7 +153,7 @@ const MutePhraseSettings = () => {
 					</li>
 				))}
 			</ul>
-			<Separator size="4" my="6" />
+			{data.phrases.length > 0 && <Separator size="4" my="6" />}
 			<Form method="POST" {...getFormProps(addForm)}>
 				<ErrorList errors={addForm.errors} id={addForm.errorId} />
 				<TextInput
