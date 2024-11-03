@@ -89,10 +89,19 @@ const EmailSettings = () => {
 		shouldRevalidate: "onSubmit",
 	});
 
+	const dateFormatter = new Intl.DateTimeFormat("en-US", {
+		timeZoneName: "short",
+	});
+
+	const dateParts = dateFormatter.formatToParts(new Date());
+	const timeZone = dateParts.find(
+		(part) => part.type === "timeZoneName",
+	)?.value;
+
 	const hours = Array.from({ length: 24 }, (_, i) => {
 		const hour = i % 12 || 12;
 		const period = i < 12 ? "a.m." : "p.m.";
-		return `${hour.toString().padStart(2, "0")}:00 ${period}`;
+		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
 	});
 
 	const defaultValue = data.currentSettings?.scheduledTime.substring(0, 5);
