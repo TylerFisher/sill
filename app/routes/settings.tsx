@@ -97,7 +97,14 @@ export default function EditUserProfile() {
 								Are you sure you want to delete your account? This action is
 								irreversible.
 							</AlertDialog.Description>
-							<Flex gap="3" mt="4">
+							<Flex
+								gap="3"
+								mt="4"
+								direction={{
+									initial: "column",
+									sm: "row",
+								}}
+							>
 								<AlertDialog.Cancel>
 									<Button variant="soft" color="gray">
 										No, keep my account
