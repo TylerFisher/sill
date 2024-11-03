@@ -1,4 +1,4 @@
-import { Box, Callout, Heading } from "@radix-ui/themes";
+import { Box, Callout, Heading, Text } from "@radix-ui/themes";
 import { Info } from "lucide-react";
 
 interface PageHeadingProps {
@@ -12,9 +12,7 @@ const PageHeading = ({ title, dek }: PageHeadingProps) => {
 			<Heading as="h2" size="6" mb="4">
 				{title}
 			</Heading>
-			<Callout.Root size="3" variant="outline">
-				<Callout.Text>{dek}</Callout.Text>
-			</Callout.Root>
+			<Text>{dek}</Text>
 		</Box>
 	);
 };
