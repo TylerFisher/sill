@@ -1,63 +1,63 @@
 .otp-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 .otp-container:disabled {
-  opacity: 50%;
+	opacity: 50%;
 }
 
 .otp:disabled {
-  cursor: not-allowed;
+	cursor: not-allowed;
 }
 
 .otp-group {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .otp-slot {
-  position: relative;
-  display: flex;
-  height: 2.5rem;
-  width: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border-top: 1px solid var(--accent-11);
-  border-bottom: 1px solid var(--accent-11);
-  border-right: 1px solid var(--accent-11);
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+	position: relative;
+	display: flex;
+	height: 2.5rem;
+	width: 2.5rem;
+	align-items: center;
+	justify-content: center;
+	border-top: 1px solid var(--accent-11);
+	border-bottom: 1px solid var(--accent-11);
+	border-right: 1px solid var(--accent-11);
+	transition-property: all;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
 }
 
 .otp-slot:first-child {
-  border-left: 1px solid var(--accent-11);
-  border-top-left-radius: 0.375rem;
-  border-bottom-left-radius: 0.375rem;
+	border-left: 1px solid var(--accent-11);
+	border-top-left-radius: 0.375rem;
+	border-bottom-left-radius: 0.375rem;
 }
 
 .otp-slot:last-child {
-  border-top-right-radius: 0.375rem;
-  border-bottom-right-radius: 0.375rem;
+	border-top-right-radius: 0.375rem;
+	border-bottom-right-radius: 0.375rem;
 }
 
 .otp-slot:active {
-  z-index: 10;
+	z-index: 10;
 }
 
 .otp-caret-container {
-  pointer-events: none;
-  position: absolute;
-  inset: 0px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+	pointer-events: none;
+	position: absolute;
+	inset: 0px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .otp-caret {
-  height: 1rem;
-  width: 1px;
-  background-color: var(--accent-11);
+	height: 1rem;
+	width: 1px;
+	background-color: var(--accent-11);
 }

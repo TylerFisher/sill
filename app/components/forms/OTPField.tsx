@@ -1,4 +1,4 @@
-import { REGEXP_ONLY_DIGITS_AND_CHARS, type OTPInputProps } from "input-otp";
+import { type OTPInputProps, REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { useId } from "react";
 import type React from "react";
 import {

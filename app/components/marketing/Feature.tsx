@@ -1,4 +1,4 @@
-import { Flex, Box, Heading, Text, Card } from "@radix-ui/themes";
+import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import styles from "./Feature.module.css";
 
 interface FeatureProps {

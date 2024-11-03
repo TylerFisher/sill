@@ -1,7 +1,7 @@
 .inset {
-  border-radius: 0;
+	border-radius: 0;
 }
 
 .link-image {
-  object-fit: cover;
+	object-fit: cover;
 }

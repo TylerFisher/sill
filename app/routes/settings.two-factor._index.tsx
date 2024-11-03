@@ -1,18 +1,18 @@
-import type { VerificationTypes } from "~/routes/accounts.verify";
+import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import {
-	redirect,
-	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	redirect,
 } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
-import { requireUserId } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
-import { generateTOTP } from "~/utils/totp.server";
-import { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
-import { uuidv7 } from "uuidv7-js";
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { and, eq } from "drizzle-orm";
+import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
 import { verification } from "~/drizzle/schema.server";
+import type { VerificationTypes } from "~/routes/accounts.verify";
+import { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
+import { requireUserId } from "~/utils/auth.server";
+import { generateTOTP } from "~/utils/totp.server";
 
 export const twoFAVerificationType = "2fa" satisfies VerificationTypes;
 

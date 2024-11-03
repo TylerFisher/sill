@@ -1,16 +1,16 @@
 import {
+	Box,
 	DropdownMenu,
 	Flex,
 	IconButton,
 	Link,
-	Box,
 	Text,
 } from "@radix-ui/themes";
-import type { PostReturn } from "~/utils/links.server";
-import { Ellipsis, Copy, ExternalLink, Share, Check } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
-import CopyToClipboard from "react-copy-to-clipboard";
+import { Check, Copy, Ellipsis, ExternalLink, Share } from "lucide-react";
 import { useEffect, useState } from "react";
+import CopyToClipboard from "react-copy-to-clipboard";
+import type { PostReturn } from "~/utils/links.server";
 import ShareOpenly from "../icons/ShareOpenly";
 
 interface PostToolbarProps {

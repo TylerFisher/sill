@@ -1,8 +1,8 @@
-import { Link, useLocation } from "@remix-run/react";
-import styles from "./Nav.module.css";
 import { Button } from "@radix-ui/themes";
-import type { ReactElement } from "react";
+import { Link, useLocation } from "@remix-run/react";
 import { Home, Mail, MessageSquareOff, User, Zap } from "lucide-react";
+import type { ReactElement } from "react";
+import styles from "./Nav.module.css";
 
 const Nav = () => {
 	const location = useLocation();

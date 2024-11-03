@@ -1,7 +1,7 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Box } from "@radix-ui/themes";
-import { requireAnonymous } from "~/utils/auth.server";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import Hero from "~/components/marketing/Hero";
+import { requireAnonymous } from "~/utils/auth.server";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 

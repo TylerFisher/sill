@@ -1,16 +1,16 @@
 import {
 	Box,
 	Button,
-	Flex,
-	Text,
-	Link as RLink,
 	Card,
+	Flex,
 	Inset,
+	Link as RLink,
+	Text,
 } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
 import Header from "~/components/nav/Header";
-import styles from "./Hero.module.css";
 import Footer from "../nav/Footer";
+import styles from "./Hero.module.css";
 
 const Hero = () => {
 	return (

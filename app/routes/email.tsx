@@ -1,27 +1,27 @@
-import { Box, Select, Button, Text } from "@radix-ui/themes";
-import {
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-	data,
-} from "@remix-run/node";
-import { db } from "~/drizzle/db.server";
-import Layout from "~/components/nav/Layout";
-import { requireUserId } from "~/utils/auth.server";
-import { eq } from "drizzle-orm";
-import { emailSettings } from "~/drizzle/schema.server";
-import {
-	Form,
-	json,
-	useActionData,
-	useSearchParams,
-	Link,
-	useLoaderData,
-} from "@remix-run/react";
-import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
+import { Box, Button, Select, Text } from "@radix-ui/themes";
+import {
+	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	data,
+} from "@remix-run/node";
+import {
+	Form,
+	Link,
+	json,
+	useActionData,
+	useLoaderData,
+	useSearchParams,
+} from "@remix-run/react";
+import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
+import { z } from "zod";
+import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
+import { db } from "~/drizzle/db.server";
+import { emailSettings } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 
 const EmailSettingsSchema = z.object({
 	time: z.string(),

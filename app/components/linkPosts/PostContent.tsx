@@ -1,6 +1,6 @@
 import { Card, Inset, Link, Text } from "@radix-ui/themes";
-import styles from "./PostContent.module.css";
 import type { PostReturn } from "~/utils/links.server";
+import styles from "./PostContent.module.css";
 
 interface PostContentProps {
 	post: PostReturn["post"];

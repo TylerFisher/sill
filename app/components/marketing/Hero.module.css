@@ -1,32 +1,32 @@
 .hero-wrapper {
-  height: 100vh;
-  margin: 0 auto;
-  padding: 1rem 1rem 0;
+	height: 100vh;
+	margin: 0 auto;
+	padding: 1rem 1rem 0;
 }
 
 .language {
-  width: 100%;
+	width: 100%;
 }
 
 .lede {
-  color: var(--accent-11);
+	color: var(--accent-11);
 }
 
 .intro-video-wrapper {
-  max-height: 90vh;
-  display: none;
+	max-height: 90vh;
+	display: none;
 }
 
 .right-box {
-  display: none;
+	display: none;
 }
 
 @media (min-width: 768px) {
-  .intro-video-wrapper {
-    display: block;
-  }
+	.intro-video-wrapper {
+		display: block;
+	}
 
-  .right-box {
-    display: block;
-  }
+	.right-box {
+		display: block;
+	}
 }

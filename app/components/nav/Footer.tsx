@@ -1,6 +1,6 @@
-import { Flex, IconButton, Text, Link } from "@radix-ui/themes";
-import { ThemeSwitch, useTheme } from "~/routes/resources.theme-switch";
+import { Flex, IconButton, Link, Text } from "@radix-ui/themes";
 import { Github } from "lucide-react";
+import { ThemeSwitch, useTheme } from "~/routes/resources.theme-switch";
 
 const Footer = ({
 	align,

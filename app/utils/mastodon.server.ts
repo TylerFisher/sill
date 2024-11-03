@@ -1,6 +1,6 @@
+import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
-import { and, eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
 	actor,

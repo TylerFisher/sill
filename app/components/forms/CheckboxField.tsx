@@ -1,13 +1,13 @@
-import type React from "react";
-import { useId } from "react";
 import {
 	Box,
-	Text,
-	Flex,
 	Checkbox,
 	type CheckboxProps,
+	Flex,
+	Text,
 	type TextProps,
 } from "@radix-ui/themes";
+import type React from "react";
+import { useId } from "react";
 
 interface CheckboxFieldProps {
 	labelProps: TextProps & React.LabelHTMLAttributes<HTMLLabelElement>;

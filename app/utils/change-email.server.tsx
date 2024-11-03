@@ -1,16 +1,16 @@
 import { invariant } from "@epic-web/invariant";
 import { data, redirect } from "@remix-run/node";
-import {
-	requireRecentVerification,
-	type VerifyFunctionArgs,
-} from "~/utils/verify.server";
+import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
-import { sendEmail } from "~/utils/email.server";
-import { verifySessionStorage } from "~/utils/verification.server";
+import { user } from "~/drizzle/schema.server";
 import EmailChangeNotice from "~/emails/emailChangeNotice";
 import { newEmailAddressSessionKey } from "~/routes/accounts.change-email";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
+import { sendEmail } from "~/utils/email.server";
+import { verifySessionStorage } from "~/utils/verification.server";
+import {
+	type VerifyFunctionArgs,
+	requireRecentVerification,
+} from "~/utils/verify.server";
 
 /**
  * Handles verification of email change and sends email change notice

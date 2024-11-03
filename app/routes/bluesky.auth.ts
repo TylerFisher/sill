@@ -1,5 +1,5 @@
-import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { OAuthResponseError } from "@atproto/oauth-client-node";
+import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { createOAuthClient } from "~/server/oauth/client";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

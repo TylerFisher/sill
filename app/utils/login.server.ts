@@ -1,18 +1,18 @@
 import { invariant } from "@epic-web/invariant";
 import { redirect } from "@remix-run/node";
+import { and, eq } from "drizzle-orm";
 import { safeRedirect } from "remix-utils/safe-redirect";
+import { db } from "~/drizzle/db.server";
+import { session, verification } from "~/drizzle/schema.server";
 import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
 import { getUserId, sessionKey } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
 import { combineResponseInits } from "~/utils/misc";
 import { authSessionStorage } from "~/utils/session.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import {
-	getRedirectToUrl,
 	type VerifyFunctionArgs,
+	getRedirectToUrl,
 } from "~/utils/verify.server";
-import { and, eq } from "drizzle-orm";
-import { verification, session } from "~/drizzle/schema.server";
 
 const verifiedTimeKey = "verified-time";
 const unverifiedSessionIdKey = "unverified-session-id";

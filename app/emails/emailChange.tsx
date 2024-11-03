@@ -1,5 +1,5 @@
-import EmailLayout from "~/components/emails/Layout";
 import EmailHeading from "~/components/emails/Heading";
+import EmailLayout from "~/components/emails/Layout";
 import Lede from "~/components/emails/Lede";
 import OTPBlock from "~/components/emails/OTPBlock";
 

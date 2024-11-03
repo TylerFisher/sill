@@ -1,4 +1,4 @@
-import { Html, Container, Text } from "@react-email/components";
+import { Container, Html, Text } from "@react-email/components";
 
 const EmailChangeNoticeEmail = ({ userId }: { userId: string }) => {
 	return (

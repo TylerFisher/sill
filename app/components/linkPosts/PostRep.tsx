@@ -1,7 +1,7 @@
-import { Card, Box, Avatar, Flex, Separator } from "@radix-ui/themes";
-import RepostActor from "~/components/linkPosts/RepostActor";
+import { Avatar, Box, Card, Flex, Separator } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
+import RepostActor from "~/components/linkPosts/RepostActor";
 import type { PostReturn } from "~/utils/links.server";
 import PostToolbar from "./PostToolbar";
 interface PostRepProps {

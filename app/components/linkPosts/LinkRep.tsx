@@ -10,13 +10,13 @@ import {
 	Link,
 	Text,
 } from "@radix-ui/themes";
-import styles from "./LinkRep.module.css";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useFetcher } from "@remix-run/react";
 import { Ellipsis } from "lucide-react";
-import { ClientOnly } from "remix-utils/client-only";
-import Youtube from "react-youtube";
 import * as ReactTweet from "react-tweet";
+import Youtube from "react-youtube";
+import { ClientOnly } from "remix-utils/client-only";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
+import styles from "./LinkRep.module.css";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {

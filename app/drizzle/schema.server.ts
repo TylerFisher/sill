@@ -1,19 +1,19 @@
+import { sql } from "drizzle-orm";
 import {
-	pgTable,
-	uniqueIndex,
-	index,
-	foreignKey,
-	uuid,
-	timestamp,
-	text,
-	integer,
 	boolean,
+	foreignKey,
+	index,
+	integer,
 	pgEnum,
-	unique,
+	pgTable,
+	text,
 	time,
+	timestamp,
+	unique,
+	uniqueIndex,
+	uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
-import { sql } from "drizzle-orm";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
 

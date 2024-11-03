@@ -1,16 +1,21 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
+	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	type MetaFunction,
 	data,
 	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-	type MetaFunction,
 } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
+import CheckboxField from "~/components/forms/CheckboxField";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
 import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { authSessionStorage } from "~/utils/session.server";
@@ -19,11 +24,6 @@ import {
 	PasswordAndConfirmPasswordSchema,
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
-import { Box, Button, Heading, Text } from "@radix-ui/themes";
-import Layout from "~/components/nav/Layout";
-import TextInput from "~/components/forms/TextInput";
-import CheckboxField from "~/components/forms/CheckboxField";
-import ErrorList from "~/components/forms/ErrorList";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 

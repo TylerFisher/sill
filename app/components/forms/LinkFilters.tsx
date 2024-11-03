@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useSearchParams } from "@remix-run/react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Box, Button } from "@radix-ui/themes";
+import { useSearchParams } from "@remix-run/react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 const LinkFilters = () => {
 	const [open, setOpen] = useState(false);

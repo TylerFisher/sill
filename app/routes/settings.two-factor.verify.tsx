@@ -1,25 +1,25 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import {
+	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
 	data,
 	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { and, eq } from "drizzle-orm";
 import * as QRCode from "qrcode";
 import { z } from "zod";
-import { isCodeValid } from "~/utils/verify.server";
-import { requireUserId } from "~/utils/auth.server";
+import ErrorList from "~/components/forms/ErrorList";
+import { OTPField } from "~/components/forms/OTPField";
 import { db } from "~/drizzle/db.server";
+import { user, verification } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 import { getDomainUrl, useIsPending } from "~/utils/misc";
 import { getTOTPAuthUri } from "~/utils/totp.server";
+import { isCodeValid } from "~/utils/verify.server";
 import { twoFAVerificationType } from "./settings.two-factor._index";
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
-import { OTPField } from "~/components/forms/OTPField";
-import ErrorList from "~/components/forms/ErrorList";
-import { and, eq } from "drizzle-orm";
-import { user, verification } from "~/drizzle/schema.server";
 
 const CancelSchema = z.object({ intent: z.literal("cancel") });
 const VerifySchema = z.object({

@@ -1,3 +1,6 @@
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod";
+import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type MetaFunction,
@@ -5,22 +8,19 @@ import {
 	redirect,
 } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
-import { Heading, Text, Button, Box, Flex } from "@radix-ui/themes";
-import { z } from "zod";
-import { parseWithZod } from "@conform-to/zod";
-import { getFormProps, getInputProps, useForm } from "@conform-to/react";
-import { EmailSchema } from "~/utils/userValidation";
-import Layout from "~/components/nav/Layout";
-import Verify from "~/emails/verify";
-import TextInput from "~/components/forms/TextInput";
-import { HoneypotInputs } from "remix-utils/honeypot/react";
-import { checkHoneypot } from "~/utils/honeypot.server";
-import { db } from "~/drizzle/db.server";
-import { prepareVerification } from "~/utils/verify.server";
-import { sendEmail } from "~/utils/email.server";
-import ErrorList from "~/components/forms/ErrorList";
 import { eq } from "drizzle-orm";
+import { HoneypotInputs } from "remix-utils/honeypot/react";
+import { z } from "zod";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
+import Verify from "~/emails/verify";
+import { sendEmail } from "~/utils/email.server";
+import { checkHoneypot } from "~/utils/honeypot.server";
+import { EmailSchema } from "~/utils/userValidation";
+import { prepareVerification } from "~/utils/verify.server";
 
 export const meta: MetaFunction = () => [{ title: "Create account" }];
 

@@ -1,9 +1,9 @@
-import { filterLinkOccurrences } from "~/utils/links.server";
-import { sendEmail } from "~/utils/email.server";
-import { db } from "~/drizzle/db.server";
-import TopLinks from "~/emails/topLinks";
 import { eq } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
+import TopLinks from "~/emails/topLinks";
+import { sendEmail } from "~/utils/email.server";
+import { filterLinkOccurrences } from "~/utils/links.server";
 
 export const loader = async () => {
 	const scheduledEmails = await db.query.emailSettings.findMany();

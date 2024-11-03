@@ -1,9 +1,9 @@
 import { Container, Flex } from "@radix-ui/themes";
 import type { PropsWithChildren } from "react";
-import Header from "./Header";
-import Nav from "./Nav";
 import Footer from "./Footer";
+import Header from "./Header";
 import styles from "./Layout.module.css";
+import Nav from "./Nav";
 
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;

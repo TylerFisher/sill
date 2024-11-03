@@ -1,41 +1,41 @@
 .mobile-logo,
 .onboarding-logo {
-  display: block;
-  text-align: center;
+	display: block;
+	text-align: center;
 }
 
 .desktop-logo {
-  display: none;
-  text-align: left;
+	display: none;
+	text-align: left;
 }
 
 .marketing-logo {
-  text-align: center;
+	text-align: center;
 }
 
 .logo-heading {
-  font-weight: 900;
-  font-style: italic;
-  color: var(--accent-11);
-  text-transform: lowercase;
-  padding-top: 1rem;
+	font-weight: 900;
+	font-style: italic;
+	color: var(--accent-11);
+	text-transform: lowercase;
+	padding-top: 1rem;
 }
 
 @media (min-width: 768px) {
-  .mobile-logo {
-    display: none;
-  }
+	.mobile-logo {
+		display: none;
+	}
 
-  .desktop-logo {
-    display: block;
-  }
+	.desktop-logo {
+		display: block;
+	}
 
-  .marketing-logo > h1 {
-    font-size: 120px;
-  }
+	.marketing-logo > h1 {
+		font-size: 120px;
+	}
 }
 
 .logo-link {
-  color: inherit;
-  text-decoration: none;
+	color: inherit;
+	text-decoration: none;
 }

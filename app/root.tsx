@@ -1,3 +1,4 @@
+import { type LoaderFunctionArgs, data } from "@remix-run/node";
 import {
 	Links,
 	Meta,
@@ -6,19 +7,18 @@ import {
 	ScrollRestoration,
 	useLoaderData,
 } from "@remix-run/react";
-import { data, type LoaderFunctionArgs } from "@remix-run/node";
 import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme as RadixTheme } from "@radix-ui/themes";
-import { honeypot } from "~/utils/honeypot.server";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
+import { honeypot } from "~/utils/honeypot.server";
+import { useTheme } from "./routes/resources.theme-switch";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getDomainUrl } from "./utils/misc";
-import { type Theme, getTheme } from "./utils/theme.server";
 import { useNonce } from "./utils/nonce-provider";
-import { useTheme } from "./routes/resources.theme-switch";
+import { type Theme, getTheme } from "./utils/theme.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps();

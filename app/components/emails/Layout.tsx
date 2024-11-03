@@ -1,10 +1,10 @@
 import {
-	Html,
-	Head,
-	Preview,
 	Body,
 	Container,
+	Head,
+	Html,
 	Img,
+	Preview,
 } from "@react-email/components";
 import type { PropsWithChildren } from "react";
 

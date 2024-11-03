@@ -1,11 +1,11 @@
 import {
-	Section,
-	Heading,
-	Text,
-	Img,
 	Column,
-	Row,
+	Heading,
+	Img,
 	Link,
+	Row,
+	Section,
+	Text,
 } from "@react-email/components";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 

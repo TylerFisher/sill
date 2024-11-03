@@ -1,20 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
-	data,
-	type ActionFunctionArgs,
-	type LoaderFunctionArgs,
-} from "@remix-run/node";
-import {
-	Form,
-	useActionData,
-	useLoaderData,
-	useFetcher,
-} from "@remix-run/react";
-import { z } from "zod";
-import { requireUserId } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
-import {
 	Box,
 	Button,
 	Flex,
@@ -22,14 +8,28 @@ import {
 	IconButton,
 	Separator,
 } from "@radix-ui/themes";
-import TextInput from "~/components/forms/TextInput";
-import { uuidv7 } from "uuidv7-js";
-import ErrorList from "~/components/forms/ErrorList";
+import {
+	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	data,
+} from "@remix-run/node";
+import {
+	Form,
+	useActionData,
+	useFetcher,
+	useLoaderData,
+} from "@remix-run/react";
 import { eq } from "drizzle-orm";
-import { mutePhrase } from "~/drizzle/schema.server";
-import Layout from "~/components/nav/Layout";
 import { X } from "lucide-react";
+import { uuidv7 } from "uuidv7-js";
+import { z } from "zod";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
+import { db } from "~/drizzle/db.server";
+import { mutePhrase } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),

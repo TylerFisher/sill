@@ -1,31 +1,31 @@
-import { data, redirect } from "@remix-run/node";
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { z } from "zod";
+import { data, redirect } from "@remix-run/node";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
-import { eq, and, or, gt, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "~/drizzle/db.server";
-import { generateTOTP, verifyTOTP } from "~/utils/totp.server";
-import { getDomainUrl } from "~/utils/misc";
-import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
-import type { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
+import { verification } from "~/drizzle/schema.server";
 import {
-	handleVerification as handleLoginTwoFactorVerification,
-	shouldRequestTwoFA,
-} from "~/utils/login.server";
-import {
+	type VerificationTypes,
 	VerifySchema,
 	codeQueryParam,
 	redirectToQueryParam,
 	targetQueryParam,
 	typeQueryParam,
-	type VerificationTypes,
 } from "~/routes/accounts.verify";
+import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
+import type { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
+import { requireUserId } from "~/utils/auth.server";
+import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
+import {
+	handleVerification as handleLoginTwoFactorVerification,
+	shouldRequestTwoFA,
+} from "~/utils/login.server";
+import { getDomainUrl } from "~/utils/misc";
 import { handleVerification as handleOnboardingVerification } from "~/utils/onboarding.server";
 import { handleVerification as handleResetPasswordVerification } from "~/utils/reset-password.server";
-import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
-import { requireUserId } from "~/utils/auth.server";
-import { verification } from "~/drizzle/schema.server";
+import { generateTOTP, verifyTOTP } from "~/utils/totp.server";
 
 export type VerifyFunctionArgs = {
 	request: Request;

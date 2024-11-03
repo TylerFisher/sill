@@ -1,24 +1,24 @@
 import {
-	AppBskyFeedDefs,
 	Agent,
-	AppBskyFeedPost,
-	AppBskyEmbedRecord,
 	AppBskyEmbedExternal,
 	AppBskyEmbedImages,
+	AppBskyEmbedRecord,
+	AppBskyEmbedRecordWithMedia,
+	AppBskyFeedDefs,
+	AppBskyFeedPost,
 	AppBskyRichtextFacet,
 	RichText,
-	AppBskyEmbedRecordWithMedia,
 } from "@atproto/api";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import {
 	OAuthResponseError,
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
-import { uuidv7 } from "uuidv7-js";
-import { and, eq, getTableColumns, type SQL, sql } from "drizzle-orm";
 import { extractFromUrl } from "@jcottam/html-metadata";
-import { createOAuthClient } from "~/server/oauth/client";
+import { type SQL, and, eq, getTableColumns, sql } from "drizzle-orm";
+import type { PgTable } from "drizzle-orm/pg-core";
+import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { linksQueue } from "~/utils/queue.server";
 import {
 	actor,
 	blueskyAccount,
@@ -30,8 +30,8 @@ import {
 	postType,
 	post as schemaPost,
 } from "~/drizzle/schema.server";
-import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import type { PgTable } from "drizzle-orm/pg-core";
+import { createOAuthClient } from "~/server/oauth/client";
+import { linksQueue } from "~/utils/queue.server";
 
 interface BskyDetectedLink {
 	uri: string;

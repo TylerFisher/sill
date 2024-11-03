@@ -1,6 +1,6 @@
-import FilterButton from "./FilterButton";
 import { RadioCards } from "@radix-ui/themes";
 import { Box, Flex, Heading } from "@radix-ui/themes";
+import FilterButton from "./FilterButton";
 import styles from "./FilterButtonGroup.module.css";
 
 export interface ButtonGroup {

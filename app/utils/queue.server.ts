@@ -1,8 +1,8 @@
 import type { Processor } from "bullmq";
 import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
-import { connection } from "~/utils/redis.server";
 import { fetchLinkMetadata } from "~/utils/bluesky.server";
+import { connection } from "~/utils/redis.server";
 import { filterLinkOccurrences } from "./links.server";
 
 const redis = connection();

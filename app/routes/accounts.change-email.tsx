@@ -1,29 +1,29 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Badge, Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
-	data,
-	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
+	data,
+	redirect,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput.js";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
+import EmailChange from "~/emails/emailChange";
+import { requireUserId } from "~/utils/auth.server";
+import { sendEmail } from "~/utils/email.server";
+import { EmailSchema } from "~/utils/userValidation";
+import { verifySessionStorage } from "~/utils/verification.server";
 import {
 	prepareVerification,
 	requireRecentVerification,
 } from "~/utils/verify.server";
-import { requireUserId } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
-import { sendEmail } from "~/utils/email.server";
-import { EmailSchema } from "~/utils/userValidation";
-import { verifySessionStorage } from "~/utils/verification.server";
-import EmailChange from "~/emails/emailChange";
-import { Badge, Box, Button, Heading, Text } from "@radix-ui/themes";
-import TextInput from "~/components/forms/TextInput.js";
-import ErrorList from "~/components/forms/ErrorList";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
-import Layout from "~/components/nav/Layout";
 
 export const newEmailAddressSessionKey = "new-email-address";
 

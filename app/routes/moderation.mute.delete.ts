@@ -1,10 +1,10 @@
-import { type ActionFunctionArgs, data } from "@remix-run/node";
 import { parseWithZod } from "@conform-to/zod";
+import { type ActionFunctionArgs, data } from "@remix-run/node";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { mutePhrase } from "~/drizzle/schema.server";
-import { and, eq } from "drizzle-orm";
+import { requireUserId } from "~/utils/auth.server";
 
 const MuteDeleteSchema = z.object({
 	phrase: z.string(),

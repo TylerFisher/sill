@@ -1,12 +1,12 @@
-import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
-import { getAccessToken } from "~/utils/mastodon.server";
-import { getInstanceCookie } from "~/utils/session.server";
-import { getUserId } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
-import { uuidv7 } from "uuidv7-js";
-import { mastodonFetchQueue } from "~/utils/queue.server";
-import { mastodonAccount, mastodonInstance } from "~/drizzle/schema.server";
+import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { eq } from "drizzle-orm";
+import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { mastodonAccount, mastodonInstance } from "~/drizzle/schema.server";
+import { getUserId } from "~/utils/auth.server";
+import { getAccessToken } from "~/utils/mastodon.server";
+import { mastodonFetchQueue } from "~/utils/queue.server";
+import { getInstanceCookie } from "~/utils/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const url = new URL(request.url);

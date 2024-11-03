@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Avatar, Box, Button } from "@radix-ui/themes";
-import groupBy from "object.groupby";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import { Avatar, Box, Button } from "@radix-ui/themes";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import groupBy from "object.groupby";
+import { useState } from "react";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;

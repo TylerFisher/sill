@@ -1,4 +1,4 @@
-import { Box, Heading, Callout } from "@radix-ui/themes";
+import { Box, Callout, Heading } from "@radix-ui/themes";
 import { Info } from "lucide-react";
 
 interface PageHeadingProps {

@@ -1,11 +1,11 @@
 import { invariant } from "@epic-web/invariant";
 import { data, redirect } from "@remix-run/node";
-import { db } from "~/drizzle/db.server";
-import { verifySessionStorage } from "~/utils/verification.server";
-import { resetPasswordEmailSessionKey } from "~/routes/accounts.reset-password";
-import type { VerifyFunctionArgs } from "~/utils/verify.server.ts";
 import { eq } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
+import { resetPasswordEmailSessionKey } from "~/routes/accounts.reset-password";
+import { verifySessionStorage } from "~/utils/verification.server";
+import type { VerifyFunctionArgs } from "~/utils/verify.server.ts";
 
 /**
  * Verifies verification code and redirects to reset password page

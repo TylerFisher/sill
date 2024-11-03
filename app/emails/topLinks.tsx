@@ -1,8 +1,8 @@
-import type { MostRecentLinkPosts } from "~/utils/links.server";
-import EmailLayout from "~/components/emails/Layout";
-import EmailHeading from "~/components/emails/Heading";
-import LinkPost from "~/components/emails/LinkPost";
 import { Button, Hr, Text } from "@react-email/components";
+import EmailHeading from "~/components/emails/Heading";
+import EmailLayout from "~/components/emails/Layout";
+import LinkPost from "~/components/emails/LinkPost";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface TopLinksProps {
 	links: MostRecentLinkPosts[];

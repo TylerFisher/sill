@@ -1,12 +1,12 @@
 import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 
-import { createOAuthClient } from "~/server/oauth/client";
 import { Agent } from "@atproto/api";
-import { db } from "~/drizzle/db.server";
 import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { blueskyAccount } from "~/drizzle/schema.server";
+import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
 import { blueskyFetchQueue } from "~/utils/queue.server";
-import { blueskyAccount } from "~/drizzle/schema.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);

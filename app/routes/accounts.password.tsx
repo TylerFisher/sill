@@ -1,26 +1,26 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Button, Flex, Heading } from "@radix-ui/themes";
 import {
-	data,
-	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
+	type LoaderFunctionArgs,
+	data,
 	redirect,
 } from "@remix-run/node";
 import { Form, Link, useActionData } from "@remix-run/react";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
+import { password } from "~/drizzle/schema.server";
 import {
 	getPasswordHash,
 	requireUserId,
 	verifyUserPassword,
 } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
 import { PasswordSchema } from "~/utils/userValidation";
-import TextInput from "~/components/forms/TextInput";
-import { Button, Flex, Heading } from "@radix-ui/themes";
-import ErrorList from "~/components/forms/ErrorList";
-import { password } from "~/drizzle/schema.server";
-import { eq } from "drizzle-orm";
-import Layout from "~/components/nav/Layout";
 
 const ChangePasswordForm = z
 	.object({

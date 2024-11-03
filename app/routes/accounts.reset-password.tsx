@@ -2,22 +2,22 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
-	data,
-	redirect,
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	type MetaFunction,
+	data,
+	redirect,
 } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { db } from "~/drizzle/db.server";
+import { eq } from "drizzle-orm";
 import ErrorList from "~/components/forms/ErrorList";
-import Layout from "~/components/nav/Layout";
 import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
 import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
 
 export const resetPasswordEmailSessionKey = "resetPasswordEmail";
 

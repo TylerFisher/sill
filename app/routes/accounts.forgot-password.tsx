@@ -1,26 +1,26 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
-	data,
-	redirect,
 	type ActionFunctionArgs,
 	type MetaFunction,
+	data,
+	redirect,
 } from "@remix-run/node";
 import { Form, Link, useFetcher } from "@remix-run/react";
+import { eq, or } from "drizzle-orm";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
-import { eq, or } from "drizzle-orm";
+import ErrorList from "~/components/forms/ErrorList";
+import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
+import ForgotPasswordEmail from "~/emails/forgotPassword";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
-import ForgotPasswordEmail from "~/emails/forgotPassword";
-import Layout from "~/components/nav/Layout";
-import { Box, Button, Heading, Text } from "@radix-ui/themes";
-import TextInput from "~/components/forms/TextInput";
-import ErrorList from "~/components/forms/ErrorList";
 
 const ForgotPasswordSchema = z.object({
 	email: EmailSchema,
