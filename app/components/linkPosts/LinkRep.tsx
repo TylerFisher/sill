@@ -1,6 +1,7 @@
 import {
 	AspectRatio,
 	Box,
+	Button,
 	Card,
 	DropdownMenu,
 	Heading,
@@ -138,27 +139,27 @@ const LinkRep = ({ link }: LinkRepProps) => {
 								<input type="hidden" name="newPhrase" value={host} />
 								<DropdownMenu.Item>
 									{" "}
-									<button
+									<Button
 										type="submit"
 										style={{
 											all: "unset",
 										}}
 									>
 										Mute {host}
-									</button>
+									</Button>
 								</DropdownMenu.Item>
 							</fetcher.Form>
 							<fetcher.Form method="POST" action="/moderation">
 								<input type="hidden" name="newPhrase" value={link.url} />
 								<DropdownMenu.Item>
-									<button
+									<Button
 										type="submit"
 										style={{
 											all: "unset",
 										}}
 									>
 										Mute this link
-									</button>
+									</Button>
 								</DropdownMenu.Item>
 							</fetcher.Form>
 						</DropdownMenu.Content>
