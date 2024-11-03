@@ -105,18 +105,32 @@ export default function EditUserProfile() {
 									sm: "row",
 								}}
 							>
-								<AlertDialog.Cancel>
-									<Button variant="soft" color="gray">
-										No, keep my account
-									</Button>
-								</AlertDialog.Cancel>
-								<AlertDialog.Action>
-									<Form method="post" action="/accounts/user/delete">
-										<Button color="red" type="submit">
-											Yes, delete my account
+								<Box
+									width={{
+										initial: "100%",
+										sm: "auto",
+									}}
+								>
+									<AlertDialog.Cancel>
+										<Button variant="soft" color="gray">
+											No, keep my account
 										</Button>
-									</Form>
-								</AlertDialog.Action>
+									</AlertDialog.Cancel>
+								</Box>
+								<Box
+									width={{
+										initial: "100%",
+										sm: "auto",
+									}}
+								>
+									<AlertDialog.Action>
+										<Form method="post" action="/accounts/user/delete">
+											<Button color="red" type="submit">
+												Yes, delete my account
+											</Button>
+										</Form>
+									</AlertDialog.Action>
+								</Box>
 							</Flex>
 						</AlertDialog.Content>
 					</AlertDialog.Root>

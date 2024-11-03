@@ -134,10 +134,10 @@ const LinkRep = ({ link }: LinkRepProps) => {
 							>
 								<DropdownMenu.Item>Share</DropdownMenu.Item>
 							</a>
-
-							<DropdownMenu.Item>
-								<fetcher.Form method="POST" action="/moderation">
-									<input type="hidden" name="newPhrase" value={host} />
+							<fetcher.Form method="POST" action="/moderation">
+								<input type="hidden" name="newPhrase" value={host} />
+								<DropdownMenu.Item>
+									{" "}
 									<button
 										type="submit"
 										style={{
@@ -146,11 +146,11 @@ const LinkRep = ({ link }: LinkRepProps) => {
 									>
 										Mute {host}
 									</button>
-								</fetcher.Form>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item>
-								<fetcher.Form method="POST" action="/moderation">
-									<input type="hidden" name="newPhrase" value={link.url} />
+								</DropdownMenu.Item>
+							</fetcher.Form>
+							<fetcher.Form method="POST" action="/moderation">
+								<input type="hidden" name="newPhrase" value={link.url} />
+								<DropdownMenu.Item>
 									<button
 										type="submit"
 										style={{
@@ -159,8 +159,8 @@ const LinkRep = ({ link }: LinkRepProps) => {
 									>
 										Mute this link
 									</button>
-								</fetcher.Form>
-							</DropdownMenu.Item>
+								</DropdownMenu.Item>
+							</fetcher.Form>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</Box>
