@@ -1,11 +1,10 @@
 import {
 	Box,
 	Button,
-	Dialog,
-	DropdownMenu,
 	Flex,
 	IconButton,
 	Link,
+	Popover,
 	Text,
 } from "@radix-ui/themes";
 import { useFetcher } from "@remix-run/react";
@@ -88,21 +87,15 @@ const Toolbar = ({
 					<ExternalLink width="18" height="18" />
 				</IconButton>
 			</Link>
-			<Dialog.Root>
-				<Dialog.Trigger>
+			<Popover.Root>
+				<Popover.Trigger>
 					<IconButton aria-label="More options" variant="ghost" size="1">
 						<MessageSquareOff width="18" height="18" />
 					</IconButton>
-				</Dialog.Trigger>
-				<Dialog.Content>
-					<Dialog.Title>Mute this {type}</Dialog.Title>
-					<Dialog.Description>
-						You can mute just this {type} or all {type}s from this{" "}
-						{type === "post" ? "user" : "website"}.
-					</Dialog.Description>
+				</Popover.Trigger>
+				<Popover.Content>
 					<Flex
 						gap="4"
-						mt="4"
 						direction={{
 							initial: "column",
 							sm: "row",
@@ -131,8 +124,8 @@ const Toolbar = ({
 							</Button>
 						</fetcher.Form>
 					</Flex>
-				</Dialog.Content>
-			</Dialog.Root>
+				</Popover.Content>
+			</Popover.Root>
 		</Flex>
 	);
 };
