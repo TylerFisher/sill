@@ -3,7 +3,7 @@ import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import type { PostReturn } from "~/utils/links.server";
-import PostToolbar from "./PostToolbar";
+import Toolbar from "./Toolbar";
 interface PostRepProps {
 	post: PostReturn["post"];
 	group: PostReturn[];
@@ -94,7 +94,12 @@ const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
 				</Card>
 			)}
 			<Separator size="4" my="4" />
-			<PostToolbar post={post} />
+			<Toolbar
+				url={post.url}
+				narrowMutePhrase={post.url}
+				broadMutePhrase={post.actorHandle}
+				type="post"
+			/>
 		</Card>
 	);
 };

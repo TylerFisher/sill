@@ -4,19 +4,32 @@ import {
 	Button,
 	Card,
 	DropdownMenu,
+	Flex,
 	Heading,
 	IconButton,
 	Inset,
 	Link,
+	Separator,
 	Text,
 } from "@radix-ui/themes";
 import { useFetcher } from "@remix-run/react";
-import { Ellipsis } from "lucide-react";
+import {
+	Check,
+	Copy,
+	Ellipsis,
+	ExternalLink,
+	MessageSquareOff,
+} from "lucide-react";
 import * as ReactTweet from "react-tweet";
 import Youtube from "react-youtube";
 import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
+import ShareOpenly from "../icons/ShareOpenly";
+import { useEffect, useState } from "react";
+import CopyToClipboard from "react-copy-to-clipboard";
+import PostToolbar from "./Toolbar";
+import Toolbar from "./Toolbar";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
@@ -45,9 +58,19 @@ const XEmbed = ({ url }: { url: URL }) => {
 
 const LinkRep = ({ link }: LinkRepProps) => {
 	if (!link) return null;
+	const [copied, setCopied] = useState(false);
 	const fetcher = useFetcher();
 	const url = new URL(link.url);
 	const host = url.host;
+
+	useEffect(() => {
+		if (copied) {
+			const timeout = setTimeout(() => {
+				setCopied(false);
+			}, 2000);
+			return () => clearTimeout(timeout);
+		}
+	}, [copied]);
 
 	return (
 		<Card mb="5">
@@ -116,56 +139,14 @@ const LinkRep = ({ link }: LinkRepProps) => {
 				>
 					{link.description}
 				</Text>
-				<Box position="absolute" top="0" right="0">
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							<IconButton variant="ghost" aria-label="Link options">
-								<Ellipsis width="18" height="18" />
-							</IconButton>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content>
-							<a
-								href={`https://shareopenly.org/share/?url=${link.url}`}
-								target="_blank"
-								rel="noreferrer"
-								style={{
-									color: "inherit",
-									textDecoration: "none",
-								}}
-							>
-								<DropdownMenu.Item>Share</DropdownMenu.Item>
-							</a>
-							<fetcher.Form method="POST" action="/moderation">
-								<input type="hidden" name="newPhrase" value={host} />
-								<DropdownMenu.Item>
-									{" "}
-									<Button
-										type="submit"
-										style={{
-											all: "unset",
-										}}
-									>
-										Mute {host}
-									</Button>
-								</DropdownMenu.Item>
-							</fetcher.Form>
-							<fetcher.Form method="POST" action="/moderation">
-								<input type="hidden" name="newPhrase" value={link.url} />
-								<DropdownMenu.Item>
-									<Button
-										type="submit"
-										style={{
-											all: "unset",
-										}}
-									>
-										Mute this link
-									</Button>
-								</DropdownMenu.Item>
-							</fetcher.Form>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-				</Box>
 			</Box>
+			<Separator orientation="horizontal" size="4" my="4" />
+			<Toolbar
+				url={link.url}
+				narrowMutePhrase={link.url}
+				broadMutePhrase={host}
+				type="link"
+			/>
 		</Card>
 	);
 };

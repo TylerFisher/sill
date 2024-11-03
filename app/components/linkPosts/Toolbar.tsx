@@ -1,5 +1,7 @@
 import {
 	Box,
+	Button,
+	Dialog,
 	DropdownMenu,
 	Flex,
 	IconButton,
@@ -7,17 +9,24 @@ import {
 	Text,
 } from "@radix-ui/themes";
 import { useFetcher } from "@remix-run/react";
-import { Check, Copy, Ellipsis, ExternalLink, Share } from "lucide-react";
+import { Check, Copy, ExternalLink, MessageSquareOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import CopyToClipboard from "react-copy-to-clipboard";
-import type { PostReturn } from "~/utils/links.server";
 import ShareOpenly from "../icons/ShareOpenly";
 
-interface PostToolbarProps {
-	post: PostReturn["post"];
+interface ToolbarProps {
+	url: string;
+	narrowMutePhrase: string;
+	broadMutePhrase: string;
+	type: "post" | "link";
 }
 
-const PostToolbar = ({ post }: PostToolbarProps) => {
+const Toolbar = ({
+	url,
+	narrowMutePhrase,
+	broadMutePhrase,
+	type,
+}: ToolbarProps) => {
 	const fetcher = useFetcher();
 	const [copied, setCopied] = useState(false);
 
@@ -33,7 +42,7 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 	return (
 		<Flex justify="between" mr="2">
 			<Link
-				href={`https://shareopenly.org/share/?url=${post.url}`}
+				href={`https://shareopenly.org/share/?url=${url}`}
 				target="_blank"
 				rel="noreferrer"
 				aria-label="Share with ShareOpenly"
@@ -48,7 +57,7 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 			</Link>
 			<Box position="relative">
 				<IconButton aria-label="Copy URL" variant="ghost" size="1">
-					<CopyToClipboard text={post.url} onCopy={() => setCopied(true)}>
+					<CopyToClipboard text={url} onCopy={() => setCopied(true)}>
 						{copied ? (
 							<Check width="18" height="18" />
 						) : (
@@ -70,7 +79,7 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 			</Box>
 
 			<Link
-				href={post.url}
+				href={url}
 				target="_blank"
 				rel="noreferrer"
 				aria-label="Open in new tab"
@@ -79,30 +88,36 @@ const PostToolbar = ({ post }: PostToolbarProps) => {
 					<ExternalLink width="18" height="18" />
 				</IconButton>
 			</Link>
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
+			<Dialog.Root>
+				<Dialog.Trigger>
 					<IconButton aria-label="More options" variant="ghost" size="1">
-						<Ellipsis width="18" height="18" />
+						<MessageSquareOff width="18" height="18" />
 					</IconButton>
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content>
-					<DropdownMenu.Item>
+				</Dialog.Trigger>
+				<Dialog.Content>
+					<Dialog.Title>Mute this {type}</Dialog.Title>
+					<Dialog.Description>
+						You can mute just this {type} or all {type}s from this{" "}
+						{type === "post" ? "user" : "website"}.
+					</Dialog.Description>
+					<Flex gap="2" mt="4">
 						<fetcher.Form method="POST" action="/moderation">
-							<input type="hidden" name="newPhrase" value={post.actorHandle} />
-							<button
-								type="submit"
-								style={{
-									all: "unset",
-								}}
-							>
-								Mute {post.actorHandle}
-							</button>
+							<input type="hidden" name="newPhrase" value={narrowMutePhrase} />
+							<Button type="submit">
+								{type === "post" ? "Mute this post" : "Mute this link"}
+							</Button>
 						</fetcher.Form>
-					</DropdownMenu.Item>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+						<fetcher.Form method="POST" action="/moderation">
+							<input type="hidden" name="newPhrase" value={broadMutePhrase} />
+							<Button type="submit">
+								Mute all {type}s from {broadMutePhrase}
+							</Button>
+						</fetcher.Form>
+					</Flex>
+				</Dialog.Content>
+			</Dialog.Root>
 		</Flex>
 	);
 };
 
-export default PostToolbar;
+export default Toolbar;
