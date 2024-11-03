@@ -141,8 +141,9 @@ const LinkRep = ({ link }: LinkRepProps) => {
 									{" "}
 									<Button
 										type="submit"
+										variant="ghost"
 										style={{
-											all: "unset",
+											color: "white",
 										}}
 									>
 										Mute {host}
@@ -154,8 +155,9 @@ const LinkRep = ({ link }: LinkRepProps) => {
 								<DropdownMenu.Item>
 									<Button
 										type="submit"
+										variant="ghost"
 										style={{
-											all: "unset",
+											color: "white",
 										}}
 									>
 										Mute this link
