@@ -76,12 +76,12 @@ const LinkRep = ({ link }: LinkRepProps) => {
 					</Inset>
 				)}
 			{(url.hostname === "www.youtube.com" || url.hostname === "youtu.be") && (
-				<Inset mb="4" className={styles.inset}>
+				<Inset mb="-4" className={styles.inset}>
 					<YoutubeEmbed url={url} />
 				</Inset>
 			)}
 			{(url.hostname === "twitter.com" || url.hostname === "x.com") && (
-				<Inset mb="4" mt="-5" className={styles.inset}>
+				<Inset mt="-5" className={styles.inset}>
 					<XEmbed url={url} />
 				</Inset>
 			)}
