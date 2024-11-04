@@ -115,7 +115,9 @@ const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 					{link.description}
 				</Text>
 			</Box>
-			<Separator orientation="horizontal" size="4" my="4" />
+			<Inset mt="4">
+				<Separator orientation="horizontal" size="4" my="4" />
+			</Inset>
 			<Toolbar
 				url={link.url}
 				narrowMutePhrase={link.url}

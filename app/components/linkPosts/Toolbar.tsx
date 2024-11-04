@@ -22,7 +22,7 @@ const Toolbar = ({
 	bsky,
 }: ToolbarProps) => {
 	return (
-		<Flex justify="between" mx="1">
+		<Flex justify="between" mx="1" mt="4">
 			<ShareLink url={url} instance={instance} bsky={bsky} />
 			<CopyLink url={url} />
 			<OpenLink url={url} />

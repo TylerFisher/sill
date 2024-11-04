@@ -1,4 +1,4 @@
-import { Avatar, Box, Card, Flex, Separator } from "@radix-ui/themes";
+import { Avatar, Box, Card, Flex, Inset, Separator } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
@@ -103,7 +103,9 @@ const PostRep = ({
 					<PostContent post={quote.post} image={quote.image} />
 				</Card>
 			)}
-			<Separator size="4" my="4" />
+			<Inset mt="4">
+				<Separator size="4" my="4" />
+			</Inset>
 			<Toolbar
 				url={post.url}
 				narrowMutePhrase={post.url}
