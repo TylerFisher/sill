@@ -7,7 +7,7 @@ import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
 
-const LinkFilters = () => {
+const LinkFilters = ({ showService }: { showService: boolean }) => {
 	const [open, setOpen] = useState(false);
 	const [searchParams, setSearchParams] = useSearchParams();
 
@@ -76,7 +76,10 @@ const LinkFilters = () => {
 				},
 			],
 		},
-		{
+	];
+
+	showService &&
+		buttonGroups.push({
 			heading: "Service",
 			defaultValue: searchParams.get("service") || "all",
 			param: "service",
@@ -94,8 +97,7 @@ const LinkFilters = () => {
 					label: "All",
 				},
 			],
-		},
-	];
+		});
 
 	return (
 		<Collapsible.Root

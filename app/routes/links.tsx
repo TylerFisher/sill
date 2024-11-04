@@ -202,7 +202,7 @@ const Links = () => {
 	return (
 		<Layout>
 			<Box mb="6" position="relative">
-				<LinkFilters />
+				<LinkFilters showService={!!(data.bsky && data.instance)} />
 				<Box position="absolute" right="0" top="0" width="50%">
 					<Form method="GET">
 						<SearchField />
