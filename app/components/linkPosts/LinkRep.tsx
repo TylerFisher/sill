@@ -1,39 +1,25 @@
 import {
 	AspectRatio,
 	Box,
-	Button,
 	Card,
-	DropdownMenu,
-	Flex,
 	Heading,
-	IconButton,
 	Inset,
 	Link,
 	Separator,
 	Text,
 } from "@radix-ui/themes";
-import { useFetcher } from "@remix-run/react";
-import {
-	Check,
-	Copy,
-	Ellipsis,
-	ExternalLink,
-	MessageSquareOff,
-} from "lucide-react";
 import * as ReactTweet from "react-tweet";
 import Youtube from "react-youtube";
 import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
-import ShareOpenly from "../icons/ShareOpenly";
-import { useEffect, useState } from "react";
-import CopyToClipboard from "react-copy-to-clipboard";
-import PostToolbar from "./Toolbar";
 import Toolbar from "./Toolbar";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
+	instance: string | undefined;
+	bsky: string | undefined;
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
@@ -56,21 +42,10 @@ const XEmbed = ({ url }: { url: URL }) => {
 	);
 };
 
-const LinkRep = ({ link }: LinkRepProps) => {
+const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 	if (!link) return null;
-	const [copied, setCopied] = useState(false);
-	const fetcher = useFetcher();
 	const url = new URL(link.url);
 	const host = url.host;
-
-	useEffect(() => {
-		if (copied) {
-			const timeout = setTimeout(() => {
-				setCopied(false);
-			}, 2000);
-			return () => clearTimeout(timeout);
-		}
-	}, [copied]);
 
 	return (
 		<Card mb="5">
@@ -145,6 +120,8 @@ const LinkRep = ({ link }: LinkRepProps) => {
 				url={link.url}
 				narrowMutePhrase={link.url}
 				broadMutePhrase={host}
+				instance={instance}
+				bsky={bsky}
 				type="link"
 			/>
 		</Card>

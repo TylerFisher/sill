@@ -10,9 +10,19 @@ interface PostRepProps {
 	actor: PostReturn["actor"];
 	quote: PostReturn["quote"];
 	image: PostReturn["image"];
+	instance: string | undefined;
+	bsky: string | undefined;
 }
 
-const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
+const PostRep = ({
+	post,
+	group,
+	actor,
+	quote,
+	image,
+	instance,
+	bsky,
+}: PostRepProps) => {
 	const reposters = group
 		.filter((l) => l.post.repostHandle !== l.post.actorHandle && l.reposter)
 		.map((l) => l.reposter)
@@ -99,6 +109,8 @@ const PostRep = ({ post, group, actor, quote, image }: PostRepProps) => {
 				narrowMutePhrase={post.url}
 				broadMutePhrase={post.actorHandle}
 				type="post"
+				instance={instance}
+				bsky={bsky}
 			/>
 		</Card>
 	);

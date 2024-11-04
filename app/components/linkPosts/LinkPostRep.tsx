@@ -9,9 +9,11 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
+	instance: string | undefined;
+	bsky: string | undefined;
 }
 
-const LinkPostRep = ({ linkPost }: LinkPostRepProps) => {
+const LinkPostRep = ({ linkPost, instance, bsky }: LinkPostRepProps) => {
 	if (!linkPost.posts || !linkPost.link) return null;
 	const [open, setOpen] = useState(false);
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.post.url);
@@ -22,7 +24,7 @@ const LinkPostRep = ({ linkPost }: LinkPostRepProps) => {
 
 	return (
 		<Box key={linkPost.link.url}>
-			<LinkRep link={linkPost.link} />
+			<LinkRep link={linkPost.link} instance={instance} bsky={bsky} />
 			<Collapsible.Root
 				className="CollapsibleRoot"
 				open={open}
@@ -64,6 +66,8 @@ const LinkPostRep = ({ linkPost }: LinkPostRepProps) => {
 								actor={group[0].actor}
 								quote={group[0].quote}
 								image={group[0].image}
+								instance={instance}
+								bsky={bsky}
 							/>
 						))}
 					</Box>

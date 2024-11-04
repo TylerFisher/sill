@@ -9,6 +9,8 @@ interface ToolbarProps {
 	narrowMutePhrase: string;
 	broadMutePhrase: string;
 	type: "post" | "link";
+	instance: string | undefined;
+	bsky: string | undefined;
 }
 
 const Toolbar = ({
@@ -16,10 +18,12 @@ const Toolbar = ({
 	narrowMutePhrase,
 	broadMutePhrase,
 	type,
+	instance,
+	bsky,
 }: ToolbarProps) => {
 	return (
 		<Flex justify="between" mx="1">
-			<ShareLink url={url} />
+			<ShareLink url={url} instance={instance} bsky={bsky} />
 			<CopyLink url={url} />
 			<OpenLink url={url} />
 			<MuteActions

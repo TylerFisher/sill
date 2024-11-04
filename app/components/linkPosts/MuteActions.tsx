@@ -21,13 +21,7 @@ const MuteActions = ({
 				</IconButton>
 			</Popover.Trigger>
 			<Popover.Content>
-				<Flex
-					gap="4"
-					direction={{
-						initial: "column",
-						sm: "row",
-					}}
-				>
+				<Flex gap="4" direction="column">
 					<fetcher.Form method="POST" action="/moderation">
 						<input type="hidden" name="newPhrase" value={narrowMutePhrase} />
 						<Button

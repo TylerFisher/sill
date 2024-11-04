@@ -4,6 +4,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { Box, Flex, Separator, Spinner } from "@radix-ui/themes";
 import {
+	data,
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
@@ -24,7 +25,7 @@ import SearchField from "~/components/forms/SearchField";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
-import { blueskyAccount } from "~/drizzle/schema.server";
+import { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
 import {
@@ -65,6 +66,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}
 		}
 	}
+
+	const mastodon = await db.query.mastodonAccount.findFirst({
+		where: eq(mastodonAccount.userId, userId),
+		with: {
+			mastodonInstance: {
+				columns: {
+					instance: true,
+				},
+			},
+		},
+	});
 
 	const url = new URL(request.url);
 
@@ -112,7 +124,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		});
 	}
 
-	return { cachedData, links, key: uuidv7() };
+	return {
+		cachedData,
+		links,
+		key: uuidv7(),
+		instance: mastodon?.mastodonInstance.instance,
+		bsky: bsky?.handle,
+	};
 };
 
 const Links = () => {
@@ -198,7 +216,12 @@ const Links = () => {
 							<Spinner size="3" />
 						</Flex>
 						{data.cachedData?.map((link) => (
-							<LinkPost key={link.link?.url} linkPost={link} />
+							<LinkPost
+								key={link.link?.url}
+								linkPost={link}
+								instance={data.instance}
+								bsky={data.bsky}
+							/>
 						))}
 					</div>
 				}
@@ -208,13 +231,22 @@ const Links = () => {
 						<div>
 							{links.map((link) => (
 								<div key={link.link?.url}>
-									<LinkPost linkPost={link} />
+									<LinkPost
+										linkPost={link}
+										instance={data.instance}
+										bsky={data.bsky}
+									/>
 								</div>
 							))}
 							{fetchedLinks.length > 0 && (
 								<div>
 									{fetchedLinks.map((link) => (
-										<LinkPost key={link.link?.url} linkPost={link} />
+										<LinkPost
+											key={link.link?.url}
+											linkPost={link}
+											instance={data.instance}
+											bsky={data.bsky}
+										/>
 									))}
 								</div>
 							)}
@@ -234,9 +266,17 @@ const Links = () => {
 	);
 };
 
-const LinkPost = ({ linkPost }: { linkPost: MostRecentLinkPosts }) => (
+const LinkPost = ({
+	linkPost,
+	instance,
+	bsky,
+}: {
+	linkPost: MostRecentLinkPosts;
+	instance: string | undefined;
+	bsky: string | undefined;
+}) => (
 	<div>
-		<LinkPostRep linkPost={linkPost} />
+		<LinkPostRep linkPost={linkPost} instance={instance} bsky={bsky} />
 		<Separator my="7" size="4" orientation="horizontal" />
 	</div>
 );
