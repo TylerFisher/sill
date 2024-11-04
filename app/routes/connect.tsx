@@ -46,11 +46,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return { user: existingUser };
+	const instances = await db.query.mastodonInstance.findMany({
+		columns: {
+			instance: true,
+		},
+	});
+
+	return { user: existingUser, instances };
 };
 
 const Connect = () => {
-	const { user } = useLoaderData<typeof loader>();
+	const { user, instances } = useLoaderData<typeof loader>();
 	if (!user) return null;
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
@@ -107,9 +113,16 @@ const Connect = () => {
 							placeholder="Enter your Mastodon instance (e.g. mastodon.social)"
 							required
 							mb="3"
+							list="instances"
+							autoComplete="off"
 						>
 							<TextField.Slot>https://</TextField.Slot>
 						</TextField.Root>
+						<datalist id="instances">
+							{instances.map((instance) => (
+								<option key={instance.instance}>{instance.instance}</option>
+							))}
+						</datalist>
 						<Button type="submit">Connect</Button>
 					</Form>
 					<Callout.Root mt="4">
