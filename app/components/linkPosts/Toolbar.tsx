@@ -55,15 +55,15 @@ const Toolbar = ({
 				</IconButton>
 			</Link>
 			<Box position="relative">
-				<IconButton aria-label="Copy URL" variant="ghost" size="1">
-					<CopyToClipboard text={url} onCopy={() => setCopied(true)}>
+				<CopyToClipboard text={url} onCopy={() => setCopied(true)}>
+					<IconButton aria-label="Copy URL" variant="ghost" size="1">
 						{copied ? (
 							<Check width="18" height="18" />
 						) : (
 							<Copy width="18" height="18" />
 						)}
-					</CopyToClipboard>
-				</IconButton>
+					</IconButton>
+				</CopyToClipboard>
 				{copied && (
 					<Text
 						style={{
