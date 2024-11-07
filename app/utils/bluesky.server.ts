@@ -524,7 +524,12 @@ export const getLinksFromBluesky = async (userId: string) => {
 		return null;
 	}
 
-	const actors = processedResults.flatMap((p) => p.actors);
+	const actors = processedResults
+		.flatMap((p) => p.actors)
+		.filter(
+			(obj1, i, arr) =>
+				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
+		);
 	const quotedPosts = processedResults
 		.map((p) => p.quotedPost)
 		.filter((p) => p !== undefined);
