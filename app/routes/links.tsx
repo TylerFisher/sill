@@ -106,13 +106,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
-		fetch: url.search === "",
+		fetch: !url.searchParams.get("page"),
 		...options,
 	});
 
 	// If we're not using any filters, use the cache
 	let cachedData: MostRecentLinkPosts[] = [];
-	if (url.search === "") {
+	if (!url.searchParams.get("page")) {
 		const redis = connection();
 		const cache = await redis.get(await getUserCacheKey(userId));
 		if (cache) {
