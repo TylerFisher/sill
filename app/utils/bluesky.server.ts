@@ -16,7 +16,11 @@ import {
 } from "@atproto/oauth-client-node";
 import { extractFromUrl } from "@jcottam/html-metadata";
 import { type SQL, and, eq, getTableColumns, sql } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
+import {
+	getTableConfig,
+	type PgTable,
+	type PgUpdateSetSource,
+} from "drizzle-orm/pg-core";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import {
@@ -548,7 +552,13 @@ export const getLinksFromBluesky = async (userId: string) => {
 
 	await db.transaction(async (tx) => {
 		if (actors.length > 0)
-			await tx.insert(actor).values(actors).onConflictDoNothing();
+			await tx
+				.insert(actor)
+				.values(actors)
+				.onConflictDoUpdate({
+					target: [actor.handle],
+					set: conflictUpdateSetAllColumns(actor),
+				});
 		if (quotedPosts.length > 0)
 			await tx.insert(post).values(quotedPosts).onConflictDoNothing();
 		if (posts.length > 0)
@@ -559,7 +569,7 @@ export const getLinksFromBluesky = async (userId: string) => {
 				.values(links)
 				.onConflictDoUpdate({
 					target: [link.url],
-					set: buildConflictUpdateColumns(link, ["title", "description"]),
+					set: conflictUpdateSetAllColumns(link),
 				});
 		if (images.length > 0)
 			await tx.insert(postImage).values(images).onConflictDoNothing();
@@ -671,23 +681,25 @@ export const fetchLinkMetadata = async (uri: string) => {
 	}
 };
 
-const buildConflictUpdateColumns = <
-	T extends PgTable,
-	Q extends keyof T["_"]["columns"],
->(
-	table: T,
-	columns: Q[],
-) => {
-	const cls = getTableColumns(table);
-	return columns.reduce(
-		(acc, column) => {
-			const colName = cls[column].name;
-			acc[column] = sql.raw(`excluded.${colName}`);
+export function conflictUpdateSetAllColumns<TTable extends PgTable>(
+	table: TTable,
+): PgUpdateSetSource<TTable> {
+	const columns = getTableColumns(table);
+	const { name: tableName } = getTableConfig(table);
+	const conflictUpdateSet = Object.entries(columns).reduce(
+		(acc, [columnName, columnInfo]) => {
+			if (!columnInfo.default && columnInfo.name !== "id") {
+				// @ts-ignore
+				acc[columnName] = sql.raw(
+					`COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`,
+				);
+			}
 			return acc;
 		},
-		{} as Record<Q, SQL>,
-	);
-};
+		{},
+	) as PgUpdateSetSource<TTable>;
+	return conflictUpdateSet;
+}
 
 const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
 	const rt = new RichText({
