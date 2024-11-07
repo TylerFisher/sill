@@ -41,13 +41,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const profile = await agent.getProfile({
 			actor: oauthSession.did,
 		});
-		await db.insert(blueskyAccount).values({
-			id: uuidv7(),
-			did: oauthSession.did,
-			handle: profile.data.handle,
-			userId: userId,
-			service: oauthSession.serverMetadata.issuer,
-		});
+		await db
+			.insert(blueskyAccount)
+			.values({
+				id: uuidv7(),
+				did: oauthSession.did,
+				handle: profile.data.handle,
+				userId: userId,
+				service: oauthSession.serverMetadata.issuer,
+			})
+			.onConflictDoUpdate({
+				target: blueskyAccount.did,
+				set: {
+					handle: profile.data.handle,
+					service: oauthSession.serverMetadata.issuer,
+				},
+			});
 
 		blueskyFetchQueue.add(`${userId}-bluesky-fetch`, {
 			userId,

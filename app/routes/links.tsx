@@ -60,7 +60,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				const client = await createOAuthClient();
 				const url = await client.authorize(bsky.handle, {
 					scope: "atproto transition:generic",
-					state: JSON.stringify(bsky),
 				});
 				return redirect(url.toString());
 			}
