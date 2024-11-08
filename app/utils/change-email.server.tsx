@@ -45,7 +45,7 @@ export async function handleVerification({
 	}
 	const preUpdateUser = await db.query.user.findFirst({
 		columns: { email: true },
-		where: eq(user.id, submission.value.target),
+		where: eq(user.email, submission.value.target),
 	});
 
 	if (!preUpdateUser) {
@@ -57,7 +57,7 @@ export async function handleVerification({
 		.set({
 			email: newEmail,
 		})
-		.where(eq(user.id, submission.value.target))
+		.where(eq(user.email, submission.value.target))
 		.returning({
 			id: user.id,
 			email: user.email,

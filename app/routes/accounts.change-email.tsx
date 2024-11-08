@@ -47,13 +47,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
 	const userId = await requireUserId(request);
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+	});
+
+	if (!existingUser) {
+		throw new Error("User not found");
+	}
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		schema: ChangeEmailSchema.superRefine(async (data, ctx) => {
-			const existingUser = await db.query.user.findFirst({
+			const userForEmail = await db.query.user.findFirst({
 				where: eq(user.email, data.email),
 			});
-			if (existingUser) {
+			if (userForEmail) {
 				ctx.addIssue({
 					path: ["email"],
 					code: z.ZodIssueCode.custom,
@@ -73,7 +80,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const { otp, redirectTo, verifyUrl } = await prepareVerification({
 		period: 10 * 60,
 		request,
-		target: userId,
+		target: existingUser.email,
 		type: "change-email",
 	});
 
