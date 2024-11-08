@@ -2,7 +2,7 @@ import {
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
-import { Box, Flex, Separator, Spinner } from "@radix-ui/themes";
+import { Box, Flex, Inset, Separator, Spinner } from "@radix-ui/themes";
 import {
 	data,
 	type LoaderFunctionArgs,
@@ -205,18 +205,22 @@ const Links = () => {
 				position="sticky"
 				top="0"
 				py="4"
+				px="4"
+				mx="-4"
 				style={{
 					zIndex: 1,
 					backgroundColor: "var(--accent-1)",
+					borderBottom: "1px solid var(--gray-a6)",
 				}}
 			>
 				<LinkFilters showService={!!(data.bsky && data.instance)} />
-				<Box position="absolute" right="0" top="10px" width="50%">
+				<Box position="absolute" right="16px" top="8px" width="50%">
 					<Form method="GET">
 						<SearchField />
 					</Form>
 				</Box>
 			</Box>
+
 			<Suspense
 				fallback={
 					<div>
