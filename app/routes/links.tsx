@@ -92,7 +92,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
 	};
 
-	const timeParam = url.searchParams.get("time") || "24h";
+	const timeParam = url.searchParams.get("time");
 	let time = 86400000;
 
 	if (timeParam === "3h") {
@@ -112,7 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	// If we're not using any filters, use the cache
 	let cachedData: MostRecentLinkPosts[] = [];
-	if (!url.searchParams.get("page")) {
+	if (url.search === "") {
 		const redis = connection();
 		const cache = await redis.get(await getUserCacheKey(userId));
 		if (cache) {
