@@ -3,9 +3,8 @@ import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
 import { IconButton } from "@radix-ui/themes";
 import { type ActionFunctionArgs, data } from "@remix-run/node";
-import { redirect, useFetcher, useFetchers } from "@remix-run/react";
+import { useFetcher, useFetchers } from "@remix-run/react";
 import { Moon, Sun } from "lucide-react";
-import { ServerOnly } from "remix-utils/server-only";
 import { z } from "zod";
 import { useHints } from "~/utils/client-hints";
 import { useRequestInfo } from "~/utils/request-info";
@@ -13,8 +12,6 @@ import { type Theme, setTheme } from "~/utils/theme.server";
 
 const ThemeFormSchema = z.object({
 	theme: z.enum(["light", "dark"]),
-	// this is useful for progressive enhancement
-	redirectTo: z.string().optional(),
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -25,14 +22,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	invariantResponse(submission.status === "success", "Invalid theme received");
 
-	const { theme, redirectTo } = submission.value;
+	const { theme } = submission.value;
 
 	const responseInit = {
 		headers: { "set-cookie": setTheme(theme) },
 	};
-	if (redirectTo) {
-		return redirect(redirectTo, responseInit);
-	}
 	return data({ result: submission.reply() }, responseInit);
 }
 
@@ -42,7 +36,6 @@ export function ThemeSwitch({
 	userPreference?: Theme | null;
 }) {
 	const fetcher = useFetcher<typeof action>();
-	const requestInfo = useRequestInfo();
 
 	const [form] = useForm({
 		id: "theme-switch",
@@ -63,11 +56,6 @@ export function ThemeSwitch({
 			{...getFormProps(form)}
 			action="/resources/theme-switch"
 		>
-			<ServerOnly>
-				{() => (
-					<input type="hidden" name="redirectTo" value={requestInfo.path} />
-				)}
-			</ServerOnly>
 			<input type="hidden" name="theme" value={nextMode} />
 			<IconButton
 				type="submit"
@@ -109,6 +97,5 @@ export function useOptimisticThemeMode() {
 export function useTheme() {
 	const hints = useHints();
 	const requestInfo = useRequestInfo();
-	const optimisticMode = useOptimisticThemeMode();
 	return requestInfo.userPrefs.theme ?? hints.theme;
 }
