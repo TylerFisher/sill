@@ -1,4 +1,4 @@
-import { Button, Hr, Text } from "@react-email/components";
+import { Button, Hr, Link, Text } from "@react-email/components";
 import EmailHeading from "~/components/emails/Heading";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
@@ -33,6 +33,12 @@ const TopLinks = ({ links, name }: TopLinksProps) => {
 			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>
+			<Text>
+				Feedback? Email{" "}
+				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>. Want to
+				stop getting these emails? Adjust your email settings{" "}
+				<Link href="https://sill.social/email">here</Link>.
+			</Text>
 		</EmailLayout>
 	);
 };

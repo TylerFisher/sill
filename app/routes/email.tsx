@@ -9,8 +9,8 @@ import {
 import {
 	Form,
 	Link,
-	json,
 	useActionData,
+	useFetcher,
 	useLoaderData,
 	useSearchParams,
 } from "@remix-run/react";
@@ -79,6 +79,7 @@ const EmailSettings = () => {
 	const actionData = useActionData<typeof action>();
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
+	const fetcher = useFetcher();
 
 	const [form, fields] = useForm({
 		lastResult: actionData?.result,
@@ -145,6 +146,15 @@ const EmailSettings = () => {
 						Save
 					</Button>
 				</Box>
+				{defaultValue && (
+					<Box mt="4">
+						<fetcher.Form method="DELETE" action="/email/delete">
+							<Button type="submit" color="red">
+								Turn off daily email
+							</Button>
+						</fetcher.Form>
+					</Box>
+				)}
 			</Form>
 			{onboarding && (
 				<Box mt="8">
