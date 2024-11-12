@@ -65,12 +65,42 @@ const Connect = () => {
 			<Box mb="6">
 				<PageHeading
 					title="Connect your accounts"
-					dek="Sill connects to your Mastodon and Bluesky accounts and gathers all of the links posted to your timeline. Then, Sill aggregates those links to show you the most popular links in your network. You can connect to one or both of these services."
+					dek="Sill connects to your Bluesky and Mastodon accounts and gathers all of the links posted to your timeline. Then, Sill aggregates those links to show you the most popular links in your network. You can connect to one or both of these services."
 				/>
 			</Box>
-
-			{user.mastodonAccounts.length > 0 ? (
+			{user.blueskyAccounts.length > 0 ? (
 				<Card mb="6">
+					<Heading size="5" mb="1">
+						Bluesky
+					</Heading>
+					<Text size="2" as="p" mb="3">
+						You are connected to <Badge>{user.blueskyAccounts[0].handle}</Badge>
+						.
+					</Text>
+					<Form action="/bluesky/auth/revoke" method="post">
+						<Button type="submit">Disconnect</Button>
+					</Form>
+				</Card>
+			) : (
+				<Card mb="6">
+					<Heading size="5" mb="1">
+						Bluesky
+					</Heading>
+					<Form action="/bluesky/auth" method="GET">
+						<TextField.Root
+							name="handle"
+							placeholder="Enter your Bluesky handle (e.g. tyler.bsky.social)"
+							required
+							mb="3"
+						>
+							<TextField.Slot>@</TextField.Slot>
+						</TextField.Root>
+						<Button type="submit">Connect</Button>
+					</Form>
+				</Card>
+			)}
+			{user.mastodonAccounts.length > 0 ? (
+				<Card>
 					<Heading as="h3" size="5" mb="1">
 						Mastodon
 					</Heading>
@@ -138,37 +168,6 @@ const Connect = () => {
 							turn off the setting.
 						</Callout.Text>
 					</Callout.Root>
-				</Card>
-			)}
-			{user.blueskyAccounts.length > 0 ? (
-				<Card>
-					<Heading size="5" mb="1">
-						Bluesky
-					</Heading>
-					<Text size="2" as="p" mb="3">
-						You are connected to <Badge>{user.blueskyAccounts[0].handle}</Badge>
-						.
-					</Text>
-					<Form action="/bluesky/auth/revoke" method="post">
-						<Button type="submit">Disconnect</Button>
-					</Form>
-				</Card>
-			) : (
-				<Card>
-					<Heading size="5" mb="1">
-						Bluesky
-					</Heading>
-					<Form action="/bluesky/auth" method="GET">
-						<TextField.Root
-							name="handle"
-							placeholder="Enter your Bluesky handle (e.g. tyler.bsky.social)"
-							required
-							mb="3"
-						>
-							<TextField.Slot>@</TextField.Slot>
-						</TextField.Root>
-						<Button type="submit">Connect</Button>
-					</Form>
 				</Card>
 			)}
 			{onboarding &&
