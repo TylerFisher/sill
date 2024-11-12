@@ -9,6 +9,7 @@ import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+export const streamTimeout = 25000;
 const ABORT_DELAY = 30_000;
 export default function handleRequest(
 	request: Request,
