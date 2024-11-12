@@ -41,8 +41,6 @@ services:
 
   db:
     image: postgres:latest
-    ports:
-      - "5433:5432"  # Expose PostgreSQL port to host
     volumes:
       - postgres_db:/var/lib/postgresql/data
     environment:
@@ -64,6 +62,24 @@ services:
       options:
         max-size: "50m"
         max-file: "6"
+  
+  pgbouncer:
+    container_name: pgbouncer
+    image: edoburu/pgbouncer:latest
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_NAME=sill
+      - AUTH_TYPE=scram-sha-256
+      - POOL_MODE=transaction
+      - ADMIN_USERS=postgres
+    ports:
+      - "5432:5432"
+    depends_on:
+      - db
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', 'localhost']
 
   remix:
     build:

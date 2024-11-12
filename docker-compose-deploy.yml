@@ -52,8 +52,6 @@ services:
   db:
     image: postgres:alpine
     container_name: postgres_db
-    expose:
-      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -75,6 +73,24 @@ services:
         max-size: "50m"
         max-file: "6"
 
+  pgbouncer:
+    container_name: pgbouncer
+    image: edoburu/pgbouncer:latest
+    environment:
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_NAME=${POSTGRES_DB:-postgres}
+      - AUTH_TYPE=scram-sha-256
+      - POOL_MODE=transaction
+      - ADMIN_USERS=${POSTGRES_USER:-postgres}
+    ports:
+      - "5432:5432"
+    depends_on:
+      - db
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', 'localhost']
+
   remix:
     image: ghcr.io/tylerfisher/sill/remix:latest
     env_file:
@@ -82,7 +98,7 @@ services:
     environment:
       - NODE_ENV=production
     depends_on:
-      - db
+      - pgbouncer
       - redis
       - traefik
       - dozzle
