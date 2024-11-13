@@ -1,4 +1,7 @@
-import { OAuthResponseError } from "@atproto/oauth-client-node";
+import {
+	OAuthResolverError,
+	OAuthResponseError,
+} from "@atproto/oauth-client-node";
 import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { createOAuthClient } from "~/server/oauth/client";
 
@@ -20,6 +23,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				scope: "atproto transition:generic",
 			});
 			return redirect(url.toString());
+		}
+
+		if (error instanceof OAuthResolverError) {
+			return redirect("/connect?error=resolver");
 		}
 		throw error;
 	}

@@ -96,6 +96,17 @@ const Connect = () => {
 							<TextField.Slot>@</TextField.Slot>
 						</TextField.Root>
 						<Button type="submit">Connect</Button>
+						{searchParams.get("error") === "resolver" && (
+							<Callout.Root mt="4">
+								<Callout.Icon>
+									<CircleAlert width="18" height="18" />
+								</Callout.Icon>
+								<Callout.Text>
+									We couldn't find a Bluesky account with that handle. Please
+									try again.
+								</Callout.Text>
+							</Callout.Root>
+						)}
 					</Form>
 				</Card>
 			)}
