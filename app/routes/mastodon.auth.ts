@@ -7,18 +7,25 @@ import { getAuthorizationUrl } from "~/utils/mastodon.server";
 import { createInstanceCookie } from "~/utils/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-	const instance = new URL(request.url).searchParams.get("instance");
+	const requestUrl = new URL(request.url);
+	const instance = requestUrl.searchParams.get("instance");
 
 	if (!instance) {
 		return null;
 	}
 
+	// If someone entered their full handle, get the instance from it
+	let correctedInstance = instance;
+	if (instance.includes("@")) {
+		correctedInstance = instance.split("@").at(-1) as string;
+	}
+
 	let instanceData = await db.query.mastodonInstance.findFirst({
-		where: eq(mastodonInstance.instance, instance),
+		where: eq(mastodonInstance.instance, correctedInstance),
 	});
 	if (!instanceData) {
 		try {
-			const response = await fetch(`https://${instance}/api/v1/apps`, {
+			const response = await fetch(`https://${correctedInstance}/api/v1/apps`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -35,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				.insert(mastodonInstance)
 				.values({
 					id: uuidv7(),
-					instance: instance,
+					instance: correctedInstance,
 					clientId: data.client_id,
 					clientSecret: data.client_secret,
 				})
@@ -50,10 +57,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			instanceData = insert[0];
 		} catch (error) {
 			console.error(error);
-			return redirect("/connect?error=instance");
+			requestUrl.searchParams.set("error", "instance");
+			return redirect(requestUrl.toString());
 		}
 	}
 
-	const authorizationUrl = getAuthorizationUrl(instance, instanceData.clientId);
-	return await createInstanceCookie(request, instance, authorizationUrl);
+	const authorizationUrl = getAuthorizationUrl(
+		correctedInstance,
+		instanceData.clientId,
+	);
+	return await createInstanceCookie(
+		request,
+		correctedInstance,
+		authorizationUrl,
+	);
 };
