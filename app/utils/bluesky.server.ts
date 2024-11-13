@@ -15,27 +15,20 @@ import {
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
 import { extractFromUrl } from "@jcottam/html-metadata";
-import { type SQL, and, eq, getTableColumns, sql } from "drizzle-orm";
-import {
-	getTableConfig,
-	type PgTable,
-	type PgUpdateSetSource,
-} from "drizzle-orm/pg-core";
+import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import {
-	actor,
 	blueskyAccount,
 	link,
 	linkPost,
 	linkPostToUser,
-	post,
-	postImage,
 	postType,
 	post as schemaPost,
 } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { linksQueue } from "~/utils/queue.server";
+import type { ProcessedResult } from "./links.server";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -499,6 +492,11 @@ const processBlueskyLink = async (
 		date: new Date(t.post.indexedAt),
 	};
 
+	const newLinkPostToUser = {
+		userId,
+		linkPostId: newLinkPost.id,
+	};
+
 	return {
 		actors,
 		quotedPost,
@@ -506,94 +504,24 @@ const processBlueskyLink = async (
 		post,
 		link,
 		newLinkPost,
+		newLinkPostToUser,
 	};
 };
 
 /**
- * Gets Bluesky timeline, processes posts, and inserts data into database
+ * Gets Bluesky timeline and processed posts
  * @param userId ID for logged in user
- * @returns void
+ * @returns Processed posts for database insertion
  */
-export const getLinksFromBluesky = async (userId: string) => {
+export const getLinksFromBluesky = async (
+	userId: string,
+): Promise<ProcessedResult[]> => {
 	const timeline = await getBlueskyTimeline(userId);
 	const processedResults = (
 		await Promise.all(timeline.map((t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
-	if (processedResults.length === 0) {
-		return null;
-	}
-
-	const actors = processedResults
-		.flatMap((p) => p.actors)
-		.filter(
-			(obj1, i, arr) =>
-				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
-		);
-	const quotedPosts = processedResults
-		.map((p) => p.quotedPost)
-		.filter((p) => p !== undefined);
-	const posts = processedResults.map((p) => p.post);
-
-	const links = Object.values(
-		processedResults.reduce(
-			(acc, p) => {
-				const existing = acc[p.link.url];
-				if (
-					!existing ||
-					(p.link.title && !existing.title) ||
-					(p.link.description && !existing.description) ||
-					(p.link.imageUrl && !existing.imageUrl)
-				) {
-					acc[p.link.url] = p.link;
-				}
-				return acc;
-			},
-			{} as Record<string, (typeof processedResults)[0]["link"]>,
-		),
-	);
-	const linkPosts = processedResults.map((p) => p.newLinkPost);
-	const images = processedResults.flatMap((p) => p.images);
-
-	await db.transaction(async (tx) => {
-		if (actors.length > 0)
-			await tx
-				.insert(actor)
-				.values(actors)
-				.onConflictDoUpdate({
-					target: [actor.handle],
-					set: conflictUpdateSetAllColumns(actor),
-				});
-		if (quotedPosts.length > 0)
-			await tx.insert(post).values(quotedPosts).onConflictDoNothing();
-		if (posts.length > 0)
-			await tx.insert(post).values(posts).onConflictDoNothing();
-		if (links.length > 0)
-			await tx
-				.insert(link)
-				.values(links)
-				.onConflictDoUpdate({
-					target: [link.url],
-					set: conflictUpdateSetAllColumns(link),
-				});
-		if (images.length > 0)
-			await tx.insert(postImage).values(images).onConflictDoNothing();
-		if (linkPosts.length > 0) {
-			const createdLinkPosts = await tx
-				.insert(linkPost)
-				.values(linkPosts)
-				.onConflictDoNothing()
-				.returning({
-					id: linkPost.id,
-				});
-			await tx.insert(linkPostToUser).values(
-				createdLinkPosts.map((lp) => ({
-					userId,
-					linkPostId: lp.id,
-				})),
-			);
-		}
-	});
+	return processedResults;
 };
 
 /**
@@ -685,26 +613,6 @@ export const fetchLinkMetadata = async (uri: string) => {
 		console.error(`Failed to fetch link ${uri}`, e);
 	}
 };
-
-export function conflictUpdateSetAllColumns<TTable extends PgTable>(
-	table: TTable,
-): PgUpdateSetSource<TTable> {
-	const columns = getTableColumns(table);
-	const { name: tableName } = getTableConfig(table);
-	const conflictUpdateSet = Object.entries(columns).reduce(
-		(acc, [columnName, columnInfo]) => {
-			if (!columnInfo.default && columnInfo.name !== "id") {
-				// @ts-ignore
-				acc[columnName] = sql.raw(
-					`COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`,
-				);
-			}
-			return acc;
-		},
-		{},
-	) as PgUpdateSetSource<TTable>;
-	return conflictUpdateSet;
-}
 
 const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
 	const rt = new RichText({

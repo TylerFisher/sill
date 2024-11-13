@@ -10,6 +10,7 @@ import {
 	notIlike,
 	or,
 	sql,
+	getTableColumns,
 } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
@@ -23,6 +24,11 @@ import {
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import {
+	getTableConfig,
+	type PgTable,
+	type PgUpdateSetSource,
+} from "drizzle-orm/pg-core";
 
 const PAGE_SIZE = 10;
 
@@ -47,22 +53,29 @@ export type MostRecentLinkPosts = {
 	posts?: PostReturn[];
 };
 
-const DEFAULT_HIDE_REPOSTS = false;
-const DEFAULT_SORT = "popularity";
-const DEFAULT_QUERY = undefined;
-const DEFAULT_FETCH = false;
-const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
+export interface ProcessedResult {
+	actors: (typeof actor.$inferInsert)[];
+	quotedPost?: typeof post.$inferInsert;
+	post: typeof post.$inferInsert;
+	link: typeof link.$inferInsert;
+	newLinkPost: typeof linkPost.$inferInsert;
+	images?: (typeof postImage.$inferInsert)[];
+	newLinkPostToUser: typeof linkPostToUser.$inferInsert;
+}
 
 /**
  * Fetches links from Mastodon and Bluesky
  * @param userId ID for logged in user
  * @returns All fetched links from Mastodon and Bluesky
  */
-const fetchLinks = async (userId: string) => {
-	return await Promise.all([
+export const fetchLinks = async (
+	userId: string,
+): Promise<ProcessedResult[]> => {
+	const results = await Promise.all([
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
+	return results[1].concat(results[0]);
 };
 
 /**
@@ -76,6 +89,100 @@ const getMutePhrases = async (userId: string) => {
 	});
 };
 
+/**
+ * Dedupe and insert new links into the database
+ * @param processedResults All processed results to insert
+ * @param userId ID for logged in user
+ */
+export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
+	const actors = processedResults
+		.flatMap((p) => p.actors)
+		.filter(
+			(obj1, i, arr) =>
+				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
+		);
+	const quotedPosts = processedResults
+		.map((p) => p.quotedPost)
+		.filter((p) => p !== undefined);
+	const posts = processedResults.map((p) => p.post);
+
+	const links = Object.values(
+		processedResults.reduce(
+			(acc, p) => {
+				const existing = acc[p.link.url];
+				if (
+					!existing ||
+					(p.link.title && !existing.title) ||
+					(p.link.description && !existing.description) ||
+					(p.link.imageUrl && !existing.imageUrl)
+				) {
+					acc[p.link.url] = p.link;
+				}
+				return acc;
+			},
+			{} as Record<string, (typeof processedResults)[0]["link"]>,
+		),
+	);
+	const linkPosts = processedResults.map((p) => p.newLinkPost);
+	const images = processedResults
+		.flatMap((p) => p.images)
+		.filter((p) => p !== undefined);
+	const newLinkPostsToUser = processedResults.map((p) => p.newLinkPostToUser);
+
+	await db.transaction(async (tx) => {
+		if (actors.length > 0)
+			await tx
+				.insert(actor)
+				.values(actors)
+				.onConflictDoUpdate({
+					target: [actor.handle],
+					set: conflictUpdateSetAllColumns(actor),
+				});
+		if (quotedPosts.length > 0)
+			await tx.insert(post).values(quotedPosts).onConflictDoNothing();
+		if (posts.length > 0)
+			await tx.insert(post).values(posts).onConflictDoNothing();
+		if (links.length > 0)
+			await tx
+				.insert(link)
+				.values(links)
+				.onConflictDoUpdate({
+					target: [link.url],
+					set: conflictUpdateSetAllColumns(link),
+				});
+		if (images.length > 0)
+			await tx.insert(postImage).values(images).onConflictDoNothing();
+		if (linkPosts.length > 0) {
+			await tx.insert(linkPost).values(linkPosts).onConflictDoNothing();
+		}
+		if (newLinkPostsToUser.length > 0) {
+			await tx
+				.insert(linkPostToUser)
+				.values(newLinkPostsToUser)
+				.onConflictDoNothing();
+		}
+	});
+};
+
+export function conflictUpdateSetAllColumns<TTable extends PgTable>(
+	table: TTable,
+): PgUpdateSetSource<TTable> {
+	const columns = getTableColumns(table);
+	const { name: tableName } = getTableConfig(table);
+	const conflictUpdateSet = Object.entries(columns).reduce(
+		(acc, [columnName, columnInfo]) => {
+			if (!columnInfo.default && columnInfo.name !== "id") {
+				// @ts-ignore
+				acc[columnName] = sql.raw(
+					`COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`,
+				);
+			}
+			return acc;
+		},
+		{},
+	) as PgUpdateSetSource<TTable>;
+	return conflictUpdateSet;
+}
 interface FilterArgs {
 	userId: string;
 	time?: number;
@@ -86,6 +193,12 @@ interface FilterArgs {
 	page?: number;
 	fetch?: boolean;
 }
+
+const DEFAULT_HIDE_REPOSTS = false;
+const DEFAULT_SORT = "popularity";
+const DEFAULT_QUERY = undefined;
+const DEFAULT_FETCH = false;
+const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 /**
  * Retrieves most recent link posts for a user in a given time frame
@@ -104,7 +217,8 @@ export const filterLinkOccurrences = async ({
 	fetch = DEFAULT_FETCH,
 }: FilterArgs) => {
 	if (fetch) {
-		await fetchLinks(userId);
+		const results = await fetchLinks(userId);
+		await insertNewLinks(results);
 	}
 
 	const offset = (page - 1) * PAGE_SIZE;

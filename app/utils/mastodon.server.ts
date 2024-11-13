@@ -3,15 +3,13 @@ import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import {
-	actor,
-	link,
 	linkPost,
 	linkPostToUser,
 	mastodonAccount,
-	post,
 	postType,
 	post as schemaPost,
 } from "~/drizzle/schema.server";
+import type { ProcessedResult } from "./links.server";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -303,62 +301,33 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		post.id,
 		original.createdAt,
 	);
+	const newLinkPostToUser = {
+		userId,
+		linkPostId: newLinkPost.id,
+	};
 
 	return {
 		actors,
 		post,
 		link,
 		newLinkPost,
+		newLinkPostToUser,
 	};
 };
 
 /**
- * Gets Mastodon timeline, processes posts, and inserts data into database
+ * Gets Mastodon timeline and processes posts
  * @param userId ID for logged in user
- * @returns void
+ * @returns Processed results for database insertion
  */
-export const getLinksFromMastodon = async (userId: string) => {
+export const getLinksFromMastodon = async (
+	userId: string,
+): Promise<ProcessedResult[]> => {
 	const timeline = await getMastodonTimeline(userId);
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
 	const processedResults = (
 		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))
 	).filter((p) => p !== null);
 
-	if (processedResults.length === 0) {
-		return null;
-	}
-
-	const actors = processedResults
-		.flatMap((p) => p.actors)
-		.filter(
-			(obj1, i, arr) =>
-				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
-		);
-	const posts = processedResults.map((p) => p.post);
-	const links = processedResults.map((p) => p.link);
-	const linkPosts = processedResults.map((p) => p.newLinkPost);
-
-	await db.transaction(async (tx) => {
-		if (actors.length > 0)
-			await tx.insert(actor).values(actors).onConflictDoNothing();
-		if (posts.length > 0)
-			await tx.insert(post).values(posts).onConflictDoNothing();
-		if (links.length > 0)
-			await tx.insert(link).values(links).onConflictDoNothing();
-		if (linkPosts.length > 0) {
-			const createdLinkPosts = await tx
-				.insert(linkPost)
-				.values(linkPosts)
-				.onConflictDoNothing()
-				.returning({
-					id: linkPost.id,
-				});
-			await tx.insert(linkPostToUser).values(
-				createdLinkPosts.map((lp) => ({
-					userId,
-					linkPostId: lp.id,
-				})),
-			);
-		}
-	});
+	return processedResults;
 };
