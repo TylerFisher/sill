@@ -3,23 +3,22 @@ import { filterLinkOccurrences } from "~/utils/links.server";
 import { getUserCacheKey } from "~/utils/redis.server";
 import { connection } from "~/utils/redis.server";
 
-export const config = {
-	maxDuration: 300,
-};
-
 export const loader = async () => {
 	const users = await db.query.user.findMany();
-	const updatedData = await Promise.all(
-		users.map(async (user) => {
+	const updatedData = [];
+	for (const user of users) {
+		try {
 			const linkCount = await filterLinkOccurrences({
 				userId: user.id,
 				fetch: true,
 			});
 			const redis = connection();
 			redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
-			return { ...user, linkCount };
-		}),
-	);
+			updatedData.push(user.email);
+		} catch (error) {
+			console.error(`Failed to update user ${user.email}:`, error);
+		}
+	}
 
 	return updatedData;
 };
