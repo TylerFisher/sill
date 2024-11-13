@@ -165,6 +165,17 @@ const Connect = () => {
 							))}
 						</datalist>
 						<Button type="submit">Connect</Button>
+						{searchParams.get("error") === "instance" && (
+							<Callout.Root mt="4">
+								<Callout.Icon>
+									<CircleAlert width="18" height="18" />
+								</Callout.Icon>
+								<Callout.Text>
+									We couldn't connect to that Mastodon instance. Please try
+									again.
+								</Callout.Text>
+							</Callout.Root>
+						)}
 					</Form>
 					<Callout.Root mt="4">
 						<Callout.Icon>
