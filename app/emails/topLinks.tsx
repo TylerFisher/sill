@@ -37,7 +37,7 @@ const TopLinks = ({ links, name }: TopLinksProps) => {
 				Feedback? Email{" "}
 				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>. Want to
 				stop getting these emails? Adjust your email settings{" "}
-				<Link href="https://sill.social/email">here</Link>.
+				<Link href="https://sill.social/connect">here</Link>.
 			</Text>
 		</EmailLayout>
 	);

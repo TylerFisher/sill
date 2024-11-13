@@ -18,18 +18,13 @@ const Nav = () => {
 			icon: <Zap className={styles["nav-list-item-icon"]} />,
 		},
 		{
-			to: "/email",
-			label: "Daily Email",
-			icon: <Mail className={styles["nav-list-item-icon"]} />,
-		},
-		{
 			to: "/moderation",
 			label: "Mute",
 			icon: <MessageSquareOff className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/settings",
-			label: "Profile",
+			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 		},
 	];
