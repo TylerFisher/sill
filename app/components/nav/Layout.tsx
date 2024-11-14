@@ -18,6 +18,22 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				sm: "5",
 			}}
 		>
+			<div
+				style={{
+					backgroundColor: "red",
+					color: "white",
+					padding: "1rem",
+				}}
+			>
+				<p
+					style={{
+						textAlign: "center",
+					}}
+				>
+					Bluesky is down. We have disabled fetching new links from Bluesky
+					until it is stable.
+				</p>
+			</div>
 			<div className={styles.wrapper}>
 				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
 				{!hideNav && (
