@@ -184,8 +184,10 @@ const Links = () => {
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
 			fetcher.data.links.then((links) => {
-				setFetchedLinks(fetchedLinks.concat(links));
-				setupIntersectionObserver();
+				if (links.length > 0) {
+					setFetchedLinks(fetchedLinks.concat(links));
+					setupIntersectionObserver();
+				}
 			});
 		}
 	}, [fetcher, fetchedLinks.concat]);

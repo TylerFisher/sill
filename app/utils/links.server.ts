@@ -71,12 +71,11 @@ export interface ProcessedResult {
 export const fetchLinks = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
-	// const results = await Promise.all([
-	// 	getLinksFromMastodon(userId),
-	// 	getLinksFromBluesky(userId),
-	// ]);
-	// return results[1].concat(results[0]);
-	return await getLinksFromMastodon(userId);
+	const results = await Promise.all([
+		getLinksFromMastodon(userId),
+		getLinksFromBluesky(userId),
+	]);
+	return results[1].concat(results[0]);
 };
 
 /**
