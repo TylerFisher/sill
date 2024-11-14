@@ -16,7 +16,9 @@ import CheckboxField from "~/components/forms/CheckboxField";
 import ErrorList from "~/components/forms/ErrorList";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
+import WelcomeEmail from "~/emails/Welcome";
 import { requireAnonymous, sessionKey, signup } from "~/utils/auth.server";
+import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { authSessionStorage } from "~/utils/session.server";
 import {
@@ -101,6 +103,12 @@ export async function action({ request }: ActionFunctionArgs) {
 		"set-cookie",
 		await verifySessionStorage.destroySession(verifySession),
 	);
+
+	await sendEmail({
+		to: email,
+		subject: "Welcome to Sill!",
+		react: <WelcomeEmail name={String(formData.get("name"))} />,
+	});
 
 	return redirect(safeRedirect(redirectTo), { headers });
 }

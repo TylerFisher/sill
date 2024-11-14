@@ -1,7 +1,6 @@
 import { Heading, Img, Link, Text } from "@react-email/components";
 import EmailHeading from "~/components/emails/Heading";
 import EmailLayout from "~/components/emails/Layout";
-import Lede from "~/components/emails/Lede";
 
 interface WelcomeEmailProps {
 	name: string | null;
@@ -10,9 +9,7 @@ interface WelcomeEmailProps {
 const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 	return (
 		<EmailLayout preview="Here's what you need to know to get started.">
-			<EmailHeading>Welcome to Sill</EmailHeading>
-			<Lede>Here's what you need to know to get started.</Lede>
-
+			<EmailHeading>Welcome to Sill!</EmailHeading>
 			<Text>
 				Hello{name ? ` ${name}` : ""}, thanks for signing up for Sill!
 				Hopefully, by now, you've connected your Bluesky and/or Mastodon
@@ -31,6 +28,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 			<Img
 				src="https://sill.social/marketing/post-example.png"
 				alt="Sill popularity ranking example"
+				style={imgStyles}
 			/>
 			<Text>
 				Sill counts both original posts and reposts in its popularity rankings.
@@ -47,6 +45,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 			<Img
 				src="https://sill.social/marketing/filters.png"
 				alt="Sill feed filters"
+				style={imgStyles}
 			/>
 			<Text>
 				First, you can use the filters to customize your view. You can hide
@@ -56,13 +55,14 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 			<Img
 				src="https://sill.social/marketing/mute.png"
 				alt="Screenshot of the UI for muting users and domains"
+				style={imgStyles}
 			/>
 			<Text>
 				If you don't want to see posts from certain users or links from certain
 				domains, you can mute them. Use the mute button on a link or a post to
 				add domains and accounts to your mute list. You can also go to{" "}
 				<Link href="https://sill.social/moderation">your mute settings</Link> to
-				manage your mute list.
+				manage your mute list and add custom mute phrases.
 			</Text>
 			<Text>
 				Finally, Sill can send you a daily email with the most popular links
@@ -74,10 +74,15 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 			<Text>
 				We're always looking to improve Sill. If you have any feedback or
 				suggestions, you can reach out to{" "}
-				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>
+				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
 			</Text>
 		</EmailLayout>
 	);
+};
+
+const imgStyles = {
+	width: "100%",
+	height: "auto",
 };
 
 export default WelcomeEmail;

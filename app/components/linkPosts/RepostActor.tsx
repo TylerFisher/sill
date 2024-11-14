@@ -1,6 +1,6 @@
 import { Button, Link, Popover, Text } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
-import type { MostRecentLinkPosts, PostReturn } from "~/utils/links.server";
+import type { PostReturn } from "~/utils/links.server";
 
 interface RepostActorProps {
 	actors: PostReturn["actor"][];
@@ -30,7 +30,7 @@ const MultipleActors = ({ actors }: RepostActorProps) => (
 		<Text size="1" as="p" color="gray">
 			<Popover.Trigger>
 				<Button variant="ghost" size="1">
-					Reposted by {actors.length} people
+					Reposted by {actors.length} accounts
 				</Button>
 			</Popover.Trigger>
 		</Text>
