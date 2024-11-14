@@ -96,8 +96,8 @@ jobs:
           echo "ENVIRONMENT=PRODUCTION" >> .env
           echo "NODE_ENV=production" >> .env
           echo "USE_SSL=true" >> .env
-          echo "WEB_DOMAIN=sill.social" >> .env
-          echo "PUBLIC_URL=https://sill.social" >> .env
+          echo "WEB_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}" >> .env
+          echo "PUBLIC_URL=https://${{ secrets.PUBLIC_DOMAIN }}" >> .env
           echo "TRAEFIK_DASHBOARD_DOMAIN=traefik.sill.social" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
@@ -112,6 +112,7 @@ jobs:
           echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
           echo "TRAEFIK_DASHBOARD_AUTH=${{ secrets.TRAEFIK_DASHBOARD_AUTH }}" >> .env
+          echo "CRON_API_KEY=${{ secrets.CRON_API_KEY }}" >> .env
 
       - name: Copy .env and docker-compose-prod files to remote server
         uses: appleboy/scp-action@master
