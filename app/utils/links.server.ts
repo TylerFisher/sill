@@ -217,24 +217,18 @@ export const filterLinkOccurrences = async ({
 	fetch = DEFAULT_FETCH,
 }: FilterArgs) => {
 	if (fetch) {
-		const results = await fetchLinks(userId);
-		await insertNewLinks(results);
+		try {
+			const results = await fetchLinks(userId);
+			await insertNewLinks(results);
+		} catch (e) {
+			console.error(e);
+		}
 	}
 
 	const offset = (page - 1) * PAGE_SIZE;
 	const start = new Date(Date.now() - time);
 
 	const mutePhrases = await getMutePhrases(userId);
-	const muteClauses = mutePhrases.flatMap((phrase) => {
-		return [
-			notIlike(link.url, `%${phrase.phrase}%`),
-			notIlike(link.title, `%${phrase.phrase}%`),
-			notIlike(link.description, `%${phrase.phrase}%`),
-			notIlike(post.text, `%${phrase.phrase}%`),
-			notIlike(actor.name, `%${phrase.phrase}%`),
-			notIlike(actor.handle, `%${phrase.phrase}%`),
-		];
-	});
 
 	const linkPosts = await db.transaction(async (tx) => {
 		const linkPostsForUser = await tx.query.linkPostToUser.findMany({
@@ -243,30 +237,59 @@ export const filterLinkOccurrences = async ({
 				linkPostId: true,
 			},
 		});
-
 		const quote = aliasedTable(post, "quote");
 		const reposter = aliasedTable(actor, "reposter");
 		const quoteActor = aliasedTable(actor, "quoteActor");
 		const quoteImage = aliasedTable(postImage, "quoteImage");
 
+		// URL-related mute clauses remain in the WHERE clause
+		const urlMuteClauses = mutePhrases.flatMap((phrase) => [
+			notIlike(link.url, `%${phrase.phrase}%`),
+			notIlike(link.title, `%${phrase.phrase}%`),
+			notIlike(link.description, `%${phrase.phrase}%`),
+		]);
+
+		// Create a CASE expression to filter out muted posts
+		const postMuteCondition =
+			mutePhrases.length > 0
+				? sql`CASE WHEN ${or(
+						...mutePhrases.flatMap((phrase) => [
+							ilike(post.text, `%${phrase.phrase}%`),
+							ilike(actor.name, `%${phrase.phrase}%`),
+							ilike(actor.handle, `%${phrase.phrase}%`),
+							ilike(quote.text, `%${phrase.phrase}%`),
+							ilike(quoteActor.name, `%${phrase.phrase}%`),
+							ilike(quoteActor.handle, `%${phrase.phrase}%`),
+							ilike(reposter.name, `%${phrase.phrase}%`),
+							ilike(reposter.handle, `%${phrase.phrase}%`),
+						]),
+					)} THEN NULL ELSE 1 END`
+				: sql`1`;
+
 		const groupedLinks = tx
 			.select({
 				url: link.url,
-				uniqueActorsCount:
-					sql<number>`cast(count(distinct coalesce(${reposter.handle}, ${actor.handle})) as int)`.as(
-						"uniqueActorsCount",
-					),
-				posts: sql<PostReturn[]>`json_agg(json_build_object(
-          'post', ${post},
-          'quote', json_build_object(
-            'post', ${quote},
-            'actor', ${quoteActor},
-            'image', ${quoteImage}
-          ),
-          'reposter', ${reposter},
-          'image', ${postImage},
-          'actor', ${actor}
-        ) order by ${post.postDate} desc)`.as("posts"),
+				uniqueActorsCount: sql<number>`cast(count(distinct 
+      CASE WHEN ${postMuteCondition} = 1 
+      THEN coalesce(${reposter.handle}, ${actor.handle}) 
+      END) as int)`.as("uniqueActorsCount"),
+				posts: sql<PostReturn[]>`json_agg(
+      CASE WHEN ${postMuteCondition} = 1 THEN
+      json_build_object(
+        'post', ${post},
+        'quote', json_build_object(
+        'post', ${quote},
+        'actor', ${quoteActor},
+        'image', ${quoteImage}
+        ),
+        'reposter', ${reposter},
+        'image', ${postImage},
+        'actor', ${actor}
+      )
+      END
+      order by ${post.postDate} desc) filter (where ${postMuteCondition} = 1)`.as(
+					"posts",
+				),
 				mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
 					"mostRecentPostDate",
 				),
@@ -287,7 +310,7 @@ export const filterLinkOccurrences = async ({
 						linkPostsForUser.map((lp) => lp.linkPostId),
 					),
 					gte(linkPost.date, start),
-					...muteClauses,
+					...urlMuteClauses,
 					service !== "all" ? eq(post.postType, service) : undefined,
 					hideReposts ? isNull(post.repostHandle) : undefined,
 					query
@@ -298,6 +321,11 @@ export const filterLinkOccurrences = async ({
 								ilike(post.text, `%${query}%`),
 								ilike(actor.name, `%${query}%`),
 								ilike(actor.handle, `%${query}%`),
+								ilike(quote.text, `%${query}%`),
+								ilike(quoteActor.name, `%${query}%`),
+								ilike(quoteActor.handle, `%${query}%`),
+								ilike(reposter.name, `%${query}%`),
+								ilike(reposter.handle, `%${query}%`),
 							)
 						: undefined,
 				),

@@ -14,6 +14,7 @@ export interface LinkPostRepProps {
 }
 
 const LinkPostRep = ({ linkPost, instance, bsky }: LinkPostRepProps) => {
+	if (!linkPost) return null;
 	if (!linkPost.posts || !linkPost.link) return null;
 	const [open, setOpen] = useState(false);
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.post.url);
