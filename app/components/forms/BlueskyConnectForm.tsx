@@ -25,7 +25,11 @@ const BlueskyConnectForm = ({
 			<Heading size="5" mb="1">
 				Bluesky
 			</Heading>
-			{account ? (
+			<Text size="2" as="p" mb="3">
+				Bluesky is experiencing some issues right now. We will reenable
+				connection when Bluesky is stable.
+			</Text>
+			{/* {account ? (
 				<>
 					<Text size="2" as="p" mb="3">
 						You are connected to <Badge>{account.handle}</Badge>.
@@ -59,7 +63,7 @@ const BlueskyConnectForm = ({
 						</Callout.Root>
 					)}
 				</Form>
-			)}
+			)} */}
 		</Card>
 	);
 };
