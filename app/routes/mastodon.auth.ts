@@ -19,6 +19,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (instance.includes("@")) {
 		correctedInstance = instance.split("@").at(-1) as string;
 	}
+	if (instance.includes("/")) {
+		correctedInstance = instance.split("/")[0];
+	}
 
 	let instanceData = await db.query.mastodonInstance.findFirst({
 		where: eq(mastodonInstance.instance, correctedInstance),
