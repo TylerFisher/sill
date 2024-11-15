@@ -33,15 +33,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const updatedData: string[] = [];
 
-	await Promise.all(
-		users.map(async (user) => {
-			const linkCount = await filterLinkOccurrences({
-				userId: user.id,
-			});
-			redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
-			updatedData.push(user.email);
-		}),
-	);
+	for (const user of users) {
+		const linkCount = await filterLinkOccurrences({
+			userId: user.id,
+		});
+		await redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
+		updatedData.push(user.email);
+	}
 
 	return updatedData;
 };
