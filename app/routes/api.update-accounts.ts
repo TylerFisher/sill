@@ -29,7 +29,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			processedResults.push(...results);
 		}),
 	);
-	await insertNewLinks(processedResults);
+	for (let i = 0; i < processedResults.length; i += 1000) {
+		const chunk = processedResults.slice(i, i + 1000);
+		await insertNewLinks(chunk);
+	}
 
 	const updatedData: string[] = [];
 
