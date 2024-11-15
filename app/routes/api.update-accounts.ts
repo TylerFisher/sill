@@ -29,10 +29,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			processedResults.push(...results);
 		}),
 	);
-	for (let i = 0; i < processedResults.length; i += 1000) {
-		const chunk = processedResults.slice(i, i + 1000);
-		await insertNewLinks(chunk);
-	}
+	await insertNewLinks(processedResults);
 
 	const updatedData: string[] = [];
 
@@ -40,7 +37,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		users.map(async (user) => {
 			const linkCount = await filterLinkOccurrences({
 				userId: user.id,
-				fetch: true,
 			});
 			redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
 			updatedData.push(user.email);
