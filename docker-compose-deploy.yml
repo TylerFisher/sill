@@ -52,6 +52,7 @@ services:
   db:
     image: postgres:alpine
     container_name: postgres_db
+    shm_size: 1gb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
