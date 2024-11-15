@@ -34,11 +34,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const updatedData: string[] = [];
 
 	for (const user of users) {
-		const linkCount = await filterLinkOccurrences({
-			userId: user.id,
-		});
-		await redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
-		updatedData.push(user.email);
+		try {
+			const linkCount = await filterLinkOccurrences({
+				userId: user.id,
+			});
+			await redis.set(
+				await getUserCacheKey(user.id),
+				JSON.stringify(linkCount),
+			);
+			updatedData.push(user.email);
+		} catch (error) {
+			console.error("error processing", user.email, error);
+		}
 	}
 
 	return updatedData;
