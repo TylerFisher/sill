@@ -35,7 +35,7 @@ async function requireResetPasswordEmail(request: Request) {
 	);
 	const resetPasswordEmail = verifySession.get(resetPasswordEmailSessionKey);
 	if (typeof resetPasswordEmail !== "string" || !resetPasswordEmail) {
-		throw redirect("/login");
+		throw redirect("/accounts/login");
 	}
 	return resetPasswordEmail;
 }

@@ -122,7 +122,7 @@ export async function handleVerification({
 			where: eq(session.id, unverifiedSessionId),
 		});
 		if (!existingSession) {
-			throw redirect("/login");
+			throw redirect("/accounts/login");
 		}
 		authSession.set(sessionKey, unverifiedSessionId);
 

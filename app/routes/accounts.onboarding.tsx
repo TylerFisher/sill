@@ -49,7 +49,7 @@ async function requireOnboardingEmail(request: Request) {
 	);
 	const email = verifySession.get(onboardingEmailSessionKey);
 	if (typeof email !== "string" || !email) {
-		throw redirect("/signup");
+		throw redirect("/accounts/signup");
 	}
 	return email;
 }
