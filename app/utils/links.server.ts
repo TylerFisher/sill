@@ -231,12 +231,14 @@ export const filterLinkOccurrences = async ({
 	const mutePhrases = await getMutePhrases(userId);
 
 	const linkPosts = await db.transaction(async (tx) => {
-		const linkPostsForUser = await tx.query.linkPostToUser.findMany({
-			where: eq(linkPostToUser.userId, userId),
-			columns: {
-				linkPostId: true,
-			},
-		});
+		const linkPostsForUser = await tx
+			.select({
+				linkPostId: linkPostToUser.linkPostId,
+			})
+			.from(linkPostToUser)
+			.leftJoin(linkPost, eq(linkPostToUser.linkPostId, linkPost.id))
+			.where(and(eq(linkPostToUser.userId, userId), gte(linkPost.date, start)));
+
 		const quote = aliasedTable(post, "quote");
 		const reposter = aliasedTable(actor, "reposter");
 		const quoteActor = aliasedTable(actor, "quoteActor");
