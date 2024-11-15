@@ -11,6 +11,7 @@ const InputOTP = React.forwardRef<
 		containerClassName={styles["otp-container"]}
 		className={styles.otp}
 		{...props}
+		inputMode="text"
 	/>
 ));
 InputOTP.displayName = "InputOTP";
