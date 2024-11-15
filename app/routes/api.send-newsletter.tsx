@@ -28,29 +28,34 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}),
 	);
 
-	const emailResponses = await Promise.all(
-		emails
-			.filter((email) => email !== undefined)
-			.map(async (email) => {
-				const emailUser = await db.query.user.findFirst({
-					where: eq(user.id, email.userId),
-				});
+	const emailResponses = [];
+	const validEmails = emails.filter((email) => email !== undefined);
 
-				if (!emailUser) {
-					throw new Error("Couldn't find user for email");
-				}
+	for (let i = 0; i < validEmails.length; i++) {
+		const email = validEmails[i];
+		// Wait for 1 second between each email
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-				const links = await filterLinkOccurrences({
-					userId: emailUser.id,
-				});
+		const emailUser = await db.query.user.findFirst({
+			where: eq(user.id, email.userId),
+		});
 
-				return sendEmail({
-					to: emailUser.email,
-					subject: "Your top links for today",
-					react: <TopLinks links={links} name={emailUser.name} />,
-				});
-			}),
-	);
+		if (!emailUser) {
+			throw new Error("Couldn't find user for email");
+		}
+
+		const links = await filterLinkOccurrences({
+			userId: emailUser.id,
+		});
+
+		const response = await sendEmail({
+			to: emailUser.email,
+			subject: "Your top links for today",
+			react: <TopLinks links={links} name={emailUser.name} />,
+		});
+
+		emailResponses.push(response);
+	}
 
 	return { emailResponses };
 };
