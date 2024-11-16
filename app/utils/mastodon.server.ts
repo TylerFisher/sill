@@ -87,10 +87,11 @@ export const getMastodonTimeline = async (userId: string) => {
 			if (status.account.username === profile.username) continue;
 			if (status.reblog?.account.username === profile.username) continue;
 
-			// Flipboard is real weird about timestamps
+			// Don't use flipboard or reposts as yesterday check
 			if (
 				new Date(status.createdAt) <= yesterday &&
-				status.account.acct.split("@")[1] !== "flipboard.com"
+				status.account.acct.split("@")[1] !== "flipboard.com" &&
+				!status.reblog
 			) {
 				ended = true;
 				break;
