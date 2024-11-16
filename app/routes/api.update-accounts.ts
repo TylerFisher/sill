@@ -25,8 +25,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const processedResults: ProcessedResult[] = [];
 	await Promise.all(
 		users.map(async (user) => {
-			const results = await fetchLinks(user.id);
-			processedResults.push(...results);
+			try {
+				const results = await fetchLinks(user.id);
+				processedResults.push(...results);
+			} catch (error) {
+				console.error("error fetching links for", user.email, error);
+			}
 		}),
 	);
 	await insertNewLinks(processedResults);
