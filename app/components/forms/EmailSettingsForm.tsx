@@ -1,7 +1,16 @@
 import { useForm, getFormProps, getInputProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Card, Heading, Text, Button, Select, Box } from "@radix-ui/themes";
+import {
+	Card,
+	Heading,
+	Text,
+	Button,
+	Select,
+	Box,
+	Callout,
+} from "@radix-ui/themes";
 import { useFetcher, Form } from "@remix-run/react";
+import { CircleAlert } from "lucide-react";
 import { useState } from "react";
 import type { emailSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email.add";
@@ -94,6 +103,17 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					</Form>
 				</Box>
 			)}
+			<Callout.Root mt="4">
+				<Callout.Icon>
+					<CircleAlert width="18" height="18" />
+				</Callout.Icon>
+				<Callout.Text>
+					<Text size="2" as="p">
+						<strong>Note:</strong> During the Sill beta, emails are free. In the
+						future, we may charge for this feature.
+					</Text>
+				</Callout.Text>
+			</Callout.Root>
 		</Card>
 	);
 };

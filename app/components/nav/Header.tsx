@@ -1,4 +1,4 @@
-import { Heading } from "@radix-ui/themes";
+import { Heading, Text } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
 import styles from "./Header.module.css";
 
@@ -8,6 +8,15 @@ const Header = ({ headerClass }: { headerClass: string }) => {
 			<Heading size="9" className={styles["logo-heading"]} mb="4">
 				<Link to="/" className={styles["logo-link"]}>
 					Sill
+					<Text
+						size="3"
+						weight="regular"
+						style={{
+							fontStyle: "normal",
+						}}
+					>
+						(beta)
+					</Text>
 				</Link>
 			</Heading>
 		</header>
