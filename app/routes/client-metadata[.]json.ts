@@ -8,5 +8,5 @@ export const headers: HeadersFunction = () => ({
 
 export const loader = async () => {
 	const oauthClient = await createOAuthClient();
-	return oauthClient.clientMetadata;
+	return Response.json(oauthClient.clientMetadata);
 };
