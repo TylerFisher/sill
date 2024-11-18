@@ -2,7 +2,7 @@ import {
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
-import { Box, Flex, Inset, Separator, Spinner } from "@radix-ui/themes";
+import { Box, Flex, Inset, Separator, Spinner, Text } from "@radix-ui/themes";
 import {
 	data,
 	type LoaderFunctionArgs,
@@ -240,7 +240,24 @@ const Links = () => {
 					</div>
 				}
 			>
-				<Await resolve={data.links}>
+				<Await
+					resolve={data.links}
+					errorElement={
+						<div>
+							<Text as="p">
+								Failed to fetch new links. Try refreshing the page.
+							</Text>
+							{data.cachedData?.map((link) => (
+								<LinkPost
+									key={link.link?.url}
+									linkPost={link}
+									instance={data.instance}
+									bsky={data.bsky}
+								/>
+							))}
+						</div>
+					}
+				>
 					{(links) => (
 						<div>
 							{links.map((link) => (
