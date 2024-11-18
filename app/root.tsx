@@ -69,6 +69,11 @@ export function Document({
 					href="/favicon-16x16.png"
 				/>
 				<link rel="manifest" href="/site.webmanifest" />
+				<script
+					defer
+					data-domain="sill.social"
+					src="https://plausible.io/js/script.outbound-links.pageview-props.tagged-events.js"
+				/>
 				<Meta />
 				<Links />
 			</head>
