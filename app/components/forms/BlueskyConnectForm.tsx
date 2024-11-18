@@ -25,10 +25,10 @@ const BlueskyConnectForm = ({
 			<Heading size="5" mb="1">
 				Bluesky
 			</Heading>
-			<Text size="2" as="p" mb="3">
+			{/* <Text size="2" as="p" mb="3">
 				Bluesky is experiencing some issues right now. We will reenable
 				connection when Bluesky is stable.
-			</Text>
+			</Text> */}
 			{account ? (
 				<>
 					<Text size="2" as="p" mb="3">
