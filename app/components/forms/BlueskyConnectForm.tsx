@@ -29,7 +29,7 @@ const BlueskyConnectForm = ({
 				Bluesky is experiencing some issues right now. We will reenable
 				connection when Bluesky is stable.
 			</Text>
-			{/* {account ? (
+			{account ? (
 				<>
 					<Text size="2" as="p" mb="3">
 						You are connected to <Badge>{account.handle}</Badge>.
@@ -63,7 +63,7 @@ const BlueskyConnectForm = ({
 						</Callout.Root>
 					)}
 				</Form>
-			)} */}
+			)}
 		</Card>
 	);
 };
