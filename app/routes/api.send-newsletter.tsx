@@ -4,7 +4,10 @@ import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
 import { sendEmail } from "~/utils/email.server";
-import { filterLinkOccurrences } from "~/utils/links.server";
+import {
+	filterLinkOccurrences,
+	type MostRecentLinkPosts,
+} from "~/utils/links.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -42,10 +45,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			throw new Error("Couldn't find user for email");
 		}
 
-		const links = await filterLinkOccurrences({
-			userId: emailUser.id,
-			fetch: true,
-		});
+		let links: MostRecentLinkPosts[] = [];
+		try {
+			links = await filterLinkOccurrences({
+				userId: emailUser.id,
+				fetch: true,
+			});
+		} catch (error) {
+			console.error("Failed to fetch links for :", error);
+		}
 
 		const response = await sendEmail({
 			to: emailUser.email,
