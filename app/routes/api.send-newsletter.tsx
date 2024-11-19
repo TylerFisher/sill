@@ -33,8 +33,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	for (let i = 0; i < validEmails.length; i++) {
 		const email = validEmails[i];
-		// Wait for 1 second between each email
-		await new Promise((resolve) => setTimeout(resolve, 1000));
 
 		const emailUser = await db.query.user.findFirst({
 			where: eq(user.id, email.userId),
@@ -46,6 +44,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 		const links = await filterLinkOccurrences({
 			userId: emailUser.id,
+			fetch: true,
 		});
 
 		const response = await sendEmail({
