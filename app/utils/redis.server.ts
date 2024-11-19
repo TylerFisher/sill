@@ -7,6 +7,7 @@ export const connection = () => {
 	if (redisUrl == null) throw new Error("REDIS_URL must be defined");
 	const connect = new Redis(redisUrl, {
 		maxRetriesPerRequest: null,
+		family: 6,
 	});
 	return connect;
 };
