@@ -22,18 +22,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const users = await db.query.user.findMany();
 	const redis = connection();
-	const processedResults: ProcessedResult[] = [];
-	await Promise.all(
-		users.map(async (user) => {
-			try {
-				const results = await fetchLinks(user.id);
-				processedResults.push(...results);
-			} catch (error) {
-				console.error("error fetching links for", user.email, error);
-			}
-		}),
-	);
-	await insertNewLinks(processedResults);
+	const chunkSize = 100;
+	for (let i = 0; i < users.length; i += chunkSize) {
+		const userChunk = users.slice(i, i + chunkSize);
+		const processedResults: ProcessedResult[] = [];
+
+		await Promise.all(
+			userChunk.map(async (user) => {
+				try {
+					const results = await fetchLinks(user.id);
+					processedResults.push(...results);
+				} catch (error) {
+					console.error("error fetching links for", user.email, error);
+				}
+			}),
+		);
+
+		await insertNewLinks(processedResults);
+	}
 
 	const updatedData: string[] = [];
 
@@ -48,7 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			);
 			updatedData.push(user.email);
 		} catch (error) {
-			console.error("error processing", user.email, error);
+			console.error("error updating redis cache for", user.email, error);
 		}
 	}
 
