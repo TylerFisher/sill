@@ -2,7 +2,7 @@ import type { Processor } from "bullmq";
 import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
 import { fetchLinkMetadata } from "~/utils/bluesky.server";
-import { connection } from "~/utils/redis.server";
+import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { filterLinkOccurrences } from "./links.server";
 
 const redis = connection();
@@ -70,7 +70,11 @@ interface BlueskyFetchQueueJob {
 export const blueskyFetchQueue = registerQueue(
 	"bluesky",
 	async (job: BlueskyFetchQueueJob) => {
-		await filterLinkOccurrences({ userId: job.data.userId, fetch: true });
+		const links = await filterLinkOccurrences({
+			userId: job.data.userId,
+			fetch: true,
+		});
+		redis.set(await getUserCacheKey(job.data.userId), JSON.stringify(links));
 	},
 );
 
@@ -83,6 +87,27 @@ interface MastodonFetchQueueJob {
 export const mastodonFetchQueue = registerQueue(
 	"mastodon",
 	async (job: MastodonFetchQueueJob) => {
-		await filterLinkOccurrences({ userId: job.data.userId, fetch: true });
+		const links = await filterLinkOccurrences({
+			userId: job.data.userId,
+			fetch: true,
+		});
+		redis.set(await getUserCacheKey(job.data.userId), JSON.stringify(links));
+	},
+);
+
+interface AccountUpdateQueueJob {
+	data: {
+		userId: string;
+	};
+}
+
+export const accountUpdateQueue = registerQueue(
+	"account-update",
+	async (job: AccountUpdateQueueJob) => {
+		const links = await filterLinkOccurrences({
+			userId: job.data.userId,
+			fetch: true,
+		});
+		redis.set(await getUserCacheKey(job.data.userId), JSON.stringify(links));
 	},
 );
