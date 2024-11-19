@@ -63,6 +63,35 @@ services:
         max-size: "50m"
         max-file: "6"
   
+  bull-monitor:
+    container_name: bull-monitor
+    image: tiagoboeing/bull-board:latest
+    restart: always
+    ports:
+      - 4000:4000
+    env_file:
+      - .env
+    environment:
+      QUEUE_PREFIX: ${BULL_QUEUE_PREFIX}
+      QUEUE_NAMES: |
+        account-update
+        mastodon
+        bluesky
+        links
+      REDIS_HOST: redis
+      AUTH_REQUIRE: true
+      AUTH_LOGIN: ${BULL_MONITOR_AUTH_LOGIN}
+      AUTH_PASSWORD: ${BULL_MONITOR_AUTH_PASSWORD}
+    networks:
+      - net
+    depends_on:
+      - redis
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
+  
   pgbouncer:
     container_name: pgbouncer
     image: edoburu/pgbouncer:latest
@@ -78,6 +107,11 @@ services:
       - "5432:5432"
     depends_on:
       - db
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
