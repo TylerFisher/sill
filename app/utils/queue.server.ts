@@ -70,7 +70,7 @@ interface BlueskyFetchQueueJob {
 export const blueskyFetchQueue = registerQueue(
 	"bluesky",
 	async (job: BlueskyFetchQueueJob) => {
-		await filterLinkOccurrences({ userId: job.data.userId });
+		await filterLinkOccurrences({ userId: job.data.userId, fetch: true });
 	},
 );
 
@@ -83,6 +83,6 @@ interface MastodonFetchQueueJob {
 export const mastodonFetchQueue = registerQueue(
 	"mastodon",
 	async (job: MastodonFetchQueueJob) => {
-		await filterLinkOccurrences({ userId: job.data.userId });
+		await filterLinkOccurrences({ userId: job.data.userId, fetch: true });
 	},
 );
