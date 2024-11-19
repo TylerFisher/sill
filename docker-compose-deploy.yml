@@ -104,10 +104,10 @@ services:
         max-file: "6"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${BULL_MONITOR_DOMAIN:-bull.localhost}`)"
-      - "traefik.http.routers.dozzle.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=4000"
+      - "traefik.http.routers.bull.rule=Host(`${BULL_MONITOR_DOMAIN:-bull.localhost}`)"
+      - "traefik.http.routers.bull.tls=${USE_SSL:-false}"
+      - "traefik.http.routers.bull.tls.certresolver=myresolver"
+      - "traefik.http.services.bull.loadbalancer.server.port=4000"
 
   pgbouncer:
     container_name: pgbouncer
