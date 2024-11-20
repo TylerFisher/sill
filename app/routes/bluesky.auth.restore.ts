@@ -33,6 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			const client = await createOAuthClient();
 			oauthSession = await client.restore(account.did);
 		}
+		console.error(error);
 	}
 
 	return Response.json({
