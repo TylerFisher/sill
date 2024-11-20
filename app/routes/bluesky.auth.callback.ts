@@ -7,6 +7,7 @@ import { blueskyAccount } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
 import { blueskyFetchQueue } from "~/utils/queue.server";
+import { OAuthCallbackError } from "@atproto/oauth-client-node";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
@@ -43,6 +44,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 		return redirect("/connect");
 	} catch (error) {
+		if (
+			error instanceof OAuthCallbackError &&
+			["login_required", "consent_required"].includes(
+				error.params.get("error") || "",
+			)
+		) {
+			if (error.state) {
+				const { user, handle } = JSON.parse(error.state);
+				const url = await oauthClient.authorize(handle, {
+					state: JSON.stringify({
+						user,
+						handle,
+					}),
+				});
+
+				return redirect(url.toString());
+			}
+		}
+
 		const { session: oauthSession } = await oauthClient.callback(
 			new URL(request.url).searchParams,
 		);

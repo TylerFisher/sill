@@ -29,11 +29,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		const client = await createOAuthClient();
 		oauthSession = await client.restore(account.did);
 	} catch (error) {
+		const client = await createOAuthClient();
+
 		if (error instanceof OAuthResponseError) {
-			const client = await createOAuthClient();
 			oauthSession = await client.restore(account.did);
 		}
+
+		const callback = await client.authorize(handle, {
+			// Use "prompt=none" to attempt silent sign-in
+			prompt: "none",
+
+			// Build an internal state to map the login request to the user, and allow retries
+			state: JSON.stringify({
+				user: account.userId,
+				handle,
+			}),
+		});
 		console.error(error);
+
+		return redirect(callback.toString());
 	}
 
 	return Response.json({
