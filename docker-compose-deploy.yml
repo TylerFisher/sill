@@ -73,9 +73,10 @@ services:
       options:
         max-size: "50m"
         max-file: "6"
+    deploy:
       resources:
         limits:
-          cpus: 10
+          cpus: 10.0
 
   bull-monitor:
     container_name: bull-monitor
