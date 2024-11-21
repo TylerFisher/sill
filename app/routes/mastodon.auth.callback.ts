@@ -41,5 +41,5 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		userId,
 	});
 
-	return redirect("/connect");
+	return redirect("/download?service=Mastodon");
 };

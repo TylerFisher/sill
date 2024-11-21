@@ -6,12 +6,16 @@ import { db } from "~/drizzle/db.server";
 import { blueskyAccount } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
-import { blueskyFetchQueue } from "~/utils/queue.server";
 import { OAuthCallbackError } from "@atproto/oauth-client-node";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);
 	const oauthClient = await createOAuthClient();
+
+	const url = new URL(request.url);
+	if (url.searchParams.get("error")) {
+		return redirect("/connect?error=oauth");
+	}
 
 	try {
 		const { session: oauthSession } = await oauthClient.callback(
@@ -38,11 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				},
 			});
 
-		blueskyFetchQueue.add(`${userId}-bluesky-fetch`, {
-			userId,
-		});
-
-		return redirect("/connect");
+		return redirect("/download?service=Bluesky");
 	} catch (error) {
 		if (
 			error instanceof OAuthCallbackError &&
@@ -87,10 +87,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				},
 			});
 
-		blueskyFetchQueue.add(`${userId}-bluesky-fetch`, {
-			userId,
-		});
 		console.error("Bluesky OAuth Error", { error: String(error) });
-		return redirect("/connect");
+		return redirect("/download?service=Bluesky");
 	}
 }

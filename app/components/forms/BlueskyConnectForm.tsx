@@ -62,6 +62,17 @@ const BlueskyConnectForm = ({
 							</Callout.Text>
 						</Callout.Root>
 					)}
+					{searchParams.get("error") === "oauth" && (
+						<Callout.Root mt="4">
+							<Callout.Icon>
+								<CircleAlert width="18" height="18" />
+							</Callout.Icon>
+							<Callout.Text>
+								We had trouble connecting to your Bluesky account. Please try
+								again.
+							</Callout.Text>
+						</Callout.Root>
+					)}
 				</Form>
 			)}
 		</Card>
