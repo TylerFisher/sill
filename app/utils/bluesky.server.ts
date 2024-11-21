@@ -15,20 +15,16 @@ import {
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
 import { extractFromUrl } from "@jcottam/html-metadata";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import {
-	blueskyAccount,
-	link,
-	linkPost,
-	linkPostToUser,
-	postType,
-	post as schemaPost,
-} from "~/drizzle/schema.server";
+import { blueskyAccount, link, postType } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { linksQueue } from "~/utils/queue.server";
-import type { ProcessedResult } from "./links.server";
+import {
+	conflictUpdateSetAllColumns,
+	type ProcessedResult,
+} from "./links.server";
 
 interface BskyDetectedLink {
 	uri: string;
@@ -354,50 +350,6 @@ const getImages = async (
 };
 
 /**
- * Searches for a link post that matches the current post and link in the database
- * @param postUrl URL for Bluesky post
- * @param detectedLinkUri Detected link URI in the post
- * @param t Bluesky post object
- * @returns Link post if one exists, null if not
- */
-const searchForLinkPost = async (
-	postUrl: string,
-	detectedLinkUri: string,
-	t: AppBskyFeedDefs.FeedViewPost,
-) => {
-	const linkPostSearch = await db.transaction(async (tx) => {
-		const existingPost = await tx.query.post.findFirst({
-			where: and(
-				eq(schemaPost.url, postUrl),
-				AppBskyFeedDefs.isReasonRepost(t.reason)
-					? eq(schemaPost.repostHandle, t.reason.by.handle)
-					: undefined,
-			),
-			columns: {
-				id: true,
-			},
-		});
-
-		if (existingPost) {
-			const existingLinkPost = await tx.query.linkPost.findFirst({
-				where: and(
-					eq(linkPost.linkUrl, detectedLinkUri),
-					eq(linkPost.postId, existingPost.id),
-				),
-				columns: { id: true },
-			});
-
-			return {
-				linkPost: existingLinkPost,
-			};
-		}
-		return null;
-	});
-
-	return linkPostSearch;
-};
-
-/**
  * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
  * @param userId ID for logged in user
  * @param t Post object from Bluesky timeline
@@ -432,21 +384,6 @@ const processBlueskyLink = async (
 	);
 
 	if (!detectedLink) {
-		return null;
-	}
-
-	const linkPostSearch = await searchForLinkPost(postUrl, detectedLink.uri, t);
-
-	// If we've already seen this link post, we can just subscribe our user to it and move on
-	if (linkPostSearch?.linkPost) {
-		await db
-			.insert(linkPostToUser)
-			.values({
-				userId,
-				linkPostId: linkPostSearch.linkPost.id,
-			})
-			.onConflictDoNothing();
-
 		return null;
 	}
 
@@ -518,8 +455,17 @@ export const getLinksFromBluesky = async (
 ): Promise<ProcessedResult[]> => {
 	const timeline = await getBlueskyTimeline(userId);
 	const processedResults = (
-		await Promise.all(timeline.map((t) => processBlueskyLink(userId, t)))
+		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
+
+	const linksToFetch = processedResults
+		.map((p) => p.link)
+		.filter((l) => !l.description)
+		.filter(
+			(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
+		);
+
+	await linksQueue.add("fetchMetadata", { links: linksToFetch });
 
 	return processedResults;
 };
@@ -555,7 +501,6 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 					description: existingLink.description,
 				};
 			}
-			await linksQueue.add("fetchMetadata", { uri: segment.link.uri });
 			foundLink = {
 				uri: segment.link.uri,
 				title: "",
@@ -568,6 +513,22 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 	return foundLink;
 };
 
+export const processLinks = async (links: (typeof link.$inferInsert)[]) => {
+	const metadata = await Promise.all(
+		links.map(async (link) => {
+			return fetchLinkMetadata(link.url);
+		}),
+	).then((results) => results.filter((r) => r !== undefined && r !== null));
+
+	await db
+		.insert(link)
+		.values(metadata)
+		.onConflictDoUpdate({
+			target: link.url,
+			set: conflictUpdateSetAllColumns(link),
+		});
+};
+
 /**
  * Fetches metadata for a link and inserts it into the database
  * Used by the link metadata fetcher queue in Redis
@@ -575,39 +536,19 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
  * @returns void
  */
 export const fetchLinkMetadata = async (uri: string) => {
-	const foundLink = await db.query.link.findFirst({
-		where: eq(link.url, uri),
-	});
-
-	// if we already have data
-	if (foundLink?.description) {
-		return;
-	}
-
 	try {
 		const metadata = await extractFromUrl(uri, {
 			timeout: 5000,
 		});
+
 		if (metadata) {
-			await db
-				.insert(link)
-				.values({
-					id: uuidv7(),
-					url: uri,
-					title: metadata["og:title"] || metadata.title,
-					description:
-						metadata["og:description"] || metadata.description || null,
-					imageUrl: metadata["og:image"] || null,
-				})
-				.onConflictDoUpdate({
-					target: link.url,
-					set: {
-						title: metadata["og:title"] || metadata.title,
-						description:
-							metadata["og:description"] || metadata.description || null,
-						imageUrl: metadata["og:image"] || null,
-					},
-				});
+			return {
+				id: uuidv7(),
+				url: uri,
+				title: metadata["og:title"] || metadata.title,
+				description: metadata["og:description"] || metadata.description || null,
+				imageUrl: metadata["og:image"] || null,
+			};
 		}
 	} catch (e) {
 		console.error(`Failed to fetch link ${uri}`, e);

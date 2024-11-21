@@ -1,14 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import {
-	linkPost,
-	linkPostToUser,
-	mastodonAccount,
-	postType,
-	post as schemaPost,
-} from "~/drizzle/schema.server";
+import { mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
@@ -130,42 +124,6 @@ const getYoutubeUrl = async (content: string): Promise<string | null> => {
 	return youtubeUrls ? youtubeUrls[0] : null;
 };
 
-const getLinkPostSearch = async (
-	url: string,
-	cardUrl: string,
-	t: mastodon.v1.Status,
-) => {
-	const linkPostSearch = await db.transaction(async (tx) => {
-		const existingPost = await tx.query.post.findFirst({
-			where: and(
-				eq(schemaPost.url, url),
-				t.reblog ? eq(schemaPost.repostHandle, t.account.username) : undefined,
-			),
-			columns: {
-				id: true,
-			},
-		});
-
-		if (existingPost) {
-			const existingLinkPost = await tx.query.linkPost.findFirst({
-				where: and(
-					eq(linkPost.linkUrl, cardUrl),
-					eq(linkPost.postId, existingPost.id),
-				),
-				columns: { id: true },
-			});
-
-			return {
-				linkPost: existingLinkPost,
-			};
-		}
-
-		return null;
-	});
-
-	return linkPostSearch;
-};
-
 /**
  * Gets actors for a Mastodon post, including reposters
  * @param original Original Mastodon status
@@ -277,21 +235,6 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		if (youtubeUrl) {
 			card.url = youtubeUrl;
 		}
-	}
-
-	// Do we know about this post?
-	const linkPostSearch = await getLinkPostSearch(url, card.url, t);
-
-	if (linkPostSearch?.linkPost) {
-		await db
-			.insert(linkPostToUser)
-			.values({
-				userId,
-				linkPostId: linkPostSearch.linkPost.id,
-			})
-			.onConflictDoNothing();
-
-		return null;
 	}
 
 	const actors = await getActors(original, t);

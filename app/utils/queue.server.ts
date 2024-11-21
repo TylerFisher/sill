@@ -1,9 +1,10 @@
 import type { Processor } from "bullmq";
 import { QueueEvents } from "bullmq";
 import { Queue, Worker } from "bullmq";
-import { fetchLinkMetadata } from "~/utils/bluesky.server";
+import { processLinks } from "~/utils/bluesky.server";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { filterLinkOccurrences } from "./links.server";
+import type { link } from "~/drizzle/schema.server";
 
 const redis = connection();
 
@@ -53,12 +54,12 @@ export function registerQueue<T>(
 
 interface LinksQueueJob {
 	data: {
-		uri: string;
+		links: (typeof link.$inferInsert)[];
 	};
 }
 
 export const linksQueue = registerQueue("links", async (job: LinksQueueJob) => {
-	await fetchLinkMetadata(job.data.uri);
+	await processLinks(job.data.links);
 });
 
 interface BlueskyFetchQueueJob {
