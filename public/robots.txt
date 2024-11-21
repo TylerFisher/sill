@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /links/
+Disallow: /connect/
+Disallow: /settings/
+Disallow: /download/
+Disallow: /moderation/
+Crawl-delay: 10
