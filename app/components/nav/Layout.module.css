@@ -21,6 +21,14 @@
   height: calc(60px + env(safe-area-inset-bottom));
 }
 
+.right {
+  position: relative;
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  height: calc(60px + env(safe-area-inset-bottom));
+	padding: 1em 0 env(safe-area-inset-bottom);
+  margin-top: 1em;
+}
+
 @media (min-width: 768px) {
 	.side {
 		grid-column: col-start / span 3;
@@ -43,7 +51,7 @@
 		position: fixed;
 		bottom: 0;
 		right: 1em;
-		width: 100%;
+		width: 25%;
 	}
 }
 

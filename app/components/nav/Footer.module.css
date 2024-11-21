@@ -1,0 +1,9 @@
+.footer {
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .footer {
+    justify-content: flex-end;
+  }
+}

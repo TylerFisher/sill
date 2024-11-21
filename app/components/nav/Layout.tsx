@@ -51,7 +51,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 					{children}
 				</main>
 				<Flex direction="column" justify="end" className={styles.right}>
-					<Footer align="end" />
+					<Footer />
 				</Flex>
 			</div>
 		</Container>

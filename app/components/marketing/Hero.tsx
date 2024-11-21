@@ -62,7 +62,7 @@ const Hero = () => {
 					</Card>
 				</Box>
 			</Flex>
-			<Footer align="center" />
+			<Footer />
 		</Box>
 	);
 };

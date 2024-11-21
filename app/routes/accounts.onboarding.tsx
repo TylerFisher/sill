@@ -1,6 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Button, Heading, Text } from "@radix-ui/themes";
+import { Box, Button, Heading, Link, Text } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
@@ -173,6 +173,7 @@ export default function OnboardingRoute() {
 					}}
 					errors={fields.confirmPassword.errors}
 				/>
+
 				<Box mb="5">
 					<CheckboxField
 						labelProps={{
@@ -192,6 +193,13 @@ export default function OnboardingRoute() {
 				<div className="flex items-center justify-between gap-6">
 					<Button type="submit">Create an account</Button>
 				</div>
+				<Text as="p" size="1" mt="4">
+					By creating an account you agree to the{" "}
+					<Link href="https://terms.sill.social/privacy.html">
+						Privacy Policy
+					</Link>
+					.
+				</Text>
 			</Form>
 		</Layout>
 	);
