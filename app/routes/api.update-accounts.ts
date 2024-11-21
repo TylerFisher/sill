@@ -23,41 +23,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	const users = await db.query.user.findMany();
-	// const redis = connection();
-	// const chunkSize = 100;
-	// for (let i = 0; i < users.length; i += chunkSize) {
-	// 	const userChunk = users.slice(i, i + chunkSize);
-	// 	const processedResults: ProcessedResult[] = [];
+	const redis = connection();
+	const chunkSize = 8;
+	for (let i = 0; i < users.length; i += chunkSize) {
+		const userChunk = users.slice(i, i + chunkSize);
+		const processedResults: ProcessedResult[] = [];
 
-	// 	await Promise.all(
-	// 		userChunk.map(async (user) => {
-	// 			try {
-	// 				const results = await fetchLinks(user.id);
-	// 				processedResults.push(...results);
-	// 			} catch (error) {
-	// 				console.error("error fetching links for", user.email, error);
-	// 			}
-	// 		}),
-	// 	);
+		await Promise.all(
+			userChunk.map(async (user) => {
+				try {
+					const results = await fetchLinks(user.id);
+					processedResults.push(...results);
+				} catch (error) {
+					console.error("error fetching links for", user.email, error);
+				}
+			}),
+		);
 
-	// 	await insertNewLinks(processedResults);
-	// }
+		await insertNewLinks(processedResults);
+	}
 
 	// const updatedData: string[] = [];
 	for (const user of users) {
-		// let linkCount: MostRecentLinkPosts[];
-		// try {
-		// 	linkCount = await filterLinkOccurrences({
-		// 		userId: user.id,
-		// 		fetch: true,
-		// 	});
-		// } catch (error) {
-		// 	console.error("error filtering links for", user.email, error);
-		// 	throw error;
-		// }
-		accountUpdateQueue.add("update-accounts", {
-			userId: user.id,
-		});
+		let linkCount: MostRecentLinkPosts[];
+		try {
+			linkCount = await filterLinkOccurrences({
+				userId: user.id,
+			});
+		} catch (error) {
+			console.error("error filtering links for", user.email, error);
+			throw error;
+		}
+		redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
+
+		// accountUpdateQueue.add("update-accounts", {
+		// 	userId: user.id,
+		// });
 	}
 
 	return Response.json({});
