@@ -1,13 +1,15 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { AlertDialog, DataList } from "@radix-ui/themes";
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
+
+export const meta: MetaFunction = () => [{ title: "Sill | Account Settings" }];
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request);

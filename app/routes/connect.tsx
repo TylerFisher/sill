@@ -16,7 +16,7 @@ import { requireUserId } from "~/utils/auth.server";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 
 export const meta: MetaFunction = () => [
-	{ title: "Sill | Connect Your Socials" },
+	{ title: "Sill | Connect Your Accounts" },
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

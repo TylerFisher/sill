@@ -11,6 +11,7 @@ import {
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
+	type MetaFunction,
 	data,
 } from "@remix-run/node";
 import {
@@ -34,6 +35,10 @@ import { requireUserId } from "~/utils/auth.server";
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
 });
+
+export const meta: MetaFunction = () => [
+	{ title: "Sill | Moderate Your Links" },
+];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
