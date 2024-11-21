@@ -38,7 +38,13 @@ const SearchField = () => {
 				</TextField.Slot>
 			)}
 			<TextField.Slot>
-				<Button type="submit" variant="ghost">
+				<Button
+					type="submit"
+					variant="ghost"
+					style={{
+						marginRight: "1px",
+					}}
+				>
 					Search
 				</Button>
 			</TextField.Slot>

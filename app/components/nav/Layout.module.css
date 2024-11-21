@@ -2,6 +2,7 @@
 	display: grid;
 	grid-template-columns: repeat(12, [col-start] 1fr);
 	gap: 20px;
+  margin: 0 0.5em;
 }
 
 .wrapper > * {
@@ -15,8 +16,9 @@
 	width: 100%;
 	z-index: 1;
 	background-color: var(--accent-1);
-	padding: 1em 0;
+	padding: 1em 0 env(safe-area-inset-bottom);
 	border-top: 1px solid var(--gray-a6);
+  height: calc(60px + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 768px) {
@@ -50,7 +52,7 @@
 	padding: 1em;
 	box-shadow: var(--base-card-surface-box-shadow);
 	border-radius: 1em;
-	margin: 0 0 1rem;
+	margin: 0 auto 1rem;
 	width: 100%;
 }
 
