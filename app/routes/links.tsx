@@ -1,4 +1,5 @@
 import {
+	OAuthResolverError,
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
@@ -62,6 +63,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 					scope: "atproto transition:generic",
 				});
 				return redirect(url.toString());
+			}
+			if (error instanceof OAuthResolverError) {
+				return redirect("/connect?error=resolver");
 			}
 		}
 	}
