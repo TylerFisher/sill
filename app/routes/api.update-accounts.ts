@@ -24,7 +24,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const users = await db.query.user.findMany();
 	const redis = connection();
-	const chunkSize = 8;
+	const chunkSize = 100;
 	for (let i = 0; i < users.length; i += chunkSize) {
 		const userChunk = users.slice(i, i + chunkSize);
 		const processedResults: ProcessedResult[] = [];
