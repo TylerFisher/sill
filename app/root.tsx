@@ -51,6 +51,17 @@ export function Document({
 					name="description"
 					content="Sill streamlines your Bluesky and Mastodon feeds to give you a clear picture of what's happening."
 				/>
+				<meta name="og:title" content="Sill" />
+				<meta
+					name="og:description"
+					content="Sill streamlines your Bluesky and Mastodon feeds to give you a clear picture of what's happening."
+				/>
+				<meta name="og:image" content="https://sill.social/share.png" />
+				<meta name="og:image:width" content="1200" />
+				<meta name="og:image:height" content="630" />
+				<meta name="og:url" content="https://sill.social" />
+				<meta name="og:type" content="website" />
+				<meta name="og:site_name" content="Sill" />
 				<link
 					rel="apple-touch-icon"
 					sizes="180x180"
@@ -69,6 +80,7 @@ export function Document({
 					href="/favicon-16x16.png"
 				/>
 				<link rel="manifest" href="/site.webmanifest" />
+				<link rel="canonical" href="https://sill.social" />
 				<script
 					defer
 					data-domain="sill.social"
