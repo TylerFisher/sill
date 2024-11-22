@@ -2,7 +2,7 @@ name: Database Backup
 
 on:
   schedule:
-    - cron: "0 2 * * *" # Run every night at 2 AM UTC
+    - cron: "20 * * * *" # Run every hour at 20 minutes past the hour
   workflow_dispatch: # Allow manual triggering
 
 env:
@@ -27,13 +27,15 @@ jobs:
             TIMESTAMP=$(date +"%Y%m%d%H%M")
             BACKUP_DIR="$HOME/pg_snapshots"
             BACKUP_FILE="${BACKUP_DIR}/postgres_backup_${TIMESTAMP}.sql"
-            STORE_NUMBER_OF_DAYS_BACKUP=${STORE_NUMBER_OF_DAYS_BACKUP:-7}
+            STORE_NUMBER_OF_DAYS_BACKUP=${STORE_NUMBER_OF_DAYS_BACKUP:-3}
 
             mkdir -p $BACKUP_DIR
-            if ! docker exec -t ${{ env.POSTGRES_CONTAINER }} pg_dumpall -c -U "${{ secrets.POSTGRES_USER }}" > "$BACKUP_FILE"; then
+            if ! docker exec -t ${{ env.POSTGRES_CONTAINER }} pg_dump ${{ secrets.POSTGRES_DB }} -a -U "${{ secrets.POSTGRES_USER }}" | bzip2 | openssl smime -encrypt -aes256 -binary -outform DEM -out "$BACKUP_FILE" ${{ secrets.BACKUP_PUBLIC_KEY }}; then
               echo "Database backup failed. Please check the logs for more information."
               exit 1
             fi
+
+            ./b2 file upload ${{ secrets.BACKBLAZE_BUCKET }} "$BACKUP_FILE" backups/"$BACKUP_FILE"
 
             find $BACKUP_DIR -type f -name "*.sql" -mtime "+$STORE_NUMBER_OF_DAYS_BACKUP" -delete
             echo "Backup completed at $TIMESTAMP"
