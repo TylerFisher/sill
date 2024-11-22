@@ -35,7 +35,7 @@ jobs:
               exit 1
             fi
 
-            ./b2 file upload ${{ secrets.BACKBLAZE_BUCKET }} "$BACKUP_FILE" backups/"$BACKUP_FILE"
+            ./b2 file upload ${{ secrets.BACKBLAZE_BUCKET }} "$BACKUP_FILE" "$BACKUP_FILE"
 
             find $BACKUP_DIR -type f -name "*.sql" -mtime "+$STORE_NUMBER_OF_DAYS_BACKUP" -delete
             echo "Backup completed at $TIMESTAMP"
