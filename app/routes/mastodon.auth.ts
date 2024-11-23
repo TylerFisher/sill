@@ -15,7 +15,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	// If someone entered their full handle, get the instance from it
-	let correctedInstance = instance;
+	let correctedInstance = instance.toLocaleLowerCase();
 	if (instance.includes("@")) {
 		correctedInstance = instance.split("@").at(-1) as string;
 	}
