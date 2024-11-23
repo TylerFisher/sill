@@ -108,21 +108,24 @@ export const getBlueskyTimeline = async (userId: string) => {
 		return newPosts;
 	}
 
-	const timeline = await getTimeline();
-
-	if (timeline.length > 0) {
-		const firstPost = timeline[0];
-
-		await db
-			.update(blueskyAccount)
-			.set({
-				mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-					? new Date(firstPost.reason.indexedAt)
-					: new Date(firstPost.post.indexedAt),
-			})
-			.where(eq(blueskyAccount.userId, userId));
+	try {
+		const timeline = await getTimeline();
+		if (timeline.length > 0) {
+			const firstPost = timeline[0];
+			await db
+				.update(blueskyAccount)
+				.set({
+					mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+						? new Date(firstPost.reason.indexedAt)
+						: new Date(firstPost.post.indexedAt),
+				})
+				.where(eq(blueskyAccount.userId, userId));
+		}
+		return timeline;
+	} catch (error) {
+		console.error("Error fetching Bluesky timeline", error);
+		return [];
 	}
-	return timeline;
 };
 
 /**
@@ -536,6 +539,18 @@ export const processLinks = async (links: (typeof link.$inferInsert)[]) => {
  * @returns void
  */
 export const fetchLinkMetadata = async (uri: string) => {
+	const url = new URL(uri);
+	// The GOVERNMENT OF MANITOBA can't make html
+	if (url.hostname === "news.gov.mb.ca") {
+		return {
+			id: uuidv7(),
+			url: uri,
+			title: null,
+			description: null,
+			imageUrl: null,
+		};
+	}
+
 	try {
 		const metadata = await extractFromUrl(uri, {
 			timeout: 5000,
