@@ -541,11 +541,14 @@ export const processLinks = async (links: (typeof link.$inferInsert)[]) => {
 export const fetchLinkMetadata = async (uri: string) => {
 	const url = new URL(uri);
 	// The GOVERNMENT OF MANITOBA can't make html
-	if (url.hostname === "news.gov.mb.ca") {
+	if (
+		url.hostname === "news.gov.mb.ca" ||
+		uri === "https://tinyurl.com/jcyff8eh"
+	) {
 		return {
 			id: uuidv7(),
 			url: uri,
-			title: null,
+			title: "",
 			description: null,
 			imageUrl: null,
 		};
