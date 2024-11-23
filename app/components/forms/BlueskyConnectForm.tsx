@@ -58,7 +58,8 @@ const BlueskyConnectForm = ({
 							</Callout.Icon>
 							<Callout.Text>
 								We couldn't find a Bluesky account with that handle. Please try
-								again.
+								again. Make sure you use the full handle (e.g.
+								myusername.bsky.social).
 							</Callout.Text>
 						</Callout.Root>
 					)}
