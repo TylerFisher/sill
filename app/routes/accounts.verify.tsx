@@ -54,6 +54,8 @@ const Verify = () => {
 		},
 	});
 
+	const error = actionData?.result.error?.code;
+
 	return (
 		<Layout hideNav>
 			<Box mb="5">
@@ -66,7 +68,7 @@ const Verify = () => {
 
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
-				<ErrorList errors={form.errors} id={form.errorId} />
+				{/* <ErrorList errors={error} id={form.errorId} /> */}
 				<Box mb="5">
 					<Flex mb="1">
 						<OTPField
@@ -95,6 +97,22 @@ const Verify = () => {
 					Submit
 				</Button>
 			</Form>
+
+			{error && (
+				<>
+					<Text size="3" style={{ color: "red" }} as="p">
+						{error}
+					</Text>
+					<Form action="/accounts/signup" method="POST">
+						<input
+							type="hidden"
+							name="email"
+							value={fields[targetQueryParam].value}
+						/>
+						<Button variant="outline">Resend Code</Button>
+					</Form>
+				</>
+			)}
 		</Layout>
 	);
 };
