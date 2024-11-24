@@ -7,10 +7,23 @@ import { createOAuthClient } from "~/server/oauth/client";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const requestUrl = new URL(request.url);
-	const handle = requestUrl.searchParams.get("handle");
+	let handle = requestUrl.searchParams.get("handle");
 	if (typeof handle !== "string") {
 		throw new Error("Invalid handle");
 	}
+
+	if (handle.startsWith("@")) {
+		handle = handle.slice(1);
+	}
+
+	if (handle.startsWith("https://bsky.app/profile/")) {
+		handle = handle.slice("https://bsky.app/profile/".length);
+	}
+
+	if (!handle.includes(".")) {
+		handle = `${handle}.bsky.social`;
+	}
+
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
