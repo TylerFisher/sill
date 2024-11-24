@@ -44,7 +44,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	users = users.slice(start, end);
 
 	const redis = connection();
-	const chunkSize = 100;
+	const chunkSize = 50;
 	for (let i = 0; i < users.length; i += chunkSize) {
 		const userChunk = users.slice(i, i + chunkSize);
 		const processedResults: ProcessedResult[] = [];
