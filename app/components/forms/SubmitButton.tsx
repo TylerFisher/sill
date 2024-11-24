@@ -8,7 +8,8 @@ interface SubmitButtonProps extends ButtonProps {
 const SubmitButton = (props: SubmitButtonProps) => {
 	const { label } = props;
 	const navigation = useNavigation();
-	const isSubmitting = navigation.state === "submitting";
+	const isSubmitting =
+		navigation.state === "submitting" || navigation.state === "loading";
 	return (
 		<Button type="submit" disabled={isSubmitting} {...props}>
 			{isSubmitting ? <Spinner size="1" /> : null}

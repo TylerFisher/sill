@@ -68,7 +68,7 @@ const MastodonConnectForm = ({
 				</>
 			) : (
 				<>
-					<Form action="/mastodon/auth" method="get">
+					<Form action="/mastodon/auth" method="GET">
 						<TextField.Root
 							type="text"
 							name="instance"
