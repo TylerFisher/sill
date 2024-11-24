@@ -29,6 +29,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	let users = await db.query.user.findMany({
 		orderBy: asc(user.createdAt),
+		with: {
+			mastodonAccounts: {
+				with: {
+					mastodonInstance: true,
+				},
+			},
+		},
 	});
 	// Determine which quarter of users to process based on current minute
 	const quarterSize = Math.ceil(users.length / 4);
@@ -49,7 +56,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 					const results = await fetchLinks(user.id);
 					processedResults.push(...results);
 				} catch (error) {
-					console.error("error fetching links for", user.email, error);
+					console.error(
+						"error fetching links for",
+						user.mastodonAccounts[0].mastodonInstance.instance,
+						error,
+					);
 				}
 			}),
 		);
