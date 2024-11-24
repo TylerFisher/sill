@@ -25,6 +25,7 @@ import { X } from "lucide-react";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
@@ -168,7 +169,7 @@ const MutePhraseSettings = () => {
 					}}
 					errors={addFields.newPhrase.errors}
 				/>
-				<Button type="submit">Submit</Button>
+				<SubmitButton label="Submit" size="2" />
 			</Form>
 		</Layout>
 	);

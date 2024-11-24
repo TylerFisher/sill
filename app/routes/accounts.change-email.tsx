@@ -11,6 +11,7 @@ import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput.js";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -145,7 +146,7 @@ export default function ChangeEmailIndex() {
 						errors={fields.email.errors}
 					/>
 					<div>
-						<Button type="submit">Send Confirmation</Button>
+						<SubmitButton label="Send confirmation" />
 					</div>
 				</Form>
 			</Box>

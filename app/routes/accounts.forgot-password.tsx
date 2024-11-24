@@ -12,6 +12,7 @@ import { eq, or } from "drizzle-orm";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -127,7 +128,7 @@ export default function ForgotPasswordRoute() {
 					errors={fields.email.errors}
 				/>
 				<Box mb="5">
-					<Button type="submit">Reset password</Button>
+					<SubmitButton label="Reset Password" />
 				</Box>
 				<Link
 					to="/accounts/login"

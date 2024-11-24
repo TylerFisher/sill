@@ -1,6 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Button, Heading, Link, Text } from "@radix-ui/themes";
+import { Box, Heading, Link, Text } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
@@ -14,6 +14,7 @@ import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
 import CheckboxField from "~/components/forms/CheckboxField";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import WelcomeEmail from "~/emails/Welcome";
@@ -191,7 +192,7 @@ export default function OnboardingRoute() {
 				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
 
 				<div className="flex items-center justify-between gap-6">
-					<Button type="submit">Create an account</Button>
+					<SubmitButton label="Create an account" />
 				</div>
 				<Text as="p" size="1" mt="4">
 					By creating an account you agree to the{" "}

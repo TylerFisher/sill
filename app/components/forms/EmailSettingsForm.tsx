@@ -14,6 +14,7 @@ import { CircleAlert } from "lucide-react";
 import { useState } from "react";
 import type { emailSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email.add";
+import SubmitButton from "./SubmitButton";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof emailSettings.$inferSelect | undefined;
@@ -85,9 +86,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							})}
 						</Select.Content>
 					</Select.Root>
-					<Button type="submit" ml="4">
-						Save
-					</Button>
+					<SubmitButton label="Save" ml="4" size="2" />
 				</Box>
 			</fetcher.Form>
 			{selectedHour && (
@@ -97,9 +96,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 						action="/email/delete"
 						onSubmit={() => setSelectedHour(undefined)}
 					>
-						<Button type="submit" color="red">
-							Turn off daily email
-						</Button>
+						<SubmitButton color="red" label="Turn off daily email" size="2" />
 					</Form>
 				</Box>
 			)}

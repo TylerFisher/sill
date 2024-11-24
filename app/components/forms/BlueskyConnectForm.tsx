@@ -10,6 +10,7 @@ import {
 import { Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import type { blueskyAccount } from "~/drizzle/schema.server";
+import SubmitButton from "./SubmitButton";
 
 interface BlueskyConnectFormProps {
 	account: typeof blueskyAccount.$inferSelect | null;
@@ -35,9 +36,7 @@ const BlueskyConnectForm = ({
 						You are connected to <Badge>{account.handle}</Badge>.
 					</Text>
 					<Form action="/bluesky/auth/revoke" method="post">
-						<Button color="red" type="submit">
-							Disconnect
-						</Button>
+						<SubmitButton label="Disconnect" color="red" size="2" />
 					</Form>
 				</>
 			) : (
@@ -50,7 +49,7 @@ const BlueskyConnectForm = ({
 					>
 						<TextField.Slot>@</TextField.Slot>
 					</TextField.Root>
-					<Button type="submit">Connect</Button>
+					<SubmitButton size="2" label="Connect" />
 					{searchParams.get("error") === "resolver" && (
 						<Callout.Root mt="4">
 							<Callout.Icon>

@@ -11,6 +11,7 @@ import {
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -130,7 +131,7 @@ export default function ResetPasswordPage() {
 					}}
 					errors={fields.confirmPassword.errors}
 				/>
-				<Button type="submit">Reset password</Button>
+				<SubmitButton label="Reset Password " />
 			</Form>
 		</Layout>
 	);

@@ -11,6 +11,7 @@ import { Form, Link, useActionData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -134,9 +135,9 @@ export default function ChangePasswordRoute() {
 				/>
 				<Flex gap="6">
 					<Button asChild variant="soft">
-						<Link to="..">Cancel</Link>
+						<Link to="/settings">Cancel</Link>
 					</Button>
-					<Button type="submit">Change Password</Button>
+					<SubmitButton label="Change Password" />
 				</Flex>
 			</Form>
 		</Layout>

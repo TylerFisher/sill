@@ -5,8 +5,8 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
-import ErrorList from "~/components/forms/ErrorList";
 import { OTPField } from "~/components/forms/OTPField";
+import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { validateRequest } from "~/utils/verify.server";
@@ -93,9 +93,7 @@ const Verify = () => {
 					})}
 				/>
 
-				<Button type="submit" size="3">
-					Submit
-				</Button>
+				<SubmitButton label="Submit" />
 			</Form>
 
 			{error && (
@@ -109,7 +107,7 @@ const Verify = () => {
 							name="email"
 							value={fields[targetQueryParam].value}
 						/>
-						<Button variant="outline">Resend Code</Button>
+						<SubmitButton variant="outline" label="Resend code" />
 					</Form>
 				</>
 			)}

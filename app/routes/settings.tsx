@@ -4,6 +4,7 @@ import { AlertDialog, DataList } from "@radix-ui/themes";
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
+import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
@@ -50,21 +51,18 @@ export default function EditUserProfile() {
 				<Flex mt="4" gap="4" direction="column">
 					<Box width="100%">
 						<Form method="get" action="/accounts/logout">
-							<Button
-								type="submit"
+							<SubmitButton
 								variant="soft"
 								style={{
 									width: "100%",
 								}}
-							>
-								Log out
-							</Button>
+								label="Log out"
+							/>
 						</Form>
 					</Box>
 					<Box>
 						<Link to="/accounts/change-email">
 							<Button
-								type="submit"
 								variant="soft"
 								style={{
 									width: "100%",
@@ -77,7 +75,6 @@ export default function EditUserProfile() {
 					<Box>
 						<Link to="/accounts/password">
 							<Button
-								type="submit"
 								variant="soft"
 								style={{
 									width: "100%",
@@ -127,9 +124,7 @@ export default function EditUserProfile() {
 								>
 									<AlertDialog.Action>
 										<Form method="post" action="/accounts/user/delete">
-											<Button color="red" type="submit">
-												Yes, delete my account
-											</Button>
+											<SubmitButton label="Yes, delete my account" />
 										</Form>
 									</AlertDialog.Action>
 								</Box>

@@ -14,6 +14,7 @@ import type {
 	mastodonAccount,
 	mastodonInstance,
 } from "~/drizzle/schema.server";
+import SubmitButton from "./SubmitButton";
 
 type Account = typeof mastodonAccount.$inferSelect;
 interface AccountWithInstance extends Account {
@@ -43,9 +44,7 @@ const MastodonConnectForm = ({
 						<Badge>{account.mastodonInstance.instance}</Badge>.
 					</Text>
 					<Form action="/mastodon/auth/revoke" method="post">
-						<Button color="red" type="submit">
-							Disconnect
-						</Button>
+						<SubmitButton color="red" label="Disconnect" />
 					</Form>
 					<Callout.Root mt="4">
 						<Callout.Icon>
@@ -81,12 +80,7 @@ const MastodonConnectForm = ({
 						>
 							<TextField.Slot>https://</TextField.Slot>
 						</TextField.Root>
-						<datalist id="instances">
-							{instances.map((instance) => (
-								<option key={instance.instance}>{instance.instance}</option>
-							))}
-						</datalist>
-						<Button type="submit">Connect</Button>
+						<SubmitButton label="Connect" size="2" />
 						{searchParams.get("error") === "instance" && (
 							<Callout.Root mt="4">
 								<Callout.Icon>

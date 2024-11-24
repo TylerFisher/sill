@@ -19,6 +19,7 @@ import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
 
 import ErrorList from "~/components/forms/ErrorList";
 import Layout from "~/components/nav/Layout";
+import SubmitButton from "~/components/forms/SubmitButton";
 
 export const meta: MetaFunction = () => [{ title: "Login" }];
 
@@ -139,7 +140,7 @@ const Login = () => {
 
 				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
 
-				<Button type="submit">Sign in</Button>
+				<SubmitButton label="Log in" />
 
 				<Box mt="5">
 					<Text size="2">New here? </Text>
