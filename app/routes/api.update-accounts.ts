@@ -9,7 +9,6 @@ import {
 } from "~/utils/links.server";
 import { getUserCacheKey } from "~/utils/redis.server";
 import { connection } from "~/utils/redis.server";
-import { accountUpdateQueue } from "~/utils/queue.server";
 import { asc } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
@@ -50,20 +49,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		const userChunk = users.slice(i, i + chunkSize);
 		const processedResults: ProcessedResult[] = [];
 
-		await Promise.all(
-			userChunk.map(async (user) => {
-				try {
-					const results = await fetchLinks(user.id);
-					processedResults.push(...results);
-				} catch (error) {
-					console.error(
-						"error fetching links for",
-						user.mastodonAccounts[0].mastodonInstance.instance,
-						error,
-					);
-				}
-			}),
-		);
+		for (const user of userChunk) {
+			try {
+				const results = await fetchLinks(user.id);
+				processedResults.push(...results);
+			} catch (error) {
+				console.error(
+					"error fetching links for",
+					user.mastodonAccounts[0].mastodonInstance.instance,
+					error,
+				);
+			}
+		}
 
 		await insertNewLinks(processedResults);
 	}
