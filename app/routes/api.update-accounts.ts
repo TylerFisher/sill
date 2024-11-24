@@ -10,6 +10,8 @@ import {
 import { getUserCacheKey } from "~/utils/redis.server";
 import { connection } from "~/utils/redis.server";
 import { accountUpdateQueue } from "~/utils/queue.server";
+import { asc } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -22,7 +24,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		throw new Response("Forbidden", { status: 403 });
 	}
 
-	const users = await db.query.user.findMany();
+	const now = new Date();
+	const currentMinute = now.getMinutes();
+
+	let users = await db.query.user.findMany({
+		orderBy: asc(user.createdAt),
+	});
+	// Determine which quarter of users to process based on current minute
+	const quarterSize = Math.ceil(users.length / 4);
+	const currentQuarter = Math.floor(currentMinute / 15);
+	const start = currentQuarter * quarterSize;
+	const end = Math.min(start + quarterSize, users.length);
+	users = users.slice(start, end);
+
 	const redis = connection();
 	const chunkSize = 100;
 	for (let i = 0; i < users.length; i += chunkSize) {
