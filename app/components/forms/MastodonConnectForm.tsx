@@ -69,16 +69,19 @@ const MastodonConnectForm = ({
 			) : (
 				<>
 					<Form action="/mastodon/auth" method="GET">
+						<Text htmlFor="instance" size="2" as="label">
+							Enter your Mastodon handle (e.g. @username@mastodon.social)
+						</Text>
 						<TextField.Root
 							type="text"
 							name="instance"
-							placeholder="Enter your Mastodon instance (e.g. mastodon.social)"
+							placeholder="@username@mastodon.social"
 							required
 							mb="3"
 							list="instances"
 							autoComplete="off"
 						>
-							<TextField.Slot>https://</TextField.Slot>
+							<TextField.Slot />
 						</TextField.Root>
 						<SubmitButton label="Connect" size="2" />
 						{searchParams.get("error") === "instance" && (

@@ -41,13 +41,16 @@ const BlueskyConnectForm = ({
 				</>
 			) : (
 				<Form action="/bluesky/auth" method="GET">
+					<Text htmlFor="handle" size="2" as="label">
+						Enter your Bluesky handle (e.g. username.bsky.social)
+					</Text>
 					<TextField.Root
 						name="handle"
-						placeholder="Enter your Bluesky handle (e.g. tyler.bsky.social)"
+						placeholder="username.bsky.social"
 						required
 						mb="3"
 					>
-						<TextField.Slot>@</TextField.Slot>
+						<TextField.Slot />
 					</TextField.Root>
 					<SubmitButton size="2" label="Connect" />
 					{searchParams.get("error") === "resolver" && (

@@ -29,6 +29,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		instance = instance.split("@").at(-1) as string;
 	}
 
+	if (!instance.includes(".")) {
+		return redirect("/connect?error=instance");
+	}
+
 	let instanceData = await db.query.mastodonInstance.findFirst({
 		where: eq(mastodonInstance.instance, instance),
 	});
@@ -66,8 +70,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			instanceData = insert[0];
 		} catch (error) {
 			console.error(error);
-			requestUrl.searchParams.set("error", "instance");
-			return redirect(requestUrl.toString());
+			return redirect("/connect?error=instance");
 		}
 	}
 
