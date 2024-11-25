@@ -21,7 +21,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		instance = instance.replace("https://", "");
 	}
 
-	if (instance.includes("/@")) {
+	if (instance.includes("/")) {
 		instance = instance.split("/")[0];
 	}
 
