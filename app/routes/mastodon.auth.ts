@@ -21,11 +21,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		instance = instance.replace("https://", "");
 	}
 
+	if (instance.includes("/@")) {
+		instance = instance.split("/")[0];
+	}
+
 	if (instance.includes("@")) {
 		instance = instance.split("@").at(-1) as string;
-	}
-	if (instance.includes("/")) {
-		instance = instance.split("/")[0];
 	}
 
 	let instanceData = await db.query.mastodonInstance.findFirst({
