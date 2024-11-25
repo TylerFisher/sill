@@ -18,7 +18,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				sm: "5",
 			}}
 		>
-			{/* <div
+			<div
 				style={{
 					backgroundColor: "red",
 					color: "white",
@@ -32,7 +32,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				>
 					Bluesky may be down. Thank you for your patience.
 				</p>
-			</div> */}
+			</div>
 			<div className={styles.wrapper}>
 				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
 				{!hideNav && (
