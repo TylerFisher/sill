@@ -16,6 +16,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		handle = handle.slice(1);
 	}
 
+	if (handle.includes("@bsky.social")) {
+		handle = handle.replace("@bsky.social", ".bsky.social");
+	}
+
 	if (handle.startsWith("https://bsky.app/profile/")) {
 		handle = handle.slice("https://bsky.app/profile/".length);
 	}

@@ -8,27 +8,32 @@ import { createInstanceCookie } from "~/utils/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const requestUrl = new URL(request.url);
-	const instance = requestUrl.searchParams.get("instance");
+	let instance = requestUrl.searchParams.get("instance");
 
 	if (!instance) {
 		return null;
 	}
 
 	// If someone entered their full handle, get the instance from it
-	let correctedInstance = instance.toLocaleLowerCase();
+	instance = instance.toLocaleLowerCase();
+
+	if (instance.includes("https://")) {
+		instance = instance.replace("https://", "");
+	}
+
 	if (instance.includes("@")) {
-		correctedInstance = instance.split("@").at(-1) as string;
+		instance = instance.split("@").at(-1) as string;
 	}
 	if (instance.includes("/")) {
-		correctedInstance = instance.split("/")[0];
+		instance = instance.split("/")[0];
 	}
 
 	let instanceData = await db.query.mastodonInstance.findFirst({
-		where: eq(mastodonInstance.instance, correctedInstance),
+		where: eq(mastodonInstance.instance, instance),
 	});
 	if (!instanceData) {
 		try {
-			const response = await fetch(`https://${correctedInstance}/api/v1/apps`, {
+			const response = await fetch(`https://${instance}/api/v1/apps`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -45,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				.insert(mastodonInstance)
 				.values({
 					id: uuidv7(),
-					instance: correctedInstance,
+					instance: instance,
 					clientId: data.client_id,
 					clientSecret: data.client_secret,
 				})
@@ -65,13 +70,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}
 	}
 
-	const authorizationUrl = getAuthorizationUrl(
-		correctedInstance,
-		instanceData.clientId,
-	);
-	return await createInstanceCookie(
-		request,
-		correctedInstance,
-		authorizationUrl,
-	);
+	const authorizationUrl = getAuthorizationUrl(instance, instanceData.clientId);
+	return await createInstanceCookie(request, instance, authorizationUrl);
 };
