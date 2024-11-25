@@ -30,7 +30,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 						textAlign: "center",
 					}}
 				>
-					We are having connectivity issues with Bluesky. Please bear with us.
+					Bluesky may be down. Thank you for your patience.
 				</p>
 			</div>
 			<div className={styles.wrapper}>
