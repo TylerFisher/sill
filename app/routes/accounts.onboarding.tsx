@@ -8,7 +8,12 @@ import {
 	data,
 	redirect,
 } from "@remix-run/node";
-import { Form, useActionData, useSearchParams } from "@remix-run/react";
+import {
+	Form,
+	useActionData,
+	useLoaderData,
+	useSearchParams,
+} from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
@@ -23,6 +28,7 @@ import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { authSessionStorage } from "~/utils/session.server";
 import {
+	EmailSchema,
 	NameSchema,
 	PasswordAndConfirmPasswordSchema,
 } from "~/utils/userValidation";
@@ -32,6 +38,7 @@ export const onboardingEmailSessionKey = "onboardingEmail";
 
 const SignupFormSchema = z
 	.object({
+		email: EmailSchema,
 		name: NameSchema,
 		remember: z.boolean().optional(),
 		redirectTo: z.string().optional(),
@@ -119,6 +126,7 @@ export const meta: MetaFunction = () => {
 };
 
 export default function OnboardingRoute() {
+	const { email } = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const [searchParams] = useSearchParams();
 	const redirectTo =
@@ -144,6 +152,18 @@ export default function OnboardingRoute() {
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
 				<ErrorList errors={form.errors} id={form.errorId} />
+				<TextInput
+					labelProps={{
+						htmlFor: fields.email.name,
+						children: "Email",
+					}}
+					inputProps={{
+						...getInputProps(fields.email, { type: "email" }),
+						readOnly: true,
+						value: email,
+					}}
+					errors={fields.email.errors}
+				/>
 				<TextInput
 					labelProps={{
 						htmlFor: fields.name.name,
