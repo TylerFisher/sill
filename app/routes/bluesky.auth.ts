@@ -28,6 +28,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		handle = `${handle}.bsky.social`;
 	}
 
+	if (handle.includes("+")) {
+		handle = handle.replace("+", "");
+	}
+
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
