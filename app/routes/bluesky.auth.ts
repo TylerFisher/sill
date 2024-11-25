@@ -12,6 +12,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		throw new Error("Invalid handle");
 	}
 
+	handle = handle.trim();
+
 	if (handle.startsWith("@")) {
 		handle = handle.slice(1);
 	}
@@ -26,10 +28,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	if (!handle.includes(".")) {
 		handle = `${handle}.bsky.social`;
-	}
-
-	if (handle.includes("+")) {
-		handle = handle.replace("+", "");
 	}
 
 	const oauthClient = await createOAuthClient();
