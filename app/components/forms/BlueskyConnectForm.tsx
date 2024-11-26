@@ -61,7 +61,19 @@ const BlueskyConnectForm = ({
 							<Callout.Text>
 								We couldn't find a Bluesky account with that handle. Please try
 								again. Make sure you use the full handle (e.g.
-								myusername.bsky.social).
+								myusername.bsky.social). If you use a custom domain as your
+								handle, use that instead (e.g. tylerjfisher.com).
+							</Callout.Text>
+						</Callout.Root>
+					)}
+					{searchParams.get("error") === "denied" && (
+						<Callout.Root mt="4">
+							<Callout.Icon>
+								<CircleAlert width="18" height="18" />
+							</Callout.Icon>
+							<Callout.Text>
+								You denied Sill access. If this was a mistake, please try again
+								and make sure you click "Accept" on the final screen.
 							</Callout.Text>
 						</Callout.Root>
 					)}

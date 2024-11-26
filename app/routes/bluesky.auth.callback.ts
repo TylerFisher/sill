@@ -13,6 +13,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const oauthClient = await createOAuthClient();
 
 	const url = new URL(request.url);
+	if (url.searchParams.get("error_description") === "Access denied") {
+		return redirect("/connect?error=denied");
+	}
+
 	if (url.searchParams.get("error")) {
 		return redirect("/connect?error=oauth");
 	}
