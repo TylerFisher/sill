@@ -43,37 +43,43 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const end = Math.min(start + quarterSize, users.length);
 	users = users.slice(start, end);
 
-	for (let i = 0; i < users.length; i += 1) {
-		const user = users[i];
-		try {
-			const results = await fetchLinks(user.id);
-			await insertNewLinks(results);
-		} catch (error) {
-			console.error(
-				"error fetching links for",
-				user.mastodonAccounts[0].mastodonInstance.instance,
-				error,
-			);
-		}
+	const redis = connection();
+	const chunkSize = 10;
+	for (let i = 0; i < users.length; i += chunkSize) {
+		const userChunk = users.slice(i, i + chunkSize);
+		const processedResults: ProcessedResult[] = [];
+
+		await Promise.all(
+			userChunk.map(async (user) => {
+				try {
+					const results = await fetchLinks(user.id);
+					processedResults.push(...results);
+				} catch (error) {
+					console.error("error fetching links for", user.email, error);
+				}
+			}),
+		);
+
+		await insertNewLinks(processedResults);
 	}
 
 	// const updatedData: string[] = [];
-	// for (const user of users) {
-	// 	let linkCount: MostRecentLinkPosts[];
-	// 	try {
-	// 		linkCount = await filterLinkOccurrences({
-	// 			userId: user.id,
-	// 		});
-	// 	} catch (error) {
-	// 		console.error("error filtering links for", user.email, error);
-	// 		throw error;
-	// 	}
-	// 	redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
+	for (const user of users) {
+		let linkCount: MostRecentLinkPosts[];
+		try {
+			linkCount = await filterLinkOccurrences({
+				userId: user.id,
+			});
+		} catch (error) {
+			console.error("error filtering links for", user.email, error);
+			throw error;
+		}
+		redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
 
-	// accountUpdateQueue.add("update-accounts", {
-	// 	userId: user.id,
-	// });
-	// }
+		// accountUpdateQueue.add("update-accounts", {
+		// 	userId: user.id,
+		// });
+	}
 
 	return Response.json({});
 };
