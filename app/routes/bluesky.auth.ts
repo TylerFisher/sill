@@ -4,6 +4,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { createOAuthClient } from "~/server/oauth/client";
+import { HandleResolver } from "@atproto/identity";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const requestUrl = new URL(request.url);
@@ -30,6 +31,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		handle = `${handle}.bsky.social`;
 	}
 
+	const resolver = new HandleResolver();
+
 	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
@@ -45,6 +48,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}
 
 		if (error instanceof OAuthResolverError) {
+			const did = await resolver.resolve(handle);
+			if (did) {
+				try {
+					const url = await oauthClient.authorize(did, {
+						scope: "atproto transition:generic",
+					});
+					return redirect(url.toString());
+				} catch {
+					return redirect("/connect?error=resolver");
+				}
+			}
 			return redirect("/connect?error=resolver");
 		}
 		throw error;
