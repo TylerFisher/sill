@@ -43,28 +43,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const end = Math.min(start + quarterSize, users.length);
 	users = users.slice(start, end);
 
-	const redis = connection();
-	const chunkSize = 10;
-	for (let i = 0; i < users.length; i += chunkSize) {
-		const userChunk = users.slice(i, i + chunkSize);
-		const processedResults: ProcessedResult[] = [];
-
-		await Promise.all(
-			userChunk.map(async (user) => {
-				try {
-					const results = await fetchLinks(user.id);
-					processedResults.push(...results);
-				} catch (error) {
-					console.error(
-						"error fetching links for",
-						user.mastodonAccounts[0].mastodonInstance.instance,
-						error,
-					);
-				}
-			}),
-		);
-
-		await insertNewLinks(processedResults);
+	for (let i = 0; i < users.length; i += 1) {
+		const user = users[i];
+		try {
+			const results = await fetchLinks(user.id);
+			await insertNewLinks(results);
+		} catch (error) {
+			console.error(
+				"error fetching links for",
+				user.mastodonAccounts[0].mastodonInstance.instance,
+				error,
+			);
+		}
 	}
 
 	// const updatedData: string[] = [];
