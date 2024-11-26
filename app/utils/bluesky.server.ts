@@ -461,14 +461,14 @@ export const getLinksFromBluesky = async (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
-	const linksToFetch = processedResults
-		.map((p) => p.link)
-		.filter((l) => !l.description)
-		.filter(
-			(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
-		);
+	// const linksToFetch = processedResults
+	// 	.map((p) => p.link)
+	// 	.filter((l) => !l.description)
+	// 	.filter(
+	// 		(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
+	// 	);
 
-	await linksQueue.add("fetchMetadata", { links: linksToFetch });
+	// await linksQueue.add("fetchMetadata", { links: linksToFetch });
 
 	return processedResults;
 };
