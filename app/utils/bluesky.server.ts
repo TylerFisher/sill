@@ -461,14 +461,18 @@ export const getLinksFromBluesky = async (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
-	const linksToFetch = processedResults
-		.map((p) => p.link)
-		.filter((l) => !l.description)
-		.filter(
-			(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
-		);
+	// const linksToFetch = processedResults
+	// 	.map((p) => p.link)
+	// 	.filter((l) => !l.description)
+	// 	.filter(
+	// 		(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
+	// 	)
+	// 	.filter((l) => {
+	// 		const url = new URL(l.url);
+	// 		return !url.pathname.endsWith(".pdf");
+	// 	});
 
-	await linksQueue.add("fetchMetadata", { links: linksToFetch });
+	// await linksQueue.add("fetchMetadata", { links: linksToFetch });
 
 	return processedResults;
 };
@@ -571,7 +575,7 @@ export const fetchLinkMetadata = async (uri: string) => {
 		if (metadata.result.success) {
 			return {
 				id: uuidv7(),
-				url: uri,
+				url: metadata.result.ogUrl || uri,
 				title: metadata.result.ogTitle || "",
 				description: metadata.result.ogDescription || null,
 				imageUrl: metadata.result.ogImage
