@@ -25,7 +25,7 @@ import {
 	conflictUpdateSetAllColumns,
 	type ProcessedResult,
 } from "./links.server";
-
+import ogs from "open-graph-scraper";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;
@@ -461,14 +461,14 @@ export const getLinksFromBluesky = async (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
-	// const linksToFetch = processedResults
-	// 	.map((p) => p.link)
-	// 	.filter((l) => !l.description)
-	// 	.filter(
-	// 		(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
-	// 	);
+	const linksToFetch = processedResults
+		.map((p) => p.link)
+		.filter((l) => !l.description)
+		.filter(
+			(obj1, i, arr) => arr.findIndex((obj2) => obj2.url === obj1.url) === i,
+		);
 
-	// await linksQueue.add("fetchMetadata", { links: linksToFetch });
+	await linksQueue.add("fetchMetadata", { links: linksToFetch });
 
 	return processedResults;
 };
@@ -554,18 +554,29 @@ export const fetchLinkMetadata = async (uri: string) => {
 		};
 	}
 
+	const userAgent =
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+
 	try {
-		const metadata = await extractFromUrl(uri, {
-			timeout: 5000,
+		const metadata = await ogs({
+			url: uri,
+			blacklist: ["news.gov.mb.ca"],
+			fetchOptions: {
+				headers: {
+					"user-agent": userAgent,
+				},
+			},
 		});
 
-		if (metadata) {
+		if (metadata.result.success) {
 			return {
 				id: uuidv7(),
 				url: uri,
-				title: metadata["og:title"] || metadata.title,
-				description: metadata["og:description"] || metadata.description || null,
-				imageUrl: metadata["og:image"] || null,
+				title: metadata.result.ogTitle || "",
+				description: metadata.result.ogDescription || null,
+				imageUrl: metadata.result.ogImage
+					? metadata.result.ogImage[0].url
+					: null,
 			};
 		}
 	} catch (e) {
