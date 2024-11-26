@@ -60,7 +60,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}),
 		);
 
-		await insertNewLinks(processedResults);
+		try {
+			await insertNewLinks(processedResults);
+		} catch (error) {
+			console.error("error sending links to database", error);
+		}
 	}
 
 	// const updatedData: string[] = [];
