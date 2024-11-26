@@ -14,6 +14,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	handle = handle.trim();
+	handle = handle.toLocaleLowerCase();
 
 	if (handle.startsWith("@")) {
 		handle = handle.slice(1);
