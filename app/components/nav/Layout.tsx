@@ -18,7 +18,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				sm: "5",
 			}}
 		>
-			{/* <div
+			<div
 				style={{
 					backgroundColor: "red",
 					color: "white",
@@ -30,9 +30,10 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 						textAlign: "center",
 					}}
 				>
-					Bluesky may be down. Thank you for your patience.
+					Our email provider is down, preventing new users from signing up.
+					Please come back later
 				</p>
-			</div> */}
+			</div>
 			<div className={styles.wrapper}>
 				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
 				{!hideNav && (
