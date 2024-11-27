@@ -8,6 +8,7 @@ const OpenLink = ({ url }: { url: string }) => {
 			target="_blank"
 			rel="noreferrer"
 			aria-label="Open in new tab"
+			title="Open in new tab"
 		>
 			<IconButton aria-label="Open in new tab" variant="ghost" size="1">
 				<ExternalLink width="18" height="18" />

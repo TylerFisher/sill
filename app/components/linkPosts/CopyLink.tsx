@@ -18,7 +18,12 @@ const CopyLink = ({ url }: { url: string }) => {
 	return (
 		<Box position="relative">
 			<CopyToClipboard text={url} onCopy={() => setCopied(true)}>
-				<IconButton aria-label="Copy URL" variant="ghost" size="1">
+				<IconButton
+					aria-label="Copy URL"
+					variant="ghost"
+					size="1"
+					title="Copy URL"
+				>
 					{copied ? (
 						<Check width="18" height="18" />
 					) : (

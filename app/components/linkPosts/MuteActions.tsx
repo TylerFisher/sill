@@ -16,7 +16,12 @@ const MuteActions = ({
 	return (
 		<Popover.Root>
 			<Popover.Trigger>
-				<IconButton aria-label="More options" variant="ghost" size="1">
+				<IconButton
+					aria-label="Mute options"
+					variant="ghost"
+					size="1"
+					title="Mute options"
+				>
 					<MessageSquareOff width="18" height="18" />
 				</IconButton>
 			</Popover.Trigger>

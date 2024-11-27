@@ -10,7 +10,7 @@ const SingleAccountShare = ({
 		: `https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`;
 	return (
 		<Link href={link} target="_blank" rel="noreferrer" aria-label="Share">
-			<IconButton aria-label="Share" variant="ghost">
+			<IconButton aria-label="Share" variant="ghost" title="Share">
 				<Share width="18" height="18" />
 			</IconButton>
 		</Link>
@@ -25,8 +25,8 @@ const ShareLink = ({
 	if (instance && bsky) {
 		return (
 			<Popover.Root>
-				<Popover.Trigger aria-label="Share">
-					<IconButton aria-label="Share" variant="ghost">
+				<Popover.Trigger aria-label="Share" title="Share">
+					<IconButton aria-label="Share" variant="ghost" title="Share">
 						<Share width="18" height="18" />
 					</IconButton>
 				</Popover.Trigger>
