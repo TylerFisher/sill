@@ -99,7 +99,7 @@ export async function sendEmail({
  * @param react React element to render
  * @returns HTML and plain text email content
  */
-async function renderReactEmail(react: ReactElement) {
+export async function renderReactEmail(react: ReactElement) {
 	const [html, text] = await Promise.all([
 		render(react),
 		render(react, { plainText: true }),

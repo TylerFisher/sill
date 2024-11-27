@@ -3,11 +3,14 @@ import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
-import { sendEmail } from "~/utils/email.server";
+import { renderReactEmail } from "~/utils/email.server";
 import {
 	filterLinkOccurrences,
 	type MostRecentLinkPosts,
 } from "~/utils/links.server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -31,38 +34,86 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}),
 	);
 
-	const emailResponses = [];
 	const validEmails = emails.filter((email) => email !== undefined);
 
-	for (let i = 0; i < validEmails.length; i++) {
-		const email = validEmails[i];
-
-		const emailUser = await db.query.user.findFirst({
-			where: eq(user.id, email.userId),
-		});
-
-		if (!emailUser) {
-			throw new Error("Couldn't find user for email");
-		}
-
-		let links: MostRecentLinkPosts[] = [];
-		try {
-			links = await filterLinkOccurrences({
-				userId: emailUser.id,
-				fetch: true,
+	const emailBodies = await Promise.all(
+		validEmails.map(async (email) => {
+			const emailUser = await db.query.user.findFirst({
+				where: eq(user.id, email.userId),
 			});
-		} catch (error) {
-			console.error("Failed to fetch links for :", error);
-		}
 
-		const response = await sendEmail({
-			to: emailUser.email,
-			subject: "Your top links for today",
-			react: <TopLinks links={links} name={emailUser.name} />,
-		});
+			if (!emailUser) {
+				throw new Error("Couldn't find user for email");
+			}
 
-		emailResponses.push(response);
+			let links: MostRecentLinkPosts[] = [];
+			try {
+				links = await filterLinkOccurrences({
+					userId: emailUser.id,
+					fetch: true,
+				});
+			} catch (error) {
+				console.error("Failed to fetch links for :", error);
+				// get what we have
+				try {
+					links = await filterLinkOccurrences({
+						userId: emailUser.id,
+					});
+				} catch (error) {
+					console.error("Second fetch failed to fetch links for :", error);
+				}
+			}
+
+			return {
+				from: "Sill <noreply@mail.sill.social>",
+				to: emailUser.email,
+				subject: "Your top links for today",
+				...(await renderReactEmail(
+					<TopLinks links={links} name={emailUser.name} />,
+				)),
+			};
+		}),
+	);
+
+	try {
+		await resend.batch.send(emailBodies);
+	} catch (error) {
+		console.error("Failed to send emails", error);
+		// Wait a second and try again
+		setTimeout(async () => {
+			await resend.batch.send(emailBodies);
+		}, 1000);
 	}
 
-	return { emailResponses };
+	// for (let i = 0; i < validEmails.length; i++) {
+	// 	const email = validEmails[i];
+
+	// 	const emailUser = await db.query.user.findFirst({
+	// 		where: eq(user.id, email.userId),
+	// 	});
+
+	// 	if (!emailUser) {
+	// 		throw new Error("Couldn't find user for email");
+	// 	}
+
+	// 	let links: MostRecentLinkPosts[] = [];
+	// 	try {
+	// 		links = await filterLinkOccurrences({
+	// 			userId: emailUser.id,
+	// 			fetch: true,
+	// 		});
+	// 	} catch (error) {
+	// 		console.error("Failed to fetch links for :", error);
+	// 	}
+
+	// 	const response = await sendEmail({
+	// 		to: emailUser.email,
+	// 		subject: "Your top links for today",
+	// 		react: <TopLinks links={links} name={emailUser.name} />,
+	// 	});
+
+	// 	emailResponses.push(response);
+	// }
+
+	return Response.json({});
 };

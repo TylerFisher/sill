@@ -51,6 +51,7 @@
 		"react-tweet": "^3.2.1",
 		"react-youtube": "^10.1.0",
 		"remix-utils": "^7.7.0",
+		"resend": "^4.0.1",
 		"ts-debounce": "^4.0.0",
 		"uuidv7-js": "^1.1.4",
 		"zod": "^3.23.8"
