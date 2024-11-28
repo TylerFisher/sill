@@ -14,6 +14,11 @@ interface LinkPostProps {
 }
 
 const LinkPost = ({ linkPost }: LinkPostProps) => {
+	const isProduction = process.env.NODE_ENV === "production";
+	const baseUrl = isProduction
+		? process.env.PUBLIC_URL
+		: "http://localhost:3000";
+
 	if (!linkPost.link || !linkPost.posts) return null;
 	const link = linkPost.link;
 	const allActors = linkPost.posts.map((l) =>
@@ -53,8 +58,10 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 				/>
 			))}
 			<Text style={accounts}>
-				Shared by {uniqueActors.length}{" "}
-				{uniqueActors.length === 1 ? "account" : "accounts"}
+				<Link style={postsLink} href={`${baseUrl}/links/${link.id}`}>
+					Shared by {uniqueActors.length}{" "}
+					{uniqueActors.length === 1 ? "account" : "accounts"}
+				</Link>
 			</Text>
 		</>
 	);
@@ -112,9 +119,11 @@ const avatar = (i: number) => ({
 
 const accounts = {
 	display: "inline",
-	color: "black",
 	verticalAlign: "top",
 	margin: "0 0 0 12px",
+};
+const postsLink = {
+	color: "#9E6C00",
 };
 
 export default LinkPost;

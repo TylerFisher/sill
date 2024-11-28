@@ -83,7 +83,7 @@ export const fetchLinks = async (
  * @param userId ID for logged in user
  * @returns All mute phrases for the user
  */
-const getMutePhrases = async (userId: string) => {
+export const getMutePhrases = async (userId: string) => {
 	return await db.query.mutePhrase.findMany({
 		where: eq(mutePhrase.userId, userId),
 	});
@@ -311,7 +311,6 @@ export const filterLinkOccurrences = async ({
 						linkPost.id,
 						linkPostsForUser.map((lp) => lp.linkPostId),
 					),
-					gte(linkPost.date, start),
 					...urlMuteClauses,
 					service !== "all" ? eq(post.postType, service) : undefined,
 					hideReposts ? isNull(post.repostHandle) : undefined,
