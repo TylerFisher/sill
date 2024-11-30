@@ -1,13 +1,17 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Box, Button } from "@radix-ui/themes";
+import { Box, Button, Heading, Select } from "@radix-ui/themes";
 import { useSearchParams } from "@remix-run/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
+import type { list } from "~/drizzle/schema.server";
 
-const LinkFilters = ({ showService }: { showService: boolean }) => {
+const LinkFilters = ({
+	showService,
+	lists,
+}: { showService: boolean; lists: (typeof list.$inferSelect)[] }) => {
 	const [open, setOpen] = useState(false);
 	const [searchParams, setSearchParams] = useSearchParams();
 
@@ -128,6 +132,35 @@ const LinkFilters = ({ showService }: { showService: boolean }) => {
 						/>
 					))}
 				</Box>
+
+				{lists.length > 0 && (
+					<Box my="3">
+						<Heading
+							mb="1"
+							size="1"
+							as="h5"
+							style={{
+								textTransform: "uppercase",
+							}}
+						>
+							Lists
+						</Heading>
+						<Select.Root
+							value={searchParams.get("list") || "all"}
+							onValueChange={(value) => setSearchParam("list", value)}
+						>
+							<Select.Trigger placeholder="Select a list" />
+							<Select.Content>
+								<Select.Item value="all">All</Select.Item>
+								{lists.map((list) => (
+									<Select.Item key={list.uri} value={list.id}>
+										{list.name}
+									</Select.Item>
+								))}
+							</Select.Content>
+						</Select.Root>
+					</Box>
+				)}
 				<Button onClick={clearSearchParams}>Clear all filters</Button>
 			</Collapsible.Content>
 		</Collapsible.Root>

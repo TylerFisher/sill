@@ -104,11 +104,9 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 				<Callout.Icon>
 					<CircleAlert width="18" height="18" />
 				</Callout.Icon>
-				<Callout.Text>
-					<Text size="2" as="p">
-						<strong>Note:</strong> During the Sill beta, emails are free. In the
-						future, we may charge for this feature.
-					</Text>
+				<Callout.Text size="2">
+					<strong>Note:</strong> During the Sill beta, emails are free. In the
+					future, we may charge for this feature.
 				</Callout.Text>
 			</Callout.Root>
 		</Card>
