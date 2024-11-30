@@ -11,12 +11,18 @@ export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
+	autoExpand?: boolean;
 }
 
-const LinkPostRep = ({ linkPost, instance, bsky }: LinkPostRepProps) => {
+const LinkPostRep = ({
+	linkPost,
+	instance,
+	bsky,
+	autoExpand = false,
+}: LinkPostRepProps) => {
 	if (!linkPost) return null;
 	if (!linkPost.posts || !linkPost.link) return null;
-	const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(autoExpand);
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.post.url);
 	const allActors = linkPost.posts.map((p) =>
 		p.reposter ? p.reposter.avatarUrl : p.actor.avatarUrl,
