@@ -8,5 +8,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
 	await db.delete(emailSettings).where(and(eq(emailSettings.userId, userId)));
 
-	return redirect("/connect");
+	return redirect("/email");
 };

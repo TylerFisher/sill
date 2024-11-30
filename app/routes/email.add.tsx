@@ -8,6 +8,9 @@ import { requireUserId } from "~/utils/auth.server";
 
 export const EmailSettingsSchema = z.object({
 	time: z.string(),
+	hideReposts: z.boolean().default(false),
+	splitServices: z.boolean().default(false),
+	topAmount: z.number().default(10),
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -35,11 +38,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			id: uuidv7(),
 			userId,
 			scheduledTime: submission.value.time,
+			hideReposts: submission.value.hideReposts,
+			splitServices: submission.value.splitServices,
+			topAmount: submission.value.topAmount,
 		})
 		.onConflictDoUpdate({
 			target: [emailSettings.userId],
 			set: {
 				scheduledTime: submission.value.time,
+				hideReposts: submission.value.hideReposts,
+				splitServices: submission.value.splitServices,
+				topAmount: submission.value.topAmount,
 			},
 		});
 

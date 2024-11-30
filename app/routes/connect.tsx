@@ -142,12 +142,6 @@ const Connect = () => {
 				searchParams={searchParams}
 				listOptions={listOptions.filter((l) => l.type === "mastodon")}
 			/>
-			<EmailSettingForm currentSettings={currentSettings} />
-			<Box>
-				<Link to="/links">
-					<Button>Show me my top links</Button>
-				</Link>
-			</Box>
 		</Layout>
 	);
 };

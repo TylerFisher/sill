@@ -1,6 +1,6 @@
 import { Button } from "@radix-ui/themes";
-import { Link, useLocation } from "@remix-run/react";
-import { Home, Mail, MessageSquareOff, User, Zap } from "lucide-react";
+import { Link, NavLink, useLocation } from "@remix-run/react";
+import { Home, Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
 
@@ -9,13 +9,18 @@ const Nav = () => {
 	const navLinks = [
 		{
 			to: "/links",
-			label: "Home",
-			icon: <Home className={styles["nav-list-item-icon"]} />,
+			label: "Links",
+			icon: <Link2 className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/connect",
 			label: "Connect",
 			icon: <Zap className={styles["nav-list-item-icon"]} />,
+		},
+		{
+			to: "/email",
+			label: "Daily Email",
+			icon: <Mail className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/moderation",
@@ -32,14 +37,14 @@ const Nav = () => {
 		<nav className={styles.nav}>
 			<ul className={styles["nav-list"]}>
 				{navLinks.map((link) => (
-					<NavLink key={link.to} {...link} location={location.pathname} />
+					<NavItem key={link.to} {...link} location={location.pathname} />
 				))}
 			</ul>
 		</nav>
 	);
 };
 
-const NavLink = ({
+const NavItem = ({
 	to,
 	label,
 	icon,
@@ -47,20 +52,22 @@ const NavLink = ({
 }: { to: string; label: string; icon: ReactElement; location: string }) => {
 	return (
 		<li className={styles["nav-list-item"]}>
-			<Link to={to} aria-label={label}>
+			<NavLink to={to} aria-label={label} viewTransition>
 				<Button
 					variant="ghost"
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
-						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
-						fontWeight: location === to ? "bold" : "normal",
+						color: location.includes(to)
+							? "var(--accent-11)"
+							: "var(--gray-a11)",
+						fontWeight: location.includes(to) ? "bold" : "normal",
 					}}
 					aria-label={label}
 				>
 					{icon} <span className={styles["nav-list-item-label"]}>{label}</span>
 				</Button>
-			</Link>
+			</NavLink>
 		</li>
 	);
 };

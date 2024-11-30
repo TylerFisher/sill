@@ -205,6 +205,7 @@ interface FilterArgs {
 	page?: number;
 	fetch?: boolean;
 	selectedList?: string;
+	limit?: number;
 }
 
 const DEFAULT_HIDE_REPOSTS = false;
@@ -229,6 +230,7 @@ export const filterLinkOccurrences = async ({
 	page = 1,
 	fetch = DEFAULT_FETCH,
 	selectedList = "all",
+	limit = PAGE_SIZE,
 }: FilterArgs) => {
 	if (fetch) {
 		try {
@@ -380,7 +382,7 @@ export const filterLinkOccurrences = async ({
 					: desc(groupedLinks.mostRecentPostDate),
 				desc(groupedLinks.mostRecentPostDate),
 			)
-			.limit(PAGE_SIZE)
+			.limit(limit)
 			.offset(offset);
 	});
 
