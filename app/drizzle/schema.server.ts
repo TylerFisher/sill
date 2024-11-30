@@ -169,6 +169,9 @@ export const emailSettings = pgTable("email_settings", {
 		.references(() => user.id, { onDelete: "cascade" })
 		.unique(),
 	scheduledTime: time().notNull(),
+	topAmount: integer().notNull().default(10),
+	splitServices: boolean().notNull().default(false),
+	hideReposts: boolean().notNull().default(false),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {

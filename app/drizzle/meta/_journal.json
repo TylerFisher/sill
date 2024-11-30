@@ -92,6 +92,13 @@
       "when": 1732927753149,
       "tag": "0012_daily_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1732990937242,
+      "tag": "0013_last_black_knight",
+      "breakpoints": true
     }
   ]
 }

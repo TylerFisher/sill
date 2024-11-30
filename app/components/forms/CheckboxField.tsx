@@ -26,16 +26,16 @@ const CheckboxField = ({
 	const errorId = errors?.length ? `${id}-error` : undefined;
 	return (
 		<Box>
-			<Text as="label" size="2" {...labelProps}>
-				<Flex gap="2">
-					<Checkbox
-						{...inputProps}
-						aria-invalid={errorId ? true : undefined}
-						aria-describedby={errorId}
-					/>
+			<Flex gap="2">
+				<Checkbox
+					{...inputProps}
+					aria-invalid={errorId ? true : undefined}
+					aria-describedby={errorId}
+				/>
+				<Text as="label" size="2" {...labelProps}>
 					{labelProps.children}
-				</Flex>
-			</Text>
+				</Text>
+			</Flex>
 			<Text size="1">{errors}</Text>
 		</Box>
 	);
