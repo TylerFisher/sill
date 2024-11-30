@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { mastodonAccount, postType } from "~/drizzle/schema.server";
+import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
@@ -51,17 +51,52 @@ export const getAccessToken = async (
  * @param userId ID for the logged-in user
  * @returns List of statuses from the user's Mastodon timeline since last fetch
  */
-export const getMastodonTimeline = async (userId: string) => {
-	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
-	const account = await db.query.mastodonAccount.findFirst({
-		where: eq(mastodonAccount.userId, userId),
-		with: {
-			mastodonInstance: true,
-		},
+export const getMastodonList = async (
+	listUri: string,
+	account: typeof mastodonAccount.$inferSelect & {
+		mastodonInstance: {
+			instance: string;
+		};
+	},
+) => {
+	const dbList = await db.query.list.findFirst({
+		where: eq(list.uri, listUri),
 	});
 
-	if (!account) return [];
+	if (!dbList) return [];
+
+	const client = createRestAPIClient({
+		url: `https://${account.mastodonInstance.instance}`,
+		accessToken: account.accessToken,
+	});
+
+	const statuses: mastodon.v1.Status[] = [];
+	for await (const statuses of client.v1.timelines.list
+		.$select(listUri)
+		.list()) {
+		statuses.push(...statuses);
+	}
+
+	if (statuses.length > 0) {
+		await db
+			.update(list)
+			.set({
+				mostRecentPostId: statuses[0].id,
+			})
+			.where(and(eq(mastodonAccount.id, account.id), eq(list.uri, listUri)));
+	}
+	return statuses;
+};
+
+export const getMastodonTimeline = async (
+	account: typeof mastodonAccount.$inferSelect & {
+		mastodonInstance: {
+			instance: string;
+		};
+	},
+) => {
+	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
 	const client = createRestAPIClient({
 		url: `https://${account.mastodonInstance.instance}`,
@@ -267,7 +302,21 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 export const getLinksFromMastodon = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
-	const timeline = await getMastodonTimeline(userId);
+	const account = await db.query.mastodonAccount.findFirst({
+		where: eq(mastodonAccount.userId, userId),
+		with: {
+			mastodonInstance: true,
+			lists: true,
+		},
+	});
+
+	if (!account) return [];
+
+	const timeline = await getMastodonTimeline(account);
+	for (const list of account.lists) {
+		const listPosts = await getMastodonList(list.uri, account);
+		timeline.push(...listPosts);
+	}
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
 	const processedResults = (
 		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))

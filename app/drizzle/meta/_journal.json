@@ -1,76 +1,97 @@
 {
-	"version": "7",
-	"dialect": "postgresql",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "7",
-			"when": 1729393254785,
-			"tag": "0000_tranquil_vanisher",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "7",
-			"when": 1729396109653,
-			"tag": "0001_mysterious_shadowcat",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "7",
-			"when": 1729649195793,
-			"tag": "0002_goofy_shinko_yamashiro",
-			"breakpoints": true
-		},
-		{
-			"idx": 3,
-			"version": "7",
-			"when": 1729649340485,
-			"tag": "0003_giant_morph",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "7",
-			"when": 1729649754849,
-			"tag": "0004_aspiring_luke_cage",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "7",
-			"when": 1729652248637,
-			"tag": "0005_chubby_nick_fury",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "7",
-			"when": 1729878244366,
-			"tag": "0006_fantastic_domino",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "7",
-			"when": 1729902582348,
-			"tag": "0007_slippery_thunderbolt_ross",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "7",
-			"when": 1730242016306,
-			"tag": "0008_last_romulus",
-			"breakpoints": true
-		},
-		{
-			"idx": 9,
-			"version": "7",
-			"when": 1730588286194,
-			"tag": "0009_lively_winter_soldier",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1729393254785,
+      "tag": "0000_tranquil_vanisher",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1729396109653,
+      "tag": "0001_mysterious_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1729649195793,
+      "tag": "0002_goofy_shinko_yamashiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1729649340485,
+      "tag": "0003_giant_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1729649754849,
+      "tag": "0004_aspiring_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1729652248637,
+      "tag": "0005_chubby_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1729878244366,
+      "tag": "0006_fantastic_domino",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1729902582348,
+      "tag": "0007_slippery_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1730242016306,
+      "tag": "0008_last_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1730588286194,
+      "tag": "0009_lively_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1732917420965,
+      "tag": "0010_shocking_stone_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1732920141919,
+      "tag": "0011_material_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1732927753149,
+      "tag": "0012_daily_spirit",
+      "breakpoints": true
+    }
+  ]
 }

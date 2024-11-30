@@ -122,6 +122,16 @@ export const post = pgTable(
 	},
 );
 
+export const postListSubscription = pgTable("post_list_subscription", {
+	id: uuid().primaryKey().notNull(),
+	postId: uuid()
+		.notNull()
+		.references(() => post.id, { onDelete: "cascade" }),
+	listId: uuid()
+		.notNull()
+		.references(() => list.id, { onDelete: "cascade" }),
+});
+
 export const password = pgTable("password", {
 	hash: text().notNull(),
 	userId: uuid()
@@ -214,6 +224,20 @@ export const blueskyAccount = pgTable(
 		};
 	},
 );
+
+export const list = pgTable("list", {
+	id: uuid().primaryKey().notNull(),
+	name: text().notNull(),
+	uri: text().notNull().unique(),
+	mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
+	mostRecentPostId: text(),
+	blueskyAccountId: uuid().references(() => blueskyAccount.id, {
+		onDelete: "cascade",
+	}),
+	mastodonAccountId: uuid().references(() => mastodonAccount.id, {
+		onDelete: "cascade",
+	}),
+});
 
 export const link = pgTable(
 	"link",
@@ -439,7 +463,7 @@ export const mastodonInstanceRelations = relations(
 
 export const mastodonAccountRelations = relations(
 	mastodonAccount,
-	({ one }) => ({
+	({ one, many }) => ({
 		user: one(user, {
 			fields: [mastodonAccount.userId],
 			references: [user.id],
@@ -448,15 +472,45 @@ export const mastodonAccountRelations = relations(
 			fields: [mastodonAccount.instanceId],
 			references: [mastodonInstance.id],
 		}),
+		lists: many(list),
 	}),
 );
 
-export const blueskyAccountRelations = relations(blueskyAccount, ({ one }) => ({
-	user: one(user, {
-		fields: [blueskyAccount.userId],
-		references: [user.id],
+export const blueskyAccountRelations = relations(
+	blueskyAccount,
+	({ one, many }) => ({
+		user: one(user, {
+			fields: [blueskyAccount.userId],
+			references: [user.id],
+		}),
+		lists: many(list),
+	}),
+);
+
+export const listRelations = relations(list, ({ one }) => ({
+	blueskyAccount: one(blueskyAccount, {
+		fields: [list.blueskyAccountId],
+		references: [blueskyAccount.id],
+	}),
+	mastodonAccount: one(mastodonAccount, {
+		fields: [list.mastodonAccountId],
+		references: [mastodonAccount.id],
 	}),
 }));
+
+export const postListSubscriptionRelations = relations(
+	postListSubscription,
+	({ one }) => ({
+		post: one(post, {
+			fields: [postListSubscription.postId],
+			references: [post.id],
+		}),
+		list: one(list, {
+			fields: [postListSubscription.listId],
+			references: [list.id],
+		}),
+	}),
+);
 
 export const postImageRelations = relations(postImage, ({ one }) => ({
 	post: one(post, {

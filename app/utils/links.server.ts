@@ -18,9 +18,11 @@ import {
 	link,
 	linkPost,
 	linkPostToUser,
+	list,
 	mutePhrase,
 	post,
 	postImage,
+	postListSubscription,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -61,6 +63,7 @@ export interface ProcessedResult {
 	newLinkPost: typeof linkPost.$inferInsert;
 	images?: (typeof postImage.$inferInsert)[];
 	newLinkPostToUser: typeof linkPostToUser.$inferInsert;
+	newPostListSubscription?: typeof postListSubscription.$inferInsert;
 }
 
 /**
@@ -128,6 +131,9 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 		.flatMap((p) => p.images)
 		.filter((p) => p !== undefined);
 	const newLinkPostsToUser = processedResults.map((p) => p.newLinkPostToUser);
+	const newPostListSubscriptions = processedResults
+		.map((p) => p.newPostListSubscription)
+		.filter((p) => p !== undefined);
 
 	await db.transaction(async (tx) => {
 		if (actors.length > 0)
@@ -161,6 +167,12 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 				.values(newLinkPostsToUser)
 				.onConflictDoNothing();
 		}
+		if (newPostListSubscriptions.length > 0) {
+			await tx
+				.insert(postListSubscription)
+				.values(newPostListSubscriptions)
+				.onConflictDoNothing();
+		}
 	});
 };
 
@@ -192,6 +204,7 @@ interface FilterArgs {
 	service?: "mastodon" | "bluesky" | "all";
 	page?: number;
 	fetch?: boolean;
+	selectedList?: string;
 }
 
 const DEFAULT_HIDE_REPOSTS = false;
@@ -215,6 +228,7 @@ export const filterLinkOccurrences = async ({
 	service = "all",
 	page = 1,
 	fetch = DEFAULT_FETCH,
+	selectedList = "all",
 }: FilterArgs) => {
 	if (fetch) {
 		try {
@@ -223,6 +237,13 @@ export const filterLinkOccurrences = async ({
 		} catch (e) {
 			console.error(e);
 		}
+	}
+
+	let listRecord: typeof list.$inferSelect | undefined;
+	if (selectedList !== "all") {
+		listRecord = await db.query.list.findFirst({
+			where: eq(list.id, selectedList),
+		});
 	}
 
 	const offset = (page - 1) * PAGE_SIZE;
@@ -237,7 +258,17 @@ export const filterLinkOccurrences = async ({
 			})
 			.from(linkPostToUser)
 			.leftJoin(linkPost, eq(linkPostToUser.linkPostId, linkPost.id))
-			.where(and(eq(linkPostToUser.userId, userId), gte(linkPost.date, start)));
+			.leftJoin(post, eq(linkPost.postId, post.id))
+			.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
+			.where(
+				and(
+					eq(linkPostToUser.userId, userId),
+					gte(linkPost.date, start),
+					listRecord
+						? eq(postListSubscription.listId, listRecord.id)
+						: undefined,
+				),
+			);
 
 		const quote = aliasedTable(post, "quote");
 		const reposter = aliasedTable(actor, "reposter");

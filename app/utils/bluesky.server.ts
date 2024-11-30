@@ -14,13 +14,17 @@ import {
 	OAuthResponseError,
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
-import { extractFromUrl } from "@jcottam/html-metadata";
 import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { blueskyAccount, link, postType } from "~/drizzle/schema.server";
+import {
+	blueskyAccount,
+	link,
+	list,
+	type postListSubscription,
+	postType,
+} from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
-import { linksQueue } from "~/utils/queue.server";
 import {
 	conflictUpdateSetAllColumns,
 	type ProcessedResult,
@@ -55,22 +59,93 @@ export const handleBlueskyOAuth = async (account: { did: string }) => {
 	return oauthSession;
 };
 
+export const getBlueskyList = async (
+	agent: Agent,
+	dbList: typeof list.$inferSelect,
+	accountHandle: string,
+) => {
+	async function getList(cursor: string | undefined = undefined) {
+		// biome-ignore lint/suspicious/noImplicitAnyLet:
+		let response;
+		if (dbList.uri.includes("app.bsky.graph.list")) {
+			response = await agent.app.bsky.feed.getListFeed({
+				list: dbList.uri,
+				limit: 100,
+				cursor,
+			});
+		} else if (dbList.uri.includes("app.bsky.feed.generator")) {
+			response = await agent.app.bsky.feed.getFeed({
+				feed: dbList.uri,
+				limit: 100,
+				cursor,
+			});
+		}
+
+		if (!response) {
+			return [];
+		}
+
+		const list = response.data.feed;
+		const checkDate = dbList.mostRecentPostDate
+			? dbList.mostRecentPostDate
+			: new Date(Date.now() - ONE_DAY_MS);
+
+		let reachedEnd = false;
+		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
+		for (const item of list) {
+			if (item.post.author.handle === accountHandle) continue;
+			if (
+				AppBskyFeedDefs.isReasonRepost(item.reason) &&
+				item.reason.by.handle === accountHandle
+			)
+				continue;
+
+			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
+				? new Date(item.reason.indexedAt)
+				: new Date(item.post.indexedAt);
+			if (postDate <= checkDate) {
+				reachedEnd = true;
+				break;
+			}
+			newPosts.push(item);
+		}
+
+		if (!reachedEnd && response.data.cursor) {
+			const nextPosts = await getList(response.data.cursor);
+			newPosts.push(...nextPosts);
+		}
+		return newPosts;
+	}
+
+	try {
+		const listTimeline = await getList();
+		if (listTimeline.length > 0) {
+			const firstPost = listTimeline[0];
+			await db
+				.update(list)
+				.set({
+					mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+						? new Date(firstPost.reason.indexedAt)
+						: new Date(firstPost.post.indexedAt),
+				})
+				.where(eq(list.uri, dbList.uri));
+		}
+		return listTimeline;
+	} catch (error) {
+		console.error("Error fetching Bluesky list", error);
+		return [];
+	}
+};
+
 /**
  * Fetches new posts from Bluesky timeline and updates account with most recent post date.
  * @param userId ID for logged in user
  * @returns New posts from Bluesky timeline
  */
-export const getBlueskyTimeline = async (userId: string) => {
-	const account = await db.query.blueskyAccount.findFirst({
-		where: eq(blueskyAccount.userId, userId),
-	});
-	if (!account) return [];
-
-	const oauthSession = await handleBlueskyOAuth(account);
-	if (!oauthSession) return [];
-
-	const agent = new Agent(oauthSession);
-
+export const getBlueskyTimeline = async (
+	account: typeof blueskyAccount.$inferSelect,
+	agent: Agent,
+) => {
 	async function getTimeline(cursor: string | undefined = undefined) {
 		const response = await agent.getTimeline({
 			limit: 100,
@@ -119,7 +194,7 @@ export const getBlueskyTimeline = async (userId: string) => {
 						? new Date(firstPost.reason.indexedAt)
 						: new Date(firstPost.post.indexedAt),
 				})
-				.where(eq(blueskyAccount.userId, userId));
+				.where(eq(blueskyAccount.id, account.id));
 		}
 		return timeline;
 	} catch (error) {
@@ -241,7 +316,7 @@ const getDetectedLink = async (
 		}
 	} else {
 		detectedLink = {
-			uri: externalRecord.external.uri,
+			uri: externalRecord.external.uri.toLocaleLowerCase(),
 			title: externalRecord.external.title,
 			description: externalRecord.external.description,
 			imageUrl: externalRecord.external.thumb,
@@ -361,6 +436,7 @@ const getImages = async (
 const processBlueskyLink = async (
 	userId: string,
 	t: AppBskyFeedDefs.FeedViewPost,
+	listId?: string,
 ) => {
 	let record: AppBskyFeedPost.Record | null = null;
 	if (AppBskyFeedPost.isRecord(t.post.record)) {
@@ -437,6 +513,18 @@ const processBlueskyLink = async (
 		linkPostId: newLinkPost.id,
 	};
 
+	let newPostListSubscription:
+		| typeof postListSubscription.$inferInsert
+		| undefined = undefined;
+
+	if (listId) {
+		newPostListSubscription = {
+			id: uuidv7(),
+			listId,
+			postId: post.id,
+		};
+	}
+
 	return {
 		actors,
 		quotedPost,
@@ -445,6 +533,7 @@ const processBlueskyLink = async (
 		link,
 		newLinkPost,
 		newLinkPostToUser,
+		newPostListSubscription,
 	};
 };
 
@@ -456,10 +545,34 @@ const processBlueskyLink = async (
 export const getLinksFromBluesky = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
-	const timeline = await getBlueskyTimeline(userId);
+	const account = await db.query.blueskyAccount.findFirst({
+		where: eq(blueskyAccount.userId, userId),
+		with: {
+			lists: true,
+		},
+	});
+	if (!account) return [];
+
+	const oauthSession = await handleBlueskyOAuth(account);
+	if (!oauthSession) return [];
+
+	const agent = new Agent(oauthSession);
+	const timeline = await getBlueskyTimeline(account, agent);
+
 	const processedResults = (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
+
+	for (const list of account.lists) {
+		const listPosts = await getBlueskyList(agent, list, account.handle);
+		processedResults.push(
+			...(
+				await Promise.all(
+					listPosts.map(async (t) => processBlueskyLink(userId, t, list.id)),
+				)
+			).filter((p) => p !== null),
+		);
+	}
 
 	// const linksToFetch = processedResults
 	// 	.map((p) => p.link)
