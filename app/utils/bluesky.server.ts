@@ -30,6 +30,7 @@ import {
 	type ProcessedResult,
 } from "./links.server";
 import ogs from "open-graph-scraper";
+import type { ListOption } from "~/components/forms/ListSwitch";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;
@@ -752,4 +753,43 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
 		}
 	}
 	return html.join("");
+};
+
+type BlueskyAccount = typeof blueskyAccount.$inferSelect;
+interface AccountWithLists extends BlueskyAccount {
+	lists: (typeof list.$inferSelect)[];
+}
+
+export const getBlueskyLists = async (account: AccountWithLists) => {
+	const listOptions: ListOption[] = [];
+	const client = await createOAuthClient();
+	const session = await client.restore(account.did);
+	const agent = new Agent(session);
+	const prefs = await agent.getPreferences();
+	const lists = prefs.savedFeeds;
+	for (const list of lists) {
+		if (list.type === "list") {
+			const listData = await agent.app.bsky.graph.getList({
+				list: list.value,
+			});
+			listOptions.push({
+				name: listData.data.list.name,
+				uri: listData.data.list.uri,
+				type: "bluesky",
+				subscribed: account.lists.some((l) => l.uri === listData.data.list.uri),
+			});
+		} else if (list.type === "feed") {
+			const feedData = await agent.app.bsky.feed.getFeedGenerator({
+				feed: list.value,
+			});
+			listOptions.push({
+				name: feedData.data.view.displayName,
+				uri: feedData.data.view.uri,
+				type: "bluesky",
+				subscribed: account.lists.some((l) => l.uri === feedData.data.view.uri),
+			});
+		}
+	}
+
+	return listOptions;
 };

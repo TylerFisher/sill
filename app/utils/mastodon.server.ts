@@ -4,6 +4,8 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
+import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
+import type { ListOption } from "~/components/forms/ListSwitch";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -327,4 +329,23 @@ export const getLinksFromMastodon = async (
 	).filter((p) => p !== null);
 
 	return processedResults;
+};
+
+export const getMastodonLists = async (account: AccountWithInstance) => {
+	const listOptions: ListOption[] = [];
+	const client = createRestAPIClient({
+		url: `https://${account.mastodonInstance.instance}`,
+		accessToken: account.accessToken,
+	});
+	const lists = await client.v1.lists.list();
+	for (const list of lists) {
+		listOptions.push({
+			name: list.title,
+			uri: list.id,
+			type: "mastodon",
+			subscribed: account.lists.some((l) => l.uri === list.id),
+		});
+	}
+
+	return listOptions;
 };

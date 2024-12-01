@@ -14,6 +14,7 @@ import { CircleAlert } from "lucide-react";
 import type { blueskyAccount } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
 import ListSwitch, { type ListOption } from "./ListSwitch";
+import Lists from "./Lists";
 
 interface BlueskyConnectFormProps {
 	account: typeof blueskyAccount.$inferSelect | null;
@@ -43,18 +44,7 @@ const BlueskyConnectForm = ({
 					<Form action="/bluesky/auth/revoke" method="post">
 						<SubmitButton label="Disconnect" color="red" size="2" />
 					</Form>
-					<Box mt="4">
-						<Heading size="3" mb="2">
-							Lists
-						</Heading>
-						{listOptions.length > 0 && (
-							<Flex direction="column" gap="4">
-								{listOptions.map((list) => (
-									<ListSwitch key={list.uri} item={list} account={account} />
-								))}
-							</Flex>
-						)}
-					</Box>
+					<Lists listOptions={listOptions} account={account} />
 				</>
 			) : (
 				<Form action="/bluesky/auth" method="GET">

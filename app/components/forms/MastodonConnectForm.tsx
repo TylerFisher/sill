@@ -2,26 +2,26 @@ import {
 	Card,
 	Heading,
 	Text,
-	Button,
 	Badge,
 	Callout,
 	TextField,
 	Link,
-	Box,
-	Flex,
 } from "@radix-ui/themes";
 import { Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import type {
+	list,
 	mastodonAccount,
 	mastodonInstance,
 } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
-import ListSwitch, { type ListOption } from "./ListSwitch";
+import type { ListOption } from "./ListSwitch";
+import Lists from "./Lists";
 
 type Account = typeof mastodonAccount.$inferSelect;
-interface AccountWithInstance extends Account {
+export interface AccountWithInstance extends Account {
 	mastodonInstance: typeof mastodonInstance.$inferSelect;
+	lists: (typeof list.$inferSelect)[];
 }
 
 interface MastodonConnectFormProps {
@@ -49,18 +49,7 @@ const MastodonConnectForm = ({
 					<Form action="/mastodon/auth/revoke" method="post">
 						<SubmitButton color="red" label="Disconnect" />
 					</Form>
-					<Box mt="4">
-						<Heading size="3" mb="2">
-							Lists
-						</Heading>
-						{listOptions.length > 0 && (
-							<Flex direction="column" gap="4">
-								{listOptions.map((list) => (
-									<ListSwitch key={list.uri} item={list} account={account} />
-								))}
-							</Flex>
-						)}
-					</Box>
+					<Lists listOptions={listOptions} account={account} />
 					<Callout.Root mt="4">
 						<Callout.Icon>
 							<CircleAlert width="18" height="18" />
