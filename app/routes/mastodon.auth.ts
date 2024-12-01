@@ -15,7 +15,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	// If someone entered their full handle, get the instance from it
-	instance = instance.toLocaleLowerCase();
+	instance = instance.toLocaleLowerCase().trim();
 
 	if (instance.includes("https://")) {
 		instance = instance.replace("https://", "");
