@@ -1,10 +1,11 @@
-import { sql } from "drizzle-orm";
+import { gte, sql } from "drizzle-orm";
 import {
 	boolean,
 	foreignKey,
 	index,
 	integer,
 	pgEnum,
+	pgMaterializedView,
 	pgTable,
 	text,
 	time,
@@ -89,6 +90,13 @@ export const linkPost = pgTable(
 			),
 		};
 	},
+);
+export const recentLinkPosts = pgMaterializedView("recent_link_posts").as(
+	(qb) =>
+		qb
+			.select()
+			.from(linkPost)
+			.where(gte(linkPost.date, sql`now() - interval '1 day'`)),
 );
 
 export const post = pgTable(

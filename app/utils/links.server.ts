@@ -22,6 +22,7 @@ import {
 	post,
 	postImage,
 	postListSubscription,
+	recentLinkPosts,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -278,6 +279,8 @@ export const filterLinkOccurrences = async ({
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
 
+	await db.refreshMaterializedView(recentLinkPosts);
+
 	return await db.transaction(async (tx) => {
 		const groupedLinks = tx
 			.select({
@@ -307,10 +310,13 @@ export const filterLinkOccurrences = async ({
 					"mostRecentPostDate",
 				),
 			})
-			.from(linkPost)
-			.leftJoin(link, eq(linkPost.linkUrl, link.url))
-			.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
-			.leftJoin(post, eq(linkPost.postId, post.id))
+			.from(recentLinkPosts)
+			.leftJoin(link, eq(recentLinkPosts.linkUrl, link.url))
+			.leftJoin(
+				linkPostToUser,
+				eq(recentLinkPosts.id, linkPostToUser.linkPostId),
+			)
+			.leftJoin(post, eq(recentLinkPosts.postId, post.id))
 			.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
 			.leftJoin(actor, eq(post.actorHandle, actor.handle))
 			.leftJoin(quote, eq(post.quotingId, quote.id))
