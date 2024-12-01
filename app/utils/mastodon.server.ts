@@ -272,6 +272,10 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		}
 	}
 
+	if (card.url.includes(".gif")) {
+		return null;
+	}
+
 	const actors = await getActors(original, t);
 	const post = await createPost(original, t, url);
 	const link = await createLink(card);

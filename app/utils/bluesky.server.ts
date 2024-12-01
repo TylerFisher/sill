@@ -466,6 +466,10 @@ const processBlueskyLink = async (
 		return null;
 	}
 
+	if (detectedLink.uri.includes(".gif")) {
+		return null;
+	}
+
 	const actors = await getActors(t, quotedRecord);
 	const quotedPost = await getQuotedPost(
 		quotedValue,
