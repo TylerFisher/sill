@@ -557,6 +557,13 @@ export const getLinksFromBluesky = async (
 	});
 	if (!account) return [];
 
+	if (
+		account.mostRecentPostDate &&
+		account.mostRecentPostDate > new Date(Date.now() - 60000) // only fetch once per minute
+	) {
+		return [];
+	}
+
 	const oauthSession = await handleBlueskyOAuth(account);
 	if (!oauthSession) return [];
 

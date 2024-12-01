@@ -174,6 +174,8 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 				.onConflictDoNothing();
 		}
 	});
+
+	await db.refreshMaterializedView(recentLinkPosts);
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
@@ -278,8 +280,6 @@ export const filterLinkOccurrences = async ({
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
-
-	await db.refreshMaterializedView(recentLinkPosts);
 
 	return await db.transaction(async (tx) => {
 		const groupedLinks = tx
