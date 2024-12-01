@@ -50,16 +50,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		return redirect("accounts/login");
 	}
 
-	const instances = await db.query.mastodonInstance.findMany({
-		columns: {
-			instance: true,
-		},
-	});
-
-	const currentSettings = await db.query.emailSettings.findFirst({
-		where: eq(emailSettings.userId, userId),
-	});
-
 	const listOptions: ListOption[] = [];
 
 	if (existingUser.blueskyAccounts.length > 0) {
@@ -115,12 +105,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}
 	}
 
-	return { user: existingUser, instances, currentSettings, listOptions };
+	return { user: existingUser, listOptions };
 };
 
 const Connect = () => {
-	const { user, currentSettings, listOptions } = useLoaderData<typeof loader>();
-	console.log(listOptions);
+	const { user, listOptions } = useLoaderData<typeof loader>();
 	if (!user) return null;
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
