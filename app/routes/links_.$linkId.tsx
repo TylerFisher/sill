@@ -6,10 +6,8 @@ import {
 	aliasedTable,
 	and,
 	eq,
-	gt,
 	gte,
 	ilike,
-	inArray,
 	notIlike,
 	or,
 	sql,
@@ -50,20 +48,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	]);
 
 	const start = new Date(Date.now() - 86400000);
-
-	const linkPosts = await db.query.linkPost.findMany({
-		where: and(eq(linkPost.linkUrl, dbLink.url), gt(linkPost.date, start)),
-	});
-
-	const linkPostsForUser = await db.query.linkPostToUser.findMany({
-		where: and(
-			inArray(
-				linkPostToUser.linkPostId,
-				linkPosts.map((lp) => lp.id),
-			),
-			eq(linkPostToUser.userId, userId),
-		),
-	});
 
 	const quote = aliasedTable(post, "quote");
 	const reposter = aliasedTable(actor, "reposter");
@@ -117,6 +101,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		})
 		.from(linkPost)
 		.leftJoin(link, eq(linkPost.linkUrl, link.url))
+		.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
 		.leftJoin(post, eq(linkPost.postId, post.id))
 		.leftJoin(actor, eq(post.actorHandle, actor.handle))
 		.leftJoin(quote, eq(post.quotingId, quote.id))
@@ -126,10 +111,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		.leftJoin(postImage, eq(post.id, postImage.postId))
 		.where(
 			and(
-				inArray(
-					linkPost.id,
-					linkPostsForUser.map((lp) => lp.linkPostId),
-				),
+				eq(link.url, dbLink.url),
+				eq(linkPostToUser.userId, userId),
 				gte(linkPost.date, start),
 				...urlMuteClauses,
 			),
