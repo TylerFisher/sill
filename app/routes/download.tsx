@@ -1,4 +1,4 @@
-import { Box, Button, Spinner, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Spinner, Text } from "@radix-ui/themes";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { Await, Link, useLoaderData } from "@remix-run/react";
 import { Suspense } from "react";
@@ -54,12 +54,23 @@ const Download = () => {
 									Successfully downloaded your timeline. We will keep your
 									account updated in the background going forward.
 								</Text>
-								<Link to="/connect">
-									<Button mr="4">Connect more accounts</Button>
-								</Link>
-								<Link to="/links">
-									<Button>View your links</Button>
-								</Link>
+								<Flex
+									gap="2"
+									direction={{
+										initial: "column",
+										sm: "row",
+									}}
+								>
+									<Link to="/connect">
+										<Button>Connect more accounts</Button>
+									</Link>
+									<Link to="/email">
+										<Button>Setup daily email</Button>
+									</Link>
+									<Link to="/links">
+										<Button>View your links</Button>
+									</Link>
+								</Flex>
 							</Box>
 						);
 					}}

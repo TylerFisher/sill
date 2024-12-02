@@ -1,9 +1,16 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { mastodonAccount, postType } from "~/drizzle/schema.server";
+import {
+	list,
+	mastodonAccount,
+	type postListSubscription,
+	postType,
+} from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
+import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
+import type { ListOption } from "~/components/forms/ListSwitch";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -51,17 +58,80 @@ export const getAccessToken = async (
  * @param userId ID for the logged-in user
  * @returns List of statuses from the user's Mastodon timeline since last fetch
  */
-export const getMastodonTimeline = async (userId: string) => {
+
+export const getMastodonList = async (
+	listUri: string,
+	account: typeof mastodonAccount.$inferSelect & {
+		mastodonInstance: {
+			instance: string;
+		};
+	},
+) => {
 	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
-	const account = await db.query.mastodonAccount.findFirst({
-		where: eq(mastodonAccount.userId, userId),
-		with: {
-			mastodonInstance: true,
-		},
+	const dbList = await db.query.list.findFirst({
+		where: eq(list.uri, listUri),
 	});
 
-	if (!account) return [];
+	if (!dbList) return [];
+
+	const client = createRestAPIClient({
+		url: `https://${account.mastodonInstance.instance}`,
+		accessToken: account.accessToken,
+	});
+
+	const profile = await client.v1.accounts.verifyCredentials();
+
+	const timeline: mastodon.v1.Status[] = [];
+	let ended = false;
+	for await (const statuses of client.v1.timelines.list.$select(listUri).list({
+		sinceId: dbList.mostRecentPostId,
+		limit: 40,
+	})) {
+		if (ended) break;
+		for await (const status of statuses) {
+			if (status.account.username === profile.username) continue;
+			if (status.reblog?.account.username === profile.username) continue;
+
+			// Don't use flipboard or reposts as yesterday check
+			if (
+				new Date(status.createdAt) <= yesterday &&
+				status.account.acct.split("@")[1] !== "flipboard.com" &&
+				!status.reblog
+			) {
+				ended = true;
+				break;
+			}
+			if (status.id === dbList.mostRecentPostId) {
+				ended = true;
+				break;
+			}
+
+			timeline.push(status);
+		}
+	}
+
+	if (timeline.length > 0) {
+		await db
+			.update(list)
+			.set({
+				mostRecentPostId: timeline[0].id,
+			})
+			.where(
+				and(eq(list.mastodonAccountId, account.id), eq(list.uri, listUri)),
+			);
+	}
+	return timeline;
+};
+
+export const getMastodonTimeline = async (
+	account: typeof mastodonAccount.$inferSelect & {
+		mastodonInstance: {
+			instance: string;
+		};
+	},
+) => {
+	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
 	const client = createRestAPIClient({
 		url: `https://${account.mastodonInstance.instance}`,
@@ -221,7 +291,11 @@ const createNewLinkPost = async (
  * @param t Status object from Mastodon timeline
  * @returns Actors, post, link, and new link post to insert into database
  */
-const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
+const processMastodonLink = async (
+	userId: string,
+	t: mastodon.v1.Status,
+	listId?: string,
+) => {
 	const original = t.reblog || t;
 	const url = original.url;
 	const card = original.card;
@@ -237,6 +311,10 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		}
 	}
 
+	if (card.url.includes(".gif")) {
+		return null;
+	}
+
 	const actors = await getActors(original, t);
 	const post = await createPost(original, t, url);
 	const link = await createLink(card);
@@ -250,12 +328,25 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		linkPostId: newLinkPost.id,
 	};
 
+	let newPostListSubscription:
+		| typeof postListSubscription.$inferInsert
+		| undefined = undefined;
+
+	if (listId) {
+		newPostListSubscription = {
+			id: uuidv7(),
+			listId,
+			postId: post.id,
+		};
+	}
+
 	return {
 		actors,
 		post,
 		link,
 		newLinkPost,
 		newLinkPostToUser,
+		newPostListSubscription,
 	};
 };
 
@@ -267,11 +358,54 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 export const getLinksFromMastodon = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
-	const timeline = await getMastodonTimeline(userId);
+	const account = await db.query.mastodonAccount.findFirst({
+		where: eq(mastodonAccount.userId, userId),
+		with: {
+			mastodonInstance: true,
+			lists: true,
+		},
+	});
+
+	if (!account) return [];
+
+	const timeline = await getMastodonTimeline(account);
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
 	const processedResults = (
-		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))
+		await Promise.all(
+			linksOnly.map(async (t) => processMastodonLink(userId, t)),
+		)
 	).filter((p) => p !== null);
 
+	for (const list of account.lists) {
+		const listPosts = await getMastodonList(list.uri, account);
+		const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
+		processedResults.push(
+			...(
+				await Promise.all(
+					linksOnly.map(async (t) => processMastodonLink(userId, t, list.id)),
+				)
+			).filter((p) => p !== null),
+		);
+	}
+
 	return processedResults;
+};
+
+export const getMastodonLists = async (account: AccountWithInstance) => {
+	const listOptions: ListOption[] = [];
+	const client = createRestAPIClient({
+		url: `https://${account.mastodonInstance.instance}`,
+		accessToken: account.accessToken,
+	});
+	const lists = await client.v1.lists.list();
+	for (const list of lists) {
+		listOptions.push({
+			name: list.title,
+			uri: list.id,
+			type: "mastodon",
+			subscribed: account.lists.some((l) => l.uri === list.id),
+		});
+	}
+
+	return listOptions;
 };

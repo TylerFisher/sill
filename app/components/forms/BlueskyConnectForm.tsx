@@ -3,24 +3,29 @@ import {
 	Heading,
 	Text,
 	Badge,
-	Button,
 	TextField,
 	Callout,
 	Link,
+	Box,
+	Flex,
 } from "@radix-ui/themes";
 import { Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import type { blueskyAccount } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
+import ListSwitch, { type ListOption } from "./ListSwitch";
+import Lists from "./Lists";
 
 interface BlueskyConnectFormProps {
 	account: typeof blueskyAccount.$inferSelect | null;
 	searchParams: URLSearchParams;
+	listOptions: ListOption[];
 }
 
 const BlueskyConnectForm = ({
 	account,
 	searchParams,
+	listOptions,
 }: BlueskyConnectFormProps) => {
 	return (
 		<Card mb="6">
@@ -39,6 +44,7 @@ const BlueskyConnectForm = ({
 					<Form action="/bluesky/auth/revoke" method="post">
 						<SubmitButton label="Disconnect" color="red" size="2" />
 					</Form>
+					<Lists listOptions={listOptions} account={account} />
 				</>
 			) : (
 				<Form action="/bluesky/auth" method="GET">

@@ -47,6 +47,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	// Check if we need to reauthenticate with Bluesky
 	const bsky = await db.query.blueskyAccount.findFirst({
 		where: eq(blueskyAccount.userId, userId),
+		with: {
+			lists: true,
+		},
 	});
 	if (bsky) {
 		try {
@@ -78,6 +81,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 					instance: true,
 				},
 			},
+			lists: true,
 		},
 	});
 
@@ -94,6 +98,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			? (url.searchParams.get("service") as "mastodon" | "bluesky" | "all")
 			: "all",
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
+		selectedList: url.searchParams.get("list") || "all",
 	};
 
 	const timeParam = url.searchParams.get("time");
@@ -133,6 +138,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		key: uuidv7(),
 		instance: mastodon?.mastodonInstance.instance,
 		bsky: bsky?.handle,
+		lists: [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])],
 	};
 };
 
@@ -219,7 +225,10 @@ const Links = () => {
 					borderBottom: "1px solid var(--gray-a6)",
 				}}
 			>
-				<LinkFilters showService={!!(data.bsky && data.instance)} />
+				<LinkFilters
+					showService={!!(data.bsky && data.instance)}
+					lists={data.lists}
+				/>
 				<Box position="absolute" right="16px" top="8px" width="50%">
 					<Form method="GET">
 						<SearchField />

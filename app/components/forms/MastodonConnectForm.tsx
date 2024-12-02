@@ -2,7 +2,6 @@ import {
 	Card,
 	Heading,
 	Text,
-	Button,
 	Badge,
 	Callout,
 	TextField,
@@ -11,26 +10,30 @@ import {
 import { Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import type {
+	list,
 	mastodonAccount,
 	mastodonInstance,
 } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
+import type { ListOption } from "./ListSwitch";
+import Lists from "./Lists";
 
 type Account = typeof mastodonAccount.$inferSelect;
-interface AccountWithInstance extends Account {
+export interface AccountWithInstance extends Account {
 	mastodonInstance: typeof mastodonInstance.$inferSelect;
+	lists: (typeof list.$inferSelect)[];
 }
 
 interface MastodonConnectFormProps {
 	account: AccountWithInstance | null;
-	instances: { instance: string }[];
 	searchParams: URLSearchParams;
+	listOptions: ListOption[];
 }
 
 const MastodonConnectForm = ({
 	account,
-	instances,
 	searchParams,
+	listOptions,
 }: MastodonConnectFormProps) => {
 	return (
 		<Card mb="6">
@@ -46,6 +49,7 @@ const MastodonConnectForm = ({
 					<Form action="/mastodon/auth/revoke" method="post">
 						<SubmitButton color="red" label="Disconnect" />
 					</Form>
+					<Lists listOptions={listOptions} account={account} />
 					<Callout.Root mt="4">
 						<Callout.Icon>
 							<CircleAlert width="18" height="18" />

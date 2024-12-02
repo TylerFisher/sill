@@ -51,6 +51,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				links = await filterLinkOccurrences({
 					userId: emailUser.id,
 					fetch: true,
+					hideReposts: email.hideReposts,
+					limit: email.topAmount,
 				});
 			} catch (error) {
 				console.error("Failed to fetch links for :", error);
@@ -58,6 +60,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				try {
 					links = await filterLinkOccurrences({
 						userId: emailUser.id,
+						hideReposts: email.hideReposts,
+						limit: email.topAmount,
 					});
 				} catch (error) {
 					console.error("Second fetch failed to fetch links for :", error);

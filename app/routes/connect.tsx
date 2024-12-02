@@ -1,19 +1,21 @@
-import { Box, Button } from "@radix-ui/themes";
+import { Box } from "@radix-ui/themes";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
 } from "@remix-run/node";
-import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
+import type { ListOption } from "~/components/forms/ListSwitch";
 import Layout from "~/components/nav/Layout";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import PageHeading from "~/components/nav/PageHeading";
 import { db } from "~/drizzle/db.server";
-import { emailSettings, user } from "~/drizzle/schema.server";
+import { user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
-import EmailSettingForm from "~/components/forms/EmailSettingsForm";
+import { getBlueskyLists } from "~/utils/bluesky.server";
+import { getMastodonLists } from "~/utils/mastodon.server";
 
 export const meta: MetaFunction = () => [
 	{ title: "Sill | Connect Your Accounts" },
@@ -30,28 +32,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		with: {
 			mastodonAccounts: {
 				with: {
+					lists: true,
 					mastodonInstance: true,
 				},
 			},
-			blueskyAccounts: true,
+			blueskyAccounts: {
+				with: {
+					lists: true,
+				},
+			},
 		},
 	});
 
-	const instances = await db.query.mastodonInstance.findMany({
-		columns: {
-			instance: true,
-		},
-	});
+	if (!existingUser) {
+		return redirect("accounts/login");
+	}
 
-	const currentSettings = await db.query.emailSettings.findFirst({
-		where: eq(emailSettings.userId, userId),
-	});
+	const listOptions: ListOption[] = [];
 
-	return { user: existingUser, instances, currentSettings };
+	if (existingUser.blueskyAccounts.length > 0) {
+		listOptions.push(
+			...(await getBlueskyLists(existingUser.blueskyAccounts[0])),
+		);
+	}
+
+	if (existingUser.mastodonAccounts.length > 0) {
+		listOptions.push(
+			...(await getMastodonLists(existingUser.mastodonAccounts[0])),
+		);
+	}
+
+	return { user: existingUser, listOptions };
 };
 
 const Connect = () => {
-	const { user, instances, currentSettings } = useLoaderData<typeof loader>();
+	const { user, listOptions } = useLoaderData<typeof loader>();
 	if (!user) return null;
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
@@ -66,18 +81,13 @@ const Connect = () => {
 			<BlueskyConnectForm
 				account={user.blueskyAccounts[0]}
 				searchParams={searchParams}
+				listOptions={listOptions.filter((l) => l.type === "bluesky")}
 			/>
 			<MastodonConnectForm
 				account={user.mastodonAccounts[0]}
-				instances={instances}
 				searchParams={searchParams}
+				listOptions={listOptions.filter((l) => l.type === "mastodon")}
 			/>
-			<EmailSettingForm currentSettings={currentSettings} />
-			<Box>
-				<Link to="/links">
-					<Button>Show me my top links</Button>
-				</Link>
-			</Box>
 		</Layout>
 	);
 };

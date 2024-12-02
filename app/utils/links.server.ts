@@ -5,7 +5,6 @@ import {
 	eq,
 	gte,
 	ilike,
-	inArray,
 	isNull,
 	notIlike,
 	or,
@@ -18,9 +17,12 @@ import {
 	link,
 	linkPost,
 	linkPostToUser,
+	list,
 	mutePhrase,
 	post,
 	postImage,
+	postListSubscription,
+	recentLinkPosts,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -61,6 +63,7 @@ export interface ProcessedResult {
 	newLinkPost: typeof linkPost.$inferInsert;
 	images?: (typeof postImage.$inferInsert)[];
 	newLinkPostToUser: typeof linkPostToUser.$inferInsert;
+	newPostListSubscription?: typeof postListSubscription.$inferInsert;
 }
 
 /**
@@ -83,7 +86,7 @@ export const fetchLinks = async (
  * @param userId ID for logged in user
  * @returns All mute phrases for the user
  */
-const getMutePhrases = async (userId: string) => {
+export const getMutePhrases = async (userId: string) => {
 	return await db.query.mutePhrase.findMany({
 		where: eq(mutePhrase.userId, userId),
 	});
@@ -128,6 +131,9 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 		.flatMap((p) => p.images)
 		.filter((p) => p !== undefined);
 	const newLinkPostsToUser = processedResults.map((p) => p.newLinkPostToUser);
+	const newPostListSubscriptions = processedResults
+		.map((p) => p.newPostListSubscription)
+		.filter((p) => p !== undefined);
 
 	await db.transaction(async (tx) => {
 		if (actors.length > 0)
@@ -161,7 +167,15 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 				.values(newLinkPostsToUser)
 				.onConflictDoNothing();
 		}
+		if (newPostListSubscriptions.length > 0) {
+			await tx
+				.insert(postListSubscription)
+				.values(newPostListSubscriptions)
+				.onConflictDoNothing();
+		}
 	});
+
+	await db.refreshMaterializedView(recentLinkPosts);
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
@@ -192,6 +206,8 @@ interface FilterArgs {
 	service?: "mastodon" | "bluesky" | "all";
 	page?: number;
 	fetch?: boolean;
+	selectedList?: string;
+	limit?: number;
 }
 
 const DEFAULT_HIDE_REPOSTS = false;
@@ -215,6 +231,8 @@ export const filterLinkOccurrences = async ({
 	service = "all",
 	page = 1,
 	fetch = DEFAULT_FETCH,
+	selectedList = "all",
+	limit = PAGE_SIZE,
 }: FilterArgs) => {
 	if (fetch) {
 		try {
@@ -225,49 +243,45 @@ export const filterLinkOccurrences = async ({
 		}
 	}
 
+	let listRecord: typeof list.$inferSelect | undefined;
+	if (selectedList !== "all") {
+		listRecord = await db.query.list.findFirst({
+			where: eq(list.id, selectedList),
+		});
+	}
+
 	const offset = (page - 1) * PAGE_SIZE;
 	const start = new Date(Date.now() - time);
 
+	const quote = aliasedTable(post, "quote");
+	const reposter = aliasedTable(actor, "reposter");
+	const quoteActor = aliasedTable(actor, "quoteActor");
+	const quoteImage = aliasedTable(postImage, "quoteImage");
+
 	const mutePhrases = await getMutePhrases(userId);
 
-	const linkPosts = await db.transaction(async (tx) => {
-		const linkPostsForUser = await tx
-			.select({
-				linkPostId: linkPostToUser.linkPostId,
-			})
-			.from(linkPostToUser)
-			.leftJoin(linkPost, eq(linkPostToUser.linkPostId, linkPost.id))
-			.where(and(eq(linkPostToUser.userId, userId), gte(linkPost.date, start)));
+	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
+		notIlike(link.url, `%${phrase.phrase}%`),
+		notIlike(link.title, `%${phrase.phrase}%`),
+		notIlike(link.description, `%${phrase.phrase}%`),
+	]);
+	const postMuteCondition =
+		mutePhrases.length > 0
+			? sql`CASE WHEN ${or(
+					...mutePhrases.flatMap((phrase) => [
+						ilike(post.text, `%${phrase.phrase}%`),
+						ilike(actor.name, `%${phrase.phrase}%`),
+						ilike(actor.handle, `%${phrase.phrase}%`),
+						ilike(quote.text, `%${phrase.phrase}%`),
+						ilike(quoteActor.name, `%${phrase.phrase}%`),
+						ilike(quoteActor.handle, `%${phrase.phrase}%`),
+						ilike(reposter.name, `%${phrase.phrase}%`),
+						ilike(reposter.handle, `%${phrase.phrase}%`),
+					]),
+				)} THEN NULL ELSE 1 END`
+			: sql`1`;
 
-		const quote = aliasedTable(post, "quote");
-		const reposter = aliasedTable(actor, "reposter");
-		const quoteActor = aliasedTable(actor, "quoteActor");
-		const quoteImage = aliasedTable(postImage, "quoteImage");
-
-		// URL-related mute clauses remain in the WHERE clause
-		const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-			notIlike(link.url, `%${phrase.phrase}%`),
-			notIlike(link.title, `%${phrase.phrase}%`),
-			notIlike(link.description, `%${phrase.phrase}%`),
-		]);
-
-		// Create a CASE expression to filter out muted posts
-		const postMuteCondition =
-			mutePhrases.length > 0
-				? sql`CASE WHEN ${or(
-						...mutePhrases.flatMap((phrase) => [
-							ilike(post.text, `%${phrase.phrase}%`),
-							ilike(actor.name, `%${phrase.phrase}%`),
-							ilike(actor.handle, `%${phrase.phrase}%`),
-							ilike(quote.text, `%${phrase.phrase}%`),
-							ilike(quoteActor.name, `%${phrase.phrase}%`),
-							ilike(quoteActor.handle, `%${phrase.phrase}%`),
-							ilike(reposter.name, `%${phrase.phrase}%`),
-							ilike(reposter.handle, `%${phrase.phrase}%`),
-						]),
-					)} THEN NULL ELSE 1 END`
-				: sql`1`;
-
+	return await db.transaction(async (tx) => {
 		const groupedLinks = tx
 			.select({
 				url: link.url,
@@ -296,9 +310,14 @@ export const filterLinkOccurrences = async ({
 					"mostRecentPostDate",
 				),
 			})
-			.from(linkPost)
-			.leftJoin(link, eq(linkPost.linkUrl, link.url))
-			.leftJoin(post, eq(linkPost.postId, post.id))
+			.from(recentLinkPosts)
+			.leftJoin(link, eq(recentLinkPosts.linkUrl, link.url))
+			.leftJoin(
+				linkPostToUser,
+				eq(recentLinkPosts.id, linkPostToUser.linkPostId),
+			)
+			.leftJoin(post, eq(recentLinkPosts.postId, post.id))
+			.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
 			.leftJoin(actor, eq(post.actorHandle, actor.handle))
 			.leftJoin(quote, eq(post.quotingId, quote.id))
 			.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
@@ -307,11 +326,11 @@ export const filterLinkOccurrences = async ({
 			.leftJoin(postImage, eq(post.id, postImage.postId))
 			.where(
 				and(
-					inArray(
-						linkPost.id,
-						linkPostsForUser.map((lp) => lp.linkPostId),
-					),
-					gte(linkPost.date, start),
+					eq(linkPostToUser.userId, userId),
+					gte(post.postDate, start),
+					listRecord
+						? eq(postListSubscription.listId, listRecord.id)
+						: undefined,
 					...urlMuteClauses,
 					service !== "all" ? eq(post.postType, service) : undefined,
 					hideReposts ? isNull(post.repostHandle) : undefined,
@@ -350,9 +369,7 @@ export const filterLinkOccurrences = async ({
 					: desc(groupedLinks.mostRecentPostDate),
 				desc(groupedLinks.mostRecentPostDate),
 			)
-			.limit(PAGE_SIZE)
+			.limit(limit)
 			.offset(offset);
 	});
-
-	return linkPosts;
 };
