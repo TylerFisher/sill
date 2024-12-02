@@ -36,14 +36,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			},
 		},
 	});
-	// Determine which eighth of users to process based on current minute
-	const eighthSize = Math.ceil(users.length / 8);
-	// Calculate which 15-minute block we're in within a 2-hour period (0-7)
-	const currentEighth = Math.floor(
-		(currentMinute + (now.getHours() % 2) * 60) / 15,
+	// Determine which sixteenth of users to process based on current minute
+	const sixteenthSize = Math.ceil(users.length / 16);
+	// Calculate which 15-minute block we're in within a 4-hour period (0-15)
+	const currentSixteenth = Math.floor(
+		(currentMinute + (now.getHours() % 4) * 60) / 15,
 	);
-	const start = currentEighth * eighthSize;
-	const end = Math.min(start + eighthSize, users.length);
+	const start = currentSixteenth * sixteenthSize;
+	const end = Math.min(start + sixteenthSize, users.length);
 	users = users.slice(start, end);
 
 	const redis = connection();
