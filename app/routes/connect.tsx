@@ -51,15 +51,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const listOptions: ListOption[] = [];
 
 	if (existingUser.blueskyAccounts.length > 0) {
-		listOptions.push(
-			...(await getBlueskyLists(existingUser.blueskyAccounts[0])),
-		);
+		try {
+			listOptions.push(
+				...(await getBlueskyLists(existingUser.blueskyAccounts[0])),
+			);
+		} catch (e) {
+			console.error("error getting bluesky lists", e);
+		}
 	}
 
 	if (existingUser.mastodonAccounts.length > 0) {
-		listOptions.push(
-			...(await getMastodonLists(existingUser.mastodonAccounts[0])),
-		);
+		try {
+			listOptions.push(
+				...(await getMastodonLists(existingUser.mastodonAccounts[0])),
+			);
+		} catch (e) {
+			console.error("error getting mastodon lists", e);
+		}
 	}
 
 	return { user: existingUser, listOptions };
