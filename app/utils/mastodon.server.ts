@@ -2,7 +2,12 @@ import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
+import {
+	list,
+	mastodonAccount,
+	type postListSubscription,
+	postType,
+} from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -62,6 +67,8 @@ export const getMastodonList = async (
 		};
 	},
 ) => {
+	const yesterday = new Date(Date.now() - ONE_DAY_MS);
+
 	const dbList = await db.query.list.findFirst({
 		where: eq(list.uri, listUri),
 	});
@@ -73,22 +80,50 @@ export const getMastodonList = async (
 		accessToken: account.accessToken,
 	});
 
-	const statuses: mastodon.v1.Status[] = [];
-	for await (const statuses of client.v1.timelines.list
-		.$select(listUri)
-		.list()) {
-		statuses.push(...statuses);
+	const profile = await client.v1.accounts.verifyCredentials();
+
+	const timeline: mastodon.v1.Status[] = [];
+	let ended = false;
+	for await (const statuses of client.v1.timelines.list.$select(listUri).list({
+		sinceId: dbList.mostRecentPostId,
+		limit: 40,
+	})) {
+		if (ended) break;
+		for await (const status of statuses) {
+			if (status.account.username === profile.username) continue;
+			if (status.reblog?.account.username === profile.username) continue;
+
+			// Don't use flipboard or reposts as yesterday check
+			if (
+				new Date(status.createdAt) <= yesterday &&
+				status.account.acct.split("@")[1] !== "flipboard.com" &&
+				!status.reblog
+			) {
+				ended = true;
+				break;
+			}
+			if (status.id === dbList.mostRecentPostId) {
+				ended = true;
+				break;
+			}
+
+			timeline.push(status);
+		}
 	}
 
-	if (statuses.length > 0) {
+	console.log("got list timeline", timeline);
+
+	if (timeline.length > 0) {
 		await db
 			.update(list)
 			.set({
-				mostRecentPostId: statuses[0].id,
+				mostRecentPostId: timeline[0].id,
 			})
-			.where(and(eq(mastodonAccount.id, account.id), eq(list.uri, listUri)));
+			.where(
+				and(eq(list.mastodonAccountId, account.id), eq(list.uri, listUri)),
+			);
 	}
-	return statuses;
+	return timeline;
 };
 
 export const getMastodonTimeline = async (
@@ -258,7 +293,11 @@ const createNewLinkPost = async (
  * @param t Status object from Mastodon timeline
  * @returns Actors, post, link, and new link post to insert into database
  */
-const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
+const processMastodonLink = async (
+	userId: string,
+	t: mastodon.v1.Status,
+	listId?: string,
+) => {
 	const original = t.reblog || t;
 	const url = original.url;
 	const card = original.card;
@@ -291,12 +330,25 @@ const processMastodonLink = async (userId: string, t: mastodon.v1.Status) => {
 		linkPostId: newLinkPost.id,
 	};
 
+	let newPostListSubscription:
+		| typeof postListSubscription.$inferInsert
+		| undefined = undefined;
+
+	if (listId) {
+		newPostListSubscription = {
+			id: uuidv7(),
+			listId,
+			postId: post.id,
+		};
+	}
+
 	return {
 		actors,
 		post,
 		link,
 		newLinkPost,
 		newLinkPostToUser,
+		newPostListSubscription,
 	};
 };
 
@@ -319,14 +371,26 @@ export const getLinksFromMastodon = async (
 	if (!account) return [];
 
 	const timeline = await getMastodonTimeline(account);
-	for (const list of account.lists) {
-		const listPosts = await getMastodonList(list.uri, account);
-		timeline.push(...listPosts);
-	}
 	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
 	const processedResults = (
-		await Promise.all(linksOnly.map((t) => processMastodonLink(userId, t)))
+		await Promise.all(
+			linksOnly.map(async (t) => processMastodonLink(userId, t)),
+		)
 	).filter((p) => p !== null);
+
+	for (const list of account.lists) {
+		console.log(list);
+		const listPosts = await getMastodonList(list.uri, account);
+		const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
+		console.log(listPosts);
+		processedResults.push(
+			...(
+				await Promise.all(
+					linksOnly.map(async (t) => processMastodonLink(userId, t, list.id)),
+				)
+			).filter((p) => p !== null),
+		);
+	}
 
 	return processedResults;
 };
