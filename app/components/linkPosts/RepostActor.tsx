@@ -1,53 +1,63 @@
 import { Button, Link, Popover, Text } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
-import type { PostReturn } from "~/utils/links.server";
+import type { linkPostDenormalized } from "~/drizzle/schema.server";
 
 interface RepostActorProps {
-	actors: PostReturn["actor"][];
+	posts: (typeof linkPostDenormalized.$inferSelect)[];
 }
 
 interface SingleActorProps {
-	actor: PostReturn["actor"];
+	post: typeof linkPostDenormalized.$inferSelect;
 }
 
-const SingleActor = ({ actor }: SingleActorProps) => (
+const SingleActor = ({ post }: SingleActorProps) => (
 	<Text size="1" as="p" color="gray">
 		Reposted by{" "}
 		<Link
-			href={actor.url}
+			href={post.repostActorUrl || ""}
 			target="_blank"
 			rel="noreferrer"
 			underline="hover"
 			color="gray"
 		>
-			{actor.name}
+			{post.repostActorName}
 		</Link>
 	</Text>
 );
 
-const MultipleActors = ({ actors }: RepostActorProps) => (
+const MultipleActors = ({ posts }: RepostActorProps) => (
 	<Popover.Root>
 		<Text size="1" as="p" color="gray">
 			<Popover.Trigger>
 				<Button variant="ghost" size="1">
-					Reposted by {actors.length} accounts
+					Reposted by {posts.length} accounts
 				</Button>
 			</Popover.Trigger>
 		</Text>
 		<Popover.Content size="1">
-			{actors.map((actor) => (
-				<PostAuthor actor={actor} key={actor.id} />
+			{posts.map((post) => (
+				<PostAuthor
+					actor={{
+						actorUrl: post.repostActorUrl || "",
+						actorName: post.repostActorName,
+						actorHandle: post.repostActorHandle || "",
+						actorAvatarUrl: post.repostActorUrl,
+					}}
+					postUrl={post.postUrl}
+					postDate={post.postDate}
+					key={post.actorHandle}
+				/>
 			))}
 		</Popover.Content>
 	</Popover.Root>
 );
 
-const RepostActor = ({ actors }: RepostActorProps) => (
+const RepostActor = ({ posts }: RepostActorProps) => (
 	<>
-		{actors.length === 1 ? (
-			<SingleActor actor={actors[0]} />
+		{posts.length === 1 ? (
+			<SingleActor post={posts[0]} />
 		) : (
-			<MultipleActors actors={actors} />
+			<MultipleActors posts={posts} />
 		)}
 	</>
 );

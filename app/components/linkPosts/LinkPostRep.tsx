@@ -23,9 +23,9 @@ const LinkPostRep = ({
 	if (!linkPost) return null;
 	if (!linkPost.posts || !linkPost.link) return null;
 	const [open, setOpen] = useState(autoExpand);
-	const groupedPosts = groupBy(linkPost.posts, (l) => l.post.url);
+	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
 	const allActors = linkPost.posts.map((p) =>
-		p.reposter ? p.reposter.avatarUrl : p.actor.avatarUrl,
+		p.repostActorHandle ? p.repostActorAvatarUrl : p.actorAvatarUrl,
 	);
 	const uniqueActors = [...new Set(allActors)];
 
@@ -68,11 +68,7 @@ const LinkPostRep = ({
 						{Object.entries(groupedPosts).map(([postUrl, group]) => (
 							<PostRep
 								key={postUrl}
-								post={group[0].post}
 								group={group}
-								actor={group[0].actor}
-								quote={group[0].quote}
-								image={group[0].image}
 								instance={instance}
 								bsky={bsky}
 							/>

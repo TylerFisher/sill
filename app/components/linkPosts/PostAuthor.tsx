@@ -1,18 +1,25 @@
 import { Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import type { PostReturn } from "~/utils/links.server";
+import type { linkPostDenormalized } from "~/drizzle/schema.server";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
 interface PostAuthor {
-	actor: PostReturn["actor"];
-	postUrl?: string;
-	postDate?: Date;
+	actorUrl: (typeof linkPostDenormalized.$inferSelect)["actorUrl"];
+	actorName: (typeof linkPostDenormalized.$inferSelect)["actorName"];
+	actorHandle: (typeof linkPostDenormalized.$inferSelect)["actorHandle"];
+	actorAvatarUrl: (typeof linkPostDenormalized.$inferSelect)["actorAvatarUrl"];
 }
 
-const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
+interface PostAuthorProps {
+	actor: PostAuthor;
+	postDate: (typeof linkPostDenormalized.$inferSelect)["postDate"];
+	postUrl: (typeof linkPostDenormalized.$inferSelect)["postUrl"];
+}
+
+const PostAuthor = ({ actor, postDate, postUrl }: PostAuthorProps) => (
 	<Text
 		size={{
 			initial: "2",
@@ -25,13 +32,23 @@ const PostAuthor = ({ actor, postUrl, postDate }: PostAuthor) => (
 			whiteSpace: "pre-wrap",
 		}}
 	>
-		<Link href={actor.url} target="_blank" rel="noreferrer" underline="hover">
-			{actor.name}{" "}
+		<Link
+			href={actor.actorUrl}
+			target="_blank"
+			rel="noreferrer"
+			underline="hover"
+		>
+			{actor.actorName}{" "}
 		</Link>
-		<Link href={actor.url} target="_blank" rel="noreferrer" underline="none">
+		<Link
+			href={actor.actorUrl}
+			target="_blank"
+			rel="noreferrer"
+			underline="none"
+		>
 			{" "}
 			<Text color="gray" weight="regular">
-				@{actor.handle}
+				@{actor.actorHandle}
 			</Text>
 		</Link>
 		{postUrl && postDate && (

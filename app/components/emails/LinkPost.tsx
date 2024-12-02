@@ -22,7 +22,7 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 	if (!linkPost.link || !linkPost.posts) return null;
 	const link = linkPost.link;
 	const allActors = linkPost.posts.map((l) =>
-		l.reposter ? l.reposter.avatarUrl : l.actor.avatarUrl,
+		l.repostActorHandle ? l.repostActorAvatarUrl : l.actorAvatarUrl,
 	);
 	const uniqueActors = [...new Set(allActors)].filter((a) => a !== null);
 

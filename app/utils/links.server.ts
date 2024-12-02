@@ -14,6 +14,7 @@ import {
 import { db } from "~/drizzle/db.server";
 import {
 	actor,
+	linkPostDenormalized,
 	link,
 	linkPost,
 	linkPostToUser,
@@ -51,18 +52,12 @@ export interface PostReturn {
 export type MostRecentLinkPosts = {
 	uniqueActorsCount: number;
 	link: typeof link.$inferSelect | null;
-	posts?: PostReturn[];
+	posts?: (typeof linkPostDenormalized.$inferSelect)[];
 };
 
 export interface ProcessedResult {
-	actors: (typeof actor.$inferInsert)[];
-	quotedPost?: typeof post.$inferInsert;
-	post: typeof post.$inferInsert;
 	link: typeof link.$inferInsert;
-	newLinkPost: typeof linkPost.$inferInsert;
-	images?: (typeof postImage.$inferInsert)[];
-	newLinkPostToUser: typeof linkPostToUser.$inferInsert;
-	newPostListSubscription?: typeof postListSubscription.$inferInsert;
+	denormalized: typeof linkPostDenormalized.$inferInsert;
 }
 
 /**
@@ -74,10 +69,11 @@ export const fetchLinks = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
 	const results = await Promise.all([
-		getLinksFromMastodon(userId),
+		// getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
-	return results[1].concat(results[0]);
+	return results[0];
+	// return results[1].concat(results[0]);
 };
 
 /**
@@ -97,17 +93,6 @@ export const getMutePhrases = async (userId: string) => {
  * @param userId ID for logged in user
  */
 export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
-	const actors = processedResults
-		.flatMap((p) => p.actors)
-		.filter(
-			(obj1, i, arr) =>
-				arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
-		);
-	const quotedPosts = processedResults
-		.map((p) => p.quotedPost)
-		.filter((p) => p !== undefined);
-	const posts = processedResults.map((p) => p.post);
-
 	const links = Object.values(
 		processedResults.reduce(
 			(acc, p) => {
@@ -125,28 +110,10 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 			{} as Record<string, (typeof processedResults)[0]["link"]>,
 		),
 	);
-	const linkPosts = processedResults.map((p) => p.newLinkPost);
-	const images = processedResults
-		.flatMap((p) => p.images)
-		.filter((p) => p !== undefined);
-	const newLinkPostsToUser = processedResults.map((p) => p.newLinkPostToUser);
-	const newPostListSubscriptions = processedResults
-		.map((p) => p.newPostListSubscription)
-		.filter((p) => p !== undefined);
+
+	const denormalized = processedResults.map((p) => p.denormalized);
 
 	await db.transaction(async (tx) => {
-		if (actors.length > 0)
-			await tx
-				.insert(actor)
-				.values(actors)
-				.onConflictDoUpdate({
-					target: [actor.handle],
-					set: conflictUpdateSetAllColumns(actor),
-				});
-		if (quotedPosts.length > 0)
-			await tx.insert(post).values(quotedPosts).onConflictDoNothing();
-		if (posts.length > 0)
-			await tx.insert(post).values(posts).onConflictDoNothing();
 		if (links.length > 0)
 			await tx
 				.insert(link)
@@ -155,24 +122,90 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 					target: [link.url],
 					set: conflictUpdateSetAllColumns(link),
 				});
-		if (images.length > 0)
-			await tx.insert(postImage).values(images).onConflictDoNothing();
-		if (linkPosts.length > 0) {
-			await tx.insert(linkPost).values(linkPosts).onConflictDoNothing();
-		}
-		if (newLinkPostsToUser.length > 0) {
+
+		if (denormalized.length > 0)
 			await tx
-				.insert(linkPostToUser)
-				.values(newLinkPostsToUser)
+				.insert(linkPostDenormalized)
+				.values(denormalized)
 				.onConflictDoNothing();
-		}
-		if (newPostListSubscriptions.length > 0) {
-			await tx
-				.insert(postListSubscription)
-				.values(newPostListSubscriptions)
-				.onConflictDoNothing();
-		}
 	});
+
+	// const actors = processedResults
+	// 	.flatMap((p) => p.actors)
+	// 	.filter(
+	// 		(obj1, i, arr) =>
+	// 			arr.findIndex((obj2) => obj2.handle === obj1.handle) === i,
+	// 	);
+	// const quotedPosts = processedResults
+	// 	.map((p) => p.quotedPost)
+	// 	.filter((p) => p !== undefined);
+	// const posts = processedResults.map((p) => p.post);
+
+	// const links = Object.values(
+	// 	processedResults.reduce(
+	// 		(acc, p) => {
+	// 			const existing = acc[p.link.url];
+	// 			if (
+	// 				!existing ||
+	// 				(p.link.title && !existing.title) ||
+	// 				(p.link.description && !existing.description) ||
+	// 				(p.link.imageUrl && !existing.imageUrl)
+	// 			) {
+	// 				acc[p.link.url] = p.link;
+	// 			}
+	// 			return acc;
+	// 		},
+	// 		{} as Record<string, (typeof processedResults)[0]["link"]>,
+	// 	),
+	// );
+	// const linkPosts = processedResults.map((p) => p.newLinkPost);
+	// const images = processedResults
+	// 	.flatMap((p) => p.images)
+	// 	.filter((p) => p !== undefined);
+	// const newLinkPostsToUser = processedResults.map((p) => p.newLinkPostToUser);
+	// const newPostListSubscriptions = processedResults
+	// 	.map((p) => p.newPostListSubscription)
+	// 	.filter((p) => p !== undefined);
+
+	// await db.transaction(async (tx) => {
+	// 	if (actors.length > 0)
+	// 		await tx
+	// 			.insert(actor)
+	// 			.values(actors)
+	// 			.onConflictDoUpdate({
+	// 				target: [actor.handle],
+	// 				set: conflictUpdateSetAllColumns(actor),
+	// 			});
+	// 	if (quotedPosts.length > 0)
+	// 		await tx.insert(post).values(quotedPosts).onConflictDoNothing();
+	// 	if (posts.length > 0)
+	// 		await tx.insert(post).values(posts).onConflictDoNothing();
+	// 	if (links.length > 0)
+	// 		await tx
+	// 			.insert(link)
+	// 			.values(links)
+	// 			.onConflictDoUpdate({
+	// 				target: [link.url],
+	// 				set: conflictUpdateSetAllColumns(link),
+	// 			});
+	// 	if (images.length > 0)
+	// 		await tx.insert(postImage).values(images).onConflictDoNothing();
+	// 	if (linkPosts.length > 0) {
+	// 		await tx.insert(linkPost).values(linkPosts).onConflictDoNothing();
+	// 	}
+	// 	if (newLinkPostsToUser.length > 0) {
+	// 		await tx
+	// 			.insert(linkPostToUser)
+	// 			.values(newLinkPostsToUser)
+	// 			.onConflictDoNothing();
+	// 	}
+	// 	if (newPostListSubscriptions.length > 0) {
+	// 		await tx
+	// 			.insert(postListSubscription)
+	// 			.values(newPostListSubscriptions)
+	// 			.onConflictDoNothing();
+	// 	}
+	// });
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
@@ -266,104 +299,176 @@ export const filterLinkOccurrences = async ({
 		mutePhrases.length > 0
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
-						ilike(post.text, `%${phrase.phrase}%`),
-						ilike(actor.name, `%${phrase.phrase}%`),
-						ilike(actor.handle, `%${phrase.phrase}%`),
-						ilike(quote.text, `%${phrase.phrase}%`),
-						ilike(quoteActor.name, `%${phrase.phrase}%`),
-						ilike(quoteActor.handle, `%${phrase.phrase}%`),
-						ilike(reposter.name, `%${phrase.phrase}%`),
-						ilike(reposter.handle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
 
-	return await db.transaction(async (tx) => {
-		const groupedLinks = tx
-			.select({
-				url: link.url,
-				uniqueActorsCount: sql<number>`cast(count(distinct 
+	return await db
+		.select({
+			link,
+			uniqueActorsCount: sql<number>`cast(count(distinct 
       CASE WHEN ${postMuteCondition} = 1 
-      THEN coalesce(${reposter.handle}, ${actor.handle}) 
+      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
       END) as int)`.as("uniqueActorsCount"),
-				posts: sql<PostReturn[]>`json_agg(
-      CASE WHEN ${postMuteCondition} = 1 THEN
-      json_build_object(
-        'post', ${post},
-        'quote', json_build_object(
-        'post', ${quote},
-        'actor', ${quoteActor},
-        'image', ${quoteImage}
-        ),
-        'reposter', ${reposter},
-        'image', ${postImage},
-        'actor', ${actor}
-      )
-      END
-      order by ${post.postDate} desc) filter (where ${postMuteCondition} = 1)`.as(
-					"posts",
-				),
-				mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
-					"mostRecentPostDate",
-				),
-			})
-			.from(linkPost)
-			.leftJoin(link, eq(linkPost.linkUrl, link.url))
-			.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
-			.leftJoin(post, eq(linkPost.postId, post.id))
-			.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
-			.leftJoin(actor, eq(post.actorHandle, actor.handle))
-			.leftJoin(quote, eq(post.quotingId, quote.id))
-			.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
-			.leftJoin(quoteActor, eq(quote.actorHandle, quoteActor.handle))
-			.leftJoin(quoteImage, eq(quote.id, quoteImage.postId))
-			.leftJoin(postImage, eq(post.id, postImage.postId))
-			.where(
-				and(
-					eq(linkPostToUser.userId, userId),
-					gte(post.postDate, start),
-					listRecord
-						? eq(postListSubscription.listId, listRecord.id)
-						: undefined,
-					...urlMuteClauses,
-					service !== "all" ? eq(post.postType, service) : undefined,
-					hideReposts ? isNull(post.repostHandle) : undefined,
-					query
-						? or(
-								ilike(link.title, `%${query}%`),
-								ilike(link.description, `%${query}%`),
-								ilike(link.url, `%${query}%`),
-								ilike(post.text, `%${query}%`),
-								ilike(actor.name, `%${query}%`),
-								ilike(actor.handle, `%${query}%`),
-								ilike(quote.text, `%${query}%`),
-								ilike(quoteActor.name, `%${query}%`),
-								ilike(quoteActor.handle, `%${query}%`),
-								ilike(reposter.name, `%${query}%`),
-								ilike(reposter.handle, `%${query}%`),
-							)
-						: undefined,
-				),
-			)
-			.groupBy(link.url)
-			.as("groupedLinks");
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.where(
+			and(
+				eq(linkPostDenormalized.userId, userId),
+				gte(linkPostDenormalized.postDate, start),
+				listRecord ? eq(linkPostDenormalized.listId, listRecord.id) : undefined,
+				...urlMuteClauses,
+				service !== "all"
+					? eq(linkPostDenormalized.postType, service)
+					: undefined,
+				hideReposts
+					? isNull(linkPostDenormalized.repostActorHandle)
+					: undefined,
+				query
+					? or(
+							ilike(link.title, `%${query}%`),
+							ilike(link.description, `%${query}%`),
+							ilike(link.url, `%${query}%`),
+							ilike(linkPostDenormalized.postText, `%${query}%`),
+							ilike(linkPostDenormalized.actorName, `%${query}%`),
+							ilike(linkPostDenormalized.actorHandle, `%${query}%`),
+							ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
+							ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
+							ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
+							ilike(linkPostDenormalized.repostActorName, `%${query}%`),
+							ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
+						)
+					: undefined,
+			),
+		)
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(
+			sort === "popularity"
+				? desc(sql`"uniqueActorsCount"`)
+				: desc(sql`max(${linkPostDenormalized.postDate})`),
+		)
+		.limit(limit)
+		.offset(offset)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(
+						and(
+							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							eq(linkPostDenormalized.userId, userId),
+							sql`${postMuteCondition} = 1`,
+						),
+					)
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 
-		return await tx
-			.select({
-				uniqueActorsCount: groupedLinks.uniqueActorsCount,
-				link,
-				posts: groupedLinks.posts,
-				mostRecentPostDate: groupedLinks.mostRecentPostDate,
-			})
-			.from(groupedLinks)
-			.leftJoin(link, eq(groupedLinks.url, link.url))
-			.orderBy(
-				sort === "popularity"
-					? desc(groupedLinks.uniqueActorsCount)
-					: desc(groupedLinks.mostRecentPostDate),
-				desc(groupedLinks.mostRecentPostDate),
-			)
-			.limit(limit)
-			.offset(offset);
-	});
+	// return await db.transaction(async (tx) => {
+	// 	const groupedLinks = tx
+	// 		.select({
+	// 			url: link.url,
+	// 	uniqueActorsCount: sql<number>`cast(count(distinct
+	// CASE WHEN ${postMuteCondition} = 1
+	// THEN coalesce(${reposter.handle}, ${actor.handle})
+	// END) as int)`.as("uniqueActorsCount"),
+	// 			posts: sql<PostReturn[]>`json_agg(
+	//     CASE WHEN ${postMuteCondition} = 1 THEN
+	//     json_build_object(
+	//       'post', ${post},
+	//       'quote', json_build_object(
+	//       'post', ${quote},
+	//       'actor', ${quoteActor},
+	//       'image', ${quoteImage}
+	//       ),
+	//       'reposter', ${reposter},
+	//       'image', ${postImage},
+	//       'actor', ${actor}
+	//     )
+	//     END
+	//     order by ${post.postDate} desc) filter (where ${postMuteCondition} = 1)`.as(
+	// 				"posts",
+	// 			),
+	// 			mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
+	// 				"mostRecentPostDate",
+	// 			),
+	// 		})
+	// 		.from(linkPost)
+	// 		.leftJoin(link, eq(linkPost.linkUrl, link.url))
+	// 		.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
+	// 		.leftJoin(post, eq(linkPost.postId, post.id))
+	// 		.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
+	// 		.leftJoin(actor, eq(post.actorHandle, actor.handle))
+	// 		.leftJoin(quote, eq(post.quotingId, quote.id))
+	// 		.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
+	// 		.leftJoin(quoteActor, eq(quote.actorHandle, quoteActor.handle))
+	// 		.leftJoin(quoteImage, eq(quote.id, quoteImage.postId))
+	// 		.leftJoin(postImage, eq(post.id, postImage.postId))
+	// 		.where(
+	// 			and(
+	// 				eq(linkPostToUser.userId, userId),
+	// 				gte(post.postDate, start),
+	// 				listRecord
+	// 					? eq(postListSubscription.listId, listRecord.id)
+	// 					: undefined,
+	// 				...urlMuteClauses,
+	// 				service !== "all" ? eq(post.postType, service) : undefined,
+	// 				hideReposts ? isNull(post.repostHandle) : undefined,
+	// 				query
+	// 					? or(
+	// 							ilike(link.title, `%${query}%`),
+	// 							ilike(link.description, `%${query}%`),
+	// 							ilike(link.url, `%${query}%`),
+	// 							ilike(post.text, `%${query}%`),
+	// 							ilike(actor.name, `%${query}%`),
+	// 							ilike(actor.handle, `%${query}%`),
+	// 							ilike(quote.text, `%${query}%`),
+	// 							ilike(quoteActor.name, `%${query}%`),
+	// 							ilike(quoteActor.handle, `%${query}%`),
+	// 							ilike(reposter.name, `%${query}%`),
+	// 							ilike(reposter.handle, `%${query}%`),
+	// 						)
+	// 					: undefined,
+	// 			),
+	// 		)
+	// 		.groupBy(link.url)
+	// 		.as("groupedLinks");
+
+	// 	return await tx
+	// 		.select({
+	// 			uniqueActorsCount: groupedLinks.uniqueActorsCount,
+	// 			link,
+	// 			posts: groupedLinks.posts,
+	// 			mostRecentPostDate: groupedLinks.mostRecentPostDate,
+	// 		})
+	// 		.from(groupedLinks)
+	// 		.leftJoin(link, eq(groupedLinks.url, link.url))
+	// 		.orderBy(
+	// 			sort === "popularity"
+	// 				? desc(groupedLinks.uniqueActorsCount)
+	// 				: desc(groupedLinks.mostRecentPostDate),
+	// 			desc(groupedLinks.mostRecentPostDate),
+	// 		)
+	// 		.limit(limit)
+	// 		.offset(offset);
+	// });
 };

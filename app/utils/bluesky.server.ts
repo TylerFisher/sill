@@ -18,8 +18,10 @@ import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import {
+	actor,
 	blueskyAccount,
 	link,
+	type linkPostDenormalized,
 	list,
 	type postListSubscription,
 	postType,
@@ -471,6 +473,53 @@ const processBlueskyLink = async (
 		return null;
 	}
 
+	const denormalized = {
+		id: uuidv7(),
+		postUrl,
+		postText: serializeBlueskyPostToHtml(record),
+		postDate: new Date(t.post.indexedAt),
+		postType: postType.enumValues[0],
+		postImages: imageGroup.map((image) => ({
+			alt: image.alt,
+			url: image.thumb,
+		})),
+		linkUrl: detectedLink.uri,
+		actorHandle: t.post.author.handle,
+		actorUrl: `https://bsky.app/profile/${t.post.author.handle}`,
+		actorName: t.post.author.displayName,
+		actorAvatarUrl: t.post.author.avatar,
+		quotedActorHandle: quotedRecord?.author.handle,
+		quotedActorUrl: quotedRecord
+			? `https://bsky.app/profile/${quotedRecord.author.handle}`
+			: undefined,
+		quotedActorName: quotedRecord?.author.displayName,
+		quotedActorAvatarUrl: quotedRecord?.author.avatar,
+		quotedPostUrl: quotedPostUrl,
+		quotedPostText: quotedValue
+			? serializeBlueskyPostToHtml(quotedValue)
+			: undefined,
+		quotedPostDate: quotedRecord ? new Date(quotedRecord.indexedAt) : undefined,
+		quotedPostImages: quotedImageGroup.map((image) => ({
+			alt: image.alt,
+			url: image.thumb,
+		})),
+		quotedPostType: quotedValue ? postType.enumValues[0] : undefined,
+		repostActorHandle: AppBskyFeedDefs.isReasonRepost(t.reason)
+			? t.reason.by.handle
+			: undefined,
+		repostActorUrl: AppBskyFeedDefs.isReasonRepost(t.reason)
+			? `https://bsky.app/profile/${t.reason.by.handle}`
+			: undefined,
+		repostActorName: AppBskyFeedDefs.isReasonRepost(t.reason)
+			? t.reason.by.displayName
+			: undefined,
+		repostActorAvatarUrl: AppBskyFeedDefs.isReasonRepost(t.reason)
+			? t.reason.by.avatar
+			: undefined,
+		userId,
+		listId,
+	};
+
 	const actors = await getActors(t, quotedRecord);
 	const quotedPost = await getQuotedPost(
 		quotedValue,
@@ -530,16 +579,7 @@ const processBlueskyLink = async (
 		};
 	}
 
-	return {
-		actors,
-		quotedPost,
-		images,
-		post,
-		link,
-		newLinkPost,
-		newLinkPostToUser,
-		newPostListSubscription,
-	};
+	return { link, denormalized };
 };
 
 /**
