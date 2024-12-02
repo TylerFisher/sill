@@ -3,6 +3,7 @@ import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import {
+	actor,
 	list,
 	mastodonAccount,
 	type postListSubscription,
@@ -315,38 +316,54 @@ const processMastodonLink = async (
 		return null;
 	}
 
-	const actors = await getActors(original, t);
-	const post = await createPost(original, t, url);
+	// const actors = await getActors(original, t);
+	// const post = await createPost(original, t, url);
 	const link = await createLink(card);
-	const newLinkPost = await createNewLinkPost(
-		card,
-		post.id,
-		original.createdAt,
-	);
-	const newLinkPostToUser = {
+
+	const denormalized = {
+		id: uuidv7(),
+		linkUrl: card.url,
+		postText: original.content,
+		postDate: new Date(original.createdAt),
+		postType: postType.enumValues[1],
+		postUrl: url,
+		actorHandle: original.account.acct,
+		actorName: original.account.displayName,
+		actorUrl: original.account.url,
+		actorAvatarUrl: original.account.avatar,
+		reposterHandle: t.reblog ? t.account.acct : undefined,
+		reposterName: t.reblog ? t.account.displayName : undefined,
+		reposterUrl: t.reblog ? t.account.url : undefined,
+		reposterAvatarUrl: t.reblog ? t.account.avatar : undefined,
 		userId,
-		linkPostId: newLinkPost.id,
+		listId,
 	};
 
-	let newPostListSubscription:
-		| typeof postListSubscription.$inferInsert
-		| undefined = undefined;
+	// const newLinkPost = await createNewLinkPost(
+	// 	card,
+	// 	post.id,
+	// 	original.createdAt,
+	// );
+	// const newLinkPostToUser = {
+	// 	userId,
+	// 	linkPostId: newLinkPost.id,
+	// };
 
-	if (listId) {
-		newPostListSubscription = {
-			id: uuidv7(),
-			listId,
-			postId: post.id,
-		};
-	}
+	// let newPostListSubscription:
+	// 	| typeof postListSubscription.$inferInsert
+	// 	| undefined = undefined;
+
+	// if (listId) {
+	// 	newPostListSubscription = {
+	// 		id: uuidv7(),
+	// 		listId,
+	// 		postId: post.id,
+	// 	};
+	// }
 
 	return {
-		actors,
-		post,
 		link,
-		newLinkPost,
-		newLinkPostToUser,
-		newPostListSubscription,
+		denormalized,
 	};
 };
 

@@ -69,11 +69,10 @@ export const fetchLinks = async (
 	userId: string,
 ): Promise<ProcessedResult[]> => {
 	const results = await Promise.all([
-		// getLinksFromMastodon(userId),
+		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),
 	]);
-	return results[0];
-	// return results[1].concat(results[0]);
+	return results[1].concat(results[0]);
 };
 
 /**

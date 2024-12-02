@@ -5,6 +5,7 @@ import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import {
 	aliasedTable,
 	and,
+	desc,
 	eq,
 	gte,
 	ilike,
@@ -16,6 +17,7 @@ import {
 	actor,
 	link,
 	linkPost,
+	linkPostDenormalized,
 	linkPostToUser,
 	post,
 	postImage,
@@ -71,60 +73,50 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
 
-	const groupedLinks = await db
+	const grouped = await db
 		.select({
-			url: link.url,
+			link,
 			uniqueActorsCount: sql<number>`cast(count(distinct 
       CASE WHEN ${postMuteCondition} = 1 
-      THEN coalesce(${reposter.handle}, ${actor.handle}) 
+      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
       END) as int)`.as("uniqueActorsCount"),
-			posts: sql<PostReturn[]>`json_agg(
-      CASE WHEN ${postMuteCondition} = 1 THEN
-      json_build_object(
-        'post', ${post},
-        'quote', json_build_object(
-        'post', ${quote},
-        'actor', ${quoteActor},
-        'image', ${quoteImage}
-        ),
-        'reposter', ${reposter},
-        'image', ${postImage},
-        'actor', ${actor}
-      )
-      END
-      order by ${post.postDate} desc) filter (where ${postMuteCondition} = 1)`.as(
-				"posts",
-			),
-			mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
 		})
-		.from(linkPost)
-		.leftJoin(link, eq(linkPost.linkUrl, link.url))
-		.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
-		.leftJoin(post, eq(linkPost.postId, post.id))
-		.leftJoin(actor, eq(post.actorHandle, actor.handle))
-		.leftJoin(quote, eq(post.quotingId, quote.id))
-		.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
-		.leftJoin(quoteActor, eq(quote.actorHandle, quoteActor.handle))
-		.leftJoin(quoteImage, eq(quote.id, quoteImage.postId))
-		.leftJoin(postImage, eq(post.id, postImage.postId))
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(
 			and(
-				eq(link.url, dbLink.url),
-				eq(linkPostToUser.userId, userId),
-				gte(linkPost.date, start),
+				eq(linkPostDenormalized.userId, userId),
+				gte(linkPostDenormalized.postDate, start),
+				eq(linkPostDenormalized.linkUrl, dbLink.url),
 				...urlMuteClauses,
 			),
 		)
-		.groupBy(link.url);
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(
+						and(
+							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							eq(linkPostDenormalized.userId, userId),
+							sql`${postMuteCondition} = 1`,
+						),
+					)
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 
-	return {
-		uniqueActorsCount: groupedLinks[0].uniqueActorsCount,
-		link: dbLink,
-		posts: groupedLinks[0].posts,
-		mostRecentPostDate: groupedLinks[0].mostRecentPostDate,
-	};
+	return grouped[0];
 }
 
 export default function LinkRoute() {
