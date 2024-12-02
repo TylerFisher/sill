@@ -111,8 +111,6 @@ export const getMastodonList = async (
 		}
 	}
 
-	console.log("got list timeline", timeline);
-
 	if (timeline.length > 0) {
 		await db
 			.update(list)
@@ -379,10 +377,8 @@ export const getLinksFromMastodon = async (
 	).filter((p) => p !== null);
 
 	for (const list of account.lists) {
-		console.log(list);
 		const listPosts = await getMastodonList(list.uri, account);
 		const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
-		console.log(listPosts);
 		processedResults.push(
 			...(
 				await Promise.all(
