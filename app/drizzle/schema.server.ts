@@ -232,7 +232,7 @@ export const blueskyAccount = pgTable(
 export const list = pgTable("list", {
 	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
-	uri: text().notNull().unique(),
+	uri: text().notNull(),
 	mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
 	mostRecentPostId: text(),
 	blueskyAccountId: uuid().references(() => blueskyAccount.id, {

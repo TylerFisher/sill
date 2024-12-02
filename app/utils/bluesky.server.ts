@@ -769,25 +769,37 @@ export const getBlueskyLists = async (account: AccountWithLists) => {
 	const lists = prefs.savedFeeds;
 	for (const list of lists) {
 		if (list.type === "list") {
-			const listData = await agent.app.bsky.graph.getList({
-				list: list.value,
-			});
-			listOptions.push({
-				name: listData.data.list.name,
-				uri: listData.data.list.uri,
-				type: "bluesky",
-				subscribed: account.lists.some((l) => l.uri === listData.data.list.uri),
-			});
+			try {
+				const listData = await agent.app.bsky.graph.getList({
+					list: list.value,
+				});
+				listOptions.push({
+					name: listData.data.list.name,
+					uri: listData.data.list.uri,
+					type: "bluesky",
+					subscribed: account.lists.some(
+						(l) => l.uri === listData.data.list.uri,
+					),
+				});
+			} catch (error) {
+				console.error("Could not find list", list.value, error);
+			}
 		} else if (list.type === "feed") {
-			const feedData = await agent.app.bsky.feed.getFeedGenerator({
-				feed: list.value,
-			});
-			listOptions.push({
-				name: feedData.data.view.displayName,
-				uri: feedData.data.view.uri,
-				type: "bluesky",
-				subscribed: account.lists.some((l) => l.uri === feedData.data.view.uri),
-			});
+			try {
+				const feedData = await agent.app.bsky.feed.getFeedGenerator({
+					feed: list.value,
+				});
+				listOptions.push({
+					name: feedData.data.view.displayName,
+					uri: feedData.data.view.uri,
+					type: "bluesky",
+					subscribed: account.lists.some(
+						(l) => l.uri === feedData.data.view.uri,
+					),
+				});
+			} catch (error) {
+				console.error("Could not find feed", list.value, error);
+			}
 		}
 	}
 
