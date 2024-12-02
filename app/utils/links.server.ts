@@ -22,7 +22,6 @@ import {
 	post,
 	postImage,
 	postListSubscription,
-	recentLinkPosts,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -174,8 +173,6 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 				.onConflictDoNothing();
 		}
 	});
-
-	await db.refreshMaterializedView(recentLinkPosts);
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
@@ -310,13 +307,10 @@ export const filterLinkOccurrences = async ({
 					"mostRecentPostDate",
 				),
 			})
-			.from(recentLinkPosts)
-			.leftJoin(link, eq(recentLinkPosts.linkUrl, link.url))
-			.leftJoin(
-				linkPostToUser,
-				eq(recentLinkPosts.id, linkPostToUser.linkPostId),
-			)
-			.leftJoin(post, eq(recentLinkPosts.postId, post.id))
+			.from(linkPost)
+			.leftJoin(link, eq(linkPost.linkUrl, link.url))
+			.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
+			.leftJoin(post, eq(linkPost.postId, post.id))
 			.leftJoin(postListSubscription, eq(postListSubscription.postId, post.id))
 			.leftJoin(actor, eq(post.actorHandle, actor.handle))
 			.leftJoin(quote, eq(post.quotingId, quote.id))

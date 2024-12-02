@@ -1,0 +1,1 @@
+DROP MATERIALIZED VIEW "public"."recent_link_posts";
