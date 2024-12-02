@@ -2,28 +2,10 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { db } from "~/drizzle/db.server";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import {
-	aliasedTable,
-	and,
-	desc,
-	eq,
-	gte,
-	ilike,
-	notIlike,
-	or,
-	sql,
-} from "drizzle-orm";
-import {
-	actor,
-	link,
-	linkPost,
-	linkPostDenormalized,
-	linkPostToUser,
-	post,
-	postImage,
-} from "~/drizzle/schema.server";
+import { and, desc, eq, gte, ilike, notIlike, or, sql } from "drizzle-orm";
+import { link, linkPostDenormalized } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
-import { getMutePhrases, type PostReturn } from "~/utils/links.server";
+import { getMutePhrases } from "~/utils/links.server";
 import Layout from "~/components/nav/Layout";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -50,25 +32,19 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	]);
 
 	const start = new Date(Date.now() - 86400000);
-
-	const quote = aliasedTable(post, "quote");
-	const reposter = aliasedTable(actor, "reposter");
-	const quoteActor = aliasedTable(actor, "quoteActor");
-	const quoteImage = aliasedTable(postImage, "quoteImage");
-
 	// Create a CASE expression to filter out muted posts
 	const postMuteCondition =
 		mutePhrases.length > 0
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
-						ilike(post.text, `%${phrase.phrase}%`),
-						ilike(actor.name, `%${phrase.phrase}%`),
-						ilike(actor.handle, `%${phrase.phrase}%`),
-						ilike(quote.text, `%${phrase.phrase}%`),
-						ilike(quoteActor.name, `%${phrase.phrase}%`),
-						ilike(quoteActor.handle, `%${phrase.phrase}%`),
-						ilike(reposter.name, `%${phrase.phrase}%`),
-						ilike(reposter.handle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;

@@ -17,15 +17,7 @@ import {
 import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import {
-	actor,
-	blueskyAccount,
-	link,
-	type linkPostDenormalized,
-	list,
-	type postListSubscription,
-	postType,
-} from "~/drizzle/schema.server";
+import { blueskyAccount, link, list, postType } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import {
 	conflictUpdateSetAllColumns,
@@ -329,108 +321,6 @@ const getDetectedLink = async (
 };
 
 /**
- * Retrieves original actor, quoted actor, and repost actor from a Bluesky post
- * @param t Bluesky post object
- * @param quotedRecord Parse quoted record from Bluesky post
- * @returns All actors from the post object
- */
-const getActors = async (
-	t: AppBskyFeedDefs.FeedViewPost,
-	quotedRecord: AppBskyEmbedRecord.ViewRecord | null,
-) => {
-	const actors = [
-		{
-			id: uuidv7(),
-			handle: t.post.author.handle,
-			url: `https://bsky.app/profile/${t.post.author.handle}`,
-			name: t.post.author.displayName,
-			avatarUrl: t.post.author.avatar,
-		},
-	];
-
-	if (quotedRecord) {
-		actors.push({
-			id: uuidv7(),
-			handle: quotedRecord.author.handle,
-			url: `https://bsky.app/profile/${quotedRecord.author.handle}`,
-			name: quotedRecord.author.displayName,
-			avatarUrl: quotedRecord.author.avatar,
-		});
-	}
-
-	if (AppBskyFeedDefs.isReasonRepost(t.reason)) {
-		actors.push({
-			id: uuidv7(),
-			handle: t.reason.by.handle,
-			url: `https://bsky.app/profile/${t.reason.by.handle}`,
-			name: t.reason.by.displayName,
-			avatarUrl: t.reason.by.avatar,
-		});
-	}
-
-	return actors;
-};
-
-/**
- *
- * @param quotedValue Value of the quoted post
- * @param quotedRecord ViewRecord of the quoted post
- * @param quotedPostUrl URL to the quoted post
- * @returns Quoted post object for the database
- */
-const getQuotedPost = async (
-	quotedValue: AppBskyFeedPost.Record | null,
-	quotedRecord: AppBskyEmbedRecord.ViewRecord | null,
-	quotedPostUrl: string | null,
-) => {
-	return quotedValue && quotedRecord
-		? {
-				id: uuidv7(),
-				url: quotedPostUrl || "",
-				text: serializeBlueskyPostToHtml(quotedValue),
-				postDate: new Date(quotedRecord.indexedAt),
-				postType: postType.enumValues[0],
-				actorHandle: quotedRecord.author.handle,
-			}
-		: undefined;
-};
-
-/**
- *
- * @param imageGroup Image group for original post
- * @param quotedImageGroup Image group for quoted post
- * @param postId Post ID for original post
- * @param quotedPostId Post ID for quoted post
- * @returns List of images for the database
- */
-const getImages = async (
-	imageGroup: AppBskyEmbedImages.ViewImage[],
-	quotedImageGroup: AppBskyEmbedImages.ViewImage[],
-	postId: string,
-	quotedPostId: string | undefined,
-) => {
-	let images = imageGroup.map((image) => ({
-		id: uuidv7(),
-		alt: image.alt,
-		url: image.thumb,
-		postId: postId,
-	}));
-
-	if (quotedPostId) {
-		images = images.concat(
-			quotedImageGroup.map((image) => ({
-				id: uuidv7(),
-				alt: image.alt,
-				url: image.thumb,
-				postId: quotedPostId,
-			})),
-		);
-	}
-
-	return images;
-};
-
-/**
  * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
  * @param userId ID for logged in user
  * @param t Post object from Bluesky timeline
@@ -520,33 +410,6 @@ const processBlueskyLink = async (
 		listId,
 	};
 
-	const actors = await getActors(t, quotedRecord);
-	const quotedPost = await getQuotedPost(
-		quotedValue,
-		quotedRecord,
-		quotedPostUrl,
-	);
-
-	const post = {
-		id: uuidv7(),
-		url: postUrl,
-		text: serializeBlueskyPostToHtml(record),
-		postDate: new Date(t.post.indexedAt),
-		postType: postType.enumValues[0],
-		actorHandle: t.post.author.handle,
-		quotingId: quotedPost ? quotedPost.id : undefined,
-		repostHandle: AppBskyFeedDefs.isReasonRepost(t.reason)
-			? t.reason.by.handle
-			: undefined,
-	};
-
-	const images = await getImages(
-		imageGroup,
-		quotedImageGroup,
-		post.id,
-		quotedPost?.id,
-	);
-
 	const link = {
 		id: uuidv7(),
 		url: detectedLink.uri,
@@ -554,30 +417,6 @@ const processBlueskyLink = async (
 		description: detectedLink.description,
 		imageUrl: detectedLink.imageUrl,
 	};
-
-	const newLinkPost = {
-		id: uuidv7(),
-		linkUrl: link.url,
-		postId: post.id,
-		date: new Date(t.post.indexedAt),
-	};
-
-	const newLinkPostToUser = {
-		userId,
-		linkPostId: newLinkPost.id,
-	};
-
-	let newPostListSubscription:
-		| typeof postListSubscription.$inferInsert
-		| undefined = undefined;
-
-	if (listId) {
-		newPostListSubscription = {
-			id: uuidv7(),
-			listId,
-			postId: post.id,
-		};
-	}
 
 	return { link, denormalized };
 };
