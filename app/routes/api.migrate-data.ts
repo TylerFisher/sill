@@ -82,7 +82,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			break;
 		}
 
-		const insert = allLinkPosts.map((linkPost) => {
+		const filtered = allLinkPosts.filter(
+			(linkPost) =>
+				linkPost.userId !== null &&
+				linkPost.linkUrl !== null &&
+				linkPost.postUrl !== null &&
+				linkPost.postText !== null &&
+				linkPost.postDate !== null &&
+				linkPost.postType !== null &&
+				linkPost.actorUrl !== null &&
+				linkPost.actorHandle !== null,
+		);
+
+		const insert = filtered.map((linkPost) => {
 			return {
 				...linkPost,
 				id: uuidv7(),
