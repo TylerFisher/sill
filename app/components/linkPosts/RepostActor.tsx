@@ -1,4 +1,5 @@
 import { Button, Link, Popover, Text } from "@radix-ui/themes";
+import { unique } from "drizzle-orm/mysql-core";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import type { linkPostDenormalized } from "~/drizzle/schema.server";
 
@@ -52,14 +53,20 @@ const MultipleActors = ({ posts }: RepostActorProps) => (
 	</Popover.Root>
 );
 
-const RepostActor = ({ posts }: RepostActorProps) => (
-	<>
-		{posts.length === 1 ? (
-			<SingleActor post={posts[0]} />
-		) : (
-			<MultipleActors posts={posts} />
-		)}
-	</>
-);
+const RepostActor = ({ posts }: RepostActorProps) => {
+	const uniqueActors = Array.from(
+		new Set(posts.map((post) => post.repostActorHandle)),
+	);
+
+	return (
+		<>
+			{uniqueActors.length === 1 ? (
+				<SingleActor post={posts[0]} />
+			) : (
+				<MultipleActors posts={posts} />
+			)}
+		</>
+	);
+};
 
 export default RepostActor;
