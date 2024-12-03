@@ -71,22 +71,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	// const updatedData: string[] = [];
-	for (const user of users) {
-		let linkCount: MostRecentLinkPosts[];
-		try {
-			linkCount = await filterLinkOccurrences({
-				userId: user.id,
-			});
-		} catch (error) {
-			console.error("error filtering links for", user.email, error);
-			throw error;
-		}
-		redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
+	// for (const user of users) {
+	// 	let linkCount: MostRecentLinkPosts[];
+	// 	try {
+	// 		linkCount = await filterLinkOccurrences({
+	// 			userId: user.id,
+	// 		});
+	// 	} catch (error) {
+	// 		console.error("error filtering links for", user.email, error);
+	// 		throw error;
+	// 	}
+	// 	redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
 
-		// accountUpdateQueue.add("update-accounts", {
-		// 	userId: user.id,
-		// });
-	}
+	// 	// accountUpdateQueue.add("update-accounts", {
+	// 	// 	userId: user.id,
+	// 	// });
+	// }
 
 	return Response.json({});
 };
