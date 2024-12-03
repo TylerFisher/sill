@@ -27,18 +27,6 @@ import {
 
 const PAGE_SIZE = 10;
 
-// export interface PostReturn {
-// 	post: typeof post.$inferSelect;
-// 	quote: {
-// 		post?: typeof post.$inferSelect;
-// 		actor?: typeof actor.$inferSelect;
-// 		image?: typeof postImage.$inferSelect;
-// 	};
-// 	reposter?: typeof actor.$inferSelect;
-// 	image?: typeof postImage.$inferSelect;
-// 	actor: typeof actor.$inferSelect;
-// }
-
 /**
  * Type for the returned most recent link posts query
  */
@@ -85,42 +73,47 @@ export const getMutePhrases = async (userId: string) => {
  * @param userId ID for logged in user
  */
 export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
-	const links = Object.values(
-		processedResults.reduce(
-			(acc, p) => {
-				const existing = acc[p.link.url];
-				if (
-					!existing ||
-					(p.link.title && !existing.title) ||
-					(p.link.description && !existing.description) ||
-					(p.link.imageUrl && !existing.imageUrl)
-				) {
-					acc[p.link.url] = p.link;
-				}
-				return acc;
-			},
-			{} as Record<string, (typeof processedResults)[0]["link"]>,
-		),
-	);
+	// Process in chunks of 1000
+	for (let i = 0; i < processedResults.length; i += 1000) {
+		const chunk = processedResults.slice(i, i + 1000);
 
-	const denormalized = processedResults.map((p) => p.denormalized);
+		const links = Object.values(
+			chunk.reduce(
+				(acc, p) => {
+					const existing = acc[p.link.url];
+					if (
+						!existing ||
+						(p.link.title && !existing.title) ||
+						(p.link.description && !existing.description) ||
+						(p.link.imageUrl && !existing.imageUrl)
+					) {
+						acc[p.link.url] = p.link;
+					}
+					return acc;
+				},
+				{} as Record<string, (typeof processedResults)[0]["link"]>,
+			),
+		);
 
-	await db.transaction(async (tx) => {
-		if (links.length > 0)
-			await tx
-				.insert(link)
-				.values(links)
-				.onConflictDoUpdate({
-					target: [link.url],
-					set: conflictUpdateSetAllColumns(link),
-				});
+		const denormalized = chunk.map((p) => p.denormalized);
 
-		if (denormalized.length > 0)
-			await tx
-				.insert(linkPostDenormalized)
-				.values(denormalized)
-				.onConflictDoNothing();
-	});
+		await db.transaction(async (tx) => {
+			if (links.length > 0)
+				await tx
+					.insert(link)
+					.values(links)
+					.onConflictDoUpdate({
+						target: [link.url],
+						set: conflictUpdateSetAllColumns(link),
+					});
+
+			if (denormalized.length > 0)
+				await tx
+					.insert(linkPostDenormalized)
+					.values(denormalized)
+					.onConflictDoNothing();
+		});
+	}
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
