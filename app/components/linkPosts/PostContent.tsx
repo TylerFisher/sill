@@ -1,19 +1,26 @@
-import { Card, Inset, Link, Text } from "@radix-ui/themes";
-import type { PostReturn } from "~/utils/links.server";
+import { Card, Inset, Text } from "@radix-ui/themes";
 import styles from "./PostContent.module.css";
-
+interface Post {
+	postText: string;
+	postType: "bluesky" | "mastodon";
+	postImages:
+		| {
+				url: string;
+				alt: string;
+		  }[]
+		| null;
+}
 interface PostContentProps {
-	post: PostReturn["post"];
-	image: PostReturn["image"] | null;
+	post: Post;
 }
 
-const PostContent = ({ post, image }: PostContentProps) => {
+const PostContent = ({ post }: PostContentProps) => {
 	if (!post) return null;
 	return (
 		<>
 			<Text
 				dangerouslySetInnerHTML={{
-					__html: post.text,
+					__html: post.postText,
 				}}
 				className={styles["post-content"]}
 				size={{
@@ -22,21 +29,21 @@ const PostContent = ({ post, image }: PostContentProps) => {
 				}}
 				as={post.postType === "bluesky" ? "p" : "div"}
 			/>
-			{image ? (
-				<Card key={image.url} mt="2">
-					<Inset>
-						<img
-							src={image.url}
-							alt={image.alt}
-							loading="lazy"
-							decoding="async"
-							width="100%"
-						/>
-					</Inset>
-				</Card>
-			) : (
-				<></>
-			)}
+			{post.postImages &&
+				post.postImages.length > 0 &&
+				post.postImages.map((image) => (
+					<Card key={image.url} mt="2">
+						<Inset>
+							<img
+								src={image.url}
+								alt={image.alt}
+								loading="lazy"
+								decoding="async"
+								width="100%"
+							/>
+						</Inset>
+					</Card>
+				))}
 		</>
 	);
 };

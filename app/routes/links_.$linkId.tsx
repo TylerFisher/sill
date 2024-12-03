@@ -2,26 +2,10 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { db } from "~/drizzle/db.server";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import {
-	aliasedTable,
-	and,
-	eq,
-	gte,
-	ilike,
-	notIlike,
-	or,
-	sql,
-} from "drizzle-orm";
-import {
-	actor,
-	link,
-	linkPost,
-	linkPostToUser,
-	post,
-	postImage,
-} from "~/drizzle/schema.server";
+import { and, desc, eq, gte, ilike, notIlike, or, sql } from "drizzle-orm";
+import { link, linkPostDenormalized } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
-import { getMutePhrases, type PostReturn } from "~/utils/links.server";
+import { getMutePhrases } from "~/utils/links.server";
 import Layout from "~/components/nav/Layout";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -48,83 +32,67 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	]);
 
 	const start = new Date(Date.now() - 86400000);
-
-	const quote = aliasedTable(post, "quote");
-	const reposter = aliasedTable(actor, "reposter");
-	const quoteActor = aliasedTable(actor, "quoteActor");
-	const quoteImage = aliasedTable(postImage, "quoteImage");
-
 	// Create a CASE expression to filter out muted posts
 	const postMuteCondition =
 		mutePhrases.length > 0
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
-						ilike(post.text, `%${phrase.phrase}%`),
-						ilike(actor.name, `%${phrase.phrase}%`),
-						ilike(actor.handle, `%${phrase.phrase}%`),
-						ilike(quote.text, `%${phrase.phrase}%`),
-						ilike(quoteActor.name, `%${phrase.phrase}%`),
-						ilike(quoteActor.handle, `%${phrase.phrase}%`),
-						ilike(reposter.name, `%${phrase.phrase}%`),
-						ilike(reposter.handle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
 
-	const groupedLinks = await db
+	const grouped = await db
 		.select({
-			url: link.url,
+			link,
 			uniqueActorsCount: sql<number>`cast(count(distinct 
       CASE WHEN ${postMuteCondition} = 1 
-      THEN coalesce(${reposter.handle}, ${actor.handle}) 
+      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
       END) as int)`.as("uniqueActorsCount"),
-			posts: sql<PostReturn[]>`json_agg(
-      CASE WHEN ${postMuteCondition} = 1 THEN
-      json_build_object(
-        'post', ${post},
-        'quote', json_build_object(
-        'post', ${quote},
-        'actor', ${quoteActor},
-        'image', ${quoteImage}
-        ),
-        'reposter', ${reposter},
-        'image', ${postImage},
-        'actor', ${actor}
-      )
-      END
-      order by ${post.postDate} desc) filter (where ${postMuteCondition} = 1)`.as(
-				"posts",
-			),
-			mostRecentPostDate: sql<Date>`max(${post.postDate})`.as(
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
 		})
-		.from(linkPost)
-		.leftJoin(link, eq(linkPost.linkUrl, link.url))
-		.leftJoin(linkPostToUser, eq(linkPost.id, linkPostToUser.linkPostId))
-		.leftJoin(post, eq(linkPost.postId, post.id))
-		.leftJoin(actor, eq(post.actorHandle, actor.handle))
-		.leftJoin(quote, eq(post.quotingId, quote.id))
-		.leftJoin(reposter, eq(post.repostHandle, reposter.handle))
-		.leftJoin(quoteActor, eq(quote.actorHandle, quoteActor.handle))
-		.leftJoin(quoteImage, eq(quote.id, quoteImage.postId))
-		.leftJoin(postImage, eq(post.id, postImage.postId))
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(
 			and(
-				eq(link.url, dbLink.url),
-				eq(linkPostToUser.userId, userId),
-				gte(linkPost.date, start),
+				eq(linkPostDenormalized.userId, userId),
+				gte(linkPostDenormalized.postDate, start),
+				eq(linkPostDenormalized.linkUrl, dbLink.url),
 				...urlMuteClauses,
 			),
 		)
-		.groupBy(link.url);
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(
+						and(
+							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							eq(linkPostDenormalized.userId, userId),
+							sql`${postMuteCondition} = 1`,
+						),
+					)
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 
-	return {
-		uniqueActorsCount: groupedLinks[0].uniqueActorsCount,
-		link: dbLink,
-		posts: groupedLinks[0].posts,
-		mostRecentPostDate: groupedLinks[0].mostRecentPostDate,
-	};
+	return grouped[0];
 }
 
 export default function LinkRoute() {

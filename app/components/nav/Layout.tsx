@@ -18,7 +18,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				sm: "5",
 			}}
 		>
-			{/* <div
+			<div
 				style={{
 					backgroundColor: "red",
 					color: "white",
@@ -30,16 +30,15 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 						textAlign: "center",
 					}}
 				>
-					Our email provider is down, preventing new users from signing up.
-					Please come back later
+					Sill is down for maintenance. We'll be back soon!
 				</p>
-			</div> */}
+			</div>
 			<div className={styles.wrapper}>
 				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
 				{!hideNav && (
 					<aside className={styles.side}>
 						<Header headerClass="desktop-logo" />
-						<Nav />
+						{/* <Nav /> */}
 					</aside>
 				)}
 				<main
@@ -48,7 +47,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 						marginTop: hideNav ? "0" : "2rem",
 					}}
 				>
-					{children}
+					{/* {children} */}
 				</main>
 				<Flex direction="column" justify="end" className={styles.right}>
 					<Footer />

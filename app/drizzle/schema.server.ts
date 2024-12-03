@@ -4,6 +4,8 @@ import {
 	foreignKey,
 	index,
 	integer,
+	json,
+	jsonb,
 	pgEnum,
 	pgMaterializedView,
 	pgTable,
@@ -372,6 +374,76 @@ export const mutePhrase = pgTable(
 			),
 		};
 	},
+);
+
+export const linkPostDenormalized = pgTable(
+	"link_post_denormalized",
+	{
+		id: uuid().primaryKey().notNull(),
+		linkUrl: text()
+			.notNull()
+			.references(() => link.url),
+		postUrl: text().notNull(),
+		postText: text().notNull(),
+		postDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+		postType: postType().notNull(),
+		postImages: json().$type<{ url: string; alt: string }[]>(),
+		actorUrl: text().notNull(),
+		actorHandle: text().notNull(),
+		actorName: text(),
+		actorAvatarUrl: text(),
+		quotedActorUrl: text(),
+		quotedActorHandle: text(),
+		quotedActorName: text(),
+		quotedActorAvatarUrl: text(),
+		quotedPostUrl: text(),
+		quotedPostText: text(),
+		quotedPostDate: timestamp({ precision: 3, mode: "date" }),
+		quotedPostType: postType(),
+		quotedPostImages: json().$type<{ url: string; alt: string }[]>(),
+		repostActorUrl: text(),
+		repostActorHandle: text(),
+		repostActorName: text(),
+		repostActorAvatarUrl: text(),
+		userId: uuid()
+			.notNull()
+			.references(() => user.id),
+		listId: uuid().references(() => list.id),
+	},
+	(table) => {
+		return {
+			userIdIdx: index("link_post_denormalized_userId_idx").using(
+				"btree",
+				table.userId.asc().nullsLast(),
+			),
+			linkUrlIdx: index("link_post_denormalized_linkUrl_idx").using(
+				"btree",
+				table.linkUrl.asc().nullsLast(),
+			),
+			listIdIdx: index("link_post_denormalized_listId_idx").using(
+				"btree",
+				table.listId.asc().nullsLast(),
+			),
+		};
+	},
+);
+
+export const linkPostDenormalizedRelations = relations(
+	linkPostDenormalized,
+	({ one }) => ({
+		user: one(user, {
+			fields: [linkPostDenormalized.userId],
+			references: [user.id],
+		}),
+		list: one(list, {
+			fields: [linkPostDenormalized.listId],
+			references: [list.id],
+		}),
+		link: one(link, {
+			fields: [linkPostDenormalized.linkUrl],
+			references: [link.url],
+		}),
+	}),
 );
 
 export const linkPostToUserRelations = relations(linkPostToUser, ({ one }) => ({

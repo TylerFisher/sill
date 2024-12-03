@@ -2,34 +2,22 @@ import { Avatar, Box, Card, Flex, Inset, Separator } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
-import type { PostReturn } from "~/utils/links.server";
 import Toolbar from "./Toolbar";
+import type { linkPostDenormalized } from "~/drizzle/schema.server";
 interface PostRepProps {
-	post: PostReturn["post"];
-	group: PostReturn[];
-	actor: PostReturn["actor"];
-	quote: PostReturn["quote"];
-	image: PostReturn["image"];
+	group: (typeof linkPostDenormalized.$inferSelect)[];
 	instance: string | undefined;
 	bsky: string | undefined;
 }
 
-const PostRep = ({
-	post,
-	group,
-	actor,
-	quote,
-	image,
-	instance,
-	bsky,
-}: PostRepProps) => {
+const PostRep = ({ group, instance, bsky }: PostRepProps) => {
+	const post = group[0];
 	const reposters = group
-		.filter((l) => l.post.repostHandle !== l.post.actorHandle && l.reposter)
-		.map((l) => l.reposter)
+		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
 	return (
-		<Card key={post.id} mt="5" size="1">
+		<Card key={post.postUrl} mt="5" size="1">
 			<Flex
 				gap={{
 					initial: "2",
@@ -39,17 +27,17 @@ const PostRep = ({
 				mb="1"
 			>
 				<a
-					href={actor.url}
+					href={post.actorUrl}
 					target="_blank"
 					rel="noreferrer"
-					aria-label={`Link to ${actor.name}'s profile page`}
+					aria-label={`Link to ${post.actorName}'s profile page`}
 				>
 					<Avatar
 						size={{
 							initial: "2",
 							sm: "3",
 						}}
-						src={actor.avatarUrl || undefined}
+						src={post.actorAvatarUrl || undefined}
 						radius="full"
 						fallback={post.actorHandle[0]}
 						mt={reposters.length > 0 ? "4" : "1"}
@@ -58,16 +46,27 @@ const PostRep = ({
 					/>
 				</a>
 				<Box>
-					{reposters.length > 0 && <RepostActor actors={reposters} />}
+					{reposters.length > 0 && <RepostActor posts={reposters} />}
 					<PostAuthor
-						actor={actor}
-						postUrl={post.url}
-						postDate={new Date(`${post.postDate}Z`)}
+						actor={{
+							actorUrl: post.actorUrl,
+							actorName: post.actorName,
+							actorHandle: post.actorHandle,
+							actorAvatarUrl: post.actorAvatarUrl,
+						}}
+						postUrl={post.postUrl}
+						postDate={post.postDate}
 					/>
-					<PostContent post={post} image={image} />
+					<PostContent
+						post={{
+							postText: post.postText,
+							postType: post.postType,
+							postImages: post.postImages,
+						}}
+					/>
 				</Box>
 			</Flex>
-			{quote.post && quote.actor && (
+			{post.quotedPostUrl && post.quotedActorHandle && (
 				<Card
 					ml={{
 						initial: "6",
@@ -78,15 +77,15 @@ const PostRep = ({
 				>
 					<Flex gap="1" mb="1" align="center">
 						<a
-							href={quote.actor.url}
+							href={post.quotedActorUrl || ""}
 							target="_blank"
 							rel="noreferrer"
-							aria-label={`Link to ${quote.actor.name}'s profile page`}
+							aria-label={`Link to ${post.quotedActorName}'s profile page`}
 						>
 							<Avatar
-								src={quote.actor.avatarUrl || undefined}
+								src={post.quotedActorAvatarUrl || undefined}
 								radius="full"
-								fallback={quote.actor.handle[0]}
+								fallback={post.quotedActorHandle[0]}
 								style={{
 									width: "20px",
 									height: "20px",
@@ -95,20 +94,31 @@ const PostRep = ({
 							/>
 						</a>
 						<PostAuthor
-							actor={quote.actor}
-							postUrl={quote.post.url}
-							postDate={new Date(`${quote.post.postDate}Z`)}
+							actor={{
+								actorUrl: post.quotedActorUrl || "",
+								actorName: post.quotedActorName,
+								actorHandle: post.quotedActorHandle,
+								actorAvatarUrl: post.quotedActorAvatarUrl,
+							}}
+							postUrl={post.quotedPostUrl}
+							postDate={new Date(`${post.quotedPostDate}Z`)}
 						/>
 					</Flex>
-					<PostContent post={quote.post} image={quote.image} />
+					<PostContent
+						post={{
+							postText: post.quotedPostText || "",
+							postType: post.quotedPostType || "bluesky",
+							postImages: post.quotedPostImages,
+						}}
+					/>
 				</Card>
 			)}
 			<Inset mt="4">
 				<Separator size="4" my="4" />
 			</Inset>
 			<Toolbar
-				url={post.url}
-				narrowMutePhrase={post.url}
+				url={post.postUrl}
+				narrowMutePhrase={post.postUrl}
 				broadMutePhrase={post.actorHandle}
 				type="post"
 				instance={instance}

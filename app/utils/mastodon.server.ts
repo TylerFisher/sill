@@ -2,12 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import {
-	list,
-	mastodonAccount,
-	type postListSubscription,
-	postType,
-} from "~/drizzle/schema.server";
+import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -195,97 +190,6 @@ const getYoutubeUrl = async (content: string): Promise<string | null> => {
 };
 
 /**
- * Gets actors for a Mastodon post, including reposters
- * @param original Original Mastodon status
- * @param t Mastodon status in the timeline
- * @returns All actors needed for the post in the database
- */
-const getActors = async (
-	original: mastodon.v1.Status,
-	t: mastodon.v1.Status,
-) => {
-	const actors = [
-		{
-			id: uuidv7(),
-			name: original.account.displayName,
-			handle: original.account.acct,
-			url: original.account.url,
-			avatarUrl: original.account.avatar,
-		},
-	];
-
-	if (t.reblog) {
-		actors.push({
-			id: uuidv7(),
-			handle: t.account.acct,
-			url: t.account.url,
-			name: t.account.displayName,
-			avatarUrl: t.account.avatar,
-		});
-	}
-
-	return actors;
-};
-
-/**
- * Formats a Mastodon status into a post for the database
- * @param original Original Mastodon status
- * @param t Mastodon status in the timeline
- * @param url URL for the Mastodon status
- * @returns Post object for the database
- */
-const createPost = async (
-	original: mastodon.v1.Status,
-	t: mastodon.v1.Status,
-	url: string,
-) => {
-	return {
-		id: uuidv7(),
-		url,
-		text: original.content,
-		postDate: new Date(original.createdAt),
-		postType: postType.enumValues[1],
-		actorHandle: original.account.acct,
-		repostHandle: t.reblog ? t.account.acct : undefined,
-	};
-};
-
-/**
- * Formats a Mastodon preview card into a link for the database
- * @param card Preview card from Mastodon status
- * @returns Link object for the database
- */
-const createLink = async (card: mastodon.v1.PreviewCard) => {
-	return {
-		id: uuidv7(),
-		url: card.url,
-		title: card.title,
-		description: card.description,
-		imageUrl: card.image,
-	};
-};
-
-/**
- * Formats a Mastodon status into a link post for the database
- * @param card Preview card from Mastodon status
- * @param postId ID of post to be created in database
- * @param createdAt Creation date of the post
- * @returns LinkPost object for the database
- */
-const createNewLinkPost = async (
-	card: mastodon.v1.PreviewCard,
-	postId: string,
-	createdAt: string,
-) => {
-	return {
-		id: uuidv7(),
-		linkUrl: card.url,
-		postId,
-		date: new Date(createdAt),
-	};
-};
-
-/**
  * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
  * @param userId ID for logged in user
  * @param t Status object from Mastodon timeline
@@ -315,38 +219,36 @@ const processMastodonLink = async (
 		return null;
 	}
 
-	const actors = await getActors(original, t);
-	const post = await createPost(original, t, url);
-	const link = await createLink(card);
-	const newLinkPost = await createNewLinkPost(
-		card,
-		post.id,
-		original.createdAt,
-	);
-	const newLinkPostToUser = {
-		userId,
-		linkPostId: newLinkPost.id,
+	const link = {
+		id: uuidv7(),
+		url: card.url,
+		title: card.title,
+		description: card.description,
+		imageUrl: card.image,
 	};
 
-	let newPostListSubscription:
-		| typeof postListSubscription.$inferInsert
-		| undefined = undefined;
-
-	if (listId) {
-		newPostListSubscription = {
-			id: uuidv7(),
-			listId,
-			postId: post.id,
-		};
-	}
+	const denormalized = {
+		id: uuidv7(),
+		linkUrl: card.url,
+		postText: original.content,
+		postDate: new Date(original.createdAt),
+		postType: postType.enumValues[1],
+		postUrl: url,
+		actorHandle: original.account.acct,
+		actorName: original.account.displayName,
+		actorUrl: original.account.url,
+		actorAvatarUrl: original.account.avatar,
+		reposterHandle: t.reblog ? t.account.acct : undefined,
+		reposterName: t.reblog ? t.account.displayName : undefined,
+		reposterUrl: t.reblog ? t.account.url : undefined,
+		reposterAvatarUrl: t.reblog ? t.account.avatar : undefined,
+		userId,
+		listId,
+	};
 
 	return {
-		actors,
-		post,
 		link,
-		newLinkPost,
-		newLinkPostToUser,
-		newPostListSubscription,
+		denormalized,
 	};
 };
 
