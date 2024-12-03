@@ -201,6 +201,7 @@ export const filterLinkOccurrences = async ({
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
 						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
 						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
 						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
 						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
@@ -216,9 +217,9 @@ export const filterLinkOccurrences = async ({
 		.select({
 			link,
 			uniqueActorsCount: sql<number>`cast(count(distinct 
-      CASE WHEN ${postMuteCondition} = 1 
-      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
-      END) as int)`.as("uniqueActorsCount"),
+	  CASE WHEN ${postMuteCondition} IS NOT NULL 
+	  THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
+	  END) as int)`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
