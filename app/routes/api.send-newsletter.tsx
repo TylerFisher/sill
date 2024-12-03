@@ -12,6 +12,13 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface Email {
+	from: string;
+	to: string;
+	subject: string;
+	html: string;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const authHeader = request.headers.get("Authorization");
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -36,48 +43,48 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	const validEmails = emails.filter((email) => email !== undefined);
 
-	const emailBodies = await Promise.all(
-		validEmails.map(async (email) => {
-			const emailUser = await db.query.user.findFirst({
-				where: eq(user.id, email.userId),
+	const emailBodies: Email[] = [];
+	for (const email of validEmails) {
+		const emailUser = await db.query.user.findFirst({
+			where: eq(user.id, email.userId),
+		});
+
+		if (!emailUser) {
+			throw new Error("Couldn't find user for email");
+		}
+
+		let links: MostRecentLinkPosts[] = [];
+		try {
+			links = await filterLinkOccurrences({
+				userId: emailUser.id,
+				fetch: true,
+				hideReposts: email.hideReposts,
+				limit: email.topAmount,
 			});
-
-			if (!emailUser) {
-				throw new Error("Couldn't find user for email");
-			}
-
-			let links: MostRecentLinkPosts[] = [];
+		} catch (error) {
+			console.error("Failed to fetch links for :", error);
+			// get what we have
 			try {
 				links = await filterLinkOccurrences({
 					userId: emailUser.id,
-					fetch: true,
 					hideReposts: email.hideReposts,
 					limit: email.topAmount,
 				});
 			} catch (error) {
-				console.error("Failed to fetch links for :", error);
-				// get what we have
-				try {
-					links = await filterLinkOccurrences({
-						userId: emailUser.id,
-						hideReposts: email.hideReposts,
-						limit: email.topAmount,
-					});
-				} catch (error) {
-					console.error("Second fetch failed to fetch links for :", error);
-				}
+				console.error("Second fetch failed to fetch links for :", error);
 			}
+		}
 
-			return {
-				from: "Sill <noreply@mail.sill.social>",
-				to: emailUser.email,
-				subject: "Your top links for today",
-				...(await renderReactEmail(
-					<TopLinks links={links} name={emailUser.name} />,
-				)),
-			};
-		}),
-	);
+		const emailBody = {
+			from: "Sill <noreply@mail.sill.social>",
+			to: emailUser.email,
+			subject: "Your top links for today",
+			...(await renderReactEmail(
+				<TopLinks links={links} name={emailUser.name} />,
+			)),
+		};
+		emailBodies.push(emailBody);
+	}
 
 	try {
 		await resend.batch.send(emailBodies);
