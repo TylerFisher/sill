@@ -275,6 +275,28 @@ export const filterLinkOccurrences = async ({
 							eq(linkPostDenormalized.userId, userId),
 							gte(linkPostDenormalized.postDate, start),
 							sql`${postMuteCondition} = 1`,
+							listRecord
+								? eq(linkPostDenormalized.listId, listRecord.id)
+								: undefined,
+							...urlMuteClauses,
+							service !== "all"
+								? eq(linkPostDenormalized.postType, service)
+								: undefined,
+							hideReposts
+								? isNull(linkPostDenormalized.repostActorHandle)
+								: undefined,
+							query
+								? or(
+										ilike(linkPostDenormalized.postText, `%${query}%`),
+										ilike(linkPostDenormalized.actorName, `%${query}%`),
+										ilike(linkPostDenormalized.actorHandle, `%${query}%`),
+										ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
+										ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
+										ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
+										ilike(linkPostDenormalized.repostActorName, `%${query}%`),
+										ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
+									)
+								: undefined,
 						),
 					)
 					.orderBy(desc(linkPostDenormalized.postDate));
