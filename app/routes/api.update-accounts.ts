@@ -26,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const now = new Date();
 	const currentMinute = now.getMinutes();
 
-	const users = await db.query.user.findMany({
+	let users = await db.query.user.findMany({
 		orderBy: asc(user.createdAt),
 		with: {
 			mastodonAccounts: {
@@ -37,14 +37,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 	// Determine which sixteenth of users to process based on current minute
-	// const sixteenthSize = Math.ceil(users.length / 16);
-	// // Calculate which 15-minute block we're in within a 4-hour period (0-15)
-	// const currentSixteenth = Math.floor(
-	// 	(currentMinute + (now.getHours() % 4) * 60) / 15,
-	// );
-	// const start = currentSixteenth * sixteenthSize;
-	// const end = Math.min(start + sixteenthSize, users.length);
-	// users = users.slice(start, end);
+	const sixteenthSize = Math.ceil(users.length / 16);
+	// Calculate which 15-minute block we're in within a 4-hour period (0-15)
+	const currentSixteenth = Math.floor(
+		(currentMinute + (now.getHours() % 4) * 60) / 15,
+	);
+	const start = currentSixteenth * sixteenthSize;
+	const end = Math.min(start + sixteenthSize, users.length);
+	users = users.slice(start, end);
 
 	const redis = connection();
 	const chunkSize = 10;

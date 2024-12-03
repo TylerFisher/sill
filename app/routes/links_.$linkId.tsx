@@ -92,7 +92,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			return Promise.all(postsPromise);
 		});
 
-	return grouped[0];
+	return grouped[0] || null;
 }
 
 export default function LinkRoute() {

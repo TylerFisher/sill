@@ -408,7 +408,7 @@ export const linkPostDenormalized = pgTable(
 		userId: uuid()
 			.notNull()
 			.references(() => user.id),
-		listId: uuid().references(() => list.id),
+		listId: uuid().references(() => list.id, { onDelete: "cascade" }),
 	},
 	(table) => {
 		return {

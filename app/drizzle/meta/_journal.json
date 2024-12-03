@@ -127,6 +127,13 @@
       "when": 1733174345758,
       "tag": "0017_cheerful_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1733211443390,
+      "tag": "0018_low_wolfsbane",
+      "breakpoints": true
     }
   ]
 }
