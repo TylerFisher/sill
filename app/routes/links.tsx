@@ -62,7 +62,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}
 			if (error instanceof TokenRefreshError) {
 				const client = await createOAuthClient();
-				const url = await client.authorize(bsky.handle, {
+				const url = await client.authorize(bsky.did, {
 					scope: "atproto transition:generic",
 				});
 				return redirect(url.toString());
