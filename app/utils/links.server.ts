@@ -278,7 +278,6 @@ export const filterLinkOccurrences = async ({
 							listRecord
 								? eq(linkPostDenormalized.listId, listRecord.id)
 								: undefined,
-							...urlMuteClauses,
 							service !== "all"
 								? eq(linkPostDenormalized.postType, service)
 								: undefined,
