@@ -38,7 +38,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				{!hideNav && (
 					<aside className={styles.side}>
 						<Header headerClass="desktop-logo" />
-						{/* <Nav /> */}
+						<Nav />
 					</aside>
 				)}
 				<main
@@ -47,7 +47,7 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 						marginTop: hideNav ? "0" : "2rem",
 					}}
 				>
-					{/* {children} */}
+					{children}
 				</main>
 				<Flex direction="column" justify="end" className={styles.right}>
 					<Footer />

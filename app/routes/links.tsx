@@ -51,27 +51,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			lists: true,
 		},
 	});
-	// if (bsky) {
-	// 	try {
-	// 		const client = await createOAuthClient();
-	// 		await client.restore(bsky.did);
-	// 	} catch (error) {
-	// 		if (error instanceof OAuthResponseError) {
-	// 			const client = await createOAuthClient();
-	// 			await client.restore(bsky.did);
-	// 		}
-	// 		if (error instanceof TokenRefreshError) {
-	// 			const client = await createOAuthClient();
-	// 			const url = await client.authorize(bsky.did, {
-	// 				scope: "atproto transition:generic",
-	// 			});
-	// 			return redirect(url.toString());
-	// 		}
-	// 		if (error instanceof OAuthResolverError) {
-	// 			return redirect("/connect?error=resolver");
-	// 		}
-	// 	}
-	// }
+	if (bsky) {
+		try {
+			const client = await createOAuthClient();
+			await client.restore(bsky.did);
+		} catch (error) {
+			if (error instanceof OAuthResponseError) {
+				const client = await createOAuthClient();
+				await client.restore(bsky.did);
+			}
+			if (error instanceof TokenRefreshError) {
+				const client = await createOAuthClient();
+				const url = await client.authorize(bsky.did, {
+					scope: "atproto transition:generic",
+				});
+				return redirect(url.toString());
+			}
+			if (error instanceof OAuthResolverError) {
+				return redirect("/connect?error=resolver");
+			}
+		}
+	}
 
 	const mastodon = await db.query.mastodonAccount.findFirst({
 		where: eq(mastodonAccount.userId, userId),
@@ -112,31 +112,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		time = 43200000;
 	}
 
-	// const links = filterLinkOccurrences({
-	// 	userId,
-	// 	time,
-	// 	fetch: !url.searchParams.get("page"),
-	// 	...options,
-	// });
+	const links = filterLinkOccurrences({
+		userId,
+		time,
+		fetch: !url.searchParams.get("page"),
+		...options,
+	});
 
 	// If we're not using any filters, use the cache
-	// let cachedData: MostRecentLinkPosts[] = [];
-	// if (url.search === "") {
-	// 	const redis = connection();
-	// 	const cache = await redis.get(await getUserCacheKey(userId));
-	// 	if (cache) {
-	// 		cachedData = JSON.parse(cache);
-	// 	}
-	// 	links.then(async (links) => {
-	// 		redis.set(await getUserCacheKey(userId), JSON.stringify(links));
-	// 	});
-	// }
+	let cachedData: MostRecentLinkPosts[] = [];
+	if (url.search === "") {
+		const redis = connection();
+		const cache = await redis.get(await getUserCacheKey(userId));
+		if (cache) {
+			cachedData = JSON.parse(cache);
+		}
+		links.then(async (links) => {
+			redis.set(await getUserCacheKey(userId), JSON.stringify(links));
+		});
+	}
 
-	return {};
+	return {
+		cachedData,
+		links,
+		key: uuidv7(),
+		instance: mastodon?.mastodonInstance.instance,
+		bsky: bsky?.handle,
+		lists: [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])],
+	};
 };
 
 const Links = () => {
-	return <Layout />;
 	const data = useLoaderData<typeof loader>();
 	const [searchParams] = useSearchParams();
 	const page = Number.parseInt(searchParams.get("page") || "1");
