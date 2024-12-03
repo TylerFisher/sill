@@ -217,7 +217,7 @@ export const filterLinkOccurrences = async ({
 			link,
 			uniqueActorsCount: sql<number>`cast(count(distinct 
       CASE WHEN ${postMuteCondition} = 1 
-      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
+      THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.quotedActorHandle}, ${linkPostDenormalized.actorHandle}) 
       END) as int)`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
@@ -273,6 +273,7 @@ export const filterLinkOccurrences = async ({
 						and(
 							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
 							eq(linkPostDenormalized.userId, userId),
+							gte(linkPostDenormalized.postDate, start),
 							sql`${postMuteCondition} = 1`,
 						),
 					)
