@@ -259,7 +259,8 @@ export const filterLinkOccurrences = async ({
 		.orderBy(
 			sort === "popularity"
 				? desc(sql`"uniqueActorsCount"`)
-				: desc(sql`max(${linkPostDenormalized.postDate})`),
+				: desc(sql`"mostRecentPostDate"`),
+			desc(sql`"mostRecentPostDate"`),
 		)
 		.limit(limit)
 		.offset(offset)
