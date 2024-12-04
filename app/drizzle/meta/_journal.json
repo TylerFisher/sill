@@ -134,6 +134,13 @@
       "when": 1733211443390,
       "tag": "0018_low_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1733352271836,
+      "tag": "0019_careless_loners",
+      "breakpoints": true
     }
   ]
 }
