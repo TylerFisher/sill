@@ -29,7 +29,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (token !== process.env.CRON_API_KEY) {
 		throw new Response("Forbidden", { status: 403 });
 	}
-	const scheduledEmails = await db.query.emailSettings.findMany();
+	const scheduledEmails = await db.query.digestSettings.findMany();
 	const emails = await Promise.all(
 		scheduledEmails.map(async (schedule) => {
 			const currentHourUTC = new Date().getUTCHours();

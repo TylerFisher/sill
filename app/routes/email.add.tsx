@@ -2,7 +2,7 @@ import { parseWithZod } from "@conform-to/zod";
 import { type ActionFunctionArgs, data } from "@remix-run/node";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { emailSettings } from "~/drizzle/schema.server";
+import { digestSettings } from "~/drizzle/schema.server";
 import { db } from "~/drizzle/db.server";
 import { requireUserId } from "~/utils/auth.server";
 
@@ -33,7 +33,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	}
 
 	await db
-		.insert(emailSettings)
+		.insert(digestSettings)
 		.values({
 			id: uuidv7(),
 			userId,
@@ -43,7 +43,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			topAmount: submission.value.topAmount,
 		})
 		.onConflictDoUpdate({
-			target: [emailSettings.userId],
+			target: [digestSettings.userId],
 			set: {
 				scheduledTime: submission.value.time,
 				hideReposts: submission.value.hideReposts,

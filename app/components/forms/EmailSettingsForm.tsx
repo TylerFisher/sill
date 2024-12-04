@@ -4,13 +4,13 @@ import { Text, Select, Box, Callout, Slider, Flex } from "@radix-ui/themes";
 import { useFetcher, Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
-import type { emailSettings } from "~/drizzle/schema.server";
+import type { digestSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email.add";
 import SubmitButton from "./SubmitButton";
 import CheckboxField from "./CheckboxField";
 
 interface EmailSettingsFormProps {
-	currentSettings: typeof emailSettings.$inferSelect | undefined;
+	currentSettings: typeof digestSettings.$inferSelect | undefined;
 }
 
 const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {

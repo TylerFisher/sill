@@ -20,6 +20,8 @@ import { relations } from "drizzle-orm/relations";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
 
+export const digestType = pgEnum("digest_type", ["email", "rss"]);
+
 export const linkPostToUser = pgTable(
 	"link_post_to_user",
 	{
@@ -165,7 +167,7 @@ export const session = pgTable(
 	},
 );
 
-export const emailSettings = pgTable("email_settings", {
+export const digestSettings = pgTable("digest_settings", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid()
 		.notNull()
@@ -175,6 +177,7 @@ export const emailSettings = pgTable("email_settings", {
 	topAmount: integer().notNull().default(10),
 	splitServices: boolean().notNull().default(false),
 	hideReposts: boolean().notNull().default(false),
+	digestType: digestType().notNull().default("email"),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {
@@ -477,7 +480,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	blueskyAccounts: many(blueskyAccount),
 	emailTokens: many(emailToken),
 	mutePhrases: many(mutePhrase),
-	emailSettings: one(emailSettings),
+	digestSettings: one(digestSettings),
 }));
 
 export const linkRelations = relations(link, ({ many }) => ({
@@ -609,9 +612,9 @@ export const mutePhraseRelations = relations(mutePhrase, ({ one }) => ({
 	}),
 }));
 
-export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
+export const digestSettingsRelations = relations(digestSettings, ({ one }) => ({
 	user: one(user, {
-		fields: [emailSettings.userId],
+		fields: [digestSettings.userId],
 		references: [user.id],
 	}),
 }));
