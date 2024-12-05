@@ -68,7 +68,7 @@ const PostRep = ({ group, instance, bsky }: PostRepProps) => {
 					/>
 				</Box>
 			</Flex>
-			{post.quotedPostUrl && post.quotedActorHandle && (
+			{post.quotedPostUrl && post.quotedActorHandle && post.quotedPostDate && (
 				<Card
 					ml={{
 						initial: "6",
@@ -103,7 +103,7 @@ const PostRep = ({ group, instance, bsky }: PostRepProps) => {
 								actorAvatarUrl: post.quotedActorAvatarUrl,
 							}}
 							postUrl={post.quotedPostUrl}
-							postDate={new Date(`${post.quotedPostDate}Z`)}
+							postDate={post.quotedPostDate}
 						/>
 					</Flex>
 					<PostContent
