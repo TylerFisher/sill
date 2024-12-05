@@ -51,7 +51,7 @@ const PostAuthor = ({ actor, postDate, postUrl }: PostAuthorProps) => (
 				@{actor.actorHandle}
 			</Text>
 		</Link>
-		{/* {postUrl && postDate && (
+		{postUrl && postDate && (
 			<>
 				<Text mx="1" color="gray">
 					·
@@ -62,7 +62,7 @@ const PostAuthor = ({ actor, postDate, postUrl }: PostAuthorProps) => (
 					</Text>
 				</Link>
 			</>
-		)} */}
+		)}
 	</Text>
 );
 
