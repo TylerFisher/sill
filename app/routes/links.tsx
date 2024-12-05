@@ -238,7 +238,13 @@ const Links = () => {
 
 			<Suspense
 				fallback={
-					<div>
+					<Box
+						mx={{
+							initial: "0",
+							sm: "9",
+							md: "0",
+						}}
+					>
 						<Flex justify="center">
 							<Spinner size="3" />
 						</Flex>
@@ -250,13 +256,19 @@ const Links = () => {
 								bsky={data.bsky}
 							/>
 						))}
-					</div>
+					</Box>
 				}
 			>
 				<Await
 					resolve={data.links}
 					errorElement={
-						<div>
+						<Box
+							mx={{
+								initial: "0",
+								sm: "9",
+								md: "0",
+							}}
+						>
 							<Text as="p">
 								Failed to fetch new links. Try refreshing the page.
 							</Text>
@@ -268,11 +280,17 @@ const Links = () => {
 									bsky={data.bsky}
 								/>
 							))}
-						</div>
+						</Box>
 					}
 				>
 					{(links) => (
-						<div>
+						<Box
+							mx={{
+								initial: "0",
+								sm: "9",
+								md: "0",
+							}}
+						>
 							{links.map((link) => (
 								<div key={link.link?.url}>
 									<LinkPost
@@ -302,7 +320,7 @@ const Links = () => {
 									))}
 								</fetcher.Form>
 							</Box>
-						</div>
+						</Box>
 					)}
 				</Await>
 			</Suspense>
