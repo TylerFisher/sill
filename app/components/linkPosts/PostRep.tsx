@@ -16,6 +16,8 @@ const PostRep = ({ group, instance, bsky }: PostRepProps) => {
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
+	console.log(post.postDate);
+
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
 			<Flex
