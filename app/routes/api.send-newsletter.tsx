@@ -32,7 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const scheduledEmails = await db.query.emailSettings.findMany();
 	const emails = await Promise.all(
 		scheduledEmails.map(async (schedule) => {
-			const currentHourUTC = 14;
+			const currentHourUTC = new Date().getUTCHours();
 			if (
 				Number.parseInt(schedule.scheduledTime.split(":")[0]) === currentHourUTC
 			) {
