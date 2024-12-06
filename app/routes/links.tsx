@@ -3,7 +3,15 @@ import {
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
-import { Box, Flex, Inset, Separator, Spinner, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Flex,
+	IconButton,
+	Inset,
+	Separator,
+	Spinner,
+	Text,
+} from "@radix-ui/themes";
 import {
 	data,
 	type LoaderFunctionArgs,
@@ -18,6 +26,7 @@ import {
 	useSearchParams,
 } from "@remix-run/react";
 import { eq } from "drizzle-orm";
+import { Rows2, Rows4 } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
@@ -34,6 +43,7 @@ import {
 	filterLinkOccurrences,
 } from "~/utils/links.server";
 import { connection, getUserCacheKey } from "~/utils/redis.server";
+import { useLayout } from "./resources.layout-switch";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -210,6 +220,8 @@ const Links = () => {
 		}
 	}, [key, data.key]);
 
+	const layout = useLayout();
+
 	return (
 		<Layout>
 			<Box
@@ -254,6 +266,7 @@ const Links = () => {
 								linkPost={link}
 								instance={data.instance}
 								bsky={data.bsky}
+								layout={layout}
 							/>
 						))}
 					</Box>
@@ -278,6 +291,7 @@ const Links = () => {
 									linkPost={link}
 									instance={data.instance}
 									bsky={data.bsky}
+									layout={layout}
 								/>
 							))}
 						</Box>
@@ -297,6 +311,7 @@ const Links = () => {
 										linkPost={link}
 										instance={data.instance}
 										bsky={data.bsky}
+										layout={layout}
 									/>
 								</div>
 							))}
@@ -308,6 +323,7 @@ const Links = () => {
 											linkPost={link}
 											instance={data.instance}
 											bsky={data.bsky}
+											layout={layout}
 										/>
 									))}
 								</div>
@@ -332,14 +348,25 @@ const LinkPost = ({
 	linkPost,
 	instance,
 	bsky,
+	layout,
 }: {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
+	layout: "dense" | "default";
 }) => (
 	<div>
-		<LinkPostRep linkPost={linkPost} instance={instance} bsky={bsky} />
-		<Separator my="7" size="4" orientation="horizontal" />
+		<LinkPostRep
+			linkPost={linkPost}
+			instance={instance}
+			bsky={bsky}
+			layout={layout}
+		/>
+		<Separator
+			my={layout === "dense" ? "5" : "7"}
+			size="4"
+			orientation="horizontal"
+		/>
 	</div>
 );
 
