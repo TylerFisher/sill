@@ -339,7 +339,7 @@ const LinkPost = ({
 }) => (
 	<div>
 		<LinkPostRep linkPost={linkPost} instance={instance} bsky={bsky} />
-		<Separator my="7" size="4" orientation="horizontal" />
+		<Separator my="5" size="4" orientation="horizontal" />
 	</div>
 );
 
