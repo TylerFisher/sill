@@ -1,7 +1,11 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
+import {
+	digestRssFeed,
+	digestRssFeedItem,
+	user,
+} from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
 import { renderReactEmail } from "~/utils/email.server";
 import {
@@ -9,6 +13,8 @@ import {
 	type MostRecentLinkPosts,
 } from "~/utils/links.server";
 import { Resend } from "resend";
+import { renderToString } from "react-dom/server";
+import { uuidv7 } from "uuidv7-js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -29,22 +35,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (token !== process.env.CRON_API_KEY) {
 		throw new Response("Forbidden", { status: 403 });
 	}
-	const scheduledEmails = await db.query.digestSettings.findMany();
-	const emails = await Promise.all(
-		scheduledEmails.map(async (schedule) => {
+	const scheduledDigests = await db.query.digestSettings.findMany();
+	const digests = await Promise.all(
+		scheduledDigests.map(async (digest) => {
 			const currentHourUTC = new Date().getUTCHours();
 			if (
-				Number.parseInt(schedule.scheduledTime.split(":")[0]) === currentHourUTC
+				Number.parseInt(digest.scheduledTime.split(":")[0]) === currentHourUTC
 			) {
-				return schedule;
+				return digest;
 			}
 		}),
 	);
 
-	const validEmails = emails.filter((email) => email !== undefined);
+	const emailsToSend = digests
+		.filter((digest) => digest !== undefined)
+		.filter((digest) => digest.digestType === "email");
 
 	const emailBodies: Email[] = [];
-	for (const email of validEmails) {
+	for (const email of emailsToSend) {
 		const emailUser = await db.query.user.findFirst({
 			where: eq(user.id, email.userId),
 		});
@@ -96,35 +104,55 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}, 1000);
 	}
 
-	// for (let i = 0; i < validEmails.length; i++) {
-	// 	const email = validEmails[i];
+	const rssToBuild = digests
+		.filter((digest) => digest !== undefined)
+		.filter((digest) => digest.digestType === "rss");
 
-	// 	const emailUser = await db.query.user.findFirst({
-	// 		where: eq(user.id, email.userId),
-	// 	});
+	for (const rss of rssToBuild) {
+		const rssUser = await db.query.user.findFirst({
+			where: eq(user.id, rss.userId),
+		});
 
-	// 	if (!emailUser) {
-	// 		throw new Error("Couldn't find user for email");
-	// 	}
+		const rssFeed = await db.query.digestRssFeed.findFirst({
+			where: eq(digestRssFeed.userId, rss.userId),
+		});
 
-	// 	let links: MostRecentLinkPosts[] = [];
-	// 	try {
-	// 		links = await filterLinkOccurrences({
-	// 			userId: emailUser.id,
-	// 			fetch: true,
-	// 		});
-	// 	} catch (error) {
-	// 		console.error("Failed to fetch links for :", error);
-	// 	}
+		if (!rssUser || !rssFeed) {
+			throw new Error("Couldn't find rss feed for user");
+		}
 
-	// 	const response = await sendEmail({
-	// 		to: emailUser.email,
-	// 		subject: "Your top links for today",
-	// 		react: <TopLinks links={links} name={emailUser.name} />,
-	// 	});
+		let links: MostRecentLinkPosts[] = [];
+		try {
+			links = await filterLinkOccurrences({
+				userId: rssUser.id,
+				fetch: true,
+				hideReposts: rss.hideReposts,
+				limit: rss.topAmount,
+			});
+		} catch (error) {
+			console.error("Failed to fetch links for :", error);
+			// get what we have
+			try {
+				links = await filterLinkOccurrences({
+					userId: rssUser.id,
+					hideReposts: rss.hideReposts,
+					limit: rss.topAmount,
+				});
+			} catch (error) {
+				console.error("Second fetch failed to fetch links for :", error);
+			}
+		}
 
-	// 	emailResponses.push(response);
-	// }
+		const html = renderToString(<TopLinks links={links} name={rssUser.name} />);
+		await db.insert(digestRssFeedItem).values({
+			id: uuidv7(),
+			feedId: rssFeed.id,
+			title: "Your top links for today",
+			html,
+			description: "Your top links for today",
+			pubDate: new Date(),
+		});
+	}
 
 	return Response.json({});
 };

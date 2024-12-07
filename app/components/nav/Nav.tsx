@@ -19,7 +19,7 @@ const Nav = () => {
 		},
 		{
 			to: "/email",
-			label: "Daily Email",
+			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 		},
 		{

@@ -141,6 +141,20 @@
       "when": 1733352271836,
       "tag": "0019_careless_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1733600408154,
+      "tag": "0020_slippery_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1733602770678,
+      "tag": "0021_flaky_leopardon",
+      "breakpoints": true
     }
   ]
 }

@@ -5,9 +5,7 @@ import {
 	index,
 	integer,
 	json,
-	jsonb,
 	pgEnum,
-	pgMaterializedView,
 	pgTable,
 	text,
 	time,
@@ -178,6 +176,31 @@ export const digestSettings = pgTable("digest_settings", {
 	splitServices: boolean().notNull().default(false),
 	hideReposts: boolean().notNull().default(false),
 	digestType: digestType().notNull().default("email"),
+});
+
+export const digestRssFeed = pgTable("digest_rss_feed", {
+	id: uuid().primaryKey().notNull(),
+	title: text().notNull(),
+	description: text(),
+	feedUrl: text().notNull(),
+	digestSettings: uuid()
+		.notNull()
+		.unique()
+		.references(() => digestSettings.id, { onDelete: "cascade" }),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const digestRssFeedItem = pgTable("digest_rss_feed_item", {
+	id: uuid().primaryKey().notNull(),
+	feedId: uuid()
+		.notNull()
+		.references(() => digestRssFeed.id, { onDelete: "cascade" }),
+	title: text().notNull(),
+	description: text(),
+	html: text(),
+	pubDate: timestamp({ precision: 3, mode: "date" }).notNull(),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {
@@ -619,3 +642,28 @@ export const digestSettingsRelations = relations(digestSettings, ({ one }) => ({
 		references: [user.id],
 	}),
 }));
+
+export const digestRssFeedRelations = relations(
+	digestRssFeed,
+	({ one, many }) => ({
+		digestSettings: one(digestSettings, {
+			fields: [digestRssFeed.digestSettings],
+			references: [digestSettings.id],
+		}),
+		user: one(user, {
+			fields: [digestRssFeed.userId],
+			references: [user.id],
+		}),
+		items: many(digestRssFeedItem),
+	}),
+);
+
+export const digestRssFeedItemRelations = relations(
+	digestRssFeedItem,
+	({ one }) => ({
+		feed: one(digestRssFeed, {
+			fields: [digestRssFeedItem.feedId],
+			references: [digestRssFeed.id],
+		}),
+	}),
+);

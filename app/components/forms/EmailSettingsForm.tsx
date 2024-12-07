@@ -1,6 +1,15 @@
 import { useForm, getFormProps, getInputProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Text, Select, Box, Callout, Slider, Flex } from "@radix-ui/themes";
+import {
+	Text,
+	Select,
+	Box,
+	Callout,
+	Slider,
+	Flex,
+	RadioGroup,
+	TextField,
+} from "@radix-ui/themes";
 import { useFetcher, Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
@@ -53,29 +62,59 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					</Box>
 				)}
 				<Box>
-					<Text as="label" size="2" htmlFor="time">
-						Time
+					<Text as="label" size="2" htmlFor="digestType">
+						Format
 					</Text>
-					<br />
-					<Select.Root
-						{...getInputProps(fields.time, { type: "time" })}
-						value={selectedHour}
-						onValueChange={(value) => setSelectedHour(value)}
+					<RadioGroup.Root
+						defaultValue={currentSettings?.digestType || "email"}
+						name="digestType"
+						mb="4"
 					>
-						<Select.Trigger placeholder="Select a time" />
-						<Select.Content>
-							{hours.map((hour, index) => {
-								const localDate = new Date();
-								localDate.setHours(index, 0, 0, 0);
-								const utcHour = localDate.toISOString().substring(11, 16);
-								return (
-									<Select.Item key={hour} value={utcHour}>
-										{hour}
-									</Select.Item>
-								);
-							})}
-						</Select.Content>
-					</Select.Root>
+						<RadioGroup.Item value="email">Email</RadioGroup.Item>
+						<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
+					</RadioGroup.Root>
+					{currentSettings?.digestType === "rss" && (
+						<Box mb="4">
+							<Text as="label" size="2" htmlFor="rssUrl" mr="2">
+								RSS URL:
+							</Text>
+							<TextField.Root
+								type="url"
+								name="rssUrl"
+								id="rssUrl"
+								value={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+								readOnly
+							>
+								<TextField.Slot />
+							</TextField.Root>
+						</Box>
+					)}
+					<Box mb="4">
+						<Text as="label" size="2" htmlFor="time">
+							Time
+						</Text>
+						<br />
+						<Select.Root
+							{...getInputProps(fields.time, { type: "time" })}
+							value={selectedHour}
+							onValueChange={(value) => setSelectedHour(value)}
+						>
+							<Select.Trigger placeholder="Select a time" />
+							<Select.Content>
+								{hours.map((hour, index) => {
+									const localDate = new Date();
+									localDate.setHours(index, 0, 0, 0);
+									const utcHour = localDate.toISOString().substring(11, 16);
+									return (
+										<Select.Item key={hour} value={utcHour}>
+											{hour}
+										</Select.Item>
+									);
+								})}
+							</Select.Content>
+						</Select.Root>
+					</Box>
+
 					<Box my="3">
 						<CheckboxField
 							inputProps={{

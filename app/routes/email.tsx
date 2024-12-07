@@ -28,8 +28,8 @@ const EmailSettings = () => {
 	return (
 		<Layout>
 			<PageHeading
-				title="Email Settings"
-				dek="Sill can send you a daily email at a time of your choosing. Configure your email here."
+				title="Digest Settings"
+				dek="Sill can send you a daily digest at a time of your choosing. Configure your digest here."
 			/>
 			<EmailSettingForm currentSettings={currentSettings} />
 		</Layout>
