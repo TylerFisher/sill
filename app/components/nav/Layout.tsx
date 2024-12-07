@@ -1,15 +1,16 @@
-import { Container, Flex } from "@radix-ui/themes";
+import { Container } from "@radix-ui/themes";
 import type { PropsWithChildren } from "react";
-import Footer from "./Footer";
 import Header from "./Header";
 import styles from "./Layout.module.css";
 import Nav from "./Nav";
+import Footer from "./Footer";
 
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;
+	sidebar?: React.ReactNode;
 }
 
-const Layout = ({ children, hideNav }: LayoutProps) => {
+const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 	return (
 		<Container
 			size="4"
@@ -17,41 +18,24 @@ const Layout = ({ children, hideNav }: LayoutProps) => {
 				initial: "0",
 				sm: "5",
 			}}
+			style={{
+				backgroundColor: "var(--accent-2)",
+				minHeight: "100vh",
+			}}
 		>
-			{/* <div
-				style={{
-					backgroundColor: "red",
-					color: "white",
-					padding: "1rem",
-				}}
-			>
-				<p
-					style={{
-						textAlign: "center",
-					}}
-				>
-					Sill is down for maintenance. We'll be back soon!
-				</p>
-			</div> */}
 			<div className={styles.wrapper}>
-				<Header headerClass={hideNav ? "onboarding-logo" : "mobile-logo"} />
+				<Header
+					headerClass={hideNav ? "onboarding-logo" : "mobile-logo"}
+					hideNav={hideNav || false}
+				/>
 				{!hideNav && (
 					<aside className={styles.side}>
-						<Header headerClass="desktop-logo" />
-						<Nav />
+						<Header headerClass="desktop-logo" hideNav={false} />
+						<Nav layoutFormId="desktop-layout" themeFormId="desktop-theme" />
 					</aside>
 				)}
-				<main
-					className={styles.content}
-					style={{
-						marginTop: hideNav ? "0" : "2rem",
-					}}
-				>
-					{children}
-				</main>
-				<Flex direction="column" justify="end" className={styles.right}>
-					<Footer />
-				</Flex>
+				<main className={styles.content}>{children}</main>
+				{sidebar && <aside className={styles.right}>{sidebar}</aside>}
 			</div>
 		</Container>
 	);

@@ -1,24 +1,53 @@
-import { Heading, Text } from "@radix-ui/themes";
-import { Link } from "@remix-run/react";
+import { Box, Dialog, IconButton } from "@radix-ui/themes";
 import styles from "./Header.module.css";
+import Nav from "./Nav";
+import { Menu } from "lucide-react";
+import Logo from "./Logo";
 
-const Header = ({ headerClass }: { headerClass: string }) => {
+const Header = ({
+	headerClass,
+	hideNav,
+}: { headerClass: string; hideNav: boolean }) => {
 	return (
 		<header className={styles[headerClass]}>
-			<Heading size="9" className={styles["logo-heading"]} mb="4">
-				<Link to="/" className={styles["logo-link"]}>
-					Sill
-					<Text
-						size="3"
-						weight="regular"
-						style={{
-							fontStyle: "normal",
+			<Box
+				position={{
+					initial: "fixed",
+					md: "relative",
+				}}
+				top="0"
+				width="100%"
+				mx={{
+					initial: "0",
+					sm: "-6",
+					md: "0",
+				}}
+				className={styles["header-wrapper"]}
+			>
+				{!hideNav && (
+					<Box
+						position="absolute"
+						top="1.1rem"
+						left="1rem"
+						display={{
+							initial: "inline-block",
+							md: "none",
 						}}
 					>
-						(beta)
-					</Text>
-				</Link>
-			</Heading>
+						<Dialog.Root>
+							<Dialog.Trigger>
+								<IconButton variant="ghost">
+									<Menu />
+								</IconButton>
+							</Dialog.Trigger>
+							<Dialog.Content className={styles["dialog-content"]}>
+								<Nav layoutFormId="mobile-layout" themeFormId="mobile-theme" />
+							</Dialog.Content>
+						</Dialog.Root>
+					</Box>
+				)}
+				<Logo />
+			</Box>
 		</header>
 	);
 };

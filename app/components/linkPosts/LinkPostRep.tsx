@@ -1,5 +1,5 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Avatar, Box, Button } from "@radix-ui/themes";
+import { Avatar, Box, Button, Heading, Text } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import groupBy from "object.groupby";
 import { useState } from "react";
@@ -11,6 +11,7 @@ export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
+	layout: "dense" | "default";
 	autoExpand?: boolean;
 }
 
@@ -18,6 +19,7 @@ const LinkPostRep = ({
 	linkPost,
 	instance,
 	bsky,
+	layout,
 	autoExpand = false,
 }: LinkPostRepProps) => {
 	if (!linkPost) return null;
@@ -31,7 +33,12 @@ const LinkPostRep = ({
 
 	return (
 		<Box key={linkPost.link.url}>
-			<LinkRep link={linkPost.link} instance={instance} bsky={bsky} />
+			<LinkRep
+				link={linkPost.link}
+				instance={instance}
+				bsky={bsky}
+				layout={layout}
+			/>
 			<Collapsible.Root
 				className="CollapsibleRoot"
 				open={open}

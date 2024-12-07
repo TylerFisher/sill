@@ -12,7 +12,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Index = () => {
 	return (
-		<Box px="4">
+		<Box
+			px="4"
+			style={{
+				backgroundColor: "var(--accent-2)",
+			}}
+		>
 			<Hero />
 		</Box>
 	);

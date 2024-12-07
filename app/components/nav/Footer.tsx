@@ -1,33 +1,36 @@
-import { Flex, IconButton, Link, Text } from "@radix-ui/themes";
-import { Github } from "lucide-react";
+import { Box, Flex, Link, Text } from "@radix-ui/themes";
 import { ThemeSwitch, useTheme } from "~/routes/resources.theme-switch";
 import styles from "./Footer.module.css";
+import { useLocation } from "@remix-run/react";
+import { LayoutSwitch, useLayout } from "~/routes/resources.layout-switch";
 
-const Footer = () => {
+const Footer = ({
+	layoutFormId,
+	themeFormId,
+}: { layoutFormId: string; themeFormId: string }) => {
 	const theme = useTheme();
+	const layout = useLayout();
+	const location = useLocation();
 	return (
-		<Flex mb="4" gap="4" align="center" wrap="wrap" className={styles.footer}>
-			<ThemeSwitch userPreference={theme} />
-			<Link
-				href="https://github.com/TylerFisher/sill"
-				target="_blank"
-				rel="noreferrer"
-				aria-label="Link to Github repository for Sill"
-			>
-				<IconButton size="3" variant="ghost" aria-label="Github icon">
-					<Github />
-				</IconButton>
-			</Link>
-			<Text size="1">
-				<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
-			</Text>
-			<Text size="1">
-				Built by{" "}
-				<Link href="https://tylerjfisher.com" target="_blank" rel="noreferrer">
-					Tyler Fisher
-				</Link>
-			</Text>
-		</Flex>
+		<Box className={styles.footer}>
+			<Flex gap="2" direction="row" align="center" wrap="wrap">
+				{location.pathname.includes("/links") && (
+					<>
+						<LayoutSwitch userPreference={layout} id={layoutFormId} /> ·
+					</>
+				)}
+				<ThemeSwitch userPreference={theme} id={themeFormId} />
+			</Flex>
+			<Flex mb="4" gap="2" direction="row" align="center" wrap="wrap">
+				<Text size="1">
+					<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
+				</Text>
+				·
+				<Text size="1">
+					Built by <Link href="https://www.tylerjfisher.com">Tyler Fisher</Link>
+				</Text>
+			</Flex>
+		</Box>
 	);
 };
 

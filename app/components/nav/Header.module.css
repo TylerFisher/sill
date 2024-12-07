@@ -4,21 +4,21 @@
 	text-align: center;
 }
 
+.header-wrapper {
+  border-bottom: 1px solid var(--gray-a6);
+  z-index: 1;
+  background-color: var(--accent-2);
+}
+
 .desktop-logo {
 	display: none;
 	text-align: left;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .marketing-logo {
 	text-align: center;
-}
-
-.logo-heading {
-	font-weight: 900;
-	font-style: italic;
-	color: var(--accent-11);
-	text-transform: lowercase;
-	padding-top: 1rem;
 }
 
 @media (min-width: 1025px) {
@@ -30,12 +30,48 @@
 		display: block;
 	}
 
-	.marketing-logo > h1 {
+	.marketing-logo h1 {
 		font-size: 120px;
+	}
+
+  .header-wrapper {
+    border-bottom: none;
+  }
+}
+
+
+@keyframes fadeIn {
+	from {
+		left: -50%;
+	}
+	to {
+		left: 0;
 	}
 }
 
-.logo-link {
-	color: inherit;
-	text-decoration: none;
+@keyframes fadeOut {
+	from {
+		left: 0;
+	}
+	to {
+		left: -50%;
+	}
+}
+
+.dialog-content {
+  height: 100vh;
+  width: 50%;
+  left: 0;
+  position: fixed;
+  top: 0;
+  border-radius: 0;
+  background-color: var(--accent-2);
+}
+
+.dialog-content[data-state="open"] {
+	animation: fadeIn 150ms ease-out;
+}
+
+.dialog-content[data-state="closed"] {
+	animation: fadeOut 150ms ease-in;
 }

@@ -1,7 +1,7 @@
 import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
-import { IconButton } from "@radix-ui/themes";
+import { Button, Flex, IconButton, Spinner, Text } from "@radix-ui/themes";
 import { type ActionFunctionArgs, data } from "@remix-run/node";
 import { useFetcher, useFetchers } from "@remix-run/react";
 import { Moon, Sun } from "lucide-react";
@@ -32,13 +32,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export function ThemeSwitch({
 	userPreference,
+	id,
 }: {
 	userPreference?: Theme | null;
+	id: string;
 }) {
 	const fetcher = useFetcher<typeof action>();
+	const isSubmitting =
+		fetcher.state === "submitting" || fetcher.state === "loading";
 
 	const [form] = useForm({
-		id: "theme-switch",
+		id: id,
 		lastResult: fetcher.data?.result,
 	});
 
@@ -46,8 +50,18 @@ export function ThemeSwitch({
 	const mode = optimisticMode ?? userPreference ?? "light";
 	const nextMode = mode === "light" ? "dark" : "light";
 	const modeLabel = {
-		light: <Sun width="22" height="22" />,
-		dark: <Moon width="22" height="22" />,
+		light: (
+			<>
+				<Sun width="14" height="14" />
+				<Text size="1">Light</Text>
+			</>
+		),
+		dark: (
+			<>
+				<Moon width="14" height="14" />
+				<Text size="1">Dark</Text>
+			</>
+		),
 	};
 
 	return (
@@ -57,14 +71,17 @@ export function ThemeSwitch({
 			action="/resources/theme-switch"
 		>
 			<input type="hidden" name="theme" value={nextMode} />
-			<IconButton
-				type="submit"
-				variant="ghost"
-				size="3"
-				aria-label="Theme switcher"
-			>
-				{modeLabel[mode]}
-			</IconButton>
+			<Flex gap="1">
+				<Button
+					type="submit"
+					variant="ghost"
+					size="1"
+					aria-label="Switch theme"
+					title="Switch theme"
+				>
+					{isSubmitting ? <Spinner /> : modeLabel[mode]}
+				</Button>
+			</Flex>
 		</fetcher.Form>
 	);
 }
