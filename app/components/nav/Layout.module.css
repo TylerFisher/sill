@@ -29,7 +29,7 @@
   margin-top: 1em;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1025px) {
 	.side {
 		grid-column: col-start / span 3;
 		position: sticky;
@@ -64,7 +64,7 @@
 	width: 100%;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
 	.content {
 		margin-top: 0 !important;
 	}

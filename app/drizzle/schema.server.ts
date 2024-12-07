@@ -266,6 +266,7 @@ export const link = pgTable(
           setweight(to_tsvector('english', ${table.description}), 'B')
         )`,
 			),
+			linkUrlUnique: uniqueIndex().using("btree", table.url),
 		};
 	},
 );
@@ -410,7 +411,7 @@ export const linkPostDenormalized = pgTable(
 		repostActorAvatarUrl: text(),
 		userId: uuid()
 			.notNull()
-			.references(() => user.id),
+			.references(() => user.id, { onDelete: "cascade" }),
 		listId: uuid().references(() => list.id, { onDelete: "cascade" }),
 	},
 	(table) => {

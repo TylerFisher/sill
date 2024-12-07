@@ -599,6 +599,7 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
 	});
 	const html: string[] = [];
 	for (const segment of rt.segments()) {
+		segment.text = segment.text.replace(/\n/g, "<br />");
 		if (segment.text && !segment.facet && !segment.link) {
 			html.push(segment.text);
 		} else if (segment.link && !segment.facet) {

@@ -59,6 +59,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 					processedResults.push(...results);
 				} catch (error) {
 					console.error("error fetching links for", user.email, error);
+					try {
+						const results = await fetchLinks(user.id);
+						processedResults.push(...results);
+					} catch (error) {
+						console.error(
+							"error fetching links second time for",
+							user.email,
+							error,
+						);
+					}
 				}
 			}),
 		);
@@ -67,6 +77,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			await insertNewLinks(processedResults);
 		} catch (error) {
 			console.error("error sending links to database", error);
+			try {
+				await insertNewLinks(processedResults);
+			} catch (error) {
+				console.error("error sending links to database second time", error);
+			}
 		}
 	}
 

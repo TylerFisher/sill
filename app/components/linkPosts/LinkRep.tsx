@@ -2,6 +2,7 @@ import {
 	AspectRatio,
 	Box,
 	Card,
+	Flex,
 	Heading,
 	Inset,
 	Link,
@@ -14,6 +15,7 @@ import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
 import Toolbar from "./Toolbar";
+import { useTheme } from "~/routes/resources.theme-switch";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
@@ -45,7 +47,8 @@ const XEmbed = ({ url }: { url: URL }) => {
 const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 	if (!link) return null;
 	const url = new URL(link.url);
-	const host = url.host;
+	const host = url.host.replace("www.", "");
+	const theme = useTheme();
 
 	return (
 		<Card mb="5">
@@ -83,16 +86,24 @@ const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 					<XEmbed url={url} />
 				</Inset>
 			)}
-			<Box position="relative">
-				<Text
-					size="1"
-					color="gray"
-					as="p"
-					mt={link.imageUrl ? "3" : "0"}
-					mb="1"
-				>
-					{host}
-				</Text>
+			<Box position="relative" mt={link.imageUrl ? "3" : "0"}>
+				<Flex align="center" mb="1">
+					<img
+						src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
+						loading="lazy"
+						alt=""
+						width="16px"
+						height="16px"
+						decoding="async"
+						style={{
+							marginRight: "0.25rem",
+							backgroundColor: theme === "dark" ? "white" : "transparent",
+						}}
+					/>
+					<Text size="1" color="gray" as="span">
+						{host}
+					</Text>
+				</Flex>
 				<Heading
 					as="h3"
 					size={{
