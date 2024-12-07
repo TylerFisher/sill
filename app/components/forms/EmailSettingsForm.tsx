@@ -54,19 +54,28 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
 	});
 	return (
-		<Box mt="3" mb="6">
+		<Box>
+			<Callout.Root mb="4">
+				<Callout.Icon>
+					<CircleAlert width="18" height="18" />
+				</Callout.Icon>
+				<Callout.Text size="2">
+					Daily Digests are free during Sill's beta period. This will be part of
+					Sill's paid plan in the future.
+				</Callout.Text>
+			</Callout.Root>
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				{fetcher.data?.result?.status === "success" && (
 					<Box mb="4">
-						<Text as="p">Your email settings have been saved.</Text>
+						<Text as="p">Your Daily Digest settings have been saved.</Text>
 					</Box>
 				)}
 				<Box>
 					<Text as="label" size="2" htmlFor="digestType">
-						Format
+						<strong>Format</strong>
 					</Text>
 					<RadioGroup.Root
-						defaultValue={currentSettings?.digestType || "email"}
+						defaultValue={currentSettings?.digestType}
 						name="digestType"
 						mb="4"
 					>
@@ -89,9 +98,9 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							</TextField.Root>
 						</Box>
 					)}
-					<Box mb="4">
+					<Box my="4">
 						<Text as="label" size="2" htmlFor="time">
-							Time
+							<strong>Time</strong>
 						</Text>
 						<br />
 						<Select.Root
@@ -114,8 +123,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							</Select.Content>
 						</Select.Root>
 					</Box>
-
-					<Box my="3">
+					<Box my="4">
 						<CheckboxField
 							inputProps={{
 								name: fields.hideReposts.name,
@@ -124,12 +132,12 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							}}
 							labelProps={{
 								children: "Hide reposts",
-								htmlFor: fields.hideReposts.name,
+								htmlFor: fields.hideReposts.id,
 							}}
 							errors={fields.hideReposts.errors}
 						/>
 					</Box>
-					<Box my="3">
+					<Box my="4">
 						<Text as="label" size="2" htmlFor="topAmount">
 							<strong>{topAmountValue}</strong> links per email
 						</Text>
@@ -144,7 +152,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 
 					<Flex gap="2" mt="4">
 						<SubmitButton label="Save" size="2" />
-						{selectedHour && (
+						{currentSettings && (
 							<Form
 								method="DELETE"
 								action="/email/delete"
@@ -152,7 +160,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							>
 								<SubmitButton
 									color="red"
-									label="Turn off daily email"
+									label="Turn off daily digest"
 									size="2"
 								/>
 							</Form>
@@ -160,15 +168,6 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					</Flex>
 				</Box>
 			</fetcher.Form>
-			<Callout.Root mt="4">
-				<Callout.Icon>
-					<CircleAlert width="18" height="18" />
-				</Callout.Icon>
-				<Callout.Text size="2">
-					Emails are free during Sill's beta period. This will be part of Sill's
-					paid plan in the future.
-				</Callout.Text>
-			</Callout.Root>
 		</Box>
 	);
 };
