@@ -1,9 +1,9 @@
 import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
-import { IconButton } from "@radix-ui/themes";
+import { Button, Flex, IconButton, Spinner, Text } from "@radix-ui/themes";
 import { type ActionFunctionArgs, data } from "@remix-run/node";
-import { useFetcher, useFetchers } from "@remix-run/react";
+import { useFetcher, useFetchers, useNavigation } from "@remix-run/react";
 import { Rows2, Rows4 } from "lucide-react";
 import { z } from "zod";
 import { type Layout, setLayout } from "~/utils/layout.server";
@@ -31,13 +31,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export function LayoutSwitch({
 	userPreference,
+	id,
 }: {
 	userPreference?: Layout | null;
+	id: string;
 }) {
 	const fetcher = useFetcher<typeof action>();
+	const isSubmitting =
+		fetcher.state === "submitting" || fetcher.state === "loading";
 
 	const [form] = useForm({
-		id: "layout-switch",
+		id: id,
 		lastResult: fetcher.data?.result,
 	});
 
@@ -45,8 +49,16 @@ export function LayoutSwitch({
 	const mode = optimisticMode ?? userPreference ?? "default";
 	const nextMode = mode === "default" ? "dense" : "default";
 	const modeLabel = {
-		default: <Rows2 width="22" height="22" />,
-		dense: <Rows4 width="22" height="22" />,
+		default: (
+			<>
+				<Rows2 width="14" height="14" /> <Text size="1">Default</Text>
+			</>
+		),
+		dense: (
+			<>
+				<Rows4 width="14" height="14" /> <Text size="1">Dense</Text>
+			</>
+		),
 	};
 
 	return (
@@ -56,14 +68,17 @@ export function LayoutSwitch({
 			action="/resources/layout-switch"
 		>
 			<input type="hidden" name="layout" value={nextMode} />
-			<IconButton
-				type="submit"
-				variant="ghost"
-				size="3"
-				aria-label="Layout switcher"
-			>
-				{modeLabel[mode]}
-			</IconButton>
+			<Flex gap="1">
+				<Button
+					type="submit"
+					variant="ghost"
+					size="1"
+					aria-label="Switch layout"
+					title="Switch layout"
+				>
+					{isSubmitting ? <Spinner /> : modeLabel[mode]}
+				</Button>
+			</Flex>
 		</fetcher.Form>
 	);
 }

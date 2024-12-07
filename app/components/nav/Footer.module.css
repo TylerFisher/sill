@@ -1,9 +1,17 @@
 .footer {
-  justify-content: center;
+  position: absolute;
+  bottom: calc(80px + env(safe-area-inset-bottom));
 }
+
 
 @media (min-width: 768px) {
   .footer {
     justify-content: flex-end;
+  }
+}
+
+@media (min-width: 1025px) {
+  .footer {
+    bottom: 0;
   }
 }
