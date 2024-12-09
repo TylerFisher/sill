@@ -328,7 +328,7 @@ const Links = () => {
 	);
 };
 
-const LinkPost = ({
+export const LinkPost = ({
 	linkPost,
 	instance,
 	bsky,

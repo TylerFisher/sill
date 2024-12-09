@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { desc, eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
-import { digestRssFeed, digestRssFeedItem } from "~/drizzle/schema.server";
+import { digestRssFeed, digestItem } from "~/drizzle/schema.server";
 import { Feed } from "feed";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -16,7 +16,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 		with: {
 			items: {
 				limit: 10,
-				orderBy: desc(digestRssFeedItem.pubDate),
+				orderBy: desc(digestItem.pubDate),
 			},
 		},
 	});
@@ -32,7 +32,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 		link: feedWithItems.feedUrl,
 		image: "https://sill.social/favicon-96x96.png",
 		favicon: "https://sill.social/favicon-96x96.png",
-		copyright: "All rights reserved 2024, Sill",
+		copyright: "",
 		updated: feedWithItems.items[0].pubDate,
 		generator: "Sill",
 		feedLinks: {

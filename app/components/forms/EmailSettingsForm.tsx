@@ -17,6 +17,8 @@ import type { digestSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email.add";
 import SubmitButton from "./SubmitButton";
 import CheckboxField from "./CheckboxField";
+import CopyLink from "../linkPosts/CopyLink";
+import ErrorCallout from "./ErrorCallout";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
@@ -64,6 +66,27 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					Sill's paid plan in the future.
 				</Callout.Text>
 			</Callout.Root>
+			{currentSettings?.digestType === "rss" && (
+				<Box mb="4">
+					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
+						RSS URL:
+					</Text>
+					<TextField.Root
+						type="url"
+						name="rssUrl"
+						id="rssUrl"
+						value={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+						readOnly
+					>
+						<TextField.Slot />
+						<TextField.Slot>
+							<CopyLink
+								url={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+							/>
+						</TextField.Slot>
+					</TextField.Root>
+				</Box>
+			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				{fetcher.data?.result?.status === "success" && (
 					<Box mb="4">
@@ -82,21 +105,8 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 						<RadioGroup.Item value="email">Email</RadioGroup.Item>
 						<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
 					</RadioGroup.Root>
-					{currentSettings?.digestType === "rss" && (
-						<Box mb="4">
-							<Text as="label" size="2" htmlFor="rssUrl" mr="2">
-								RSS URL:
-							</Text>
-							<TextField.Root
-								type="url"
-								name="rssUrl"
-								id="rssUrl"
-								value={`https://sill.social/digest/${currentSettings?.userId}.rss`}
-								readOnly
-							>
-								<TextField.Slot />
-							</TextField.Root>
-						</Box>
+					{fields.digestType.errors && (
+						<ErrorCallout error={fields.digestType.errors[0]} />
 					)}
 					<Box my="4">
 						<Text as="label" size="2" htmlFor="time">
@@ -122,6 +132,9 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 								})}
 							</Select.Content>
 						</Select.Root>
+						{fields.time.errors && (
+							<ErrorCallout error={fields.time.errors[0]} />
+						)}
 					</Box>
 					<Box my="4">
 						<CheckboxField
@@ -139,7 +152,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					</Box>
 					<Box my="4">
 						<Text as="label" size="2" htmlFor="topAmount">
-							<strong>{topAmountValue}</strong> links per email
+							<strong>{topAmountValue}</strong> links per Daily Digest
 						</Text>
 						<Slider
 							min={1}
@@ -152,22 +165,18 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 
 					<Flex gap="2" mt="4">
 						<SubmitButton label="Save" size="2" />
-						{currentSettings && (
-							<Form
-								method="DELETE"
-								action="/email/delete"
-								onSubmit={() => setSelectedHour(undefined)}
-							>
-								<SubmitButton
-									color="red"
-									label="Turn off daily digest"
-									size="2"
-								/>
-							</Form>
-						)}
 					</Flex>
 				</Box>
 			</fetcher.Form>
+			{currentSettings && (
+				<Form
+					method="DELETE"
+					action="/email/delete"
+					onSubmit={() => setSelectedHour(undefined)}
+				>
+					<SubmitButton color="red" label="Turn off daily digest" size="2" />
+				</Form>
+			)}
 		</Box>
 	);
 };

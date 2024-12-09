@@ -17,7 +17,7 @@ export const EmailSettingsSchema = z.object({
 	hideReposts: z.boolean().default(false),
 	splitServices: z.boolean().default(false),
 	topAmount: z.number().default(10),
-	digestType: z.string().default("email"),
+	digestType: z.string(),
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {

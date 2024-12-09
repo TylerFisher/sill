@@ -15,6 +15,7 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
 
@@ -192,14 +193,13 @@ export const digestRssFeed = pgTable("digest_rss_feed", {
 		.references(() => user.id, { onDelete: "cascade" }),
 });
 
-export const digestRssFeedItem = pgTable("digest_rss_feed_item", {
+export const digestItem = pgTable("digest_item", {
 	id: uuid().primaryKey().notNull(),
-	feedId: uuid()
-		.notNull()
-		.references(() => digestRssFeed.id, { onDelete: "cascade" }),
+	feedId: uuid().references(() => digestRssFeed.id, { onDelete: "cascade" }),
 	title: text().notNull(),
 	description: text(),
 	html: text(),
+	json: json().$type<MostRecentLinkPosts[]>(),
 	pubDate: timestamp({ precision: 3, mode: "date" }).notNull(),
 });
 
@@ -654,16 +654,13 @@ export const digestRssFeedRelations = relations(
 			fields: [digestRssFeed.userId],
 			references: [user.id],
 		}),
-		items: many(digestRssFeedItem),
+		items: many(digestItem),
 	}),
 );
 
-export const digestRssFeedItemRelations = relations(
-	digestRssFeedItem,
-	({ one }) => ({
-		feed: one(digestRssFeed, {
-			fields: [digestRssFeedItem.feedId],
-			references: [digestRssFeed.id],
-		}),
+export const digestItemRelations = relations(digestItem, ({ one }) => ({
+	feed: one(digestRssFeed, {
+		fields: [digestItem.feedId],
+		references: [digestRssFeed.id],
 	}),
-);
+}));

@@ -1,11 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
-import {
-	digestRssFeed,
-	digestRssFeedItem,
-	user,
-} from "~/drizzle/schema.server";
+import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
 import { renderReactEmail } from "~/utils/email.server";
 import {
@@ -144,11 +140,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}
 
 		const html = renderToString(<TopLinks links={links} name={rssUser.name} />);
-		await db.insert(digestRssFeedItem).values({
+		await db.insert(digestItem).values({
 			id: uuidv7(),
 			feedId: rssFeed.id,
 			title: "Your top links for today",
 			html,
+			json: links,
 			description: "Your top links for today",
 			pubDate: new Date(),
 		});
