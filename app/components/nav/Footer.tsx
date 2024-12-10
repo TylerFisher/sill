@@ -14,7 +14,8 @@ const Footer = ({
 	return (
 		<Box className={styles.footer}>
 			<Flex gap="2" direction="row" align="center" wrap="wrap">
-				{location.pathname.includes("/links") && (
+				{(location.pathname.includes("/links") ||
+					location.pathname.includes("/digest")) && (
 					<>
 						<LayoutSwitch userPreference={layout} id={layoutFormId} /> ·
 					</>

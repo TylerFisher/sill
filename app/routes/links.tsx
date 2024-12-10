@@ -323,13 +323,14 @@ export const LinkPost = ({
 				linkPost={linkPost}
 				instance={instance}
 				bsky={bsky}
+				layout={layout}
 				autoExpand={location.hash.substring(1) === linkPost.link?.id}
 			/>
-		<Separator
-			my={layout === "dense" ? "5" : "7"}
-			size="4"
-			orientation="horizontal"
-		/>
+			<Separator
+				my={layout === "dense" ? "5" : "7"}
+				size="4"
+				orientation="horizontal"
+			/>
 		</div>
 	);
 };

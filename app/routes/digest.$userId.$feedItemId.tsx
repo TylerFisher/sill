@@ -11,6 +11,7 @@ import { requireUserId } from "~/utils/auth.server";
 import { LinkPost } from "./links";
 import Layout from "~/components/nav/Layout";
 import { Heading } from "@radix-ui/themes";
+import { useLayout } from "./resources.layout-switch";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -75,6 +76,7 @@ const DigestFeedItem = () => {
 		month: "long",
 		day: "numeric",
 	}).format(new Date(pubDate));
+	const layout = useLayout();
 
 	return (
 		<Layout>
@@ -86,7 +88,12 @@ const DigestFeedItem = () => {
 			</Heading>
 			{links?.map((link) => (
 				<div key={link.link?.id} id={link.link?.id}>
-					<LinkPost linkPost={link} instance={instance} bsky={bsky} />
+					<LinkPost
+						linkPost={link}
+						instance={instance}
+						bsky={bsky}
+						layout={layout}
+					/>
 				</div>
 			))}
 		</Layout>
