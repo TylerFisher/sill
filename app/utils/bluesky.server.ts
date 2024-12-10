@@ -505,7 +505,7 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			// if we already have data
 			if (existingLink?.description) {
 				return {
-					uri: existingLink.url,
+					uri: normalizeLink(existingLink.url),
 					title: existingLink.title,
 					imageUrl: existingLink.imageUrl,
 					description: existingLink.description,
