@@ -5,7 +5,6 @@ import { db } from "~/drizzle/db.server";
 import { mastodonAccount, mastodonInstance } from "~/drizzle/schema.server";
 import { getUserId } from "~/utils/auth.server";
 import { getAccessToken } from "~/utils/mastodon.server";
-import { mastodonFetchQueue } from "~/utils/queue.server";
 import { getInstanceCookie } from "~/utils/session.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -35,10 +34,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		tokenType: tokenData.token_type,
 		instanceId: dbInstance.id,
 		userId: userId,
-	});
-
-	mastodonFetchQueue.add(`${userId}-mastodon-fetch`, {
-		userId,
 	});
 
 	return redirect("/download?service=Mastodon");

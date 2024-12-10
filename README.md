@@ -8,7 +8,7 @@ You can find the official production version of Sill at [sill.social](https://si
 
 ## How it works
 
-Sill is a [Remix](https://remix.run) application with a [Redis](https://redis.io) cache layer and a [Postgres](https://www.postgresql.org) database. 
+Sill is a [Remix](https://remix.run) application with a [Postgres](https://www.postgresql.org) database. 
 
 ## Prerequisites
 

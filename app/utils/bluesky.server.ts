@@ -476,8 +476,6 @@ export const getLinksFromBluesky = async (
 	// 		return !url.pathname.endsWith(".pdf");
 	// 	});
 
-	// await linksQueue.add("fetchMetadata", { links: linksToFetch });
-
 	return processedResults;
 };
 
