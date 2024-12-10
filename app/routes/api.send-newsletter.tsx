@@ -1,14 +1,18 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
+import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
+import RSSLinks from "~/components/rss/RSSLinks";
 import { renderReactEmail } from "~/utils/email.server";
 import {
 	filterLinkOccurrences,
 	type MostRecentLinkPosts,
 } from "~/utils/links.server";
 import { Resend } from "resend";
+import { renderToString } from "react-dom/server";
+import { uuidv7 } from "uuidv7-js";
+import { preview, subject } from "~/utils/digestText";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -29,22 +33,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (token !== process.env.CRON_API_KEY) {
 		throw new Response("Forbidden", { status: 403 });
 	}
-	const scheduledEmails = await db.query.emailSettings.findMany();
-	const emails = await Promise.all(
-		scheduledEmails.map(async (schedule) => {
+
+	const requestUrl = new URL(request.url);
+	const baseUrl = `${requestUrl.origin}/digest`;
+
+	const scheduledDigests = await db.query.digestSettings.findMany();
+	const digests = await Promise.all(
+		scheduledDigests.map(async (digest) => {
 			const currentHourUTC = new Date().getUTCHours();
 			if (
-				Number.parseInt(schedule.scheduledTime.split(":")[0]) === currentHourUTC
+				Number.parseInt(digest.scheduledTime.split(":")[0]) === currentHourUTC
 			) {
-				return schedule;
+				return digest;
 			}
 		}),
 	);
 
-	const validEmails = emails.filter((email) => email !== undefined);
+	const emailsToSend = digests
+		.filter((digest) => digest !== undefined)
+		.filter((digest) => digest.digestType === "email");
 
 	const emailBodies: Email[] = [];
-	for (const email of validEmails) {
+	for (const email of emailsToSend) {
 		const emailUser = await db.query.user.findFirst({
 			where: eq(user.id, email.userId),
 		});
@@ -75,15 +85,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}
 		}
 
+		const digestId = uuidv7();
+		const digestUrl = `${baseUrl}/${emailUser.id}/${digestId}`;
+
 		const emailBody = {
 			from: "Sill <noreply@mail.sill.social>",
 			to: emailUser.email,
-			subject: "Your top links for today",
+			subject: subject,
 			...(await renderReactEmail(
-				<TopLinks links={links} name={emailUser.name} />,
+				<TopLinks links={links} name={emailUser.name} digestUrl={digestUrl} />,
 			)),
 		};
 		emailBodies.push(emailBody);
+
+		await db.insert(digestItem).values({
+			id: digestId,
+			title: subject,
+			html: emailBody.html,
+			json: links,
+			description: preview(links),
+			pubDate: new Date(),
+			userId: emailUser.id,
+		});
 	}
 
 	try {
@@ -96,35 +119,61 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		}, 1000);
 	}
 
-	// for (let i = 0; i < validEmails.length; i++) {
-	// 	const email = validEmails[i];
+	const rssToBuild = digests
+		.filter((digest) => digest !== undefined)
+		.filter((digest) => digest.digestType === "rss");
 
-	// 	const emailUser = await db.query.user.findFirst({
-	// 		where: eq(user.id, email.userId),
-	// 	});
+	for (const rss of rssToBuild) {
+		const rssUser = await db.query.user.findFirst({
+			where: eq(user.id, rss.userId),
+		});
 
-	// 	if (!emailUser) {
-	// 		throw new Error("Couldn't find user for email");
-	// 	}
+		const rssFeed = await db.query.digestRssFeed.findFirst({
+			where: eq(digestRssFeed.userId, rss.userId),
+		});
 
-	// 	let links: MostRecentLinkPosts[] = [];
-	// 	try {
-	// 		links = await filterLinkOccurrences({
-	// 			userId: emailUser.id,
-	// 			fetch: true,
-	// 		});
-	// 	} catch (error) {
-	// 		console.error("Failed to fetch links for :", error);
-	// 	}
+		if (!rssUser || !rssFeed) {
+			throw new Error("Couldn't find rss feed for user");
+		}
 
-	// 	const response = await sendEmail({
-	// 		to: emailUser.email,
-	// 		subject: "Your top links for today",
-	// 		react: <TopLinks links={links} name={emailUser.name} />,
-	// 	});
+		let links: MostRecentLinkPosts[] = [];
+		try {
+			links = await filterLinkOccurrences({
+				userId: rssUser.id,
+				fetch: true,
+				hideReposts: rss.hideReposts,
+				limit: rss.topAmount,
+			});
+		} catch (error) {
+			console.error("Failed to fetch links for :", error);
+			// get what we have
+			try {
+				links = await filterLinkOccurrences({
+					userId: rssUser.id,
+					hideReposts: rss.hideReposts,
+					limit: rss.topAmount,
+				});
+			} catch (error) {
+				console.error("Second fetch failed to fetch links for :", error);
+			}
+		}
 
-	// 	emailResponses.push(response);
-	// }
+		const digestId = uuidv7();
+		const digestUrl = `${baseUrl}/${rssUser.id}/${digestId}`;
+		const html = renderToString(
+			<RSSLinks links={links} name={rssUser.name} digestUrl={digestUrl} />,
+		);
+		await db.insert(digestItem).values({
+			id: digestId,
+			feedId: rssFeed.id,
+			title: subject,
+			html,
+			json: links,
+			description: preview(links),
+			pubDate: new Date(),
+			userId: rssUser.id,
+		});
+	}
 
 	return Response.json({});
 };

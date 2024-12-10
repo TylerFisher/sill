@@ -1,16 +1,27 @@
 import { useForm, getFormProps, getInputProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Text, Select, Box, Callout, Slider, Flex } from "@radix-ui/themes";
+import {
+	Text,
+	Select,
+	Box,
+	Callout,
+	Slider,
+	Flex,
+	RadioGroup,
+	TextField,
+} from "@radix-ui/themes";
 import { useFetcher, Form } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
-import type { emailSettings } from "~/drizzle/schema.server";
+import type { digestSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email.add";
 import SubmitButton from "./SubmitButton";
 import CheckboxField from "./CheckboxField";
+import CopyLink from "../linkPosts/CopyLink";
+import ErrorCallout from "./ErrorCallout";
 
 interface EmailSettingsFormProps {
-	currentSettings: typeof emailSettings.$inferSelect | undefined;
+	currentSettings: typeof digestSettings.$inferSelect | undefined;
 }
 
 const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
@@ -45,38 +56,87 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
 	});
 	return (
-		<Box mt="3" mb="6">
+		<Box>
+			<Callout.Root mb="4">
+				<Callout.Icon>
+					<CircleAlert width="18" height="18" />
+				</Callout.Icon>
+				<Callout.Text size="2">
+					Daily Digests are free during Sill's beta period. This will be part of
+					Sill's paid plan in the future.
+				</Callout.Text>
+			</Callout.Root>
+			{currentSettings?.digestType === "rss" && (
+				<Box mb="4">
+					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
+						RSS URL:
+					</Text>
+					<TextField.Root
+						type="url"
+						name="rssUrl"
+						id="rssUrl"
+						value={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+						readOnly
+					>
+						<TextField.Slot />
+						<TextField.Slot>
+							<CopyLink
+								url={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+							/>
+						</TextField.Slot>
+					</TextField.Root>
+				</Box>
+			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				{fetcher.data?.result?.status === "success" && (
 					<Box mb="4">
-						<Text as="p">Your email settings have been saved.</Text>
+						<Text as="p">Your Daily Digest settings have been saved.</Text>
 					</Box>
 				)}
 				<Box>
-					<Text as="label" size="2" htmlFor="time">
-						Time
+					<Text as="label" size="2" htmlFor="digestType">
+						<strong>Format</strong>
 					</Text>
-					<br />
-					<Select.Root
-						{...getInputProps(fields.time, { type: "time" })}
-						value={selectedHour}
-						onValueChange={(value) => setSelectedHour(value)}
+					<RadioGroup.Root
+						defaultValue={currentSettings?.digestType}
+						name="digestType"
+						mb="4"
 					>
-						<Select.Trigger placeholder="Select a time" />
-						<Select.Content>
-							{hours.map((hour, index) => {
-								const localDate = new Date();
-								localDate.setHours(index, 0, 0, 0);
-								const utcHour = localDate.toISOString().substring(11, 16);
-								return (
-									<Select.Item key={hour} value={utcHour}>
-										{hour}
-									</Select.Item>
-								);
-							})}
-						</Select.Content>
-					</Select.Root>
-					<Box my="3">
+						<RadioGroup.Item value="email">Email</RadioGroup.Item>
+						<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
+					</RadioGroup.Root>
+					{fields.digestType.errors && (
+						<ErrorCallout error={fields.digestType.errors[0]} />
+					)}
+					<Box my="4">
+						<Text as="label" size="2" htmlFor="time">
+							<strong>Time</strong>
+						</Text>
+						<br />
+						<Select.Root
+							{...getInputProps(fields.time, { type: "time" })}
+							value={selectedHour}
+							onValueChange={(value) => setSelectedHour(value)}
+						>
+							<Select.Trigger placeholder="Select a time" />
+							<Select.Content>
+								{hours.map((hour, index) => {
+									const localDate = new Date();
+									localDate.setHours(index, 0, 0, 0);
+									const utcHour = localDate.toISOString().substring(11, 16);
+									return (
+										<Select.Item key={hour} value={utcHour}>
+											{hour}
+										</Select.Item>
+									);
+								})}
+							</Select.Content>
+						</Select.Root>
+						{fields.time.errors && (
+							<ErrorCallout error={fields.time.errors[0]} />
+						)}
+					</Box>
+					<Box my="4">
 						<CheckboxField
 							inputProps={{
 								name: fields.hideReposts.name,
@@ -85,14 +145,14 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							}}
 							labelProps={{
 								children: "Hide reposts",
-								htmlFor: fields.hideReposts.name,
+								htmlFor: fields.hideReposts.id,
 							}}
 							errors={fields.hideReposts.errors}
 						/>
 					</Box>
-					<Box my="3">
+					<Box my="4">
 						<Text as="label" size="2" htmlFor="topAmount">
-							<strong>{topAmountValue}</strong> links per email
+							<strong>{topAmountValue}</strong> links per Daily Digest
 						</Text>
 						<Slider
 							min={1}
@@ -105,31 +165,20 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 
 					<Flex gap="2" mt="4">
 						<SubmitButton label="Save" size="2" />
-						{selectedHour && (
-							<Form
-								method="DELETE"
-								action="/email/delete"
-								onSubmit={() => setSelectedHour(undefined)}
-							>
-								<SubmitButton
-									color="red"
-									label="Turn off daily email"
-									size="2"
-								/>
-							</Form>
-						)}
 					</Flex>
 				</Box>
 			</fetcher.Form>
-			<Callout.Root mt="4">
-				<Callout.Icon>
-					<CircleAlert width="18" height="18" />
-				</Callout.Icon>
-				<Callout.Text size="2">
-					Emails are free during Sill's beta period. This will be part of Sill's
-					paid plan in the future.
-				</Callout.Text>
-			</Callout.Root>
+			{currentSettings && (
+				<Box mt="4">
+					<Form
+						method="DELETE"
+						action="/email/delete"
+						onSubmit={() => setSelectedHour(undefined)}
+					>
+						<SubmitButton color="red" label="Turn off daily digest" size="2" />
+					</Form>
+				</Box>
+			)}
 		</Box>
 	);
 };

@@ -1,15 +1,17 @@
-import { Button, Hr, Link, Text } from "@react-email/components";
+import { Button, Heading, Hr, Link, Text } from "@react-email/components";
 import EmailHeading from "~/components/emails/Heading";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
+import { intro, linkPlug, outro, preview, title } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface TopLinksProps {
 	links: MostRecentLinkPosts[];
 	name: string | null;
+	digestUrl: string;
 }
 
-const TopLinks = ({ links, name }: TopLinksProps) => {
+const TopLinks = ({ links, name, digestUrl }: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -18,27 +20,27 @@ const TopLinks = ({ links, name }: TopLinksProps) => {
 	}).format(new Date());
 
 	return (
-		<EmailLayout preview="The top links from across your network">
-			<EmailHeading>Your Top Links for {today}</EmailHeading>
-			<Text style={lede}>
-				Hello{name ? ` ${name}` : ""}, here are your top ten links from the past
-				24 hours across your social networks.
-			</Text>
+		<EmailLayout preview={preview(links)}>
+			<Heading as="h1">{title}</Heading>
+			<Heading as="h3" style={date}>
+				{today}
+			</Heading>
+			<Text>{intro(name)}</Text>
+			<Text>{linkPlug(digestUrl)}</Text>
 			{links.map((linkPost, i) => (
 				<>
-					<LinkPost key={linkPost.link?.url} linkPost={linkPost} />
+					<LinkPost
+						key={linkPost.link?.url}
+						linkPost={linkPost}
+						digestUrl={digestUrl}
+					/>
 					{i < links.length - 1 && <Hr style={hr} />}
 				</>
 			))}
 			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>
-			<Text>
-				Feedback? Email{" "}
-				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>. Want to
-				stop getting these emails? Adjust your email settings{" "}
-				<Link href="https://sill.social/connect">here</Link>.
-			</Text>
+			<Text>{outro()}</Text>
 		</EmailLayout>
 	);
 };
@@ -58,7 +60,7 @@ const button = {
 	display: "block",
 };
 
-const lede = {
+const date = {
 	fontSize: "18px",
 	marginBottom: "20px",
 };

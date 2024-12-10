@@ -5,7 +5,7 @@ import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import { db } from "~/drizzle/db.server";
-import { emailSettings } from "~/drizzle/schema.server";
+import { digestSettings } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -15,8 +15,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		return redirect("/accounts/login");
 	}
 
-	const currentSettings = await db.query.emailSettings.findFirst({
-		where: eq(emailSettings.userId, userId),
+	const currentSettings = await db.query.digestSettings.findFirst({
+		where: eq(digestSettings.userId, userId),
 	});
 
 	return { currentSettings };
@@ -28,8 +28,8 @@ const EmailSettings = () => {
 	return (
 		<Layout>
 			<PageHeading
-				title="Email Settings"
-				dek="Sill can send you a daily email at a time of your choosing. Configure your email here."
+				title="Daily Digest Settings"
+				dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest here."
 			/>
 			<EmailSettingForm currentSettings={currentSettings} />
 		</Layout>

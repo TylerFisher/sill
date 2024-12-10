@@ -13,6 +13,7 @@ import {
 	Await,
 	useFetcher,
 	useLoaderData,
+	useLocation,
 	useSearchParams,
 } from "@remix-run/react";
 import { eq } from "drizzle-orm";
@@ -304,7 +305,7 @@ const Links = () => {
 	);
 };
 
-const LinkPost = ({
+export const LinkPost = ({
 	linkPost,
 	instance,
 	bsky,
@@ -314,20 +315,23 @@ const LinkPost = ({
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
-}) => (
-	<div>
-		<LinkPostRep
-			linkPost={linkPost}
-			instance={instance}
-			bsky={bsky}
-			layout={layout}
-		/>
+}) => {
+	const location = useLocation();
+	return (
+		<div>
+			<LinkPostRep
+				linkPost={linkPost}
+				instance={instance}
+				bsky={bsky}
+				autoExpand={location.hash.substring(1) === linkPost.link?.id}
+			/>
 		<Separator
 			my={layout === "dense" ? "5" : "7"}
 			size="4"
 			orientation="horizontal"
 		/>
-	</div>
-);
+		</div>
+	);
+};
 
 export default Links;
