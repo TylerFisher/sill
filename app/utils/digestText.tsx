@@ -30,3 +30,6 @@ export const linkPlug = (digestUrl: string) => (
 		<a href={digestUrl}>Sill</a>.
 	</>
 );
+
+export const firstFeedItem = (name: string | null) =>
+	`Welcome to Sill's Daily Digest${name ? `, ${name}` : ""}! We'll send your first Daily Digest at your scheduled time.`;
