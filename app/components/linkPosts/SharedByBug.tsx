@@ -1,5 +1,5 @@
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible";
-import { Avatar, Box, Button } from "@radix-ui/themes";
+import { Avatar, Button } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const SharedByBug = ({

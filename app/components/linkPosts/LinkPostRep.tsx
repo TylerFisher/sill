@@ -1,6 +1,5 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Avatar, Box, Button, Heading, Text } from "@radix-ui/themes";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Box } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import { useState } from "react";
 import LinkRep from "~/components/linkPosts/LinkRep";

@@ -3,7 +3,6 @@ import type { PropsWithChildren } from "react";
 import Header from "./Header";
 import styles from "./Layout.module.css";
 import Nav from "./Nav";
-import Footer from "./Footer";
 
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;
