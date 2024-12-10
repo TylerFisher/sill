@@ -9,8 +9,11 @@ import {
 	Flex,
 	RadioGroup,
 	TextField,
+	Badge,
+	Button,
+	Separator,
 } from "@radix-ui/themes";
-import { useFetcher, Form } from "@remix-run/react";
+import { useFetcher, Form, Link } from "@remix-run/react";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
 import type { digestSettings } from "~/drizzle/schema.server";
@@ -22,9 +25,13 @@ import ErrorCallout from "./ErrorCallout";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
+	email: string;
 }
 
-const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
+const EmailSettingForm = ({
+	currentSettings,
+	email,
+}: EmailSettingsFormProps) => {
 	const [selectedHour, setSelectedHour] = useState<string | undefined>(
 		currentSettings?.scheduledTime.substring(0, 5),
 	);
@@ -60,6 +67,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 		const period = i < 12 ? "a.m." : "p.m.";
 		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
 	});
+
 	return (
 		<Box>
 			<Callout.Root mb="4">
@@ -78,6 +86,25 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					</Text>
 				</Box>
 			)}
+			{currentSettings?.digestType === "email" && (
+				<Box mb="4">
+					<Text as="p" size="2" mb="4">
+						Your Daily Digest is currently set to be delivered at{" "}
+						<Badge>
+							{selectedHour &&
+								hours[
+									new Date(
+										`2000-01-01T${currentSettings.scheduledTime}Z`,
+									).getHours()
+								]}
+						</Badge>
+						, to <Badge>{email}</Badge>.
+					</Text>
+					<Link to="/accounts/change-email">
+						<Button size="1">Change your email</Button>
+					</Link>
+				</Box>
+			)}
 			{currentSettings?.digestType === "rss" && (
 				<Box mb="4">
 					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
@@ -91,18 +118,30 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 						readOnly
 					>
 						<TextField.Slot />
-						<TextField.Slot>
+						<TextField.Slot
+							style={{
+								position: "relative",
+								top: "1px",
+								marginRight: "8px",
+							}}
+						>
 							<CopyLink
 								url={`https://sill.social/digest/${currentSettings?.userId}.rss`}
+								textPositioning={{
+									position: "absolute",
+									top: "-28px",
+									left: "-.9em",
+								}}
 							/>
 						</TextField.Slot>
 					</TextField.Root>
 				</Box>
 			)}
+			<Separator size="4" my="4" />
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				<Box>
 					<Text as="label" size="2" htmlFor="digestType">
-						<strong>Format</strong>
+						<strong>Daily Digest delivery format</strong>
 					</Text>
 					<RadioGroup.Root
 						defaultValue={format}
@@ -121,7 +160,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 							<strong>Layout</strong>
 						</Text>
 						<RadioGroup.Root
-							defaultValue={currentSettings?.layout}
+							defaultValue={currentSettings?.layout || "default"}
 							name="layout"
 							mb="4"
 							disabled={format === "rss"}
@@ -150,7 +189,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 
 					<Box my="4">
 						<Text as="label" size="2" htmlFor="time">
-							<strong>Time</strong>
+							<strong>Time to deliver Daily Digest</strong>
 						</Text>
 						<br />
 						<Select.Root
@@ -184,7 +223,7 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 								defaultChecked: currentSettings?.hideReposts,
 							}}
 							labelProps={{
-								children: "Hide reposts",
+								children: "Hide reposts from top links calculation",
 								htmlFor: fields.hideReposts.id,
 							}}
 							errors={fields.hideReposts.errors}
