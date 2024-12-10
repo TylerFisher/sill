@@ -6,6 +6,7 @@ import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
+import { normalizeLink } from "./normalizeLink";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -229,7 +230,7 @@ const processMastodonLink = async (
 
 	const denormalized = {
 		id: uuidv7(),
-		linkUrl: card.url,
+		linkUrl: normalizeLink(card.url),
 		postText: original.content,
 		postDate: new Date(original.createdAt),
 		postType: postType.enumValues[1],

@@ -25,6 +25,7 @@ import {
 } from "./links.server";
 import ogs from "open-graph-scraper";
 import type { ListOption } from "~/components/forms/ListSwitch";
+import { normalizeLink } from "./normalizeLink";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;
@@ -311,7 +312,7 @@ const getDetectedLink = async (
 		}
 	} else {
 		detectedLink = {
-			uri: externalRecord.external.uri,
+			uri: normalizeLink(externalRecord.external.uri),
 			title: externalRecord.external.title,
 			description: externalRecord.external.description,
 			imageUrl: externalRecord.external.thumb,
@@ -511,7 +512,7 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 				};
 			}
 			foundLink = {
-				uri: segment.link.uri,
+				uri: normalizeLink(segment.link.uri),
 				title: "",
 				imageUrl: null,
 				description: null,
