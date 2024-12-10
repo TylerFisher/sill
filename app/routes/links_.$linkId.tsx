@@ -7,6 +7,7 @@ import { link, linkPostDenormalized } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 import { getMutePhrases } from "~/utils/links.server";
 import Layout from "~/components/nav/Layout";
+import { useLayout } from "./resources.layout-switch";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const linkId = params.linkId;
@@ -97,6 +98,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 export default function LinkRoute() {
 	const data = useLoaderData<typeof loader>();
+	const layout = useLayout();
 
 	return (
 		<Layout>
@@ -105,6 +107,7 @@ export default function LinkRoute() {
 				bsky={undefined}
 				linkPost={data}
 				autoExpand={true}
+				layout={layout}
 			/>
 		</Layout>
 	);

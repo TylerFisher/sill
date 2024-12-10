@@ -22,6 +22,7 @@ interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
 	instance: string | undefined;
 	bsky: string | undefined;
+	layout: "dense" | "default";
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
@@ -44,7 +45,7 @@ const XEmbed = ({ url }: { url: URL }) => {
 	);
 };
 
-const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
+const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 	if (!link) return null;
 	const url = new URL(link.url);
 	const host = url.host.replace("www.", "");
@@ -53,6 +54,7 @@ const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 	return (
 		<Card mb="5">
 			{link.imageUrl &&
+				layout === "default" &&
 				url.hostname !== "www.youtube.com" &&
 				url.hostname !== "youtu.be" && (
 					<Inset mb="4" className={styles.inset}>
@@ -86,7 +88,10 @@ const LinkRep = ({ link, instance, bsky }: LinkRepProps) => {
 					<XEmbed url={url} />
 				</Inset>
 			)}
-			<Box position="relative" mt={link.imageUrl ? "3" : "0"}>
+			<Box
+				position="relative"
+				mt={link.imageUrl && layout === "default" ? "3" : "0"}
+			>
 				<Flex align="center" mb="1">
 					<img
 						src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
