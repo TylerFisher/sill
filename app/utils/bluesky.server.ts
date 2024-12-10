@@ -311,7 +311,7 @@ const getDetectedLink = async (
 		}
 	} else {
 		detectedLink = {
-			uri: externalRecord.external.uri.toLocaleLowerCase(),
+			uri: externalRecord.external.uri,
 			title: externalRecord.external.title,
 			description: externalRecord.external.description,
 			imageUrl: externalRecord.external.thumb,
