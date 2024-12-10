@@ -10,6 +10,7 @@ import {
 import { requireUserId } from "~/utils/auth.server";
 import { LinkPost } from "./links";
 import Layout from "~/components/nav/Layout";
+import { Heading } from "@radix-ui/themes";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
@@ -24,6 +25,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 		throw new Error("Feed item ID is required");
 	}
 
+	const feedItem = await db.query.digestItem.findFirst({
+		where: eq(digestItem.id, feedItemId),
+	});
+
+	if (!feedItem || !feedItem.json) {
+		throw new Error("Feed item not found");
+	}
+
+	if (feedItem.userId !== userId) {
+		throw new Error("Unauthorized");
+	}
+
 	const bsky = await db.query.blueskyAccount.findFirst({
 		where: eq(blueskyAccount.userId, userId),
 	});
@@ -34,14 +47,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 			mastodonInstance: true,
 		},
 	});
-
-	const feedItem = await db.query.digestItem.findFirst({
-		where: eq(digestItem.id, feedItemId),
-	});
-
-	if (!feedItem || !feedItem.json) {
-		throw new Error("Feed item not found");
-	}
 
 	for (const item of feedItem.json) {
 		if (!item.posts) {
@@ -56,23 +61,33 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 	return {
 		links: feedItem.json,
-		bsky,
+		pubDate: feedItem.pubDate,
+		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
 	};
 };
 
 const DigestFeedItem = () => {
-	const { links, bsky, instance } = useLoaderData<typeof loader>();
+	const { links, bsky, instance, pubDate } = useLoaderData<typeof loader>();
+	const date = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(new Date(pubDate));
 
 	return (
 		<Layout>
+			<Heading as="h2" mt="4" size="6">
+				Your Sill Daily Digest
+			</Heading>
+			<Heading as="h3" size="4" mb="6" color="yellow">
+				{date}
+			</Heading>
 			{links?.map((link) => (
-				<LinkPost
-					key={link.link?.id}
-					linkPost={link}
-					instance={instance}
-					bsky={bsky}
-				/>
+				<div key={link.link?.id} id={link.link?.id}>
+					<LinkPost linkPost={link} instance={instance} bsky={bsky} />
+				</div>
 			))}
 		</Layout>
 	);

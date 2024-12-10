@@ -169,13 +169,15 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 				</Box>
 			</fetcher.Form>
 			{currentSettings && (
-				<Form
-					method="DELETE"
-					action="/email/delete"
-					onSubmit={() => setSelectedHour(undefined)}
-				>
-					<SubmitButton color="red" label="Turn off daily digest" size="2" />
-				</Form>
+				<Box mt="4">
+					<Form
+						method="DELETE"
+						action="/email/delete"
+						onSubmit={() => setSelectedHour(undefined)}
+					>
+						<SubmitButton color="red" label="Turn off daily digest" size="2" />
+					</Form>
+				</Box>
 			)}
 		</Box>
 	);

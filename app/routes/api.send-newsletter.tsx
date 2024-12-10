@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
+import RSSLinks from "~/components/rss/RSSLinks";
 import { renderReactEmail } from "~/utils/email.server";
 import {
 	filterLinkOccurrences,
@@ -11,6 +12,7 @@ import {
 import { Resend } from "resend";
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
+import { preview, subject } from "~/utils/digestText";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -31,6 +33,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	if (token !== process.env.CRON_API_KEY) {
 		throw new Response("Forbidden", { status: 403 });
 	}
+
+	const requestUrl = new URL(request.url);
+	const baseUrl = `${requestUrl.origin}/digest`;
+
 	const scheduledDigests = await db.query.digestSettings.findMany();
 	const digests = await Promise.all(
 		scheduledDigests.map(async (digest) => {
@@ -79,15 +85,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}
 		}
 
+		const digestId = uuidv7();
+		const digestUrl = `${baseUrl}/${emailUser.id}/${digestId}`;
+
 		const emailBody = {
 			from: "Sill <noreply@mail.sill.social>",
 			to: emailUser.email,
-			subject: "Your top links for today",
+			subject: subject,
 			...(await renderReactEmail(
-				<TopLinks links={links} name={emailUser.name} />,
+				<TopLinks links={links} name={emailUser.name} digestUrl={digestUrl} />,
 			)),
 		};
 		emailBodies.push(emailBody);
+
+		await db.insert(digestItem).values({
+			id: digestId,
+			title: subject,
+			html: emailBody.html,
+			json: links,
+			description: preview(links),
+			pubDate: new Date(),
+			userId: emailUser.id,
+		});
 	}
 
 	try {
@@ -139,15 +158,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			}
 		}
 
-		const html = renderToString(<TopLinks links={links} name={rssUser.name} />);
+		const digestId = uuidv7();
+		const digestUrl = `${baseUrl}/${rssUser.id}/${digestId}`;
+		const html = renderToString(
+			<RSSLinks links={links} name={rssUser.name} digestUrl={digestUrl} />,
+		);
 		await db.insert(digestItem).values({
-			id: uuidv7(),
+			id: digestId,
 			feedId: rssFeed.id,
-			title: "Your top links for today",
+			title: subject,
 			html,
 			json: links,
-			description: "Your top links for today",
+			description: preview(links),
 			pubDate: new Date(),
+			userId: rssUser.id,
 		});
 	}
 

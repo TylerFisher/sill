@@ -4,7 +4,10 @@ import { db } from "~/drizzle/db.server";
 import { digestRssFeed, digestItem } from "~/drizzle/schema.server";
 import { Feed } from "feed";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+	const requestUrl = new URL(request.url);
+	const baseUrl = `${requestUrl.origin}/digest`;
+
 	const userId = params.userId;
 
 	if (!userId) {
@@ -28,7 +31,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 	const feed = new Feed({
 		title: feedWithItems.title,
 		description: feedWithItems.description || undefined,
-		id: feedWithItems.id,
+		id: feedWithItems.feedUrl,
 		link: feedWithItems.feedUrl,
 		image: "https://sill.social/favicon-96x96.png",
 		favicon: "https://sill.social/favicon-96x96.png",
@@ -36,15 +39,16 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 		updated: feedWithItems.items[0].pubDate,
 		generator: "Sill",
 		feedLinks: {
-			rss: `https://sill.social/digest/${userId}.rss`,
+			rss: `${baseUrl}/${userId}.rss`,
 		},
 	});
 
 	for (const item of feedWithItems.items) {
+		const digestUrl = `${baseUrl}/${userId}/${item.id}`;
 		feed.addItem({
 			title: item.title,
-			id: item.id,
-			link: `https://sill.social/digest/${userId}/${item.id}`,
+			id: digestUrl,
+			link: digestUrl,
 			description: item.description || undefined,
 			content: item.html || undefined,
 			date: item.pubDate,

@@ -1,4 +1,4 @@
-import { gte, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
 	boolean,
 	foreignKey,
@@ -195,12 +195,15 @@ export const digestRssFeed = pgTable("digest_rss_feed", {
 
 export const digestItem = pgTable("digest_item", {
 	id: uuid().primaryKey().notNull(),
-	feedId: uuid().references(() => digestRssFeed.id, { onDelete: "cascade" }),
 	title: text().notNull(),
 	description: text(),
 	html: text(),
 	json: json().$type<MostRecentLinkPosts[]>(),
 	pubDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+	feedId: uuid().references(() => digestRssFeed.id, { onDelete: "cascade" }),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {
@@ -505,6 +508,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	emailTokens: many(emailToken),
 	mutePhrases: many(mutePhrase),
 	digestSettings: one(digestSettings),
+	digestItems: many(digestItem),
 }));
 
 export const linkRelations = relations(link, ({ many }) => ({
@@ -662,5 +666,9 @@ export const digestItemRelations = relations(digestItem, ({ one }) => ({
 	feed: one(digestRssFeed, {
 		fields: [digestItem.feedId],
 		references: [digestRssFeed.id],
+	}),
+	user: one(user, {
+		fields: [digestItem.userId],
+		references: [user.id],
 	}),
 }));

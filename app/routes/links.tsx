@@ -15,6 +15,7 @@ import {
 	Form,
 	useFetcher,
 	useLoaderData,
+	useLocation,
 	useSearchParams,
 } from "@remix-run/react";
 import { eq } from "drizzle-orm";
@@ -336,11 +337,19 @@ export const LinkPost = ({
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
-}) => (
-	<div>
-		<LinkPostRep linkPost={linkPost} instance={instance} bsky={bsky} />
-		<Separator my="7" size="4" orientation="horizontal" />
-	</div>
-);
+}) => {
+	const location = useLocation();
+	return (
+		<div>
+			<LinkPostRep
+				linkPost={linkPost}
+				instance={instance}
+				bsky={bsky}
+				autoExpand={location.hash.substring(1) === linkPost.link?.id}
+			/>
+			<Separator my="7" size="4" orientation="horizontal" />
+		</div>
+	);
+};
 
 export default Links;
