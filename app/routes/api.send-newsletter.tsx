@@ -93,7 +93,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			to: emailUser.email,
 			subject: subject,
 			...(await renderReactEmail(
-				<TopLinks links={links} name={emailUser.name} digestUrl={digestUrl} />,
+				<TopLinks
+					links={links}
+					name={emailUser.name}
+					digestUrl={digestUrl}
+					layout={email.layout}
+				/>,
 			)),
 		};
 		emailBodies.push(emailBody);

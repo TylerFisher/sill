@@ -3,6 +3,7 @@ import { type ActionFunctionArgs, data } from "@remix-run/node";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import {
+	digestLayout,
 	digestRssFeed,
 	digestSettings,
 	digestType,
@@ -17,11 +18,14 @@ export const EmailSettingsSchema = z.object({
 	hideReposts: z.boolean().default(false),
 	splitServices: z.boolean().default(false),
 	topAmount: z.number().default(10),
+	layout: z.string().default("default"),
 	digestType: z.string(),
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const userId = await requireUserId(request);
+	const requestUrl = new URL(request.url);
+	const baseUrl = `${requestUrl.origin}/digest`;
 
 	const existingUser = await db.query.user.findFirst({
 		where: eq(user.id, userId),
@@ -48,6 +52,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		(value) => value === submission.value.digestType,
 	);
 
+	const submittedLayout = digestLayout.enumValues.find(
+		(value) => value === submission.value.layout,
+	);
+
 	const settings = await db
 		.insert(digestSettings)
 		.values({
@@ -57,6 +65,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			hideReposts: submission.value.hideReposts,
 			splitServices: submission.value.splitServices,
 			topAmount: submission.value.topAmount,
+			layout: submittedLayout,
 			digestType: submittedDigestType,
 		})
 		.onConflictDoUpdate({
@@ -66,6 +75,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				hideReposts: submission.value.hideReposts,
 				splitServices: submission.value.splitServices,
 				topAmount: submission.value.topAmount,
+				layout: submittedLayout,
 				digestType: submittedDigestType,
 			},
 		})
@@ -83,14 +93,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				id: uuidv7(),
 				userId,
 				digestSettings: settings[0].id,
-				feedUrl: `https://sill.social/digest/${userId}.rss`,
+				feedUrl: `${baseUrl}/digest/${userId}.rss`,
 				title: `Sill Digest for ${existingUser?.name}`,
 				description: "Daily links from your personal social network",
 			})
 			.onConflictDoUpdate({
 				target: [digestRssFeed.digestSettings],
 				set: {
-					feedUrl: `https://sill.social/digest/${userId}.rss`,
+					feedUrl: `${baseUrl}/digest/${userId}.rss`,
 					title: `Sill Digest for ${existingUser?.name}`,
 					description: "Daily links from your personal social network",
 				},

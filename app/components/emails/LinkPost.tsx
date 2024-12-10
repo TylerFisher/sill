@@ -12,9 +12,10 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 interface LinkPostProps {
 	linkPost: MostRecentLinkPosts;
 	digestUrl: string;
+	layout: "default" | "dense";
 }
 
-const LinkPost = ({ linkPost, digestUrl }: LinkPostProps) => {
+const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 	const isProduction = process.env.NODE_ENV === "production";
 
 	if (!linkPost.link || !linkPost.posts) return null;
@@ -28,7 +29,7 @@ const LinkPost = ({ linkPost, digestUrl }: LinkPostProps) => {
 		<div style={container}>
 			<Link href={link.url}>
 				<Section style={wrapper}>
-					{link.imageUrl && (
+					{link.imageUrl && layout === "default" && (
 						<Row>
 							<Column style={imgWrapper}>
 								<Img src={link.imageUrl} style={img} />

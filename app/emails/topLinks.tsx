@@ -1,7 +1,7 @@
-import { Button, Heading, Hr, Link, Text } from "@react-email/components";
-import EmailHeading from "~/components/emails/Heading";
+import { Button, Heading, Hr, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
+import type { digestLayout } from "~/drizzle/schema.server";
 import { intro, linkPlug, outro, preview, title } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
@@ -9,9 +9,10 @@ interface TopLinksProps {
 	links: MostRecentLinkPosts[];
 	name: string | null;
 	digestUrl: string;
+	layout: "default" | "dense";
 }
 
-const TopLinks = ({ links, name, digestUrl }: TopLinksProps) => {
+const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -33,8 +34,9 @@ const TopLinks = ({ links, name, digestUrl }: TopLinksProps) => {
 						key={linkPost.link?.url}
 						linkPost={linkPost}
 						digestUrl={digestUrl}
+						layout={layout}
 					/>
-					{i < links.length - 1 && <Hr style={hr} />}
+					{i < links.length - 1 && <Hr style={hr(layout)} />}
 				</>
 			))}
 			<Button href="https://sill.social/links" style={button}>
@@ -45,11 +47,11 @@ const TopLinks = ({ links, name, digestUrl }: TopLinksProps) => {
 	);
 };
 
-const hr = {
-	margin: "40px 0",
+const hr = (layout: "default" | "dense") => ({
+	margin: layout === "default" ? "40px 0" : "30px 0",
 	border: "none",
 	borderTop: "1px solid #D9D9E0",
-};
+});
 
 const button = {
 	margin: "40px 0",

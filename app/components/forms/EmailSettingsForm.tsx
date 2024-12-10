@@ -31,6 +31,11 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 	const [topAmountValue, setTopAmountValue] = useState<number[]>([
 		currentSettings?.topAmount || 10,
 	]);
+
+	const [format, setFormat] = useState<string | undefined>(
+		currentSettings?.digestType || "email",
+	);
+
 	const fetcher = useFetcher<typeof action>();
 	const [form, fields] = useForm({
 		lastResult: fetcher.data?.result,
@@ -66,6 +71,13 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					Sill's paid plan in the future.
 				</Callout.Text>
 			</Callout.Root>
+			{fetcher.data?.result?.status === "success" && (
+				<Box mb="4">
+					<Text as="p">
+						<strong>Your Daily Digest settings have been saved.</strong>
+					</Text>
+				</Box>
+			)}
 			{currentSettings?.digestType === "rss" && (
 				<Box mb="4">
 					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
@@ -88,19 +100,15 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 				</Box>
 			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
-				{fetcher.data?.result?.status === "success" && (
-					<Box mb="4">
-						<Text as="p">Your Daily Digest settings have been saved.</Text>
-					</Box>
-				)}
 				<Box>
 					<Text as="label" size="2" htmlFor="digestType">
 						<strong>Format</strong>
 					</Text>
 					<RadioGroup.Root
-						defaultValue={currentSettings?.digestType}
+						defaultValue={format}
 						name="digestType"
 						mb="4"
+						onValueChange={(value) => setFormat(value)}
 					>
 						<RadioGroup.Item value="email">Email</RadioGroup.Item>
 						<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
@@ -108,6 +116,38 @@ const EmailSettingForm = ({ currentSettings }: EmailSettingsFormProps) => {
 					{fields.digestType.errors && (
 						<ErrorCallout error={fields.digestType.errors[0]} />
 					)}
+					<Box mb="4">
+						<Text as="label" size="2" htmlFor="digestType">
+							<strong>Layout</strong>
+						</Text>
+						<RadioGroup.Root
+							defaultValue={currentSettings?.layout}
+							name="layout"
+							mb="4"
+							disabled={format === "rss"}
+						>
+							<RadioGroup.Item value="default">
+								Default (with images, comfortable spacing)
+							</RadioGroup.Item>
+							<RadioGroup.Item value="dense">
+								Dense (no images, tighter spacing)
+							</RadioGroup.Item>
+						</RadioGroup.Root>
+						{fields.layout.errors && (
+							<ErrorCallout error={fields.layout.errors[0]} />
+						)}
+						{format === "rss" && (
+							<Callout.Root mb="4">
+								<Callout.Icon>
+									<CircleAlert width="18" height="18" />
+								</Callout.Icon>
+								<Callout.Text size="2">
+									Layout configuration is only available for email digests.
+								</Callout.Text>
+							</Callout.Root>
+						)}
+					</Box>
+
 					<Box my="4">
 						<Text as="label" size="2" htmlFor="time">
 							<strong>Time</strong>
