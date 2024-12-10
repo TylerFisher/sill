@@ -1,20 +1,16 @@
-import * as Collapsible from "@radix-ui/react-collapsible";
 import { Box, Button, Heading, Select, Text } from "@radix-ui/themes";
 import { Form, useSearchParams } from "@remix-run/react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
 import type { list } from "~/drizzle/schema.server";
-import styles from "./LinkFilters.module.css";
 import SearchField from "./SearchField";
 
 const LinkFilters = ({
 	showService,
 	lists,
 }: { showService: boolean; lists: (typeof list.$inferSelect)[] }) => {
-	const [open, setOpen] = useState(false);
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	function setSearchParam(param: string, value: string) {
@@ -36,19 +32,19 @@ const LinkFilters = ({
 			buttons: [
 				{
 					value: "3h",
-					label: "3h",
+					label: "3 hours",
 				},
 				{
 					value: "6h",
-					label: "6h",
+					label: "6 hours",
 				},
 				{
 					value: "12h",
-					label: "12h",
+					label: "12 hours",
 				},
 				{
 					value: "24h",
-					label: "24h",
+					label: "24 hours",
 				},
 			],
 		},
@@ -105,6 +101,27 @@ const LinkFilters = ({
 			],
 		});
 
+	if (lists.length > 0) {
+		const listOptions = [
+			{
+				value: "all",
+				label: "All",
+			},
+		];
+		listOptions.push(
+			...lists.map((list) => ({
+				value: list.id,
+				label: list.name,
+			})),
+		);
+		buttonGroups.push({
+			heading: "List",
+			defaultValue: searchParams.get("list") || "all",
+			param: "list",
+			buttons: listOptions,
+		});
+	}
+
 	return (
 		<>
 			<Box mt="6">
@@ -120,38 +137,12 @@ const LinkFilters = ({
 						param={group.param}
 						buttonData={group.buttons}
 						setter={setSearchParam}
-						variantCheck={group.defaultValue}
+						defaultValue={group.defaultValue}
 					/>
 				))}
 			</Box>
-
-			{lists.length > 0 && (
-				<Box my="3">
-					<Heading
-						mb="1"
-						size="1"
-						as="h5"
-						style={{
-							textTransform: "uppercase",
-						}}
-					>
-						Lists
-					</Heading>
-					<Select.Root
-						value={searchParams.get("list") || "all"}
-						onValueChange={(value) => setSearchParam("list", value)}
-					>
-						<Select.Trigger placeholder="Select a list" />
-						<Select.Content>
-							<Select.Item value="all">All</Select.Item>
-							{lists.map((list) => (
-								<Select.Item key={list.uri} value={list.id}>
-									{list.name}
-								</Select.Item>
-							))}
-						</Select.Content>
-					</Select.Root>
-				</Box>
+			{searchParams.size > 0 && (
+				<Button onClick={clearSearchParams}>Reset to defaults</Button>
 			)}
 		</>
 	);

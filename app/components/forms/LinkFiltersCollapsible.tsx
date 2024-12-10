@@ -10,7 +10,8 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 	return (
 		<Box
 			px="4"
-			py="2"
+			pt="2"
+			pb={open ? "5" : "2"}
 			mb={{
 				initial: "0",
 				md: "2",

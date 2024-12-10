@@ -6,6 +6,7 @@ import { useState } from "react";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
+import SharedByBug from "./SharedByBug";
 
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
@@ -44,32 +45,11 @@ const LinkPostRep = ({
 				open={open}
 				onOpenChange={setOpen}
 			>
-				<Collapsible.Trigger asChild>
-					<Button variant="soft" size="2">
-						{uniqueActors.slice(0, 3).map((actor, i) => (
-							<Avatar
-								src={actor || undefined}
-								alt=""
-								loading="lazy"
-								decoding="async"
-								fallback="T"
-								key={actor}
-								radius="full"
-								size="1"
-								style={{
-									marginLeft: i > 0 ? "-12px" : "0",
-								}}
-							/>
-						))}
-						Shared by {linkPost.uniqueActorsCount}{" "}
-						{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}
-						{open ? (
-							<ChevronUp width="14" height="14" />
-						) : (
-							<ChevronDown width="14" height="14" />
-						)}
-					</Button>
-				</Collapsible.Trigger>
+				<SharedByBug
+					uniqueActors={uniqueActors}
+					uniqueActorsCount={linkPost.uniqueActorsCount}
+					open={open}
+				/>
 				<Collapsible.Content>
 					<Box mt="5">
 						{Object.entries(groupedPosts).map(([postUrl, group]) => (
