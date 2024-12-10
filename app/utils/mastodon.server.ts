@@ -230,7 +230,7 @@ const processMastodonLink = async (
 
 	const denormalized = {
 		id: uuidv7(),
-		linkUrl: normalizeLink(card.url),
+		linkUrl: card.url,
 		postText: original.content,
 		postDate: new Date(original.createdAt),
 		postType: postType.enumValues[1],

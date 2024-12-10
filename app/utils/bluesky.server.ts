@@ -312,7 +312,7 @@ const getDetectedLink = async (
 		}
 	} else {
 		detectedLink = {
-			uri: normalizeLink(externalRecord.external.uri),
+			uri: externalRecord.external.uri,
 			title: externalRecord.external.title,
 			description: externalRecord.external.description,
 			imageUrl: externalRecord.external.thumb,
@@ -499,20 +499,20 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			!segment.link.uri.includes("bsky.app")
 		) {
 			const existingLink = await db.query.link.findFirst({
-				where: eq(link.url, normalizeLink(segment.link.uri)),
+				where: eq(link.url, segment.link.uri),
 			});
 
 			// if we already have data
 			if (existingLink?.description) {
 				return {
-					uri: normalizeLink(existingLink.url),
+					uri: existingLink.url,
 					title: existingLink.title,
 					imageUrl: existingLink.imageUrl,
 					description: existingLink.description,
 				};
 			}
 			foundLink = {
-				uri: normalizeLink(segment.link.uri),
+				uri: segment.link.uri,
 				title: "",
 				imageUrl: null,
 				description: null,
