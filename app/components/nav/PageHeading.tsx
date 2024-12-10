@@ -7,7 +7,7 @@ interface PageHeadingProps {
 
 const PageHeading = ({ title, dek }: PageHeadingProps) => {
 	return (
-		<Box mb="6">
+		<Box mb="4">
 			<Heading as="h2" size="6" mb="4">
 				{title}
 			</Heading>

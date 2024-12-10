@@ -19,6 +19,7 @@ import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme.server";
+import { getLayout } from "./utils/layout.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps();
@@ -30,6 +31,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			path: new URL(request.url).pathname,
 			userPrefs: {
 				theme: getTheme(request),
+				layout: getLayout(request),
 			},
 		},
 		honeyProps,

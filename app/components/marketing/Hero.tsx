@@ -3,6 +3,7 @@ import {
 	Button,
 	Card,
 	Flex,
+	Heading,
 	Inset,
 	Link as RLink,
 	Text,
@@ -11,6 +12,7 @@ import { Link } from "@remix-run/react";
 import Header from "~/components/nav/Header";
 import Footer from "../nav/Footer";
 import styles from "./Hero.module.css";
+import Logo from "../nav/Logo";
 
 const Hero = () => {
 	return (
@@ -36,7 +38,7 @@ const Hero = () => {
 					}}
 					className={styles.language}
 				>
-					<Header headerClass="marketing-logo" />
+					<Logo extraBig />
 					<Box>
 						<Text as="p" size="7" align="center" mb="4" className={styles.lede}>
 							Top news shared by <strong>the people you trust</strong>
@@ -72,7 +74,7 @@ const Hero = () => {
 					</Card>
 				</Box>
 			</Flex>
-			<Footer />
+			<Footer themeFormId="hero-theme" layoutFormId="hero-layout" />
 		</Box>
 	);
 };
