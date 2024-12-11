@@ -107,15 +107,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			continue;
 		}
 
-		await db.insert(digestItem).values({
-			id: digestId,
-			title: subject,
-			html: emailBody.html,
-			json: links,
-			description: preview(links),
-			pubDate: new Date(),
-			userId: emailUser.id,
-		});
+		try {
+			await db.insert(digestItem).values({
+				id: digestId,
+				title: subject,
+				html: emailBody.html,
+				json: links,
+				description: preview(links),
+				pubDate: new Date(),
+				userId: emailUser.id,
+			});
+		} catch (error) {
+			console.error("Failed to insert digest item for", emailUser.email, error);
+		}
 	}
 
 	try {
