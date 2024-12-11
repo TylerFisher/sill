@@ -93,14 +93,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				id: uuidv7(),
 				userId,
 				digestSettings: settings[0].id,
-				feedUrl: `${baseUrl}/digest/${userId}.rss`,
+				feedUrl: `${baseUrl}/${userId}.rss`,
 				title: `Sill Digest for ${existingUser?.name}`,
 				description: "Daily links from your personal social network",
 			})
 			.onConflictDoUpdate({
 				target: [digestRssFeed.digestSettings],
 				set: {
-					feedUrl: `${baseUrl}/digest/${userId}.rss`,
+					feedUrl: `${baseUrl}/${userId}.rss`,
 					title: `Sill Digest for ${existingUser?.name}`,
 					description: "Daily links from your personal social network",
 				},
