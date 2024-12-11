@@ -40,15 +40,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 	const feed = new Feed({
 		title: feedWithItems.title,
 		description: feedWithItems.description || undefined,
-		id: feedWithItems.feedUrl,
-		link: feedWithItems.feedUrl,
+		id: feedWithItems.feedUrl.replace("/digest/digest", "/digest"),
+		link: feedWithItems.feedUrl.replace("/digest/digest", "/digest"),
 		image: "https://sill.social/favicon-96x96.png",
 		favicon: "https://sill.social/favicon-96x96.png",
 		copyright: "",
 		updated: feedWithItems.items[0]?.pubDate || new Date(),
 		generator: "Sill",
 		feedLinks: {
-			rss: `${baseUrl}/${userId}.rss`,
+			rss: `${baseUrl}/digest/${userId}.rss`,
 		},
 	});
 
