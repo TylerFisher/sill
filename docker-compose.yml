@@ -19,26 +19,6 @@ services:
         max-size: "50m"
         max-file: "6"
 
-  redis:
-    image: redis
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - net
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-
   db:
     image: postgres:latest
     volumes:
@@ -57,35 +37,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-  
-  bull-monitor:
-    container_name: bull-monitor
-    image: tiagoboeing/bull-board:latest
-    restart: always
-    ports:
-      - 4000:4000
-    env_file:
-      - .env
-    environment:
-      QUEUE_PREFIX: ${BULL_QUEUE_PREFIX}
-      QUEUE_NAMES: |
-        account-update
-        mastodon
-        bluesky
-        links
-      REDIS_HOST: redis
-      AUTH_REQUIRE: true
-      AUTH_LOGIN: ${BULL_MONITOR_AUTH_LOGIN}
-      AUTH_PASSWORD: ${BULL_MONITOR_AUTH_PASSWORD}
-    networks:
-      - net
-    depends_on:
-      - redis
     logging:
       driver: json-file
       options:
@@ -125,7 +76,6 @@ services:
       - NODE_ENV=development
     depends_on:
       - db
-      - redis
     networks:
       - net
     labels:
@@ -166,7 +116,6 @@ services:
 
 volumes:
   postgres_db:
-  redis_data:
 
 networks:
   net:

@@ -31,7 +31,6 @@ import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
 } from "~/utils/links.server";
-import { connection, getUserCacheKey } from "~/utils/redis.server";
 import { useLayout } from "./resources.layout-switch";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 
@@ -119,21 +118,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		...options,
 	});
 
-	// If we're not using any filters, use the cache
-	let cachedData: MostRecentLinkPosts[] = [];
-	if (url.search === "") {
-		const redis = connection();
-		const cache = await redis.get(await getUserCacheKey(userId));
-		if (cache) {
-			cachedData = JSON.parse(cache);
-		}
-		links.then(async (links) => {
-			redis.set(await getUserCacheKey(userId), JSON.stringify(links));
-		});
-	}
-
 	return {
-		cachedData,
 		links,
 		key: uuidv7(),
 		instance: mastodon?.mastodonInstance.instance,
@@ -233,15 +218,6 @@ const Links = () => {
 						<Flex justify="center">
 							<Spinner size="3" />
 						</Flex>
-						{data.cachedData?.map((link) => (
-							<LinkPost
-								key={link.link?.url}
-								linkPost={link}
-								instance={data.instance}
-								bsky={data.bsky}
-								layout={layout}
-							/>
-						))}
 					</Box>
 				}
 			>
@@ -252,15 +228,6 @@ const Links = () => {
 							<Text as="p">
 								Failed to fetch new links. Try refreshing the page.
 							</Text>
-							{data.cachedData?.map((link) => (
-								<LinkPost
-									key={link.link?.url}
-									linkPost={link}
-									instance={data.instance}
-									bsky={data.bsky}
-									layout={layout}
-								/>
-							))}
 						</Box>
 					}
 				>

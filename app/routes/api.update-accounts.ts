@@ -2,13 +2,9 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { db } from "~/drizzle/db.server";
 import {
 	fetchLinks,
-	filterLinkOccurrences,
 	insertNewLinks,
-	type MostRecentLinkPosts,
 	type ProcessedResult,
 } from "~/utils/links.server";
-import { getUserCacheKey } from "~/utils/redis.server";
-import { connection } from "~/utils/redis.server";
 import { asc } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 
@@ -46,7 +42,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const end = Math.min(start + sixteenthSize, users.length);
 	users = users.slice(start, end);
 
-	const redis = connection();
 	const chunkSize = 10;
 	for (let i = 0; i < users.length; i += chunkSize) {
 		const userChunk = users.slice(i, i + chunkSize);
@@ -83,24 +78,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				console.error("error sending links to database second time", error);
 			}
 		}
-	}
-
-	// const updatedData: string[] = [];
-	for (const user of users) {
-		let linkCount: MostRecentLinkPosts[];
-		try {
-			linkCount = await filterLinkOccurrences({
-				userId: user.id,
-			});
-		} catch (error) {
-			console.error("error filtering links for", user.email, error);
-			throw error;
-		}
-		redis.set(await getUserCacheKey(user.id), JSON.stringify(linkCount));
-
-		// accountUpdateQueue.add("update-accounts", {
-		// 	userId: user.id,
-		// });
 	}
 
 	return Response.json({});

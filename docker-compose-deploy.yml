@@ -28,27 +28,6 @@ services:
       - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
 
-  redis:
-    image: redis
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - net
-    restart: always    
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-
   db:
     image: postgres:alpine
     container_name: postgres_db
@@ -78,41 +57,6 @@ services:
         limits:
           cpus: 10.0
 
-  bull-monitor:
-    container_name: bull-monitor
-    image: tiagoboeing/bull-board:latest
-    restart: always
-    ports:
-      - 4000:4000
-    env_file:
-      - .env
-    environment:
-      QUEUE_PREFIX: ${BULL_QUEUE_PREFIX}
-      QUEUE_NAMES: |
-        account-update
-        mastodon
-        bluesky
-        links
-      REDIS_HOST: redis
-      AUTH_REQUIRE: true
-      AUTH_LOGIN: ${BULL_MONITOR_AUTH_LOGIN}
-      AUTH_PASSWORD: ${BULL_MONITOR_AUTH_PASSWORD}
-    networks:
-      - net
-    depends_on:
-      - redis
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.bull.rule=Host(`${BULL_MONITOR_DOMAIN:-bull.localhost}`)"
-      - "traefik.http.routers.bull.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.bull.tls.certresolver=myresolver"
-      - "traefik.http.services.bull.loadbalancer.server.port=4000"
-
   pgbouncer:
     container_name: pgbouncer
     image: edoburu/pgbouncer:latest
@@ -139,10 +83,8 @@ services:
       - NODE_ENV=production
     depends_on:
       - pgbouncer
-      - redis
       - traefik
       - dozzle
-      - bull-monitor
     networks:
       - net
     restart: always
@@ -184,7 +126,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
 
 networks:
   net:

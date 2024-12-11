@@ -108,15 +108,10 @@ jobs:
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
           echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
           echo "PRIVATE_KEY_ES256_B64=${{ secrets.PRIVATE_KEY_ES256_B64 }}" >> .env
-          echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
           echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
           echo "TRAEFIK_DASHBOARD_AUTH=${{ secrets.TRAEFIK_DASHBOARD_AUTH }}" >> .env
           echo "CRON_API_KEY=${{ secrets.CRON_API_KEY }}" >> .env
-          echo "BULL_MONITOR_AUTH_LOGIN=${{ secrets.BULL_MONITOR_AUTH_LOGIN }}" >> .env
-          echo "BULL_MONITOR_AUTH_PASSWORD=${{ secrets.BULL_MONITOR_AUTH_PASSWORD }}" >> .env
-          echo "BULL_MONITOR_DOMAIN=${{ secrets.BULL_MONITOR_DOMAIN }}" >> .env
-          echo "BULL_QUEUE_PREFIX=${{ secrets.BULL_QUEUE_PREFIX }}" >> .env
 
       - name: Copy .env and docker-compose-prod files to remote server
         uses: appleboy/scp-action@master
