@@ -118,7 +118,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				userId: emailUser.id,
 			});
 		} catch (error) {
-			console.error("Failed to insert digest item for", emailUser.email, error);
+			console.error(
+				"Failed to insert digest item for",
+				emailUser.email,
+				emailBody.html,
+				error,
+			);
 		}
 	}
 
@@ -176,16 +181,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		const html = renderToString(
 			<RSSLinks links={links} name={rssUser.name} digestUrl={digestUrl} />,
 		);
-		await db.insert(digestItem).values({
-			id: digestId,
-			feedId: rssFeed.id,
-			title: subject,
-			html,
-			json: links,
-			description: preview(links),
-			pubDate: new Date(),
-			userId: rssUser.id,
-		});
+		try {
+			await db.insert(digestItem).values({
+				id: digestId,
+				feedId: rssFeed.id,
+				title: subject,
+				html,
+				json: links,
+				description: preview(links),
+				pubDate: new Date(),
+				userId: rssUser.id,
+			});
+		} catch (e) {
+			console.error("Failed to insert digest item for", rssUser.email, html, e);
+		}
 	}
 
 	return Response.json({});
