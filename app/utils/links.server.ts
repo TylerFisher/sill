@@ -308,3 +308,28 @@ export const filterLinkOccurrences = async ({
 			return Promise.all(postsPromise);
 		});
 };
+
+export const networkTopTen = async (): Promise<MostRecentLinkPosts[]> => {
+	const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+
+	const topTen = await db
+		.select({
+			link,
+			uniqueActorsCount: sql<number>`cast(count(distinct 
+      coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle})) as int)`.as(
+				"uniqueActorsCount",
+			),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.where(gte(linkPostDenormalized.postDate, threeHoursAgo))
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
+		.limit(10);
+
+	return topTen;
+};
