@@ -121,7 +121,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			console.error(
 				"Failed to insert digest item for",
 				emailUser.email,
-				emailBody.html,
+				preview(links),
+				links,
 				error,
 			);
 		}
@@ -193,7 +194,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 				userId: rssUser.id,
 			});
 		} catch (e) {
-			console.error("Failed to insert digest item for", rssUser.email, html, e);
+			console.error(
+				"Failed to insert digest item for",
+				rssUser.email,
+				preview(links),
+				links,
+				e,
+			);
 		}
 	}
 
