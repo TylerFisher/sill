@@ -103,6 +103,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		};
 		emailBodies.push(emailBody);
 
+		if (links.length === 0) {
+			continue;
+		}
+
 		await db.insert(digestItem).values({
 			id: digestId,
 			title: subject,
