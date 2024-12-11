@@ -3,18 +3,17 @@ import {
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
-import { Box, Flex, Inset, Separator, Spinner, Text } from "@radix-ui/themes";
+import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import {
-	data,
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
 } from "@remix-run/node";
 import {
 	Await,
-	Form,
 	useFetcher,
 	useLoaderData,
+	useLocation,
 	useSearchParams,
 } from "@remix-run/react";
 import { eq } from "drizzle-orm";
@@ -22,7 +21,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
-import SearchField from "~/components/forms/SearchField";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -33,6 +31,8 @@ import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
 } from "~/utils/links.server";
+import { useLayout } from "./resources.layout-switch";
+import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 
 export const meta: MetaFunction = () => [{ title: "Sill" }];
 
@@ -195,41 +195,26 @@ const Links = () => {
 		}
 	}, [key, data.key]);
 
+	const layout = useLayout();
+
 	return (
-		<Layout>
-			<Box
-				mb="6"
-				position="sticky"
-				top="0"
-				py="4"
-				px="4"
-				mx="-4"
-				style={{
-					zIndex: 1,
-					backgroundColor: "var(--accent-1)",
-					borderBottom: "1px solid var(--gray-a6)",
-				}}
-			>
+		<Layout
+			sidebar={
 				<LinkFilters
 					showService={!!(data.bsky && data.instance)}
 					lists={data.lists}
 				/>
-				<Box position="absolute" right="16px" top="8px" width="50%">
-					<Form method="GET">
-						<SearchField />
-					</Form>
-				</Box>
-			</Box>
-
+			}
+		>
+			<LinkFiltersCollapsible>
+				<LinkFilters
+					showService={!!(data.bsky && data.instance)}
+					lists={data.lists}
+				/>
+			</LinkFiltersCollapsible>
 			<Suspense
 				fallback={
-					<Box
-						mx={{
-							initial: "0",
-							sm: "9",
-							md: "0",
-						}}
-					>
+					<Box>
 						<Flex justify="center">
 							<Spinner size="3" />
 						</Flex>
@@ -239,13 +224,7 @@ const Links = () => {
 				<Await
 					resolve={data.links}
 					errorElement={
-						<Box
-							mx={{
-								initial: "0",
-								sm: "9",
-								md: "0",
-							}}
-						>
+						<Box>
 							<Text as="p">
 								Failed to fetch new links. Try refreshing the page.
 							</Text>
@@ -253,19 +232,14 @@ const Links = () => {
 					}
 				>
 					{(links) => (
-						<Box
-							mx={{
-								initial: "0",
-								sm: "9",
-								md: "0",
-							}}
-						>
+						<Box>
 							{links.map((link) => (
 								<div key={link.link?.url}>
 									<LinkPost
 										linkPost={link}
 										instance={data.instance}
 										bsky={data.bsky}
+										layout={layout}
 									/>
 								</div>
 							))}
@@ -277,6 +251,7 @@ const Links = () => {
 											linkPost={link}
 											instance={data.instance}
 											bsky={data.bsky}
+											layout={layout}
 										/>
 									))}
 								</div>
@@ -297,19 +272,34 @@ const Links = () => {
 	);
 };
 
-const LinkPost = ({
+export const LinkPost = ({
 	linkPost,
 	instance,
 	bsky,
+	layout,
 }: {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
-}) => (
-	<div>
-		<LinkPostRep linkPost={linkPost} instance={instance} bsky={bsky} />
-		<Separator my="7" size="4" orientation="horizontal" />
-	</div>
-);
+	layout: "dense" | "default";
+}) => {
+	const location = useLocation();
+	return (
+		<div>
+			<LinkPostRep
+				linkPost={linkPost}
+				instance={instance}
+				bsky={bsky}
+				layout={layout}
+				autoExpand={location.hash.substring(1) === linkPost.link?.id}
+			/>
+			<Separator
+				my={layout === "dense" ? "5" : "7"}
+				size="4"
+				orientation="horizontal"
+			/>
+		</div>
+	);
+};
 
 export default Links;

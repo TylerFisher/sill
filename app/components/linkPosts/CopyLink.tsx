@@ -3,7 +3,10 @@ import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import CopyToClipboard from "react-copy-to-clipboard";
 
-const CopyLink = ({ url }: { url: string }) => {
+const CopyLink = ({
+	url,
+	textPositioning,
+}: { url: string; textPositioning: object }) => {
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -31,17 +34,7 @@ const CopyLink = ({ url }: { url: string }) => {
 					)}
 				</IconButton>
 			</CopyToClipboard>
-			{copied && (
-				<Text
-					style={{
-						position: "absolute",
-						top: "-3.5px",
-						left: "1.8em",
-					}}
-				>
-					Copied!
-				</Text>
-			)}
+			{copied && <Text style={textPositioning}>Copied!</Text>}
 		</Box>
 	);
 };

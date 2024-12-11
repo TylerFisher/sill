@@ -1,8 +1,8 @@
 .wrapper {
 	display: grid;
 	grid-template-columns: repeat(12, [col-start] 1fr);
-	gap: 20px;
-  margin: 0 0.5em;
+	gap: 0px;
+  margin: 0;
 }
 
 .wrapper > * {
@@ -10,27 +10,45 @@
 }
 
 .side {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	z-index: 1;
-	background-color: var(--accent-1);
-	padding: 1em 0 env(safe-area-inset-bottom);
-	border-top: 1px solid var(--gray-a6);
-  height: calc(60px + env(safe-area-inset-bottom));
+  display: none;
 }
 
 .right {
-  position: relative;
-  bottom: calc(60px + env(safe-area-inset-bottom));
-  height: calc(60px + env(safe-area-inset-bottom));
-	padding: 1em 0 env(safe-area-inset-bottom);
-  margin-top: 1em;
+  display: none;
+}
+
+.content {
+	background-color: var(--accent-1);
+	padding: 1em;
+	box-shadow: var(--base-card-surface-box-shadow);
+	border-radius: 0;
+	margin: 3.5rem auto 1rem;
+	width: 100%;
+}
+
+@media (min-width: 768px) {
+  .wrapper {
+    gap: 20px;
+    margin: 0 0.5em;
+  }
+  .content {
+		grid-column: col-start / span 8;
+    border-radius: var(--radius-4);
+    margin-top: 3.75rem;
+	}
+  .right {
+    display: block;
+		grid-column: col-start 9 / span 4;
+		position: sticky;
+		top: 3.75rem;
+		height: 100vh;
+		width: 100%;
+	}
 }
 
 @media (min-width: 1025px) {
 	.side {
+    display: block;
 		grid-column: col-start / span 3;
 		position: sticky;
 		top: 0;
@@ -45,27 +63,13 @@
 
 	.content {
 		grid-column: col-start 4 / span 6;
+    border-radius: var(--radius-4);
+    margin-top: 2rem;
 	}
-	.right {
-		grid-column: col-start 10 / span 3;
-		position: fixed;
-		bottom: 0;
-		right: 1em;
-		width: 25%;
-	}
-}
 
-.content {
-	background-color: var(--accent-1);
-	padding: 1em;
-	box-shadow: var(--base-card-surface-box-shadow);
-	border-radius: 1em;
-	margin: 0 auto 1rem;
-	width: 100%;
-}
+  .right {
+    top: 0;
+    grid-column: col-start 10 / span 3;
 
-@media (max-width: 1024px) {
-	.content {
-		margin-top: 0 !important;
-	}
+  }
 }

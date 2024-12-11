@@ -39,7 +39,7 @@ const bodyStyles = {
 const containerStyles = {
 	margin: "0 auto",
 	padding: "0px 20px",
-	maxWidth: "600px",
+	maxWidth: "500px",
 };
 
 const imgStyles = { width: "100%", height: "auto" };

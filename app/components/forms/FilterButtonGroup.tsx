@@ -1,7 +1,7 @@
-import { RadioCards } from "@radix-ui/themes";
-import { Box, Flex, Heading } from "@radix-ui/themes";
-import FilterButton from "./FilterButton";
+import { Select, Spinner } from "@radix-ui/themes";
+import { Box, Heading } from "@radix-ui/themes";
 import styles from "./FilterButtonGroup.module.css";
+import { useLocation, useNavigation, useSearchParams } from "@remix-run/react";
 
 export interface ButtonGroup {
 	heading: string;
@@ -19,7 +19,7 @@ interface FilterButtonGroupProps {
 	buttonData: ButtonProps[];
 	setter: (param: string, value: string) => void;
 	param: string;
-	variantCheck: string;
+	defaultValue: string;
 	heading: string;
 }
 
@@ -27,27 +27,50 @@ const FilterButtonGroup = ({
 	buttonData,
 	setter,
 	param,
-	variantCheck,
+	defaultValue,
 	heading,
 }: FilterButtonGroupProps) => {
+	const [searchParams] = useSearchParams();
+	const searchParam = searchParams.get(param);
+	const navigation = useNavigation();
+	const location = useLocation();
+
+	const oldParams = new URLSearchParams(location.search);
+	const newParams = new URLSearchParams(navigation.location?.search);
+
+	const buttonSelected =
+		oldParams.get(param) !== newParams.get(param) &&
+		newParams.get(param) === defaultValue;
+
+	const onSelected = (value: string) => {
+		setter(param, value);
+	};
+
 	return (
 		<Box mb="4">
 			<Heading mb="1" size="1" as="h5" className={styles["filter-heading"]}>
 				{heading}
 			</Heading>
-			<RadioCards.Root value={variantCheck} size="1">
-				<Flex gap="3">
+
+			<Select.Root
+				value={searchParam || defaultValue}
+				onValueChange={onSelected}
+			>
+				{navigation.state === "loading" && buttonSelected ? (
+					<Select.Trigger>
+						<Spinner size="1" />
+					</Select.Trigger>
+				) : (
+					<Select.Trigger placeholder={heading} />
+				)}
+				<Select.Content>
 					{buttonData.map((button) => (
-						<FilterButton
-							key={button.value}
-							param={param}
-							value={button.value}
-							setter={setter}
-							label={button.label}
-						/>
+						<Select.Item key={button.value} value={button.value}>
+							{button.label}
+						</Select.Item>
 					))}
-				</Flex>
-			</RadioCards.Root>
+				</Select.Content>
+			</Select.Root>
 		</Box>
 	);
 };
