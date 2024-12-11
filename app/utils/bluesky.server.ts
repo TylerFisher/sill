@@ -374,7 +374,7 @@ const processBlueskyLink = async (
 			alt: image.alt,
 			url: image.thumb,
 		})),
-		linkUrl: detectedLink.uri,
+		linkUrl: normalizeLink(detectedLink.uri),
 		actorHandle: t.post.author.handle,
 		actorUrl: `https://bsky.app/profile/${t.post.author.handle}`,
 		actorName: t.post.author.displayName,
@@ -413,7 +413,7 @@ const processBlueskyLink = async (
 
 	const link = {
 		id: uuidv7(),
-		url: detectedLink.uri,
+		url: normalizeLink(detectedLink.uri),
 		title: detectedLink.title || "",
 		description: detectedLink.description,
 		imageUrl: detectedLink.imageUrl,
@@ -499,7 +499,7 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			!segment.link.uri.includes("bsky.app")
 		) {
 			const existingLink = await db.query.link.findFirst({
-				where: eq(link.url, segment.link.uri),
+				where: eq(link.url, normalizeLink(segment.link.uri)),
 			});
 
 			// if we already have data

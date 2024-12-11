@@ -21,5 +21,11 @@ export const normalizeLink = (url: string): string => {
 		parsed.searchParams.delete(key);
 	}
 
-	return `${parsed.origin.toLocaleLowerCase()}${parsed.pathname}${parsed.search}${parsed.hash}`;
+	let stringified = parsed.toString();
+	stringified = stringified.replace(
+		parsed.origin,
+		parsed.origin.toLocaleLowerCase(),
+	);
+
+	return stringified;
 };
