@@ -3,14 +3,11 @@ import {
 	Button,
 	Card,
 	Flex,
-	Heading,
 	Inset,
 	Link as RLink,
 	Text,
 } from "@radix-ui/themes";
 import { Link } from "@remix-run/react";
-import Header from "~/components/nav/Header";
-import Footer from "../nav/Footer";
 import styles from "./Hero.module.css";
 import Logo from "../nav/Logo";
 
@@ -74,7 +71,26 @@ const Hero = () => {
 					</Card>
 				</Box>
 			</Flex>
-			<Footer themeFormId="hero-theme" layoutFormId="hero-layout" />
+			{/* <Footer themeFormId="hero-theme" layoutFormId="hero-layout" /> */}
+			<Box mb="4">
+				<Flex
+					mb="4"
+					gap="2"
+					direction="row"
+					align="center"
+					justify="center"
+					wrap="wrap"
+				>
+					<Text size="1">
+						<RLink href="https://terms.sill.social/privacy.html">Privacy</RLink>
+					</Text>
+					·
+					<Text size="1">
+						Built by{" "}
+						<RLink href="https://www.tylerjfisher.com">Tyler Fisher</RLink>
+					</Text>
+				</Flex>
+			</Box>
 		</Box>
 	);
 };
