@@ -1,10 +1,14 @@
-import { Button } from "@radix-ui/themes";
-import { Link, NavLink, useLocation } from "@remix-run/react";
-import { Home, Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
+import { Box, Button, Dialog, IconButton } from "@radix-ui/themes";
+import { NavLink, useLocation } from "@remix-run/react";
+import { Link2, Mail, Menu, MessageSquareOff, User, Zap } from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
+import Footer from "./Footer";
 
-const Nav = () => {
+const Nav = ({
+	layoutFormId,
+	themeFormId,
+}: { layoutFormId: string; themeFormId: string }) => {
 	const location = useLocation();
 	const navLinks = [
 		{
@@ -19,7 +23,7 @@ const Nav = () => {
 		},
 		{
 			to: "/email",
-			label: "Daily Email",
+			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 		},
 		{
@@ -34,13 +38,16 @@ const Nav = () => {
 		},
 	];
 	return (
-		<nav className={styles.nav}>
-			<ul className={styles["nav-list"]}>
-				{navLinks.map((link) => (
-					<NavItem key={link.to} {...link} location={location.pathname} />
-				))}
-			</ul>
-		</nav>
+		<>
+			<nav className={styles.nav}>
+				<ul className={styles["nav-list"]}>
+					{navLinks.map((link) => (
+						<NavItem key={link.to} {...link} location={location.pathname} />
+					))}
+				</ul>
+			</nav>
+			<Footer layoutFormId={layoutFormId} themeFormId={themeFormId} />
+		</>
 	);
 };
 

@@ -24,7 +24,14 @@ const Toolbar = ({
 	return (
 		<Flex justify="between" mx="1" mt="4">
 			<ShareLink url={url} instance={instance} bsky={bsky} />
-			<CopyLink url={url} />
+			<CopyLink
+				url={url}
+				textPositioning={{
+					position: "absolute",
+					top: "-3.5px",
+					left: "1.8em",
+				}}
+			/>
 			<OpenLink url={url} />
 			<MuteActions
 				narrowMutePhrase={narrowMutePhrase}

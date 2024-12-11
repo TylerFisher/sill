@@ -1,0 +1,1 @@
+ALTER TABLE "digest_rss_feed" ADD CONSTRAINT "digest_rss_feed_digestSettings_unique" UNIQUE("digestSettings");

@@ -11,13 +11,12 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface LinkPostProps {
 	linkPost: MostRecentLinkPosts;
+	digestUrl: string;
+	layout: "default" | "dense";
 }
 
-const LinkPost = ({ linkPost }: LinkPostProps) => {
+const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 	const isProduction = process.env.NODE_ENV === "production";
-	const baseUrl = isProduction
-		? process.env.PUBLIC_URL
-		: "http://localhost:3000";
 
 	if (!linkPost.link || !linkPost.posts) return null;
 	const link = linkPost.link;
@@ -27,10 +26,10 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 	const uniqueActors = [...new Set(allActors)].filter((a) => a !== null);
 
 	return (
-		<>
+		<div style={container}>
 			<Link href={link.url}>
 				<Section style={wrapper}>
-					{link.imageUrl && (
+					{link.imageUrl && layout === "default" && (
 						<Row>
 							<Column style={imgWrapper}>
 								<Img src={link.imageUrl} style={img} />
@@ -58,13 +57,18 @@ const LinkPost = ({ linkPost }: LinkPostProps) => {
 				/>
 			))}
 			<Text style={accounts}>
-				<Link style={postsLink} href={`${baseUrl}/links/${link.id}`}>
+				<Link style={postsLink} href={`${digestUrl}#${link.id}`}>
 					Shared by {uniqueActors.length}{" "}
 					{uniqueActors.length === 1 ? "account" : "accounts"}
 				</Link>
 			</Text>
-		</>
+		</div>
 	);
+};
+
+const container = {
+	maxWidth: "500px",
+	margin: "0 auto",
 };
 
 const wrapper = {
@@ -80,12 +84,18 @@ const row = {
 
 const imgWrapper = {
 	width: "100%",
-	aspectRatio: "16 / 9",
+	padding: 0,
+	margin: 0,
+	borderCollapse: "collapse" as const,
+	maxWidth: "500px",
 };
 
 const img = {
 	width: "100%",
-	height: "auto",
+	display: "block",
+	height: "56.25vw", // 16:9 ratio of viewport width
+	maxHeight: "281px", // 600px * 0.5625
+	minHeight: "168px", // For very small screens
 	borderTopLeftRadius: "12px",
 	borderTopRightRadius: "12px",
 	objectFit: "cover" as const,

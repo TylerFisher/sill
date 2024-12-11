@@ -1,13 +1,11 @@
-import { gte, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
 	boolean,
 	foreignKey,
 	index,
 	integer,
 	json,
-	jsonb,
 	pgEnum,
-	pgMaterializedView,
 	pgTable,
 	text,
 	time,
@@ -17,8 +15,12 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
+
+export const digestType = pgEnum("digest_type", ["email", "rss"]);
+export const digestLayout = pgEnum("digest_layout", ["default", "dense"]);
 
 export const linkPostToUser = pgTable(
 	"link_post_to_user",
@@ -165,7 +167,7 @@ export const session = pgTable(
 	},
 );
 
-export const emailSettings = pgTable("email_settings", {
+export const digestSettings = pgTable("digest_settings", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid()
 		.notNull()
@@ -175,6 +177,35 @@ export const emailSettings = pgTable("email_settings", {
 	topAmount: integer().notNull().default(10),
 	splitServices: boolean().notNull().default(false),
 	hideReposts: boolean().notNull().default(false),
+	layout: digestLayout().notNull().default("default"),
+	digestType: digestType().notNull().default("email"),
+});
+
+export const digestRssFeed = pgTable("digest_rss_feed", {
+	id: uuid().primaryKey().notNull(),
+	title: text().notNull(),
+	description: text(),
+	feedUrl: text().notNull(),
+	digestSettings: uuid()
+		.notNull()
+		.unique()
+		.references(() => digestSettings.id, { onDelete: "cascade" }),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const digestItem = pgTable("digest_item", {
+	id: uuid().primaryKey().notNull(),
+	title: text().notNull(),
+	description: text(),
+	html: text(),
+	json: json().$type<MostRecentLinkPosts[]>(),
+	pubDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+	feedId: uuid().references(() => digestRssFeed.id, { onDelete: "cascade" }),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {
@@ -478,7 +509,8 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	blueskyAccounts: many(blueskyAccount),
 	emailTokens: many(emailToken),
 	mutePhrases: many(mutePhrase),
-	emailSettings: one(emailSettings),
+	digestSettings: one(digestSettings),
+	digestItems: many(digestItem),
 }));
 
 export const linkRelations = relations(link, ({ many }) => ({
@@ -610,9 +642,35 @@ export const mutePhraseRelations = relations(mutePhrase, ({ one }) => ({
 	}),
 }));
 
-export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
+export const digestSettingsRelations = relations(digestSettings, ({ one }) => ({
 	user: one(user, {
-		fields: [emailSettings.userId],
+		fields: [digestSettings.userId],
+		references: [user.id],
+	}),
+}));
+
+export const digestRssFeedRelations = relations(
+	digestRssFeed,
+	({ one, many }) => ({
+		digestSettings: one(digestSettings, {
+			fields: [digestRssFeed.digestSettings],
+			references: [digestSettings.id],
+		}),
+		user: one(user, {
+			fields: [digestRssFeed.userId],
+			references: [user.id],
+		}),
+		items: many(digestItem),
+	}),
+);
+
+export const digestItemRelations = relations(digestItem, ({ one }) => ({
+	feed: one(digestRssFeed, {
+		fields: [digestItem.feedId],
+		references: [digestRssFeed.id],
+	}),
+	user: one(user, {
+		fields: [digestItem.userId],
 		references: [user.id],
 	}),
 }));
