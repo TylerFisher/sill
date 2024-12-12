@@ -27,6 +27,7 @@ const PostRep = ({ group, instance, bsky }: PostRepProps) => {
 				}}
 				align="start"
 				mb="1"
+				mr="5"
 			>
 				<a
 					href={post.actorUrl}
