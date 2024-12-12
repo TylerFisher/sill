@@ -111,7 +111,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			await db.insert(digestItem).values({
 				id: digestId,
 				title: subject,
-				html: emailBody.html,
 				json: links,
 				description: preview(links),
 				pubDate: new Date(),
