@@ -24,6 +24,7 @@ import {
 	type PgTable,
 	type PgUpdateSetSource,
 } from "drizzle-orm/pg-core";
+import { getFullUrl, isShortenedLink } from "./normalizeLink";
 
 const PAGE_SIZE = 10;
 

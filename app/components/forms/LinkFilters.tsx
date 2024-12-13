@@ -49,7 +49,7 @@ const LinkFilters = ({
 			],
 		},
 		{
-			heading: "Hide reposts",
+			heading: "Exclude reposts",
 			defaultValue: searchParams.get("reposts") || "false",
 			param: "reposts",
 			buttons: [

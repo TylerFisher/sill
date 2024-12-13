@@ -38,9 +38,10 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 };
 
 const XEmbed = ({ url }: { url: URL }) => {
+	const adjusted = url.href.split("/photo/")[0];
 	return (
 		<ClientOnly>
-			{() => <Tweet id={url.href.split("/").pop() || ""} />}
+			{() => <Tweet id={adjusted.split("/").pop() || ""} />}
 		</ClientOnly>
 	);
 };
@@ -56,7 +57,8 @@ const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 			{link.imageUrl &&
 				layout === "default" &&
 				url.hostname !== "www.youtube.com" &&
-				url.hostname !== "youtu.be" && (
+				url.hostname !== "youtu.be" &&
+				url.hostname !== "twitter.com" && (
 					<Inset mb="4" className={styles.inset}>
 						<AspectRatio ratio={16 / 9}>
 							<Link
