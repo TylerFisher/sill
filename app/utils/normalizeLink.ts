@@ -47,7 +47,7 @@ export const getFullUrl = async (url: string): Promise<string> => {
 		const response = await fetch(url, {
 			method: "HEAD",
 			redirect: "follow",
-			signal: AbortSignal.timeout(2000),
+			signal: AbortSignal.timeout(3000),
 			headers: {
 				"User-Agent":
 					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36",
@@ -55,7 +55,7 @@ export const getFullUrl = async (url: string): Promise<string> => {
 		});
 		return response.url;
 	} catch (e) {
-		console.log("timed out expanding", url, e);
+		console.log("timed out expanding", url);
 		return url;
 	}
 };
