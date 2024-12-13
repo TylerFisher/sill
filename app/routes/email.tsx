@@ -1,4 +1,8 @@
-import { type LoaderFunctionArgs, redirect } from "@remix-run/node";
+import {
+	type LoaderFunctionArgs,
+	type MetaFunction,
+	redirect,
+} from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
@@ -8,6 +12,9 @@ import { db } from "~/drizzle/db.server";
 import { digestSettings, user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 
+export const meta: MetaFunction = () => [
+	{ title: "Sill | Daily Digest Settings" },
+];
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
 

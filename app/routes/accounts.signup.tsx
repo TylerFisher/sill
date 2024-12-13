@@ -23,7 +23,7 @@ import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
 
-export const meta: MetaFunction = () => [{ title: "Create account" }];
+export const meta: MetaFunction = () => [{ title: "Sill | Sign up" }];
 
 export const SignupSchema = z.object({
 	email: EmailSchema,

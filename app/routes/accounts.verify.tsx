@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
-import type { ActionFunctionArgs } from "@remix-run/node";
+import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import type { ActionFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
@@ -18,6 +18,8 @@ export const redirectToQueryParam = "redirectTo";
 const types = ["onboarding", "reset-password", "change-email", "2fa"] as const;
 const VerificationTypeSchema = z.enum(types);
 export type VerificationTypes = z.infer<typeof VerificationTypeSchema>;
+
+export const meta: MetaFunction = () => [{ title: "Sill | Verify your email" }];
 
 export const VerifySchema = z.object({
 	[codeQueryParam]: z.string().min(6).max(6),

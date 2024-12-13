@@ -4,6 +4,7 @@ import { Button, Flex, Heading } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
+	type MetaFunction,
 	data,
 	redirect,
 } from "@remix-run/node";
@@ -38,6 +39,10 @@ const ChangePasswordForm = z
 			});
 		}
 	});
+
+export const meta: MetaFunction = () => [
+	{ title: "Sill | Change your password" },
+];
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserId(request);

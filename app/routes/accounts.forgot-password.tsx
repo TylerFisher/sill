@@ -1,6 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Button, Heading, Text } from "@radix-ui/themes";
+import { Box, Heading, Text } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type MetaFunction,
@@ -87,7 +87,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export const meta: MetaFunction = () => {
-	return [{ title: "Password Recovery for Epic Notes" }];
+	return [{ title: "Sill | Forgot your password?" }];
 };
 
 export default function ForgotPasswordRoute() {

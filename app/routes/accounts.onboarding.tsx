@@ -122,7 +122,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export const meta: MetaFunction = () => {
-	return [{ title: "Setup Sill Account" }];
+	return [{ title: "Sill | Setup your account" }];
 };
 
 export default function OnboardingRoute() {

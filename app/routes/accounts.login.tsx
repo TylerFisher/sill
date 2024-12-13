@@ -21,7 +21,7 @@ import ErrorList from "~/components/forms/ErrorList";
 import Layout from "~/components/nav/Layout";
 import SubmitButton from "~/components/forms/SubmitButton";
 
-export const meta: MetaFunction = () => [{ title: "Login" }];
+export const meta: MetaFunction = () => [{ title: "Sill | Login" }];
 
 const LoginFormSchema = z.object({
 	email: EmailSchema,

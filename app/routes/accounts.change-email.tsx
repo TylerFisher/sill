@@ -4,6 +4,7 @@ import { Badge, Box, Button, Heading, Text } from "@radix-ui/themes";
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
+	type MetaFunction,
 	data,
 	redirect,
 } from "@remix-run/node";
@@ -31,6 +32,8 @@ export const newEmailAddressSessionKey = "new-email-address";
 const ChangeEmailSchema = z.object({
 	email: EmailSchema,
 });
+
+export const meta: MetaFunction = () => [{ title: "Sill | Change your email" }];
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireRecentVerification(request);

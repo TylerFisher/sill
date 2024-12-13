@@ -1,10 +1,12 @@
 import { Box, Button, Flex, Spinner, Text } from "@radix-ui/themes";
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Await, Link, useLoaderData } from "@remix-run/react";
 import { Suspense } from "react";
 import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
 import { filterLinkOccurrences } from "~/utils/links.server";
+
+export const meta: MetaFunction = () => [{ title: "Sill | Downloading..." }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
