@@ -5,21 +5,10 @@ const shorteners = await readFile(
 	"utf-8",
 ).then((content) => content.split("\n"));
 
-const knownSearchParameters = [
-	"utm_source",
-	"utm_medium",
-	"utm_campaign",
-	"utm_term",
-	"utm_content",
-	"fbclid",
-	"gclid",
-	"smid",
-	"ref",
-	"ref_",
-	"smtyp",
-	"source",
-	"referringSource",
-];
+const trackingParameters = await readFile(
+	"/app/app/utils/trackingParams.txt",
+	"utf-8",
+).then((content) => content.split("\n"));
 
 export const normalizeLink = (url: string): string => {
 	let parsed: URL | null = null;
@@ -30,7 +19,7 @@ export const normalizeLink = (url: string): string => {
 		return url;
 	}
 
-	for (const key of knownSearchParameters) {
+	for (const key of trackingParameters) {
 		parsed.searchParams.delete(key);
 	}
 
