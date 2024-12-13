@@ -55,7 +55,7 @@ export const getFullUrl = async (url: string): Promise<string> => {
 		});
 		return response.url;
 	} catch (e) {
-		console.log("timed out expanding", url);
+		console.log("timed out expanding", url, e);
 		return url;
 	}
 };
