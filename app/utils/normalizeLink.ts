@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { giftLinkFormats } from "./giftLinkFormat";
 
 const shorteners = await readFile(
 	"/app/app/utils/shorteners.txt",
@@ -10,7 +11,7 @@ const trackingParameters = await readFile(
 	"utf-8",
 ).then((content) => content.split("\n"));
 
-export const normalizeLink = (url: string): string => {
+export const normalizeLink = async (url: string): Promise<string> => {
 	let parsed: URL | null = null;
 	try {
 		parsed = new URL(url);
@@ -32,7 +33,7 @@ export const normalizeLink = (url: string): string => {
 	return stringified;
 };
 
-export const isShortenedLink = (url: string): boolean => {
+export const isShortenedLink = async (url: string): Promise<boolean> => {
 	try {
 		const parsed = new URL(url);
 		return shorteners.includes(parsed.hostname);
@@ -57,5 +58,27 @@ export const getFullUrl = async (url: string): Promise<string> => {
 	} catch (e) {
 		console.log("timed out expanding", url);
 		return url;
+	}
+};
+
+export const isGiftLink = async (url: string): Promise<boolean> => {
+	try {
+		const parsed = new URL(url);
+		const format = giftLinkFormats[parsed.hostname.replace("www.", "")];
+		if (format) {
+			console.log("checking format for", parsed.href);
+			for (const key of format) {
+				if (!parsed.searchParams.has(key)) {
+					console.log("missing key", key);
+					return false;
+				}
+			}
+			console.log("gift link found", parsed.href);
+			return true;
+		}
+		return false;
+	} catch (e) {
+		console.log("error parsing gift link", url);
+		return false;
 	}
 };

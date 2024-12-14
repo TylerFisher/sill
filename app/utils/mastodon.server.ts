@@ -6,7 +6,12 @@ import { list, mastodonAccount, postType } from "~/drizzle/schema.server";
 import type { ProcessedResult } from "./links.server";
 import type { AccountWithInstance } from "~/components/forms/MastodonConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
-import { getFullUrl, isShortenedLink, normalizeLink } from "./normalizeLink";
+import {
+	getFullUrl,
+	isGiftLink,
+	isShortenedLink,
+	normalizeLink,
+} from "./normalizeLink";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -220,16 +225,17 @@ const processMastodonLink = async (
 		return null;
 	}
 
-	if (isShortenedLink(card.url)) {
+	if (await isShortenedLink(card.url)) {
 		card.url = await getFullUrl(card.url);
 	}
 
 	const link = {
 		id: uuidv7(),
-		url: normalizeLink(card.url),
+		url: await normalizeLink(card.url),
 		title: card.title,
 		description: card.description,
 		imageUrl: card.image,
+		giftUrl: (await isGiftLink(card.url)) ? card.url : undefined,
 	};
 
 	const denormalized = {

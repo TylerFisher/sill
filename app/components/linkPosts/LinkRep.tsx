@@ -138,6 +138,7 @@ const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 			</Inset>
 			<Toolbar
 				url={link.url}
+				giftUrl={link.giftUrl}
 				narrowMutePhrase={link.url}
 				broadMutePhrase={host}
 				instance={instance}

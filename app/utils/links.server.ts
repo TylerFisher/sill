@@ -86,9 +86,13 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 						!existing ||
 						(p.link.title && !existing.title) ||
 						(p.link.description && !existing.description) ||
-						(p.link.imageUrl && !existing.imageUrl)
+						(p.link.imageUrl && !existing.imageUrl) ||
+						(p.link.giftUrl && !existing.giftUrl)
 					) {
-						acc[p.link.url] = p.link;
+						acc[p.link.url] = {
+							...p.link,
+							giftUrl: existing?.giftUrl || p.link.giftUrl,
+						};
 					}
 					return acc;
 				},
@@ -105,7 +109,13 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 					.values(links)
 					.onConflictDoUpdate({
 						target: [link.url],
-						set: conflictUpdateSetAllColumns(link),
+						set: {
+							...conflictUpdateSetAllColumns(link),
+							giftUrl: sql`CASE 
+                WHEN ${link.giftUrl} IS NULL THEN excluded."giftUrl"
+                ELSE ${link.giftUrl} 
+              END`,
+						},
 					});
 
 			if (denormalized.length > 0)
@@ -219,7 +229,7 @@ export const filterLinkOccurrences = async ({
 			link,
 			// Count unique actors based on similar handles or names, excluding duplicates from different networks
 			uniqueActorsCount: sql<number>`
-  LEAST(
+  CAST(LEAST(
     -- Count by normalized names
     COUNT(DISTINCT 
       CASE WHEN ${postMuteCondition} IS NOT NULL THEN
@@ -249,7 +259,7 @@ export const filterLinkOccurrences = async ({
         END
       END
     )
-  )`.as("uniqueActorsCount"),
+  ) as INTEGER)`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),

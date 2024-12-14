@@ -284,6 +284,7 @@ export const link = pgTable(
 		title: text().notNull(),
 		description: text(),
 		imageUrl: text(),
+		giftUrl: text(),
 	},
 	(table) => {
 		return {

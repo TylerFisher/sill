@@ -6,6 +6,7 @@ import MuteActions from "./MuteActions";
 
 interface ToolbarProps {
 	url: string;
+	giftUrl?: string | null;
 	narrowMutePhrase: string;
 	broadMutePhrase: string;
 	type: "post" | "link";
@@ -15,6 +16,7 @@ interface ToolbarProps {
 
 const Toolbar = ({
 	url,
+	giftUrl,
 	narrowMutePhrase,
 	broadMutePhrase,
 	type,
@@ -32,7 +34,7 @@ const Toolbar = ({
 					left: "1.8em",
 				}}
 			/>
-			<OpenLink url={url} />
+			<OpenLink url={giftUrl || url} isGift={!!giftUrl} />
 			<MuteActions
 				narrowMutePhrase={narrowMutePhrase}
 				broadMutePhrase={broadMutePhrase}

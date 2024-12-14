@@ -25,7 +25,12 @@ import {
 } from "./links.server";
 import ogs from "open-graph-scraper";
 import type { ListOption } from "~/components/forms/ListSwitch";
-import { getFullUrl, isShortenedLink, normalizeLink } from "./normalizeLink";
+import {
+	getFullUrl,
+	isGiftLink,
+	isShortenedLink,
+	normalizeLink,
+} from "./normalizeLink";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;
@@ -364,16 +369,19 @@ const processBlueskyLink = async (
 		return null;
 	}
 
-	if (isShortenedLink(detectedLink.uri)) {
+	if (await isShortenedLink(detectedLink.uri)) {
 		detectedLink.uri = await getFullUrl(detectedLink.uri);
 	}
 
 	const link = {
 		id: uuidv7(),
-		url: normalizeLink(detectedLink.uri),
+		url: await normalizeLink(detectedLink.uri),
 		title: detectedLink.title || "",
 		description: detectedLink.description,
 		imageUrl: detectedLink.imageUrl,
+		giftUrl: (await isGiftLink(detectedLink.uri))
+			? detectedLink.uri
+			: undefined,
 	};
 
 	const denormalized = {
@@ -503,7 +511,7 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 			!segment.link.uri.includes("bsky.app")
 		) {
 			const existingLink = await db.query.link.findFirst({
-				where: eq(link.url, normalizeLink(segment.link.uri)),
+				where: eq(link.url, await normalizeLink(segment.link.uri)),
 			});
 
 			// if we already have data
