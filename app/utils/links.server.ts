@@ -217,10 +217,39 @@ export const filterLinkOccurrences = async ({
 	return await db
 		.select({
 			link,
-			uniqueActorsCount: sql<number>`cast(count(distinct 
-	  CASE WHEN ${postMuteCondition} IS NOT NULL 
-	  THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
-	  END) as int)`.as("uniqueActorsCount"),
+			// Count unique actors based on similar handles or names, excluding duplicates from different networks
+			uniqueActorsCount: sql<number>`
+  LEAST(
+    -- Count by normalized names
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        LOWER(REGEXP_REPLACE(
+          COALESCE(
+            ${linkPostDenormalized.repostActorName},
+            ${linkPostDenormalized.actorName}
+          ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+      END
+    ),
+    -- Count by normalized handles
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        CASE 
+          WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+            LOWER(substring(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ) from '^@?([^@]+)(@|$)'))
+          ELSE
+            LOWER(replace(replace(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ), '.bsky.social', ''), '@', ''))
+        END
+      END
+    )
+  )`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),

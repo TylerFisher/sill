@@ -1,4 +1,8 @@
-import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+	type MetaFunction,
+	redirect,
+	type LoaderFunctionArgs,
+} from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
@@ -12,6 +16,8 @@ import { LinkPost } from "./links";
 import Layout from "~/components/nav/Layout";
 import { Heading } from "@radix-ui/themes";
 import { useLayout } from "./resources.layout-switch";
+
+export const meta: MetaFunction = () => [{ title: "Sill | Daily Digest" }];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 	const userId = await requireUserId(request);
