@@ -66,14 +66,11 @@ export const isGiftLink = async (url: string): Promise<boolean> => {
 		const parsed = new URL(url);
 		const format = giftLinkFormats[parsed.hostname.replace("www.", "")];
 		if (format) {
-			console.log("checking format for", parsed.href);
 			for (const key of format) {
 				if (!parsed.searchParams.has(key)) {
-					console.log("missing key", key);
 					return false;
 				}
 			}
-			console.log("gift link found", parsed.href);
 			return true;
 		}
 		return false;
