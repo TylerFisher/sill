@@ -121,7 +121,7 @@ const Login = () => {
 					<Flex mb="5" align="center" justify="between" gap="3" width="100%">
 						<CheckboxField
 							labelProps={{
-								htmlFor: fields.remember.name,
+								htmlFor: fields.remember.id,
 								children: "Remember me?",
 							}}
 							inputProps={{
