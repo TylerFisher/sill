@@ -1,4 +1,4 @@
-import { Box, Button, Heading, Select, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Heading, Select, Text } from "@radix-ui/themes";
 import { Form, useSearchParams } from "@remix-run/react";
 import { useState } from "react";
 import FilterButtonGroup, {
@@ -10,7 +10,12 @@ import SearchField from "./SearchField";
 const LinkFilters = ({
 	showService,
 	lists,
-}: { showService: boolean; lists: (typeof list.$inferSelect)[] }) => {
+	reverse = false,
+}: {
+	showService: boolean;
+	lists: (typeof list.$inferSelect)[];
+	reverse?: boolean;
+}) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	function setSearchParam(param: string, value: string) {
@@ -124,23 +129,26 @@ const LinkFilters = ({
 
 	return (
 		<>
-			<Box mt="6">
-				<Form method="GET">
-					<SearchField />
-				</Form>
-			</Box>
-			<Box mt="6">
-				{buttonGroups.map((group, index) => (
-					<FilterButtonGroup
-						key={group.heading}
-						heading={group.heading}
-						param={group.param}
-						buttonData={group.buttons}
-						setter={setSearchParam}
-						defaultValue={group.defaultValue}
-					/>
-				))}
-			</Box>
+			<Flex direction={reverse ? "column-reverse" : "column"}>
+				<Box mt="6">
+					<Form method="GET">
+						<SearchField />
+					</Form>
+				</Box>
+				<Box mt="6">
+					{buttonGroups.map((group, index) => (
+						<FilterButtonGroup
+							key={group.heading}
+							heading={group.heading}
+							param={group.param}
+							buttonData={group.buttons}
+							setter={setSearchParam}
+							defaultValue={group.defaultValue}
+						/>
+					))}
+				</Box>
+			</Flex>
+
 			{searchParams.size > 0 && (
 				<Button onClick={clearSearchParams}>Reset to defaults</Button>
 			)}

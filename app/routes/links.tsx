@@ -210,6 +210,7 @@ const Links = () => {
 				<LinkFilters
 					showService={!!(data.bsky && data.instance)}
 					lists={data.lists}
+					reverse={true}
 				/>
 			</LinkFiltersCollapsible>
 			<Suspense
