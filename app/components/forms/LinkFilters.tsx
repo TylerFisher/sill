@@ -130,7 +130,7 @@ const LinkFilters = ({
 	return (
 		<>
 			<Flex direction={reverse ? "column-reverse" : "column"}>
-				<Box mt="6">
+				<Box mt={reverse ? "3" : "6"} mb={reverse ? "6" : "0"}>
 					<Form method="GET">
 						<SearchField />
 					</Form>
