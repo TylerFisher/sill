@@ -1,29 +1,17 @@
 import { render } from "@react-email/components";
 import type { ReactElement } from "react";
-import { z } from "zod";
+import Mailgun from "mailgun.js";
+import formData from "form-data";
 
-const resendErrorSchema = z.union([
-	z.object({
-		name: z.string(),
-		message: z.string(),
-		statusCode: z.number(),
-	}),
-	z.object({
-		name: z.literal("UnknownError"),
-		message: z.literal("Unknown Error"),
-		statusCode: z.literal(500),
-		cause: z.any(),
-	}),
-]);
-type ResendError = z.infer<typeof resendErrorSchema>;
-
-const resendSuccessSchema = z.object({
-	id: z.string(),
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+	username: "api",
+	key: process.env.MAILGUN_API_KEY || "",
 });
 
 /**
- * Sends an email using the Resend API
- * @returns Resend API response
+ * Sends an email using the Mailgun API
+ * @returns Mailgun API response
  */
 export async function sendEmail({
 	react,
@@ -35,63 +23,34 @@ export async function sendEmail({
 	| { html: string; text: string; react?: never }
 	| { react: ReactElement; html?: never; text?: never }
 )) {
-	const from = "Sill <noreply@mail.sill.social>";
+	const from = "Sill <noreply@e.sill.social>";
 
 	const email = {
 		from,
 		...options,
 		...(react ? await renderReactEmail(react) : null),
+		template: "",
 	};
 
-	// feel free to remove this condition once you've set up resend
-	if (!process.env.RESEND_API_KEY) {
-		console.error("RESEND_API_KEY not set and we're not in mocks mode.");
+	// feel free to remove this condition once you've set up Mailgun
+	if (!process.env.MAILGUN_API_KEY) {
+		console.error("MAILGUN_API_KEY not set and we're not in mocks mode.");
 		console.error(
-			"To send emails, set the RESEND_API_KEY environment variable.",
+			"To send emails, set the MAILGUN_API_KEY environment variable.",
 		);
 		console.error(
 			"Would have sent the following email:",
 			JSON.stringify(email),
 		);
 		return {
-			status: "success",
-			data: { id: "mocked" },
+			status: "200",
+			id: "mock",
+			message: email,
 		} as const;
 	}
 
-	const response = await fetch("https://api.resend.com/emails", {
-		method: "POST",
-		body: JSON.stringify(email),
-		headers: {
-			Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-			"Content-Type": "application/json",
-		},
-	});
-	const data = await response.json();
-	const parsedData = resendSuccessSchema.safeParse(data);
-
-	if (response.ok && parsedData.success) {
-		return {
-			status: "success",
-			data: parsedData,
-		} as const;
-	}
-	const parseResult = resendErrorSchema.safeParse(data);
-	if (parseResult.success) {
-		return {
-			status: "error",
-			error: parseResult.data,
-		} as const;
-	}
-	return {
-		status: "error",
-		error: {
-			name: "UnknownError",
-			message: "Unknown Error",
-			statusCode: 500,
-			cause: data,
-		} satisfies ResendError,
-	} as const;
+	const resp = await mg.messages.create("e.sill.social", email);
+	return resp;
 }
 
 /**

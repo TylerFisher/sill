@@ -8,14 +8,14 @@ You can find the official production version of Sill at [sill.social](https://si
 
 ## How it works
 
-Sill is a [Remix](https://remix.run) application with a [Postgres](https://www.postgresql.org) database. 
+Sill is a [React Router](https://reactrouter.com) application with a [Postgres](https://www.postgresql.org) database. 
 
 ## Prerequisites
 
 - Node.js >= 20
 - Docker
 
-Sill uses [Resend](https://resend.com) to send transactional emails. Sign up for an account and get your API key. For reasonable solo usage, it should be free.
+Sill uses [Mailgun](https://mailgun.com) to send transactional emails. Sign up for an account and get your API key. For reasonable solo usage, it should be free.
 
 ## Getting started
 
