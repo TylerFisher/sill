@@ -101,7 +101,9 @@ export async function action({ request }: Route.ActionArgs) {
 	}
 	return data(
 		{
-			result: submission.reply({ formErrors: [response.error?.message || ""] }),
+			result: submission.reply({
+				formErrors: [String(response.message)],
+			}),
 		},
 		{ status: 500 },
 	);

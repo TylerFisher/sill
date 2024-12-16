@@ -69,10 +69,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		react: <Verify otp={otp} />,
 	});
 
-	if (response.error) {
+	if (response.status !== 200) {
 		return data(
 			{
-				result: submission.reply({ formErrors: [response.error.message] }),
+				result: submission.reply({
+					formErrors: [String(response.message)],
+				}),
 			},
 			{
 				status: 500,
