@@ -103,7 +103,7 @@ jobs:
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
           echo "DOZZLE_DOMAIN=${{ secrets.DOZZLE_DOMAIN }}" >> .env
           echo "HONEYPOT_SECRET=${{ secrets.HONEYPOT_SECRET }}" >> .env
-          echo "MAILGUN_API_KEY"=${{ secrets.MAILGUN_API_KEY }}" >> .env
+          echo "MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" >> .env
           echo "MASTODON_REDIRECT_URI=${{ secrets.MASTODON_REDIRECT_URI }}" >> .env
           echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
