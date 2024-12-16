@@ -1,5 +1,5 @@
 import { Popover, IconButton, Flex, Button } from "@radix-ui/themes";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { MessageSquareOff } from "lucide-react";
 
 const MuteActions = ({

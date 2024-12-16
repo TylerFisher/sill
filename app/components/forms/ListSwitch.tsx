@@ -1,4 +1,4 @@
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
 import type { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 import { useState } from "react";

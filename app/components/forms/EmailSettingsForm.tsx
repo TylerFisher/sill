@@ -13,11 +13,11 @@ import {
 	Button,
 	Separator,
 } from "@radix-ui/themes";
-import { useFetcher, Form, Link } from "@remix-run/react";
+import { useFetcher, Form, Link } from "react-router";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
 import type { digestSettings } from "~/drizzle/schema.server";
-import { type action, EmailSettingsSchema } from "~/routes/email.add";
+import { type action, EmailSettingsSchema } from "~/routes/email/add";
 import SubmitButton from "./SubmitButton";
 import CheckboxField from "./CheckboxField";
 import CopyLink from "../linkPosts/CopyLink";

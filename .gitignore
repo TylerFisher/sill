@@ -10,3 +10,4 @@ redis-data
 public/sw.js
 .env.production
 dozzle
+.react-router

@@ -1,11 +1,11 @@
+import type { Route } from "./+types/_index";
 import { Box } from "@radix-ui/themes";
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import Hero from "~/components/marketing/Hero";
 import { requireAnonymous } from "~/utils/auth.server";
 
-export const meta: MetaFunction = () => [{ title: "Sill" }];
+export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
 	await requireAnonymous(request);
 	return {};
 };

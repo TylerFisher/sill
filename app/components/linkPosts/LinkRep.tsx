@@ -15,7 +15,7 @@ import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
 import Toolbar from "./Toolbar";
-import { useTheme } from "~/routes/resources.theme-switch";
+import { useTheme } from "~/routes/resources/theme-switch";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {

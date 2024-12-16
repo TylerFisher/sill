@@ -1,10 +1,11 @@
+import type { Route } from "./+types/connect";
 import { Box } from "@radix-ui/themes";
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	redirect,
-} from "@remix-run/node";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
+} from "react-router";
+import { useLoaderData, useSearchParams } from "react-router";
 import { eq } from "drizzle-orm";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -17,14 +18,14 @@ import { requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
 
-export const meta: MetaFunction = () => [
+export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connect Your Accounts" },
 ];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
 	if (!userId) {
-		return redirect("accounts/login");
+		return redirect("accounts/login") as never;
 	}
 	const existingUser = await db.query.user.findFirst({
 		columns: {},
@@ -45,7 +46,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	});
 
 	if (!existingUser) {
-		return redirect("accounts/login");
+		return redirect("accounts/login") as never;
 	}
 
 	const listOptions: ListOption[] = [];
@@ -73,8 +74,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	return { user: existingUser, listOptions };
 };
 
-const Connect = () => {
-	const { user, listOptions } = useLoaderData<typeof loader>();
+const Connect = ({ loaderData }: Route.ComponentProps) => {
+	const { user, listOptions } = loaderData;
 	if (!user) return null;
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");

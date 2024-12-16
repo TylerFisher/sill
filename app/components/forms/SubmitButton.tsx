@@ -1,5 +1,5 @@
 import { Spinner, Button, type ButtonProps } from "@radix-ui/themes";
-import { useNavigation } from "@remix-run/react";
+import { useNavigation } from "react-router";
 
 interface SubmitButtonProps extends ButtonProps {
 	label: string;

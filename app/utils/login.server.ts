@@ -1,10 +1,10 @@
 import { invariant } from "@epic-web/invariant";
-import { redirect } from "@remix-run/node";
+import { redirect } from "react-router";
 import { and, eq } from "drizzle-orm";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { db } from "~/drizzle/db.server";
 import { session, verification } from "~/drizzle/schema.server";
-import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
+import { twoFAVerificationType } from "~/routes/settings/two-factor";
 import { getUserId, sessionKey } from "~/utils/auth.server";
 import { combineResponseInits } from "~/utils/misc";
 import { authSessionStorage } from "~/utils/session.server";
@@ -68,7 +68,7 @@ export async function handleNewSession(
 				},
 				responseInit,
 			),
-		);
+		) as never;
 	}
 	const authSession = await authSessionStorage.getSession(
 		request.headers.get("cookie"),

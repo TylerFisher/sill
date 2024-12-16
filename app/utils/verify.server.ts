@@ -1,6 +1,6 @@
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { data, redirect } from "@remix-run/node";
+import { data, redirect } from "react-router";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
@@ -13,9 +13,9 @@ import {
 	redirectToQueryParam,
 	targetQueryParam,
 	typeQueryParam,
-} from "~/routes/accounts.verify";
-import { twoFAVerificationType } from "~/routes/settings.two-factor._index";
-import type { twoFAVerifyVerificationType } from "~/routes/settings.two-factor.verify";
+} from "~/routes/accounts/verify";
+import { twoFAVerificationType } from "~/routes/settings/two-factor";
+import type { twoFAVerifyVerificationType } from "~/routes/settings/two-factor.verify";
 import { requireUserId } from "~/utils/auth.server";
 import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
 import {
@@ -223,18 +223,34 @@ export async function validateRequest(
 	switch (submissionValue[typeQueryParam]) {
 		case "reset-password": {
 			await deleteVerification();
-			return handleResetPasswordVerification({ request, body, submission });
+			return handleResetPasswordVerification({
+				request,
+				body,
+				submission,
+			}) as never;
 		}
 		case "onboarding": {
 			await deleteVerification();
-			return handleOnboardingVerification({ request, body, submission });
+			return handleOnboardingVerification({
+				request,
+				body,
+				submission,
+			}) as never;
 		}
 		case "change-email": {
 			await deleteVerification();
-			return handleChangeEmailVerification({ request, body, submission });
+			return handleChangeEmailVerification({
+				request,
+				body,
+				submission,
+			}) as never;
 		}
 		case "2fa": {
-			return handleLoginTwoFactorVerification({ request, body, submission });
+			return handleLoginTwoFactorVerification({
+				request,
+				body,
+				submission,
+			}) as never;
 		}
 	}
 }

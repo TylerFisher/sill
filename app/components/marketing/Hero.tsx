@@ -7,7 +7,7 @@ import {
 	Link as RLink,
 	Text,
 } from "@radix-ui/themes";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import styles from "./Hero.module.css";
 import Logo from "../nav/Logo";
 

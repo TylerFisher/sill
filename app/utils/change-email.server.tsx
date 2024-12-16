@@ -1,10 +1,10 @@
 import { invariant } from "@epic-web/invariant";
-import { data, redirect } from "@remix-run/node";
+import { data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import EmailChangeNotice from "~/emails/emailChangeNotice";
-import { newEmailAddressSessionKey } from "~/routes/accounts.change-email";
+import { newEmailAddressSessionKey } from "~/routes/accounts/change-email";
 import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import {

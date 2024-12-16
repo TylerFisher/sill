@@ -1,6 +1,6 @@
 import type { ButtonProps } from "@radix-ui/themes";
 import { RadioCards, Spinner } from "@radix-ui/themes";
-import { useLocation, useNavigation } from "@remix-run/react";
+import { useLocation, useNavigation } from "react-router";
 interface FilterButtonProps {
 	param: string;
 	value: string;

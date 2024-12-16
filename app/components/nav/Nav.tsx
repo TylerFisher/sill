@@ -1,6 +1,6 @@
-import { Box, Button, Dialog, IconButton } from "@radix-ui/themes";
-import { NavLink, useLocation } from "@remix-run/react";
-import { Link2, Mail, Menu, MessageSquareOff, User, Zap } from "lucide-react";
+import { Button } from "@radix-ui/themes";
+import { NavLink, useLocation } from "react-router";
+import { Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
 import Footer from "./Footer";
