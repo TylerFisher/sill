@@ -71,9 +71,7 @@ export function ThemeSwitch({
 			{...getFormProps(form)}
 			action="/resources/theme-switch"
 		>
-			<ServerOnly>
-				{() => <input type="hidden" name="theme" value={nextMode} />}
-			</ServerOnly>
+			<input type="hidden" name="theme" value={nextMode} />
 			<Flex gap="1">
 				<Button
 					type="submit"
