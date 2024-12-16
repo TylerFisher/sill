@@ -128,7 +128,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	}
 
 	try {
-		await resend.batch.send(emailBodies);
+		const resp = resend.batch.send(emailBodies);
+		console.log("emails sent", resp);
 	} catch (error) {
 		console.error("Failed to send emails", error);
 		// Wait a second and try again
