@@ -91,6 +91,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 				from: "Sill <noreply@mail.sill.social>",
 				to: dbUser.email,
 				subject: subject,
+				"o:tag": "digest",
 				...(await renderReactEmail(
 					<TopLinks
 						links={links}

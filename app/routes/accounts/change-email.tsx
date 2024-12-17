@@ -87,6 +87,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const response = await sendEmail({
 		to: submission.value.email,
 		subject: "Sill Email Change Notification",
+		"o:tag": "change-email",
 		react: <EmailChange otp={otp} />,
 	});
 

@@ -70,6 +70,7 @@ export async function action({ request }: Route.ActionArgs) {
 	const response = await sendEmail({
 		to: existingUser.email,
 		subject: "Sill Password Reset",
+		"o:tag": "reset-password",
 		react: <ForgotPasswordEmail otp={otp} />,
 	});
 

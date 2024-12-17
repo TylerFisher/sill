@@ -66,6 +66,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	const response = await sendEmail({
 		to: email,
 		subject: "Verify your email",
+		"o:tag": "verify",
 		react: <Verify otp={otp} />,
 	});
 

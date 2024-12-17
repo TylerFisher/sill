@@ -66,6 +66,7 @@ export async function handleVerification({
 	await sendEmail({
 		to: preUpdateUser.email,
 		subject: "Sill email changed",
+		"o:tag": "email-change-notice",
 		react: <EmailChangeNotice userId={updatedUser[0].id} />,
 	});
 

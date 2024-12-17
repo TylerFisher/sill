@@ -104,6 +104,7 @@ export async function action({ request }: Route.ActionArgs) {
 	await sendEmail({
 		to: email,
 		subject: "Welcome to Sill!",
+		"o:tag": "welcome",
 		react: <WelcomeEmail name={String(formData.get("name"))} />,
 	});
 
