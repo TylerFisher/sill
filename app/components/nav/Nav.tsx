@@ -1,6 +1,6 @@
 import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation } from "react-router";
-import { Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
+import { Bell, Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
 import Footer from "./Footer";
@@ -25,6 +25,11 @@ const Nav = ({
 			to: "/email",
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
+		},
+		{
+			to: "/notifications",
+			label: "Notifications",
+			icon: <Bell className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/moderation",

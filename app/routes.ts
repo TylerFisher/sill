@@ -1,4 +1,9 @@
-import { type RouteConfig, index, prefix, route } from "@react-router/dev/routes";
+import {
+	type RouteConfig,
+	index,
+	prefix,
+	route,
+} from "@react-router/dev/routes";
 
 export default [
 	index("routes/_index.tsx"),
@@ -52,6 +57,7 @@ export default [
 		index("routes/moderation/index.tsx"),
 		route("mute/delete", "routes/moderation/mute.delete.ts"),
 	]),
+	...prefix("notifications", [index("routes/notifications/index.tsx")]),
 	...prefix("resources", [
 		route("layout-switch", "routes/resources/layout-switch.tsx"),
 		route("theme-switch", "routes/resources/theme-switch.tsx"),
