@@ -14,13 +14,27 @@ import { useFetcher } from "react-router";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { NotificationSchema } from "~/routes/notifications/add";
-import NotificationQueryItem from "./NotificationQueryItem";
+import NotificationQueryItem, {
+	type NotificationQuery,
+} from "./NotificationQueryItem";
 import { Plus } from "lucide-react";
 import SubmitButton from "./SubmitButton";
 
 const NotificationGroup = ({ index }: { index: number }) => {
+	const defaultCategory = {
+		id: "domain",
+		name: "Link domain",
+		type: "string",
+	};
+
 	const [format, setFormat] = useState<string | undefined>("email");
-	const [queryItems, setQueryItems] = useState([{}]);
+	const [queryItems, setQueryItems] = useState<NotificationQuery[]>([
+		{
+			category: defaultCategory,
+			operator: "",
+			value: "",
+		},
+	]);
 	const fetcher = useFetcher();
 	const [form, fields] = useForm({
 		lastResult: fetcher.data?.result,
@@ -30,6 +44,18 @@ const NotificationGroup = ({ index }: { index: number }) => {
 		shouldValidate: "onBlur",
 		shouldRevalidate: "onSubmit",
 	});
+
+	const onQueryItemChange = (item: NotificationQuery, index: number) => {
+		const newQueryItems = [...queryItems];
+		newQueryItems[index] = item;
+		setQueryItems(newQueryItems);
+	};
+
+	const onQueryItemRemove = (index: number) => {
+		const newQueryItems = [...queryItems];
+		newQueryItems.splice(index, 1);
+		setQueryItems(newQueryItems);
+	};
 
 	return (
 		<fetcher.Form
@@ -72,17 +98,36 @@ const NotificationGroup = ({ index }: { index: number }) => {
 						<strong>Filters</strong>
 					</Text>
 					<Card>
-						{queryItems.map((_, index) => (
+						<input
+							type="hidden"
+							name="query"
+							value={JSON.stringify(queryItems)}
+						/>
+						{queryItems.map((item, index) => (
 							// biome-ignore lint/suspicious/noArrayIndexKey: Nothing else to use
 							<Box key={index}>
-								<NotificationQueryItem index={index} />
+								<NotificationQueryItem
+									index={index}
+									item={item}
+									setter={onQueryItemChange}
+									remover={onQueryItemRemove}
+								/>
 								<Separator size="4" my="4" />
 							</Box>
 						))}
 						<Box mt="4">
 							<Button
 								type="button"
-								onClick={() => setQueryItems([...queryItems, {}])}
+								onClick={() =>
+									setQueryItems([
+										...queryItems,
+										{
+											category: defaultCategory,
+											operator: "",
+											value: "",
+										},
+									])
+								}
 								variant="soft"
 							>
 								<Plus width="18" height="18" />

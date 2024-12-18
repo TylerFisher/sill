@@ -1,4 +1,5 @@
-import { Box, Card, Flex, Select, Text, TextField } from "@radix-ui/themes";
+import { Box, Flex, IconButton, Select, TextField } from "@radix-ui/themes";
+import { X } from "lucide-react";
 import { useState } from "react";
 
 interface NotificationCategory {
@@ -9,8 +10,8 @@ interface NotificationCategory {
 
 const notificationCategories = [
 	{
-		id: "domain",
-		name: "Link domain",
+		id: "url",
+		name: "Link URL",
 		type: "string",
 	},
 	{
@@ -29,7 +30,7 @@ const notificationCategories = [
 		type: "string",
 	},
 	{
-		id: "text",
+		id: "post",
 		name: "Post text",
 		type: "string",
 	},
@@ -38,12 +39,57 @@ const notificationCategories = [
 		name: "Repost author",
 		type: "string",
 	},
+	{
+		id: "service",
+		name: "Service",
+		type: "string",
+	},
 ];
 
-const NotificationQueryItem = ({ index }: { index: number }) => {
-	const [category, setCategory] = useState<NotificationCategory | undefined>(
-		undefined,
-	);
+export interface NotificationQuery {
+	category: NotificationCategory;
+	operator: string;
+	value: string | number;
+}
+
+interface NotificationQueryItemProps {
+	index: number;
+	item: NotificationQuery;
+	setter: (item: NotificationQuery, index: number) => void;
+	remover: (index: number) => void;
+}
+
+const NotificationQueryItem = ({
+	index,
+	item,
+	setter,
+	remover,
+}: NotificationQueryItemProps) => {
+	const [category, setCategory] = useState<NotificationCategory>(item.category);
+	const [operator, setOperator] = useState<string>(item.operator);
+	const [value, setValue] = useState<string | number>(item.value);
+
+	const onCategoryChange = (value: string) => {
+		const category = notificationCategories.find((c) => c.id === value);
+		if (!category) {
+			return;
+		}
+
+		setCategory(category);
+		setOperator("");
+		setValue("");
+		setter({ category, operator, value }, index);
+	};
+
+	const onOperatorChange = (operator: string) => {
+		setOperator(operator);
+		setter({ category, operator, value }, index);
+	};
+
+	const onValueChange = (value: string | number) => {
+		setValue(value);
+		setter({ category, operator, value }, index);
+	};
 
 	return (
 		<Flex
@@ -52,13 +98,12 @@ const NotificationQueryItem = ({ index }: { index: number }) => {
 			mt={index > 0 ? "4" : "0"}
 			wrap="wrap"
 			align="center"
+			position="relative"
 		>
 			<Box>
 				<Select.Root
-					value={category?.id}
-					onValueChange={(value) =>
-						setCategory(notificationCategories.find((c) => c.id === value))
-					}
+					value={category.id}
+					onValueChange={onCategoryChange}
 					size="3"
 				>
 					<Select.Trigger placeholder="Category" id="category" />
@@ -72,7 +117,7 @@ const NotificationQueryItem = ({ index }: { index: number }) => {
 				</Select.Root>
 			</Box>
 			<Box>
-				<Select.Root size="3">
+				<Select.Root size="3" value={operator} onValueChange={onOperatorChange}>
 					<Select.Trigger placeholder="Operator" id="operator" />
 					<Select.Content>
 						{category?.type === "number" ? (
@@ -87,7 +132,7 @@ const NotificationQueryItem = ({ index }: { index: number }) => {
 							<>
 								<Select.Item value="contains">Contains</Select.Item>
 								<Select.Item value="equals">Equals</Select.Item>
-								<Select.Item value="notEquals">Does not equal</Select.Item>
+								<Select.Item value="excludes">Does not contain</Select.Item>
 							</>
 						)}
 					</Select.Content>
@@ -97,12 +142,27 @@ const NotificationQueryItem = ({ index }: { index: number }) => {
 				<TextField.Root
 					placeholder="Value"
 					id="value"
-					type={category?.type === "number" ? "number" : "text"}
+					type={category.type === "number" ? "number" : "text"}
 					size="3"
+					onChange={(e) => onValueChange(e.target.value)}
+					value={value}
 				>
 					<TextField.Slot />
 				</TextField.Root>
 			</Box>
+			{index > 0 && (
+				<Box position="absolute" top="0" right="0">
+					<IconButton
+						size="1"
+						type="button"
+						variant="soft"
+						color="red"
+						onClick={() => remover(index)}
+					>
+						<X width="14" height="14" />
+					</IconButton>
+				</Box>
+			)}
 		</Flex>
 	);
 };

@@ -24,7 +24,7 @@ import {
 	type PgTable,
 	type PgUpdateSetSource,
 } from "drizzle-orm/pg-core";
-import { getFullUrl, isShortenedLink } from "./normalizeLink";
+import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 
 const PAGE_SIZE = 10;
 
@@ -347,4 +347,125 @@ export const filterLinkOccurrences = async ({
 			});
 			return Promise.all(postsPromise);
 		});
+};
+
+const testQuery = async (userId: string, query: NotificationQuery) => {
+	const start = new Date(Date.now() - ONE_DAY_MS);
+	const mutePhrases = await getMutePhrases(userId);
+	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
+		notIlike(link.url, `%${phrase.phrase}%`),
+		notIlike(link.title, `%${phrase.phrase}%`),
+		notIlike(link.description, `%${phrase.phrase}%`),
+	]);
+	const postMuteCondition =
+		mutePhrases.length > 0
+			? sql`CASE WHEN ${or(
+					...mutePhrases.flatMap((phrase) => [
+						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
+					]),
+				)} THEN NULL ELSE 1 END`
+			: sql`1`;
+
+	const queries = [];
+	if (query.category.id === "url" && typeof query.value === "string") {
+		if (query.operator === "equals") {
+			queries.push(eq(link.url, query.value));
+		}
+		if (query.operator === "contains") {
+			queries.push(ilike(link.url, `%${query.value}%`));
+		}
+		if (query.operator === "excludes") {
+			queries.push(notIlike(link.url, `%${query.value}%`));
+		}
+	}
+
+	if (query.category.id === "link" && typeof query.value === "string") {
+		if (query.operator === "equals") {
+			queries.push(
+				or(eq(link.title, query.value), eq(link.description, query.value)),
+			);
+		}
+		if (query.operator === "contains") {
+			queries.push(
+				or(
+					ilike(link.title, `%${query.value}%`),
+					ilike(link.description, `%${query.value}%`),
+				),
+			);
+		}
+		if (query.operator === "excludes") {
+			queries.push(
+				and(
+					notIlike(link.title, `%${query.value}%`),
+					notIlike(link.description, `%${query.value}%`),
+				),
+			);
+		}
+	}
+
+	const links = await db
+		.select({
+			link,
+			// Count unique actors based on similar handles or names, excluding duplicates from different networks
+			uniqueActorsCount: sql<number>`
+  CAST(LEAST(
+  -- Count by normalized names
+  COUNT(DISTINCT 
+  CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+  LOWER(REGEXP_REPLACE(
+    COALESCE(
+    ${linkPostDenormalized.repostActorName},
+    ${linkPostDenormalized.actorName}
+    ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+  END
+  ),
+  -- Count by normalized handles
+  COUNT(DISTINCT 
+  CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+  CASE 
+    WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+    LOWER(substring(
+    COALESCE(
+    ${linkPostDenormalized.repostActorHandle},
+    ${linkPostDenormalized.actorHandle}
+    ) from '^@?([^@]+)(@|$)'))
+    ELSE
+    LOWER(replace(replace(
+    COALESCE(
+    ${linkPostDenormalized.repostActorHandle},
+    ${linkPostDenormalized.actorHandle}
+    ), '.bsky.social', ''), '@', ''))
+  END
+  END
+  )
+  ) as INTEGER)`.as("uniqueActorsCount"),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.where(
+			and(
+				eq(linkPostDenormalized.userId, userId),
+				gte(linkPostDenormalized.postDate, start),
+				...urlMuteClauses,
+				...queries,
+			),
+		)
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(
+			query.category.id === "shares" && typeof query.value === "number"
+				? sql`"uniqueActorsCount" >= ${query.value}`
+				: sql`count(*) > 0`,
+		)
+		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`));
 };

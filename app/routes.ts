@@ -57,7 +57,11 @@ export default [
 		index("routes/moderation/index.tsx"),
 		route("mute/delete", "routes/moderation/mute.delete.ts"),
 	]),
-	...prefix("notifications", [index("routes/notifications/index.tsx")]),
+	...prefix("notifications", [
+		index("routes/notifications/index.tsx"),
+		route("add", "routes/notifications/add.tsx"),
+		route("test", "routes/notifications/test.tsx"),
+	]),
 	...prefix("resources", [
 		route("layout-switch", "routes/resources/layout-switch.tsx"),
 		route("theme-switch", "routes/resources/theme-switch.tsx"),
