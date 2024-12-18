@@ -91,7 +91,7 @@ export async function action({ request }: Route.ActionArgs) {
 		react: <EmailChange otp={otp} />,
 	});
 
-	if (response.status === 200) {
+	if (response.status === 200 || response.status === "success") {
 		const verifySession = await verifySessionStorage.getSession();
 		verifySession.set(newEmailAddressSessionKey, submission.value.email);
 		return redirect(redirectTo.toString(), {
