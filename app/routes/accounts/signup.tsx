@@ -70,7 +70,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		react: <Verify otp={otp} />,
 	});
 
-	if (response.status !== "success") {
+	if (response.status !== 200) {
 		return data(
 			{
 				result: submission.reply({

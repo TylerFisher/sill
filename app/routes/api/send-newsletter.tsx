@@ -1,11 +1,10 @@
 import type { Route } from "./+types/send-newsletter";
 import { eq } from "drizzle-orm";
-import { Resend } from "resend";
 import { db } from "~/drizzle/db.server";
 import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
 import RSSLinks from "~/components/rss/RSSLinks";
-import { renderReactEmail } from "~/utils/email.server";
+import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import {
 	filterLinkOccurrences,
 	type MostRecentLinkPosts,
@@ -13,13 +12,6 @@ import {
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
 import { preview, subject } from "~/utils/digestText";
-const resend = new Resend(process.env.RESEND_API_KEY);
-interface Email {
-	from: string;
-	to: string;
-	subject: string;
-	html: string;
-}
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -47,7 +39,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}),
 	);
 
-	const emailBodies: Email[] = [];
 	for (const digest of digests) {
 		if (!digest) {
 			continue;
@@ -109,14 +100,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 					/>,
 				)),
 			};
-			emailBodies.push(emailBody);
 
-			// try {
-			// 	const emailResp = await sendEmail(emailBody);
-			// 	console.log("email sent", emailResp);
-			// } catch (e) {
-			// 	console.error("Failed to send email", e);
-			// }
+			try {
+				const emailResp = await sendEmail(emailBody);
+				console.log("email sent", emailResp);
+			} catch (e) {
+				console.error("Failed to send email", e);
+			}
 		} else {
 			const rssFeed = await db.query.digestRssFeed.findFirst({
 				where: eq(digestRssFeed.userId, digest.userId),
@@ -136,17 +126,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		} catch (error) {
 			console.error("Failed to insert digest item for", dbUser.email, error);
 		}
-	}
-
-	try {
-		const resp = await resend.batch.send(emailBodies);
-		console.log("emails sent", resp);
-	} catch (error) {
-		console.error("Failed to send emails", error);
-		// Wait a second and try again
-		setTimeout(async () => {
-			await resend.batch.send(emailBodies);
-		}, 1000);
 	}
 
 	return Response.json({});

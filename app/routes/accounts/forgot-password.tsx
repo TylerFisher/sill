@@ -74,7 +74,7 @@ export async function action({ request }: Route.ActionArgs) {
 		react: <ForgotPasswordEmail otp={otp} />,
 	});
 
-	if (response.status === 200 || response.status === "success") {
+	if (response.status === 200) {
 		return redirect(redirectTo.toString()) as never;
 	}
 	return data(
