@@ -26,6 +26,7 @@ const CopyLink = ({
 					variant="ghost"
 					size="1"
 					title="Copy URL"
+					type="button"
 				>
 					{copied ? (
 						<Check width="18" height="18" />

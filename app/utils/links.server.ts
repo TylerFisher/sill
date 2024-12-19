@@ -540,7 +540,6 @@ export const evaluateNotifications = async (
 							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
 							eq(linkPostDenormalized.userId, userId),
 							gte(linkPostDenormalized.postDate, start),
-							...postSQLQueries,
 							sql`${postMuteCondition} = 1`,
 						),
 					)

@@ -5,14 +5,36 @@ import NotificationGroup, {
 	type NotificationGroupInit,
 } from "./NotificationGroup";
 import type { notificationGroup } from "~/drizzle/schema.server";
+import type { SubmissionResult } from "@conform-to/react";
 
 interface NotificationFormProps {
 	notificationGroups: (typeof notificationGroup.$inferSelect)[];
+	lastResult?: SubmissionResult<string[]>;
 }
+const defaultCategory = {
+	id: "url",
+	name: "Link URL",
+	type: "string",
+};
 
-const NotificationForm = ({ notificationGroups }: NotificationFormProps) => {
+const defaultGroup: NotificationGroupInit = {
+	name: "",
+	query: [
+		{
+			category: defaultCategory,
+			operator: "contains",
+			value: "",
+		},
+	],
+	notificationType: "email",
+};
+
+const NotificationForm = ({
+	notificationGroups,
+	lastResult,
+}: NotificationFormProps) => {
 	const [groups, setGroups] = useState<NotificationGroupInit[]>(
-		notificationGroups.length > 0 ? notificationGroups : [],
+		notificationGroups.length > 0 ? notificationGroups : [defaultGroup],
 	);
 	return (
 		<Box>
@@ -30,22 +52,14 @@ const NotificationForm = ({ notificationGroups }: NotificationFormProps) => {
 					key={group.id || index}
 					index={index}
 					group={group}
+					lastResult={lastResult}
 				/>
 			))}
 			<Box mt="4">
 				<Button
 					variant="soft"
 					type="button"
-					onClick={() =>
-						setGroups([
-							...groups,
-							{
-								name: "",
-								query: [],
-								notificationType: "email",
-							},
-						])
-					}
+					onClick={() => setGroups([...groups, defaultGroup])}
 				>
 					<Plus width="18" height="18" />
 					Add notification

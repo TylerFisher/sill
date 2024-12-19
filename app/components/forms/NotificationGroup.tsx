@@ -6,18 +6,25 @@ import {
 	RadioGroup,
 	Separator,
 	Text,
+	TextField,
 } from "@radix-ui/themes";
 import TextInput from "./TextInput";
 import ErrorCallout from "./ErrorCallout";
 import { useState } from "react";
-import { useFetcher } from "react-router";
-import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { Form, useFetcher } from "react-router";
+import {
+	getFormProps,
+	getInputProps,
+	useForm,
+	type SubmissionResult,
+} from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { NotificationSchema } from "~/routes/notifications/add";
+import { NotificationSchema } from "~/routes/notifications";
 import NotificationQueryItem, {
 	type NotificationQuery,
 } from "./NotificationQueryItem";
 import { Plus } from "lucide-react";
+import CopyLink from "../linkPosts/CopyLink";
 
 export interface NotificationGroupInit {
 	id?: string;
@@ -29,10 +36,13 @@ export interface NotificationGroupInit {
 const NotificationGroup = ({
 	index,
 	group,
+	lastResult,
 }: {
 	index: number;
-	group?: NotificationGroupInit;
+	group: NotificationGroupInit;
+	lastResult?: SubmissionResult<string[]>;
 }) => {
+	console.log(lastResult);
 	const defaultCategory = {
 		id: "url",
 		name: "Link URL",
@@ -40,10 +50,10 @@ const NotificationGroup = ({
 	};
 
 	const [format, setFormat] = useState<string | undefined>(
-		group?.notificationType || "email",
+		group.notificationType || "email",
 	);
 	const [queryItems, setQueryItems] = useState<NotificationQuery[]>(
-		group?.query
+		group.query
 			? group.query
 			: [
 					{
@@ -54,9 +64,9 @@ const NotificationGroup = ({
 				],
 	);
 	const testFetcher = useFetcher();
-	const formFetcher = useFetcher();
+
 	const [form, fields] = useForm({
-		lastResult: formFetcher.data?.result,
+		lastResult: lastResult,
 		onValidate({ formData }) {
 			return parseWithZod(formData, { schema: NotificationSchema });
 		},
@@ -89,18 +99,46 @@ const NotificationGroup = ({
 		setQueryItems(newQueryItems);
 	};
 	return (
-		<formFetcher.Form
-			method="POST"
-			preventScrollReset
-			action="/notifications/add"
-			{...getFormProps(form)}
-		>
+		<Form method="POST" {...getFormProps(form)}>
+			<input type="hidden" name="id" value={group.id} />
 			<Card mt={index > 0 ? "4" : "0"}>
-				{testFetcher.data?.result?.status === "success" && (
+				{/* {mainFetcher?.data?.result === "success" && (
 					<Box mb="4">
 						<Text as="p">
 							<strong>Your notification settings have been saved.</strong>
 						</Text>
+					</Box>
+				)} */}
+				{group.notificationType === "rss" && (
+					<Box mb="4">
+						<Text as="label" htmlFor="feedUrl" size="3">
+							<strong>RSS URL</strong>
+						</Text>
+						<TextField.Root
+							readOnly
+							value={`https://sill.social/notifications/${group.id}.rss`}
+							name="feedUrl"
+							id="feedUrl"
+							size="3"
+						>
+							<TextField.Slot />
+							<TextField.Slot
+								style={{
+									position: "relative",
+									top: "1px",
+									marginRight: "8px",
+								}}
+							>
+								<CopyLink
+									url={`https://sill.social/notifications/${group.id}.rss`}
+									textPositioning={{
+										position: "absolute",
+										top: "-34px",
+										left: "-1em",
+									}}
+								/>
+							</TextField.Slot>
+						</TextField.Root>
 					</Box>
 				)}
 				<TextInput
@@ -108,8 +146,8 @@ const NotificationGroup = ({
 					inputProps={{
 						...getInputProps(fields.name, {
 							type: "text",
-							defaultValue: group?.name,
 						}),
+						defaultValue: group.name,
 					}}
 					errors={fields.name.errors}
 				/>
@@ -172,6 +210,9 @@ const NotificationGroup = ({
 						</Box>
 					</Card>
 				</Box>
+				{fields.queries.errors && (
+					<ErrorCallout error={fields.queries.errors[0]} />
+				)}
 				{testFetcher.data && (
 					<Box width="100%" my="4">
 						<strong>{testFetcher.data} results</strong> found from the last 24
@@ -180,12 +221,25 @@ const NotificationGroup = ({
 				)}
 				<Flex direction="row" gap="2">
 					<Button type="submit">Save notification</Button>
-					<Button type="button" color="red">
-						Delete notification
-					</Button>
+					{group.id && (
+						<Button
+							type="button"
+							color="red"
+							onClick={() => {
+								const formData = new FormData();
+								formData.set("groupId", group.id as string);
+								testFetcher.submit(formData, {
+									method: "DELETE",
+									action: "/notifications/delete",
+								});
+							}}
+						>
+							Delete notification
+						</Button>
+					)}
 				</Flex>
 			</Card>
-		</formFetcher.Form>
+		</Form>
 	);
 };
 
