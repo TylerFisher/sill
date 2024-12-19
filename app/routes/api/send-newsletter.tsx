@@ -88,7 +88,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 		if (digest.digestType === "email") {
 			const emailBody = {
-				from: "Sill <noreply@mail.sill.social>",
+				from: "Sill <noreply@e.sill.social>",
 				to: dbUser.email,
 				subject: subject,
 				"o:tag": "digest",

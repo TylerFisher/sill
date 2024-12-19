@@ -1,10 +1,19 @@
 import { Box, Callout, Button } from "@radix-ui/themes";
 import { CircleAlert, Plus } from "lucide-react";
 import { useState } from "react";
-import NotificationGroup from "./NotificationGroup";
+import NotificationGroup, {
+	type NotificationGroupInit,
+} from "./NotificationGroup";
+import type { notificationGroup } from "~/drizzle/schema.server";
 
-const NotificationForm = () => {
-	const [groups, setGroups] = useState([{}]);
+interface NotificationFormProps {
+	notificationGroups: (typeof notificationGroup.$inferSelect)[];
+}
+
+const NotificationForm = ({ notificationGroups }: NotificationFormProps) => {
+	const [groups, setGroups] = useState<NotificationGroupInit[]>(
+		notificationGroups.length > 0 ? notificationGroups : [],
+	);
 	return (
 		<Box>
 			<Callout.Root mb="4">
@@ -17,14 +26,26 @@ const NotificationForm = () => {
 				</Callout.Text>
 			</Callout.Root>
 			{groups.map((group, index) => (
-				// biome-ignore lint/suspicious/noArrayIndexKey: Nothing else to use
-				<NotificationGroup key={index} index={index} />
+				<NotificationGroup
+					key={group.id || index}
+					index={index}
+					group={group}
+				/>
 			))}
 			<Box mt="4">
 				<Button
 					variant="soft"
 					type="button"
-					onClick={() => setGroups([...groups, {}])}
+					onClick={() =>
+						setGroups([
+							...groups,
+							{
+								name: "",
+								query: [],
+								notificationType: "email",
+							},
+						])
+					}
 				>
 					<Plus width="18" height="18" />
 					Add notification

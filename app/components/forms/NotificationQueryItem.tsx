@@ -144,7 +144,13 @@ const NotificationQueryItem = ({
 					id="value"
 					type={category.type === "number" ? "number" : "text"}
 					size="3"
-					onChange={(e) => onValueChange(e.target.value)}
+					onChange={(e) => {
+						onValueChange(
+							category.type === "number" && e.target.valueAsNumber > 0
+								? e.target.valueAsNumber
+								: e.target.value,
+						);
+					}}
 					value={value}
 				>
 					<TextField.Slot />
@@ -155,7 +161,7 @@ const NotificationQueryItem = ({
 					<IconButton
 						size="1"
 						type="button"
-						variant="soft"
+						variant="ghost"
 						color="red"
 						onClick={() => remover(index)}
 					>

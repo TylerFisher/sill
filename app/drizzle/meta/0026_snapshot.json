@@ -1,5 +1,5 @@
 {
-  "id": "006c3a50-a54b-43bd-8339-931d44b4f962",
+  "id": "ba39612d-ea2c-4764-803b-f27801503385",
   "prevId": "71b6cf0a-e8e5-448e-bf94-3035d27b0db4",
   "version": "7",
   "dialect": "postgresql",
@@ -1407,6 +1407,19 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'email'"
+        },
+        "feedUrl": {
+          "name": "feedUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seenLinks": {
+          "name": "seenLinks",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::json"
         },
         "userId": {
           "name": "userId",

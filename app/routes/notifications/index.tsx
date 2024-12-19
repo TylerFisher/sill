@@ -43,7 +43,9 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
 					dek="Sill can send you notifications for when links meet certain criteria that you define."
 				/>
 			</Box>
-			<NotificationForm />
+			<NotificationForm
+				notificationGroups={loaderData.user.notificationGroups}
+			/>
 		</Layout>
 	);
 }

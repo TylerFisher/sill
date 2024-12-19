@@ -23,7 +23,7 @@ export default [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
-		route("update-accounts", "routes/api/update-accounts.ts"),
+		route("update-accounts", "routes/api/update-accounts.tsx"),
 	]),
 	...prefix("bluesky", [
 		route("auth", "routes/bluesky/auth.ts"),
@@ -60,6 +60,7 @@ export default [
 	...prefix("notifications", [
 		index("routes/notifications/index.tsx"),
 		route("add", "routes/notifications/add.tsx"),
+		route(":notificationGroupId.rss", "routes/notifications/feed.ts"),
 		route("test", "routes/notifications/test.tsx"),
 	]),
 	...prefix("resources", [

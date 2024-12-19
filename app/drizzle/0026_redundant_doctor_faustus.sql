@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS "notification_group" (
 	"name" text NOT NULL,
 	"query" json NOT NULL,
 	"notificationType" "digest_type" DEFAULT 'email' NOT NULL,
+	"feedUrl" text,
+	"seenLinks" json DEFAULT '[]'::json NOT NULL,
 	"userId" uuid NOT NULL,
 	"createdAt" timestamp (3) DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

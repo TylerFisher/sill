@@ -18,26 +18,45 @@ import NotificationQueryItem, {
 	type NotificationQuery,
 } from "./NotificationQueryItem";
 import { Plus } from "lucide-react";
-import SubmitButton from "./SubmitButton";
 
-const NotificationGroup = ({ index }: { index: number }) => {
+export interface NotificationGroupInit {
+	id?: string;
+	name: string;
+	query: NotificationQuery[];
+	notificationType: "email" | "rss";
+}
+
+const NotificationGroup = ({
+	index,
+	group,
+}: {
+	index: number;
+	group?: NotificationGroupInit;
+}) => {
 	const defaultCategory = {
-		id: "domain",
-		name: "Link domain",
+		id: "url",
+		name: "Link URL",
 		type: "string",
 	};
 
-	const [format, setFormat] = useState<string | undefined>("email");
-	const [queryItems, setQueryItems] = useState<NotificationQuery[]>([
-		{
-			category: defaultCategory,
-			operator: "",
-			value: "",
-		},
-	]);
-	const fetcher = useFetcher();
+	const [format, setFormat] = useState<string | undefined>(
+		group?.notificationType || "email",
+	);
+	const [queryItems, setQueryItems] = useState<NotificationQuery[]>(
+		group?.query
+			? group.query
+			: [
+					{
+						category: defaultCategory,
+						operator: "",
+						value: "",
+					},
+				],
+	);
+	const testFetcher = useFetcher();
+	const formFetcher = useFetcher();
 	const [form, fields] = useForm({
-		lastResult: fetcher.data?.result,
+		lastResult: formFetcher.data?.result,
 		onValidate({ formData }) {
 			return parseWithZod(formData, { schema: NotificationSchema });
 		},
@@ -46,9 +65,22 @@ const NotificationGroup = ({ index }: { index: number }) => {
 	});
 
 	const onQueryItemChange = (item: NotificationQuery, index: number) => {
-		const newQueryItems = [...queryItems];
+		if (!item.category || !item.operator || !item.value) {
+			return;
+		}
+		const validItems = queryItems.filter(
+			(item) => item.category && item.operator && item.value,
+		);
+		const newQueryItems = [...validItems];
 		newQueryItems[index] = item;
 		setQueryItems(newQueryItems);
+
+		const formData = new FormData();
+		formData.append("queries", JSON.stringify(newQueryItems));
+		testFetcher.submit(formData, {
+			method: "POST",
+			action: "/notifications/test",
+		});
 	};
 
 	const onQueryItemRemove = (index: number) => {
@@ -56,16 +88,15 @@ const NotificationGroup = ({ index }: { index: number }) => {
 		newQueryItems.splice(index, 1);
 		setQueryItems(newQueryItems);
 	};
-
 	return (
-		<fetcher.Form
+		<formFetcher.Form
 			method="POST"
 			preventScrollReset
 			action="/notifications/add"
 			{...getFormProps(form)}
 		>
 			<Card mt={index > 0 ? "4" : "0"}>
-				{fetcher.data?.result?.status === "success" && (
+				{testFetcher.data?.result?.status === "success" && (
 					<Box mb="4">
 						<Text as="p">
 							<strong>Your notification settings have been saved.</strong>
@@ -74,7 +105,12 @@ const NotificationGroup = ({ index }: { index: number }) => {
 				)}
 				<TextInput
 					labelProps={{ children: "Name" }}
-					inputProps={{ ...getInputProps(fields.name, { type: "text" }) }}
+					inputProps={{
+						...getInputProps(fields.name, {
+							type: "text",
+							defaultValue: group?.name,
+						}),
+					}}
 					errors={fields.name.errors}
 				/>
 				<Text as="label" size="3" htmlFor="format">
@@ -100,7 +136,7 @@ const NotificationGroup = ({ index }: { index: number }) => {
 					<Card>
 						<input
 							type="hidden"
-							name="query"
+							name="queries"
 							value={JSON.stringify(queryItems)}
 						/>
 						{queryItems.map((item, index) => (
@@ -136,14 +172,20 @@ const NotificationGroup = ({ index }: { index: number }) => {
 						</Box>
 					</Card>
 				</Box>
+				{testFetcher.data && (
+					<Box width="100%" my="4">
+						<strong>{testFetcher.data} results</strong> found from the last 24
+						hours.
+					</Box>
+				)}
 				<Flex direction="row" gap="2">
-					<SubmitButton label="Save notification" />
+					<Button type="submit">Save notification</Button>
 					<Button type="button" color="red">
 						Delete notification
 					</Button>
 				</Flex>
 			</Card>
-		</fetcher.Form>
+		</formFetcher.Form>
 	);
 };
 
