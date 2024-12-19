@@ -12,18 +12,18 @@ const RSSNotificationItem = ({
 
 	return (
 		<Box key={linkPost.link.url}>
+			<Text as="p">{linkPost.link.description}</Text>
 			<Text as="p">
 				<small>
-					from {host}
+					from <Link href={linkPost.link.url}>{host}</Link>
 					{linkPost.link.giftUrl ? (
 						<>
 							{" "}
-							<Link href={linkPost.link.url}>(link)</Link>
+							<Link href={linkPost.link.url}>(gift link)</Link>
 						</>
 					) : null}
 				</small>
 			</Text>
-			<Text as="p">{linkPost.link.description}</Text>
 			<Text as="p">
 				Shared by {linkPost.uniqueActorsCount}{" "}
 				{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}

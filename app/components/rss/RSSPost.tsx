@@ -11,8 +11,10 @@ const RSSPost = ({
 	return (
 		<Box key={postUrl}>
 			<RSSRepost group={group} />
-			<Heading as="h5">
-				{post.actorName} ({post.actorHandle})
+			<Heading as="h4">
+				<Link href={post.actorUrl}>
+					{post.actorName} (@{post.actorHandle})
+				</Link>
 			</Heading>
 			<Blockquote>
 				<Text
@@ -21,29 +23,51 @@ const RSSPost = ({
 						__html: post.postText,
 					}}
 				/>
+				{post.postImages && (
+					<Box>
+						{post.postImages.map((image) => (
+							<img src={image.url} alt={image.alt} key={image.url} />
+						))}
+					</Box>
+				)}
 				{post.quotedPostText && (
 					<Blockquote>
 						<Heading as="h5">
-							{post.quotedActorName} ({post.quotedActorHandle})
+							{post.quotedActorName} (@{post.quotedActorHandle})
 						</Heading>
 						<Text
 							as="p"
 							dangerouslySetInnerHTML={{ __html: post.quotedPostText }}
 						/>
-						<Text as="p">
-							<Link href={post.quotedPostUrl || ""}>
-								{post.quotedPostDate?.toLocaleDateString()}{" "}
-								{post.quotedPostDate?.toLocaleTimeString()}
-							</Link>
-						</Text>
+						{post.quotedPostImages && (
+							<Box>
+								{post.quotedPostImages.map((image) => (
+									<img src={image.url} alt={image.alt} key={image.url} />
+								))}
+							</Box>
+						)}
+						{post.quotedPostType && post.quotedPostUrl && (
+							<Text as="p">
+								<Link href={post.quotedPostUrl}>
+									<small>
+										View post on{" "}
+										{post.quotedPostType.charAt(0).toUpperCase() +
+											post.quotedPostType.slice(1)}{" "}
+										→
+									</small>
+								</Link>
+							</Text>
+						)}
 					</Blockquote>
 				)}
 			</Blockquote>
 
 			<Text as="p">
 				<Link href={post.postUrl}>
-					{group[0].postDate.toLocaleDateString()}{" "}
-					{group[0].postDate?.toLocaleTimeString()}
+					<small>
+						View post on{" "}
+						{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
+					</small>
 				</Link>
 			</Text>
 		</Box>

@@ -1,4 +1,4 @@
-import { Heading } from "@radix-ui/themes";
+import { Heading, Link } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 const RSSRepost = ({ group }: { group: MostRecentLinkPosts["posts"] }) => {
@@ -8,8 +8,14 @@ const RSSRepost = ({ group }: { group: MostRecentLinkPosts["posts"] }) => {
 	if (!reposters.length) return null;
 
 	return (
-		<Heading as="h6">
-			Reposted by {reposters.map((post) => post.repostActorName).join(", ")}
+		<Heading as="h5">
+			Reposted by{" "}
+			{reposters.map((post, index) => (
+				<Link key={post.repostActorUrl} href={post.repostActorUrl || ""}>
+					{post.repostActorName}
+					{index < reposters.length - 1 ? ", " : ""}
+				</Link>
+			))}
 		</Heading>
 	);
 };
