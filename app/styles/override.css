@@ -42,3 +42,9 @@
 	--default-font-family: "Nacelle";
 	--heading-font-family: "Nacelle";
 }
+
+@-moz-document url-prefix() {
+  .rt-IconButton {
+    transform: translateY(-1px);
+  }
+}
