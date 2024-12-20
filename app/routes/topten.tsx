@@ -24,12 +24,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const timeParam = url.searchParams.get("time");
 	let time = 10800000;
 
-	if (timeParam === "3h") {
-		time = 10800000;
-	} else if (timeParam === "6h") {
+	if (timeParam === "6h") {
 		time = 21600000;
 	} else if (timeParam === "12h") {
 		time = 43200000;
+	} else if (timeParam === "24h") {
+		time = 86400000;
 	}
 
 	const topTen = await networkTopTen(time);
@@ -43,13 +43,21 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 const TopTen = ({ loaderData }: Route.ComponentProps) => {
 	const { existingUser, topTen } = loaderData;
 	const layout = useLayout();
-	const [searchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const timeParam = searchParams.get("time") || "3h";
 	const [time, setTime] = useState(timeParam);
 
 	const onSelected = (value: string) => {
 		setTime(value);
+		setSearchParam("time", value);
 	};
+
+	function setSearchParam(param: string, value: string) {
+		setSearchParams((prev) => {
+			prev.set(param, value);
+			return prev;
+		});
+	}
 
 	return (
 		<Layout hideNav={!!existingUser}>
