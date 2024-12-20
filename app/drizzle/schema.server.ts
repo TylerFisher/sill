@@ -457,6 +457,10 @@ export const linkPostDenormalized = pgTable(
 				"btree",
 				table.listId.asc().nullsLast(),
 			),
+			postDateIdx: index("link_post_denormalized_postDate_idx").using(
+				"btree",
+				table.postDate.asc().nullsLast(),
+			),
 		};
 	},
 );
