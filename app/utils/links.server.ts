@@ -352,7 +352,7 @@ export const filterLinkOccurrences = async ({
 export const networkTopTen = async (
 	time: number,
 ): Promise<MostRecentLinkPosts[]> => {
-	const threeHoursAgo = new Date(Date.now() - time);
+	const start = new Date(Date.now() - time);
 
 	const topTen = await db
 		.select({
@@ -366,7 +366,7 @@ export const networkTopTen = async (
 		})
 		.from(linkPostDenormalized)
 		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-		.where(gte(linkPostDenormalized.postDate, threeHoursAgo))
+		.where(gte(linkPostDenormalized.postDate, start))
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
 		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))

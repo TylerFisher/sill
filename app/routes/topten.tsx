@@ -7,9 +7,9 @@ import { getUserId } from "~/utils/auth.server";
 import { networkTopTen } from "~/utils/links.server";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import { useLayout } from "./resources/layout-switch";
-import { Box, Flex, Heading, Select, Text } from "@radix-ui/themes";
-import { useSearchParams } from "react-router";
-import { useState } from "react";
+import { Box, Flex, Heading, Select, Spinner, Text } from "@radix-ui/themes";
+import { Await, useSearchParams } from "react-router";
+import { Suspense, useState } from "react";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -32,7 +32,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		time = 86400000;
 	}
 
-	const topTen = await networkTopTen(time);
+	const topTen = networkTopTen(time);
 
 	return {
 		existingUser,
@@ -80,45 +80,62 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 				</Flex>
 			</Flex>
 
-			{topTen.map((linkPost, index) => (
-				<Box mb="9" key={linkPost.link?.id} position="relative">
-					<Flex
-						position="absolute"
-						top="10px"
-						right={{
-							initial: "10px",
-							md: "initial",
-						}}
-						left={{
-							initial: "initial",
-							md: "-80px",
-						}}
-						style={{
-							backgroundColor: "var(--accent-11)",
-							borderRadius: "100%",
-							zIndex: 1,
-							color: "var(--accent-1)",
-						}}
-						width="50px"
-						height="50px"
-						justify="center"
-						align="center"
-					>
-						<Text weight="bold" size="4">
-							#{index + 1}
-						</Text>
-					</Flex>
-					<LinkRep
-						link={linkPost.link}
-						instance={undefined}
-						bsky={undefined}
-						layout={layout}
-					/>
-					<Text as="p">
-						Shared by {linkPost.uniqueActorsCount.toLocaleString()} accounts
-					</Text>
-				</Box>
-			))}
+			<Suspense
+				fallback={
+					<Box>
+						<Flex justify="center">
+							<Spinner size="3" />
+						</Flex>
+					</Box>
+				}
+			>
+				<Await resolve={topTen}>
+					{(topTen) => (
+						<Box>
+							{topTen.map((linkPost, index) => (
+								<Box mb="9" key={linkPost.link?.id} position="relative">
+									<Flex
+										position="absolute"
+										top="10px"
+										right={{
+											initial: "10px",
+											md: "initial",
+										}}
+										left={{
+											initial: "initial",
+											md: "-80px",
+										}}
+										style={{
+											backgroundColor: "var(--accent-11)",
+											borderRadius: "100%",
+											zIndex: 1,
+											color: "var(--accent-1)",
+										}}
+										width="50px"
+										height="50px"
+										justify="center"
+										align="center"
+									>
+										<Text weight="bold" size="4">
+											#{index + 1}
+										</Text>
+									</Flex>
+									<LinkRep
+										link={linkPost.link}
+										instance={undefined}
+										bsky={undefined}
+										layout={layout}
+									/>
+									<Text as="p">
+										Shared by {linkPost.uniqueActorsCount.toLocaleString()}{" "}
+										accounts
+									</Text>
+								</Box>
+							))}
+						</Box>
+					)}
+				</Await>
+			</Suspense>
 		</Layout>
 	);
 };
