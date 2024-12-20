@@ -66,7 +66,8 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  remix:
+  remix: &base-service
+    image: sill-app
     build:
       context: ./
       dockerfile: Dockerfile
@@ -78,19 +79,24 @@ services:
       - db
     networks:
       - net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`) || Host(`127.0.0.1`)"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
+    volumes:
+      - ${APP_DIR}:/app
+      - /app/node_modules
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "6"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`) || Host(`127.0.0.1`)"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
     command: ["npm", "run", "dev"]
-    volumes:
-      - ${APP_DIR}:/app
-      - /app/node_modules
+
+  worker:
+    <<: *base-service
+    command: npm run dev:worker
+    restart: unless-stopped
 
   dozzle:
     image: amir20/dozzle:latest

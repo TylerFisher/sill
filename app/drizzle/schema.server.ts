@@ -465,6 +465,28 @@ export const linkPostDenormalized = pgTable(
 	},
 );
 
+export const accountUpdateQueue = pgTable("account_update_queue", {
+	id: uuid().primaryKey().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id),
+	status: text().notNull().default("pending"),
+	createdAt: timestamp().defaultNow(),
+	processedAt: timestamp(),
+	error: text(),
+	retries: integer().default(0),
+});
+
+export const accountUpdateRelations = relations(
+	accountUpdateQueue,
+	({ one }) => ({
+		user: one(user, {
+			fields: [accountUpdateQueue.userId],
+			references: [user.id],
+		}),
+	}),
+);
+
 export const linkPostDenormalizedRelations = relations(
 	linkPostDenormalized,
 	({ one }) => ({

@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "build": "NODE_ENV=production react-router build",
+    "build:worker": "tsx workers/build.ts",
     "dev": "NODE_ENV=development react-router dev --host",
+    "dev:worker": "tsx watch --env-file .env ./workers/process-queue.ts",
     "generate-secrets": "sh ./scripts/generate-secrets.sh",
     "lint": "biome check",
     "start": "react-router-serve ./build/server/index.js",
+    "start:worker": "node --env-file .env ./build/worker.js",
     "typecheck": "react-router typegen && tsc",
     "test": "vitest"
   },
@@ -90,5 +93,8 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.9.5"
+  },
+  "_moduleAliases": {
+    "~": "build/app"
   }
 }

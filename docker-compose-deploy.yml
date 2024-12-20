@@ -75,7 +75,7 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  remix:
+  remix: &base-service
     image: ghcr.io/tylerfisher/sill/remix:latest
     env_file:
       - .env
@@ -99,6 +99,13 @@ services:
       options:
         max-size: "50m"
         max-file: "6"
+  
+  worker:
+    <<: *base-service
+    depends_on:
+      - remix
+    command: npm run start:worker
+    restart: unless-stopped
 
   dozzle:
     image: amir20/dozzle:latest

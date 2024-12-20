@@ -16,6 +16,8 @@ ADD . .
 
 # Build application
 RUN npm run build
+RUN npm run build:worker
+
 
 # Remove development dependencies
 RUN npm prune --omit-dev
