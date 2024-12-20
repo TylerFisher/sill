@@ -355,10 +355,34 @@ export const networkTopTen = async (): Promise<MostRecentLinkPosts[]> => {
 	const topTen = await db
 		.select({
 			link,
-			uniqueActorsCount: sql<number>`cast(count(distinct 
-      coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle})) as int)`.as(
-				"uniqueActorsCount",
-			),
+			uniqueActorsCount: sql<number>`
+  CAST(LEAST(
+    -- Count by normalized names
+    COUNT(DISTINCT 
+        LOWER(REGEXP_REPLACE(
+          COALESCE(
+            ${linkPostDenormalized.repostActorName},
+            ${linkPostDenormalized.actorName}
+          ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+    ),
+    -- Count by normalized handles
+    COUNT(DISTINCT 
+        CASE 
+          WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+            LOWER(substring(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ) from '^@?([^@]+)(@|$)'))
+          ELSE
+            LOWER(replace(replace(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ), '.bsky.social', ''), '@', ''))
+        END
+    )
+  ) as INTEGER)`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),

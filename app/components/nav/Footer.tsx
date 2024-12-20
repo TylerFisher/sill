@@ -14,12 +14,13 @@ const Footer = ({
 	return (
 		<Box className={styles.footer}>
 			<Flex gap="2" direction="row" align="center" wrap="wrap">
-				{(location.pathname.includes("/links") ||
-					location.pathname.includes("/digest")) && (
-					<>
-						<LayoutSwitch userPreference={layout} id={layoutFormId} /> ·
-					</>
-				)}
+				{location.pathname.includes("/links") ||
+					location.pathname.includes("/digest") ||
+					(location.pathname.includes("topten") && (
+						<>
+							<LayoutSwitch userPreference={layout} id={layoutFormId} /> ·
+						</>
+					))}
 				<ThemeSwitch userPreference={theme} id={themeFormId} />
 			</Flex>
 			<Flex mb="4" gap="2" direction="row" align="center" wrap="wrap">
