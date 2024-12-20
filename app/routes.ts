@@ -62,5 +62,5 @@ export default [
 		route("theme-switch", "routes/resources/theme-switch.tsx"),
 	]),
 	route("settings", "routes/settings/index.tsx"),
-	// route("topten", "routes/topten.tsx"),
+	route("topten", "routes/topten.tsx"),
 ] satisfies RouteConfig;

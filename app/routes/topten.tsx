@@ -43,6 +43,9 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 						bsky={undefined}
 						layout={layout}
 					/>
+					<Text as="p">
+						Sill has seen posts from {linkPost.uniqueActorsCount} accounts
+					</Text>
 				</Box>
 			))}
 		</Layout>
