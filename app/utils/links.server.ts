@@ -358,7 +358,9 @@ interface TopTenLinks {
 	post: typeof linkPostDenormalized.$inferSelect | undefined;
 }
 
-export const networkTopTen = async (time: number): Promise<TopTenLinks[]> => {
+export const networkTopTen = async (
+	time: number,
+): Promise<MostRecentLinkPosts[]> => {
 	const start = new Date(Date.now() - time);
 
 	const topTen = await db
@@ -379,34 +381,5 @@ export const networkTopTen = async (time: number): Promise<TopTenLinks[]> => {
 		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
 		.limit(10);
 
-	const topTenWithPosts = await Promise.all(
-		topTen.map(async (result) => {
-			const postUrl = await db
-				.select({
-					postUrl: linkPostDenormalized.postUrl,
-					count: sql<number>`count(*)`.as("count"),
-				})
-				.from(linkPostDenormalized)
-				.where(
-					and(
-						eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-						gte(linkPostDenormalized.postDate, start),
-					),
-				)
-				.groupBy(linkPostDenormalized.postUrl, linkPostDenormalized.postDate)
-				.orderBy(desc(sql`count`))
-				.limit(1);
-
-			const fullPost = await db.query.linkPostDenormalized.findFirst({
-				where: eq(linkPostDenormalized.postUrl, postUrl[0].postUrl),
-			});
-
-			return {
-				...result,
-				post: fullPost,
-			};
-		}),
-	);
-
-	return topTenWithPosts;
+	return topTen;
 };

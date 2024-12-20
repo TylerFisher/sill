@@ -127,19 +127,11 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 										bsky={undefined}
 										layout={layout}
 									/>
-									<Text as="p">Most popular post:</Text>
-									{linkPost.post && (
-										<PostRep
-											group={[
-												{
-													...linkPost.post,
-													repostActorHandle: null,
-												},
-											]}
-											instance={undefined}
-											bsky={undefined}
-										/>
-									)}
+									<Text as="p">
+										Shared by{" "}
+										{linkPost.uniqueActorsCount.toLocaleString("en-US")}{" "}
+										accounts
+									</Text>
 								</Box>
 							))}
 						</Box>
