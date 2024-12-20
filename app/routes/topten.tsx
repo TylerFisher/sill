@@ -10,6 +10,7 @@ import { useLayout } from "./resources/layout-switch";
 import { Box, Flex, Heading, Select, Spinner, Text } from "@radix-ui/themes";
 import { Await, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
+import PostRep from "~/components/linkPosts/PostRep";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -126,10 +127,19 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 										bsky={undefined}
 										layout={layout}
 									/>
-									<Text as="p">
-										Shared by {linkPost.uniqueActorsCount.toLocaleString()}{" "}
-										accounts
-									</Text>
+									<Text as="p">Most popular post:</Text>
+									{linkPost.post && (
+										<PostRep
+											group={[
+												{
+													...linkPost.post,
+													repostActorHandle: null,
+												},
+											]}
+											instance={undefined}
+											bsky={undefined}
+										/>
+									)}
 								</Box>
 							))}
 						</Box>

@@ -13,9 +13,11 @@ import {
 import { db } from "~/drizzle/db.server";
 import {
 	link,
+	linkPost,
 	linkPostDenormalized,
 	list,
 	mutePhrase,
+	post,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -349,9 +351,14 @@ export const filterLinkOccurrences = async ({
 		});
 };
 
-export const networkTopTen = async (
-	time: number,
-): Promise<MostRecentLinkPosts[]> => {
+interface TopTenLinks {
+	link: typeof link.$inferSelect;
+	mostRecentPostDate: Date;
+	uniqueActorsCount: number;
+	post: typeof linkPostDenormalized.$inferSelect | undefined;
+}
+
+export const networkTopTen = async (time: number): Promise<TopTenLinks[]> => {
 	const start = new Date(Date.now() - time);
 
 	const topTen = await db
@@ -365,12 +372,41 @@ export const networkTopTen = async (
       )`.as("uniqueActorsCount"),
 		})
 		.from(linkPostDenormalized)
-		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(gte(linkPostDenormalized.postDate, start))
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
 		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
 		.limit(10);
 
-	return topTen;
+	const topTenWithPosts = await Promise.all(
+		topTen.map(async (result) => {
+			const postUrl = await db
+				.select({
+					postUrl: linkPostDenormalized.postUrl,
+					count: sql<number>`count(*)`.as("count"),
+				})
+				.from(linkPostDenormalized)
+				.where(
+					and(
+						eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+						gte(linkPostDenormalized.postDate, start),
+					),
+				)
+				.groupBy(linkPostDenormalized.postUrl, linkPostDenormalized.postDate)
+				.orderBy(desc(sql`count`))
+				.limit(1);
+
+			const fullPost = await db.query.linkPostDenormalized.findFirst({
+				where: eq(linkPostDenormalized.postUrl, postUrl[0].postUrl),
+			});
+
+			return {
+				...result,
+				post: fullPost,
+			};
+		}),
+	);
+
+	return topTenWithPosts;
 };
