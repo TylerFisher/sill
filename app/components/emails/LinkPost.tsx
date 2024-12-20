@@ -38,7 +38,14 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 					)}
 					<Row style={row}>
 						<Column>
-							<Text style={host}>{new URL(link.url).host}</Text>
+							<Text style={host}>
+								{new URL(link.url).host}{" "}
+								{link.giftUrl && (
+									<Link style={giftLink} href={link.giftUrl}>
+										(gift link)
+									</Link>
+								)}
+							</Text>
 							<Heading style={heading} as="h2">
 								{link.title || link.url}
 							</Heading>
@@ -107,6 +114,15 @@ const host = {
 	fontSize: "12px",
 	lineHeight: 1,
 };
+
+const giftLink = {
+	margin: 0,
+	color: "gray",
+	fontSize: "12px",
+	lineHeight: 1,
+	textDecoration: "underline",
+};
+
 const heading = {
 	color: "#9E6C00",
 	lineHeight: 1.2,

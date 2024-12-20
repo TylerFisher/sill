@@ -1,4 +1,4 @@
-import { redirect } from "@remix-run/node";
+import { redirect } from "react-router";
 import bcrypt from "bcryptjs";
 import { and, eq, gt } from "drizzle-orm";
 import { safeRedirect } from "remix-utils/safe-redirect";

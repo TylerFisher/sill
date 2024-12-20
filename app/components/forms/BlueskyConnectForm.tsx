@@ -6,14 +6,12 @@ import {
 	TextField,
 	Callout,
 	Link,
-	Box,
-	Flex,
 } from "@radix-ui/themes";
-import { Form } from "@remix-run/react";
+import { Form } from "react-router";
 import { CircleAlert } from "lucide-react";
 import type { blueskyAccount } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
-import ListSwitch, { type ListOption } from "./ListSwitch";
+import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
 
 interface BlueskyConnectFormProps {

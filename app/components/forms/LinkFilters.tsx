@@ -1,6 +1,5 @@
-import { Box, Button, Heading, Select, Text } from "@radix-ui/themes";
-import { Form, useSearchParams } from "@remix-run/react";
-import { useState } from "react";
+import { Box, Button, Flex } from "@radix-ui/themes";
+import { Form, useSearchParams } from "react-router";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
@@ -10,7 +9,12 @@ import SearchField from "./SearchField";
 const LinkFilters = ({
 	showService,
 	lists,
-}: { showService: boolean; lists: (typeof list.$inferSelect)[] }) => {
+	reverse = false,
+}: {
+	showService: boolean;
+	lists: (typeof list.$inferSelect)[];
+	reverse?: boolean;
+}) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	function setSearchParam(param: string, value: string) {
@@ -49,7 +53,7 @@ const LinkFilters = ({
 			],
 		},
 		{
-			heading: "Hide reposts",
+			heading: "Exclude reposts",
 			defaultValue: searchParams.get("reposts") || "false",
 			param: "reposts",
 			buttons: [
@@ -124,23 +128,26 @@ const LinkFilters = ({
 
 	return (
 		<>
-			<Box mt="6">
-				<Form method="GET">
-					<SearchField />
-				</Form>
-			</Box>
-			<Box mt="6">
-				{buttonGroups.map((group, index) => (
-					<FilterButtonGroup
-						key={group.heading}
-						heading={group.heading}
-						param={group.param}
-						buttonData={group.buttons}
-						setter={setSearchParam}
-						defaultValue={group.defaultValue}
-					/>
-				))}
-			</Box>
+			<Flex direction={reverse ? "column-reverse" : "column"}>
+				<Box mt={reverse ? "3" : "6"} mb={reverse ? "6" : "0"}>
+					<Form method="GET">
+						<SearchField />
+					</Form>
+				</Box>
+				<Box mt="6">
+					{buttonGroups.map((group, index) => (
+						<FilterButtonGroup
+							key={group.heading}
+							heading={group.heading}
+							param={group.param}
+							buttonData={group.buttons}
+							setter={setSearchParam}
+							defaultValue={group.defaultValue}
+						/>
+					))}
+				</Box>
+			</Flex>
+
 			{searchParams.size > 0 && (
 				<Button onClick={clearSearchParams}>Reset to defaults</Button>
 			)}

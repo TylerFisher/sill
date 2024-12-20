@@ -1,17 +1,31 @@
 import { Link, IconButton } from "@radix-ui/themes";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Gift } from "lucide-react";
 
-const OpenLink = ({ url }: { url: string }) => {
+const OpenLink = ({ url, isGift }: { url: string; isGift: boolean }) => {
+	const label = isGift ? "Open gift link" : "Open in new tab";
 	return (
 		<Link
 			href={url}
 			target="_blank"
 			rel="noreferrer"
-			aria-label="Open in new tab"
-			title="Open in new tab"
+			aria-label={label}
+			title={label}
 		>
-			<IconButton aria-label="Open in new tab" variant="ghost" size="1">
-				<ExternalLink width="18" height="18" />
+			<IconButton
+				aria-label={label}
+				title={label}
+				variant="ghost"
+				size="1"
+				style={{
+					position: "relative",
+					top: isGift ? "-1px" : "0",
+				}}
+			>
+				{isGift ? (
+					<Gift width="20" height="20" />
+				) : (
+					<ExternalLink width="18" height="18" />
+				)}
 			</IconButton>
 		</Link>
 	);

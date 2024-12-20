@@ -15,7 +15,7 @@ import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
 import Toolbar from "./Toolbar";
-import { useTheme } from "~/routes/resources.theme-switch";
+import { useTheme } from "~/routes/resources/theme-switch";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
@@ -38,9 +38,10 @@ const YoutubeEmbed = ({ url }: { url: URL }) => {
 };
 
 const XEmbed = ({ url }: { url: URL }) => {
+	const adjusted = url.href.split("/photo/")[0];
 	return (
 		<ClientOnly>
-			{() => <Tweet id={url.href.split("/").pop() || ""} />}
+			{() => <Tweet id={adjusted.split("/").pop() || ""} />}
 		</ClientOnly>
 	);
 };
@@ -56,7 +57,8 @@ const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 			{link.imageUrl &&
 				layout === "default" &&
 				url.hostname !== "www.youtube.com" &&
-				url.hostname !== "youtu.be" && (
+				url.hostname !== "youtu.be" &&
+				url.hostname !== "twitter.com" && (
 					<Inset mb="4" className={styles.inset}>
 						<AspectRatio ratio={16 / 9}>
 							<Link
@@ -136,6 +138,7 @@ const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 			</Inset>
 			<Toolbar
 				url={link.url}
+				giftUrl={link.giftUrl}
 				narrowMutePhrase={link.url}
 				broadMutePhrase={host}
 				instance={instance}

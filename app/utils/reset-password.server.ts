@@ -1,9 +1,9 @@
 import { invariant } from "@epic-web/invariant";
-import { data, redirect } from "@remix-run/node";
+import { data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { resetPasswordEmailSessionKey } from "~/routes/accounts.reset-password";
+import { resetPasswordEmailSessionKey } from "~/routes/accounts/reset-password";
 import { verifySessionStorage } from "~/utils/verification.server";
 import type { VerifyFunctionArgs } from "~/utils/verify.server.ts";
 

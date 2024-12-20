@@ -1,12 +1,16 @@
+import type { Route } from "./+types/download";
 import { Box, Button, Flex, Spinner, Text } from "@radix-ui/themes";
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Await, Link, useLoaderData } from "@remix-run/react";
+import { Await, Link } from "react-router";
 import { Suspense } from "react";
 import Layout from "~/components/nav/Layout";
 import { requireUserId } from "~/utils/auth.server";
 import { filterLinkOccurrences } from "~/utils/links.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const meta: Route.MetaFunction = () => [
+	{ title: "Sill | Downloading..." },
+];
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
 	const params = new URL(request.url).searchParams;
 	const service = params.get("service");
@@ -18,8 +22,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	return { promise, service };
 };
 
-const Download = () => {
-	const { promise, service } = useLoaderData<typeof loader>();
+const Download = ({ loaderData }: Route.ComponentProps) => {
+	const { promise, service } = loaderData;
 
 	return (
 		<Layout hideNav>

@@ -1,5 +1,5 @@
 import { Button, TextField } from "@radix-ui/themes";
-import { useSearchParams } from "@remix-run/react";
+import { useSearchParams } from "react-router";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 

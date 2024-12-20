@@ -19,6 +19,14 @@ const RSSLinkPost = ({
 				<Link href={linkPost.link.url}>
 					<small>{host}</small>
 				</Link>
+				{linkPost.link.giftUrl && (
+					<>
+						{" "}
+						<Link href={linkPost.link.giftUrl}>
+							<small>(gift link)</small>
+						</Link>
+					</>
+				)}
 			</Heading>
 			<Heading as="h3">
 				<Link href={linkPost.link.url}>

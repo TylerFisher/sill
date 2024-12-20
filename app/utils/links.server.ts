@@ -24,6 +24,7 @@ import {
 	type PgTable,
 	type PgUpdateSetSource,
 } from "drizzle-orm/pg-core";
+import { getFullUrl, isShortenedLink } from "./normalizeLink";
 
 const PAGE_SIZE = 10;
 
@@ -85,9 +86,13 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 						!existing ||
 						(p.link.title && !existing.title) ||
 						(p.link.description && !existing.description) ||
-						(p.link.imageUrl && !existing.imageUrl)
+						(p.link.imageUrl && !existing.imageUrl) ||
+						(p.link.giftUrl && !existing.giftUrl)
 					) {
-						acc[p.link.url] = p.link;
+						acc[p.link.url] = {
+							...p.link,
+							giftUrl: existing?.giftUrl || p.link.giftUrl,
+						};
 					}
 					return acc;
 				},
@@ -104,7 +109,13 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 					.values(links)
 					.onConflictDoUpdate({
 						target: [link.url],
-						set: conflictUpdateSetAllColumns(link),
+						set: {
+							...conflictUpdateSetAllColumns(link),
+							giftUrl: sql`CASE 
+                WHEN ${link.giftUrl} IS NULL THEN excluded."giftUrl"
+                ELSE ${link.giftUrl} 
+              END`,
+						},
 					});
 
 			if (denormalized.length > 0)
@@ -216,10 +227,39 @@ export const filterLinkOccurrences = async ({
 	return await db
 		.select({
 			link,
-			uniqueActorsCount: sql<number>`cast(count(distinct 
-	  CASE WHEN ${postMuteCondition} IS NOT NULL 
-	  THEN coalesce(${linkPostDenormalized.repostActorHandle}, ${linkPostDenormalized.actorHandle}) 
-	  END) as int)`.as("uniqueActorsCount"),
+			// Count unique actors based on similar handles or names, excluding duplicates from different networks
+			uniqueActorsCount: sql<number>`
+  CAST(LEAST(
+    -- Count by normalized names
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        LOWER(REGEXP_REPLACE(
+          COALESCE(
+            ${linkPostDenormalized.repostActorName},
+            ${linkPostDenormalized.actorName}
+          ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+      END
+    ),
+    -- Count by normalized handles
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        CASE 
+          WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+            LOWER(substring(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ) from '^@?([^@]+)(@|$)'))
+          ELSE
+            LOWER(replace(replace(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ), '.bsky.social', ''), '@', ''))
+        END
+      END
+    )
+  ) as INTEGER)`.as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
