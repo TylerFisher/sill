@@ -349,8 +349,10 @@ export const filterLinkOccurrences = async ({
 		});
 };
 
-export const networkTopTen = async (): Promise<MostRecentLinkPosts[]> => {
-	const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+export const networkTopTen = async (
+	time: number,
+): Promise<MostRecentLinkPosts[]> => {
+	const threeHoursAgo = new Date(Date.now() - time);
 
 	const topTen = await db
 		.select({
