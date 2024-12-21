@@ -22,18 +22,26 @@ async function processQueue() {
 				jobs.map(async (job) => {
 					const jobStart = Date.now();
 					try {
-						const links = await fetchLinks(job.userId);
-						// await insertNewLinks(links);
-						allLinks.push(...links);
+						const timeoutPromise = new Promise((_, reject) =>
+							setTimeout(() => {
+								console.log(`[Queue] Job timed out for user: ${job.userId}`);
+								reject(new Error("Job timed out after 10 seconds"));
+							}, 10000),
+						);
+						const jobPromise = (async () => {
+							const links = await fetchLinks(job.userId);
+							allLinks.push(...links);
 
-						await db
-							.update(accountUpdateQueue)
-							.set({
-								status: "completed",
-								processedAt: new Date(),
-							})
-							.where(eq(accountUpdateQueue.id, job.id));
+							await db
+								.update(accountUpdateQueue)
+								.set({
+									status: "completed",
+									processedAt: new Date(),
+								})
+								.where(eq(accountUpdateQueue.id, job.id));
+						})();
 
+						await Promise.race([timeoutPromise, jobPromise]);
 						return { status: "success", duration: Date.now() - jobStart };
 					} catch (error) {
 						await db
