@@ -7,8 +7,16 @@ import { getUserId } from "~/utils/auth.server";
 import { networkTopTen } from "~/utils/links.server";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import { useLayout } from "../resources/layout-switch";
-import { Box, Flex, Heading, Select, Spinner, Text } from "@radix-ui/themes";
-import { Await, useSearchParams } from "react-router";
+import {
+	Box,
+	Button,
+	Flex,
+	Heading,
+	Select,
+	Spinner,
+	Text,
+} from "@radix-ui/themes";
+import { Await, NavLink, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -129,6 +137,20 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 									/>
 								</Box>
 							))}
+							<Box>
+								<Text as="p">
+									Want to see the most popular links in your own network?{" "}
+									{existingUser ? (
+										<NavLink to="/links">
+											<Button type="button">See your top links</Button>
+										</NavLink>
+									) : (
+										<NavLink to="/accounts/signup">
+											<Button type="button">Sign up for Sill</Button>
+										</NavLink>
+									)}
+								</Text>
+							</Box>
 						</Box>
 					)}
 				</Await>
