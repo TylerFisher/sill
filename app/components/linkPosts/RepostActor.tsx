@@ -1,5 +1,4 @@
 import { Button, Link, Popover, Text } from "@radix-ui/themes";
-import { unique } from "drizzle-orm/mysql-core";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import type { linkPostDenormalized } from "~/drizzle/schema.server";
 
