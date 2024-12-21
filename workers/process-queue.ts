@@ -24,7 +24,6 @@ async function processQueue() {
 					try {
 						const timeoutPromise = new Promise((_, reject) =>
 							setTimeout(() => {
-								console.log(`[Queue] Job timed out for user: ${job.userId}`);
 								reject(new Error("Job timed out after 10 seconds"));
 							}, 10000),
 						);
@@ -44,6 +43,8 @@ async function processQueue() {
 						await Promise.race([timeoutPromise, jobPromise]);
 						return { status: "success", duration: Date.now() - jobStart };
 					} catch (error) {
+						console.log(`[Queue] Job timed out for user: ${job.userId}`);
+
 						await db
 							.update(accountUpdateQueue)
 							.set({
