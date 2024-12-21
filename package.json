@@ -11,7 +11,7 @@
     "generate-secrets": "sh ./scripts/generate-secrets.sh",
     "lint": "biome check",
     "start": "react-router-serve ./build/server/index.js",
-    "start:worker": "node --env-file .env ./build/worker.js",
+    "start:worker": "node ./build/worker.js",
     "typecheck": "react-router typegen && tsc",
     "test": "vitest"
   },
