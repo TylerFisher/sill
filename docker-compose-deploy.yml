@@ -75,7 +75,7 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  remix: &base-service
+  remix:
     image: ghcr.io/tylerfisher/sill/remix:latest
     env_file:
       - .env
@@ -101,11 +101,24 @@ services:
         max-file: "6"
   
   worker:
-    <<: *base-service
+    image: ghcr.io/tylerfisher/sill/remix:latest
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
     depends_on:
-      - remix
+      - pgbouncer
+      - traefik
+      - dozzle
     command: npm run start:worker
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
+    networks:
+      - net
 
   dozzle:
     image: amir20/dozzle:latest
