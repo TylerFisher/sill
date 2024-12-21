@@ -6,11 +6,10 @@ import { user } from "~/drizzle/schema.server";
 import { getUserId } from "~/utils/auth.server";
 import { networkTopTen } from "~/utils/links.server";
 import LinkRep from "~/components/linkPosts/LinkRep";
-import { useLayout } from "./resources/layout-switch";
+import { useLayout } from "../resources/layout-switch";
 import { Box, Flex, Heading, Select, Spinner, Text } from "@radix-ui/themes";
 import { Await, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
-import PostRep from "~/components/linkPosts/PostRep";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -61,7 +60,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 	}
 
 	return (
-		<Layout hideNav={!!existingUser}>
+		<Layout hideNav={!existingUser}>
 			<Flex justify="between" align="center" mb="4">
 				<Heading as="h2">Top Ten Links</Heading>
 				<Flex align="center" gap="1">
@@ -70,7 +69,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 						value={time}
 						onValueChange={(value) => onSelected(value)}
 					>
-						<Select.Trigger variant="ghost" />
+						<Select.Trigger />
 						<Select.Content>
 							<Select.Item value="3h">3 hours</Select.Item>
 							<Select.Item value="6h">6 hours</Select.Item>
@@ -98,14 +97,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 									<Flex
 										position="absolute"
 										top="10px"
-										right={{
-											initial: "10px",
-											md: "initial",
-										}}
-										left={{
-											initial: "initial",
-											md: "-80px",
-										}}
+										right="10px"
 										style={{
 											backgroundColor: "var(--accent-11)",
 											borderRadius: "100%",
@@ -117,8 +109,16 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 										justify="center"
 										align="center"
 									>
-										<Text weight="bold" size="4">
-											#{index + 1}
+										<Text
+											size="6"
+											style={{
+												fontWeight: "900",
+												fontStyle: "italic",
+												top: "2px",
+												position: "relative",
+											}}
+										>
+											{index + 1}
 										</Text>
 									</Flex>
 									<LinkRep
@@ -127,11 +127,6 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 										bsky={undefined}
 										layout={layout}
 									/>
-									<Text as="p">
-										Shared by{" "}
-										{linkPost.uniqueActorsCount.toLocaleString("en-US")}{" "}
-										accounts
-									</Text>
 								</Box>
 							))}
 						</Box>

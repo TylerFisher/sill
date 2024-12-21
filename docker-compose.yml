@@ -66,7 +66,7 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  remix: &base-service
+  remix:
     image: sill-app
     build:
       context: ./
@@ -94,7 +94,26 @@ services:
     command: ["npm", "run", "dev"]
 
   worker:
-    <<: *base-service
+    image: sill-app
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - db
+    networks:
+      - net
+    volumes:
+      - ${APP_DIR}:/app
+      - /app/node_modules
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
     command: npm run dev:worker
     restart: unless-stopped
 

@@ -47,6 +47,7 @@ export default [
 	...prefix("links", [
 		index("routes/links/index.tsx"),
 		route(":linkId", "routes/links/item.tsx"),
+		route("topten", "routes/links/topten.tsx"),
 	]),
 	...prefix("mastodon", [
 		route("auth", "routes/mastodon/auth.ts"),
@@ -62,5 +63,4 @@ export default [
 		route("theme-switch", "routes/resources/theme-switch.tsx"),
 	]),
 	route("settings", "routes/settings/index.tsx"),
-	route("topten", "routes/topten.tsx"),
 ] satisfies RouteConfig;
