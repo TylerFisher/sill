@@ -9,7 +9,7 @@ import { accountUpdateQueue } from "~/drizzle/schema.server";
 import { eq, sql } from "drizzle-orm";
 
 async function processQueue() {
-	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "50");
+	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
 
 	while (true) {
 		const batchStart = Date.now();
@@ -24,8 +24,8 @@ async function processQueue() {
 					try {
 						const timeoutPromise = new Promise((_, reject) =>
 							setTimeout(() => {
-								reject(new Error("Job timed out after 10 seconds"));
-							}, 10000),
+								reject(new Error("Job timed out after 20 seconds"));
+							}, 20000),
 						);
 						const jobPromise = (async () => {
 							const links = await fetchLinks(job.userId);
@@ -43,7 +43,7 @@ async function processQueue() {
 						await Promise.race([timeoutPromise, jobPromise]);
 						return { status: "success", duration: Date.now() - jobStart };
 					} catch (error) {
-						console.log(`[Queue] Job timed out for user: ${job.userId}`);
+						console.log(`Error for user ${job.userId}: ${error}`);
 
 						await db
 							.update(accountUpdateQueue)
