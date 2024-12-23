@@ -24,8 +24,8 @@ async function processQueue() {
 					try {
 						const timeoutPromise = new Promise((_, reject) =>
 							setTimeout(() => {
-								reject(new Error("Job timed out after 20 seconds"));
-							}, 20000),
+								reject(new Error("Job timed out after 30 seconds"));
+							}, 30000),
 						);
 						const jobPromise = (async () => {
 							const links = await fetchLinks(job.userId);
