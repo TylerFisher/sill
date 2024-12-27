@@ -1,32 +1,46 @@
 @font-face {
-	font-family: "Nacelle";
-	src: url("./fonts/Nacelle-Regular.otf");
+  font-family: 'Nacelle';
+    src: url('fonts/Nacelle-Regular.ttf') format('truetype'),
+          url('fonts/Nacelle-Regular.woff') format('woff'),
+          url('fonts/Nacelle-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
 }
 
 @font-face {
-	font-family: "Nacelle";
-	src: url("./fonts/Nacelle-Italic.otf");
-	font-style: italic;
+  font-family: 'Nacelle';
+  src: url('fonts/Nacelle-Italic.ttf') format('truetype'),
+        url('fonts/Nacelle-Italic.woff') format('woff'),
+        url('fonts/Nacelle-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
 }
 
 @font-face {
-	font-family: "Nacelle";
-	src: url("./fonts/Nacelle-Bold.otf");
-	font-weight: 700;
+    font-family: 'Nacelle';
+    src: url('fonts/Nacelle-Bold.ttf') format('truetype'),
+          url('fonts/Nacelle-Bold.woff') format('woff'),
+          url('fonts/Nacelle-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
 }
 
 @font-face {
-	font-family: "Nacelle";
-	src: url("./fonts/Nacelle-BoldItalic.otf");
-	font-weight: 700;
-	font-style: italic;
+  font-family: 'Nacelle';
+    src: url('fonts/Nacelle-BoldItalic.ttf') format('truetype'),
+          url('fonts/Nacelle-BoldItalic.woff') format('woff'),
+          url('fonts/Nacelle-BoldItalic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
 }
 
 @font-face {
-	font-family: "Nacelle";
-	src: url("./fonts/Nacelle-BlackItalic.otf");
-	font-weight: 900;
-	font-style: italic;
+  font-family: 'Nacelle';
+    src: url('fonts/Nacelle-BlackItalic.ttf') format('truetype'),
+          url('fonts/Nacelle-BlackItalic.woff') format('woff'),
+          url('fonts/Nacelle-BlackItalic.woff2') format('woff2');
+  font-weight: 900;
+  font-style: italic;
 }
 
 .radix-themes {
@@ -41,10 +55,4 @@
 	--cursor-switch: pointer;
 	--default-font-family: "Nacelle";
 	--heading-font-family: "Nacelle";
-}
-
-@-moz-document url-prefix() {
-  .rt-IconButton {
-    transform: translateY(-1px);
-  }
 }

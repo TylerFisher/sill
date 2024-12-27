@@ -19,18 +19,18 @@
 
 }
 
-@-moz-document url-prefix() {
-  .nav-list-item-icon {
-      transform: translateY(-1px);
-  }
-}
-
 .nav-list {
   width: 100%;
 }
 
 .nav-list-item-label {
   display: inline;
+}
+
+@-moz-document url-prefix() {
+  .nav-list-item-icon {
+      transform: translateY(-1px);
+  }
 }
 
 .nav-list-item-btn {
