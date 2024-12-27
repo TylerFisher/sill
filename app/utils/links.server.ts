@@ -358,7 +358,7 @@ interface TopTenLinks {
 export interface TopTenResults {
 	count: number;
 	link: typeof link.$inferSelect | null;
-	posts?: (typeof linkPostDenormalized.$inferSelect)[];
+	posts?: (typeof linkPostDenormalized.$inferSelect & { count: number })[];
 	mostRecentPostDate: Date;
 }
 
@@ -384,7 +384,7 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 			const postsPromise = results.map(async (result) => {
 				const post = await db
 					.select({
-						...linkPostDenormalized,
+						...getTableColumns(linkPostDenormalized),
 						count:
 							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
 								"count",

@@ -172,15 +172,13 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 											layout={layout}
 											toolbar={false}
 										/>
-										<Text as="p">
+										<Text as="p" mt="-3" mb="4">
 											This link has been seen{" "}
-											<strong>{linkPost.count.toLocaleString()}</strong> times.
+											<strong>{linkPost.count.toLocaleString("en-US")}</strong>{" "}
+											times.
 										</Text>
-										<Heading size="3" as="h5" mt="3">
-											Most popular post, seen {linkPost.posts[0].count} times
-										</Heading>
 										{linkPost.posts && (
-											<Box mt="-4">
+											<>
 												<PostRep
 													group={linkPost.posts.map((post) => ({
 														...post,
@@ -194,7 +192,14 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 													bsky={undefined}
 													toolbar={false}
 												/>
-											</Box>
+												<Text as="p" mt="3">
+													Most popular post, seen{" "}
+													<strong>
+														{linkPost.posts[0].count.toLocaleString("en-US")}
+													</strong>{" "}
+													times
+												</Text>
+											</>
 										)}
 										<Separator size="4" my="7" />
 									</Box>
