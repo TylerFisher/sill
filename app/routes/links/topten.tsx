@@ -172,33 +172,26 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 											layout={layout}
 											toolbar={false}
 										/>
-										<Text as="p" mt="-3" mb="4">
-											This link has been seen{" "}
-											<strong>{linkPost.count.toLocaleString("en-US")}</strong>{" "}
-											times.
-										</Text>
 										{linkPost.posts && (
 											<>
-												<PostRep
-													group={linkPost.posts.map((post) => ({
-														...post,
-														repostActorAvatarUrl: null,
-														repostActorHandle: null,
-														repostActorName: null,
-														repostActorUrl: null,
-													}))}
-													key={linkPost.posts[0].postUrl}
-													instance={undefined}
-													bsky={undefined}
-													toolbar={false}
-												/>
-												<Text as="p" mt="3">
-													Most popular post, seen{" "}
-													<strong>
-														{linkPost.posts[0].count.toLocaleString("en-US")}
-													</strong>{" "}
-													times
-												</Text>
+												<Heading as="h3" size="3">
+													Most popular post
+												</Heading>
+												<Box mt="-4">
+													<PostRep
+														group={linkPost.posts.map((post) => ({
+															...post,
+															repostActorAvatarUrl: null,
+															repostActorHandle: null,
+															repostActorName: null,
+															repostActorUrl: null,
+														}))}
+														key={linkPost.posts[0].postUrl}
+														instance={undefined}
+														bsky={undefined}
+														toolbar={false}
+													/>
+												</Box>
 											</>
 										)}
 										<Separator size="4" my="7" />
