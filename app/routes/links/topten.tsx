@@ -13,11 +13,13 @@ import {
 	Flex,
 	Heading,
 	Select,
+	Separator,
 	Spinner,
 	Text,
 } from "@radix-ui/themes";
 import { Await, NavLink, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
+import PostRep from "~/components/linkPosts/PostRep";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -68,94 +70,128 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 	}
 
 	return (
-		<Layout hideNav={!existingUser}>
-			<Flex justify="between" align="center" mb="4">
-				<Heading as="h2">Top Ten Links</Heading>
-				<Flex align="center" gap="1">
-					<Text>Links from the last </Text>
-					<Select.Root
-						value={time}
-						onValueChange={(value) => onSelected(value)}
-					>
-						<Select.Trigger />
-						<Select.Content>
-							<Select.Item value="3h">3 hours</Select.Item>
-							<Select.Item value="6h">6 hours</Select.Item>
-							<Select.Item value="12h">12 hours</Select.Item>
-							<Select.Item value="24h">24 hours</Select.Item>
-						</Select.Content>
-					</Select.Root>
-				</Flex>
-			</Flex>
+		<>
+			{!existingUser && (
+				<Box
+					position="fixed"
+					width="100%"
+					bottom="0"
+					p="4"
+					style={{
+						backgroundColor: "var(--accent-1)",
+						zIndex: 2,
+						borderTop: "1px solid var(--accent-11)",
+					}}
+				>
+					<Flex justify="center" align="center" direction="column" gap="2">
+						<Text as="p">
+							Want to see the most popular links in your own network?{" "}
+						</Text>
+						<Text as="p">
+							{existingUser ? (
+								<NavLink to="/links">
+									<Button type="button">See your top links</Button>
+								</NavLink>
+							) : (
+								<NavLink to="/accounts/signup">
+									<Button type="button" size="4">
+										Sign up for Sill
+									</Button>
+								</NavLink>
+							)}
+						</Text>
+					</Flex>
+				</Box>
+			)}
 
-			<Suspense
-				fallback={
-					<Box>
-						<Flex justify="center">
-							<Spinner size="3" />
-						</Flex>
-					</Box>
-				}
-			>
-				<Await resolve={topTen}>
-					{(topTen) => (
+			<Layout hideNav={!existingUser}>
+				<Flex justify="between" align="center" mb="4">
+					<Heading as="h2">The Sill Six</Heading>
+					{/* <Flex align="center" gap="1">
+						<Text>From the last </Text>
+						<Select.Root
+							value={time}
+							onValueChange={(value) => onSelected(value)}
+						>
+							<Select.Trigger />
+							<Select.Content>
+								<Select.Item value="3h">3 hours</Select.Item>
+								<Select.Item value="6h">6 hours</Select.Item>
+								<Select.Item value="12h">12 hours</Select.Item>
+								<Select.Item value="24h">24 hours</Select.Item>
+							</Select.Content>
+						</Select.Root>
+					</Flex> */}
+				</Flex>
+
+				<Suspense
+					fallback={
 						<Box>
-							{topTen.map((linkPost, index) => (
-								<Box mb="9" key={linkPost.link?.id} position="relative">
-									<Flex
-										position="absolute"
-										top="10px"
-										right="10px"
-										style={{
-											backgroundColor: "var(--accent-11)",
-											borderRadius: "100%",
-											zIndex: 1,
-											color: "var(--accent-1)",
-										}}
-										width="50px"
-										height="50px"
-										justify="center"
-										align="center"
-									>
-										<Text
-											size="6"
-											style={{
-												fontWeight: "900",
-												fontStyle: "italic",
-												top: "2px",
-												position: "relative",
-											}}
-										>
-											{index + 1}
-										</Text>
-									</Flex>
-									<LinkRep
-										link={linkPost.link}
-										instance={undefined}
-										bsky={undefined}
-										layout={layout}
-									/>
-								</Box>
-							))}
-							<Box>
-								<Text as="p">
-									Want to see the most popular links in your own network?{" "}
-									{existingUser ? (
-										<NavLink to="/links">
-											<Button type="button">See your top links</Button>
-										</NavLink>
-									) : (
-										<NavLink to="/accounts/signup">
-											<Button type="button">Sign up for Sill</Button>
-										</NavLink>
-									)}
-								</Text>
-							</Box>
+							<Flex justify="center">
+								<Spinner size="3" />
+							</Flex>
 						</Box>
-					)}
-				</Await>
-			</Suspense>
-		</Layout>
+					}
+				>
+					<Await resolve={topTen}>
+						{(topTen) => (
+							<Box>
+								{topTen.map((linkPost, index) => (
+									<Box key={linkPost.link?.id} position="relative">
+										<Flex
+											position="absolute"
+											top="10px"
+											right="10px"
+											style={{
+												backgroundColor: "var(--accent-11)",
+												borderRadius: "100%",
+												zIndex: 1,
+												color: "var(--accent-1)",
+											}}
+											width="50px"
+											height="50px"
+											justify="center"
+											align="center"
+										>
+											<Text
+												size="6"
+												style={{
+													fontWeight: "900",
+													fontStyle: "italic",
+													top: "2px",
+													position: "relative",
+												}}
+											>
+												{index + 1}
+											</Text>
+										</Flex>
+										<LinkRep
+											link={linkPost.link}
+											instance={undefined}
+											bsky={undefined}
+											layout={layout}
+										/>
+										<Heading size="3" as="h5" mb="0">
+											Most popular post
+										</Heading>
+										{linkPost.posts && (
+											<PostRep
+												group={linkPost.posts}
+												key={linkPost.posts[0].postUrl}
+												instance={undefined}
+												bsky={undefined}
+											/>
+										)}
+										<Text>Count: {linkPost.count}</Text>
+										<Separator size="4" my="7" />
+									</Box>
+								))}
+							</Box>
+						)}
+					</Await>
+				</Suspense>
+			</Layout>
+		</>
 	);
 };
 
