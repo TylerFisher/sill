@@ -383,7 +383,13 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 		.then(async (results) => {
 			const postsPromise = results.map(async (result) => {
 				const post = await db
-					.select()
+					.select({
+						...linkPostDenormalized,
+						count:
+							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
+								"count",
+							),
+					})
 					.from(linkPostDenormalized)
 					.where(
 						and(

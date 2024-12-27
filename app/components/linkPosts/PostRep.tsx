@@ -8,9 +8,10 @@ interface PostRepProps {
 	group: (typeof linkPostDenormalized.$inferSelect)[];
 	instance: string | undefined;
 	bsky: string | undefined;
+	toolbar?: boolean;
 }
 
-const PostRep = ({ group, instance, bsky }: PostRepProps) => {
+const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 	const post = group[0];
 	const reposters = group
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
@@ -114,17 +115,23 @@ const PostRep = ({ group, instance, bsky }: PostRepProps) => {
 					/>
 				</Card>
 			)}
-			<Inset mt="4">
-				<Separator size="4" my="4" />
-			</Inset>
-			<Toolbar
-				url={post.postUrl}
-				narrowMutePhrase={post.postUrl}
-				broadMutePhrase={post.actorHandle}
-				type="post"
-				instance={instance}
-				bsky={bsky}
-			/>
+
+			{toolbar && (
+				<>
+					<Inset mt="4">
+						<Separator size="4" my="4" />
+					</Inset>
+					<Toolbar
+						url={post.postUrl}
+						narrowMutePhrase={post.postUrl}
+						broadMutePhrase={post.actorHandle}
+						type="post"
+						instance={instance}
+						bsky={bsky}
+					/>
+				</>
+			)}
+
 			{instance && bsky && (
 				<img
 					src={

@@ -107,7 +107,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 			<Layout hideNav={!existingUser}>
 				<Flex justify="between" align="center" mb="4">
 					<Heading as="h2">The Sill Six</Heading>
-					{/* <Flex align="center" gap="1">
+					<Flex align="center" gap="1">
 						<Text>From the last </Text>
 						<Select.Root
 							value={time}
@@ -121,7 +121,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 								<Select.Item value="24h">24 hours</Select.Item>
 							</Select.Content>
 						</Select.Root>
-					</Flex> */}
+					</Flex>
 				</Flex>
 
 				<Suspense
@@ -158,7 +158,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 												style={{
 													fontWeight: "900",
 													fontStyle: "italic",
-													top: "2px",
+													// top: "2px",
 													position: "relative",
 												}}
 											>
@@ -170,19 +170,32 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 											instance={undefined}
 											bsky={undefined}
 											layout={layout}
+											toolbar={false}
 										/>
-										<Heading size="3" as="h5" mb="0">
-											Most popular post
+										<Text as="p">
+											This link has been seen{" "}
+											<strong>{linkPost.count.toLocaleString()}</strong> times.
+										</Text>
+										<Heading size="3" as="h5" mt="3">
+											Most popular post, seen {linkPost.posts[0].count} times
 										</Heading>
 										{linkPost.posts && (
-											<PostRep
-												group={linkPost.posts}
-												key={linkPost.posts[0].postUrl}
-												instance={undefined}
-												bsky={undefined}
-											/>
+											<Box mt="-4">
+												<PostRep
+													group={linkPost.posts.map((post) => ({
+														...post,
+														repostActorAvatarUrl: null,
+														repostActorHandle: null,
+														repostActorName: null,
+														repostActorUrl: null,
+													}))}
+													key={linkPost.posts[0].postUrl}
+													instance={undefined}
+													bsky={undefined}
+													toolbar={false}
+												/>
+											</Box>
 										)}
-										<Text>Count: {linkPost.count}</Text>
 										<Separator size="4" my="7" />
 									</Box>
 								))}
