@@ -165,13 +165,19 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 												{index + 1}
 											</Text>
 										</Flex>
-										<LinkRep
-											link={linkPost.link}
-											instance={undefined}
-											bsky={undefined}
-											layout={layout}
-											toolbar={false}
-										/>
+										{linkPost.link && (
+											<LinkRep
+												link={{
+													...linkPost.link,
+													url: linkPost.link.giftUrl || linkPost.link.url,
+												}}
+												instance={undefined}
+												bsky={undefined}
+												layout={layout}
+												toolbar={false}
+											/>
+										)}
+
 										{linkPost.posts && (
 											<>
 												<Heading as="h3" size="3">
