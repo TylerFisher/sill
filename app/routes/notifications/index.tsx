@@ -1,5 +1,5 @@
 import type { Route } from "./+types/index";
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import { redirect } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
@@ -13,6 +13,7 @@ import { parseWithZod } from "@conform-to/zod";
 import { data } from "react-router";
 import { notificationGroup } from "~/drizzle/schema.server";
 import { uuidv7 } from "uuidv7-js";
+import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -35,11 +36,10 @@ export const NotificationSchema = z.object({
 });
 
 export const action = async ({ request }: Route.ActionArgs) => {
-	console.log("action");
 	const userId = await requireUserId(request);
 
 	if (!userId) {
-		return data({ result: "Unauthorized" }, { status: 401 });
+		throw new Error("Unauthorized");
 	}
 
 	const formData = await request.formData();
@@ -74,7 +74,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		feedUrl = `https://sill.social/notifications/rss/${groupId}.rss`;
 	}
 
-	await db
+	const result = await db
 		.insert(notificationGroup)
 		.values({
 			id: groupId,
@@ -93,9 +93,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
 				feedUrl,
 				userId,
 			},
+		})
+		.returning({
+			id: notificationGroup.id,
 		});
 
-	return { result: "success" };
+	return { result };
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -135,10 +138,13 @@ export default function Notifications({
 					dek="Sill can send you notifications for when links meet certain criteria that you define."
 				/>
 			</Box>
-			<NotificationForm
-				notificationGroups={loaderData.user.notificationGroups}
-				lastResult={actionData?.result}
-			/>
+			<NotificationsProvider
+				initial={{
+					notifications: loaderData.user.notificationGroups,
+				}}
+			>
+				<NotificationForm lastResult={actionData?.result} />
+			</NotificationsProvider>
 		</Layout>
 	);
 }

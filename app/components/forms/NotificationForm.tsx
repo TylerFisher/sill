@@ -1,15 +1,18 @@
 import { Box, Callout, Button } from "@radix-ui/themes";
 import { CircleAlert, Plus } from "lucide-react";
-import { useState } from "react";
 import NotificationGroup, {
 	type NotificationGroupInit,
 } from "./NotificationGroup";
-import type { notificationGroup } from "~/drizzle/schema.server";
 import type { SubmissionResult } from "@conform-to/react";
+import {
+	useNotifications,
+	useNotificationsDispatch,
+} from "../contexts/NotificationsContext";
+import { index } from "drizzle-orm/mysql-core";
+import { uuidv7 } from "uuidv7-js";
 
 interface NotificationFormProps {
-	notificationGroups: (typeof notificationGroup.$inferSelect)[];
-	lastResult?: string | SubmissionResult<string[]>;
+	lastResult?: { id: string }[] | SubmissionResult<string[]>;
 }
 const defaultCategory = {
 	id: "url",
@@ -17,7 +20,8 @@ const defaultCategory = {
 	type: "string",
 };
 
-const defaultGroup: NotificationGroupInit = {
+const defaultGroup = (id?: string): NotificationGroupInit => ({
+	id,
 	name: "",
 	query: [
 		{
@@ -27,15 +31,12 @@ const defaultGroup: NotificationGroupInit = {
 		},
 	],
 	notificationType: "email",
-};
+});
 
-const NotificationForm = ({
-	notificationGroups,
-	lastResult,
-}: NotificationFormProps) => {
-	const [groups, setGroups] = useState<NotificationGroupInit[]>(
-		notificationGroups.length > 0 ? notificationGroups : [defaultGroup],
-	);
+const NotificationForm = ({ lastResult }: NotificationFormProps) => {
+	const groups = useNotifications();
+	const { dispatch } = useNotificationsDispatch();
+
 	return (
 		<Box>
 			<Callout.Root mb="4">
@@ -47,7 +48,7 @@ const NotificationForm = ({
 					Sill's paid plan in the future.
 				</Callout.Text>
 			</Callout.Root>
-			{groups.map((group, index) => (
+			{groups.notifications.map((group, index) => (
 				<NotificationGroup
 					key={group.id || index}
 					index={index}
@@ -59,7 +60,12 @@ const NotificationForm = ({
 				<Button
 					variant="soft"
 					type="button"
-					onClick={() => setGroups([...groups, defaultGroup])}
+					onClick={() =>
+						dispatch({
+							type: "added",
+							notification: defaultGroup(uuidv7()),
+						})
+					}
 				>
 					<Plus width="18" height="18" />
 					Add notification

@@ -60,7 +60,6 @@ export default [
 	]),
 	...prefix("notifications", [
 		index("routes/notifications/index.tsx"),
-		route("add", "routes/notifications/add.tsx"),
 		route("delete", "routes/notifications/delete.ts"),
 		route(":notificationGroupId.rss", "routes/notifications/feed.ts"),
 		route("test", "routes/notifications/test.tsx"),
