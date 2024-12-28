@@ -379,7 +379,7 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
 		.orderBy(desc(sql`"count"`), desc(sql`"mostRecentPostDate"`))
-		.limit(6)
+		.limit(10)
 		.then(async (results) => {
 			const postsPromise = results.map(async (result) => {
 				const post = await db

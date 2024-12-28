@@ -20,6 +20,7 @@ import {
 import { Await, NavLink, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
 import PostRep from "~/components/linkPosts/PostRep";
+import NumberRanking from "~/components/linkPosts/NumberRanking";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -106,7 +107,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 
 			<Layout hideNav={!existingUser}>
 				<Flex justify="between" align="center" mb="4">
-					<Heading as="h2">The Sill Six</Heading>
+					<Heading as="h2">Top links on Sill</Heading>
 					<Flex align="center" gap="1">
 						<Text>From the last </Text>
 						<Select.Root
@@ -138,33 +139,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 							<Box>
 								{topTen.map((linkPost, index) => (
 									<Box key={linkPost.link?.id} position="relative">
-										<Flex
-											position="absolute"
-											top="10px"
-											right="10px"
-											style={{
-												backgroundColor: "var(--accent-11)",
-												borderRadius: "100%",
-												zIndex: 1,
-												color: "var(--accent-1)",
-											}}
-											width="50px"
-											height="50px"
-											justify="center"
-											align="center"
-										>
-											<Text
-												size="6"
-												style={{
-													fontWeight: "900",
-													fontStyle: "italic",
-													// top: "2px",
-													position: "relative",
-												}}
-											>
-												{index + 1}
-											</Text>
-										</Flex>
+										<NumberRanking ranking={index + 1} />
 										{linkPost.link && (
 											<LinkRep
 												link={{
