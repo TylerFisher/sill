@@ -504,7 +504,6 @@ export const evaluateNotifications = async (
 	return await db
 		.select({
 			link,
-			// Count unique actors based on similar handles or names, excluding duplicates from different networks
 			uniqueActorsCount:
 				getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(

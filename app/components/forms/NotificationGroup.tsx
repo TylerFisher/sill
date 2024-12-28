@@ -9,15 +9,23 @@ import {
 	TextField,
 } from "@radix-ui/themes";
 import TextInput from "./TextInput";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Form, useFetcher } from "react-router";
-import type { SubmissionResult } from "@conform-to/react";
+import {
+	getFormProps,
+	getInputProps,
+	useForm,
+	type SubmissionResult,
+} from "@conform-to/react";
 import NotificationQueryItem, {
 	type NotificationQuery,
 } from "./NotificationQueryItem";
 import { Plus } from "lucide-react";
 import CopyLink from "../linkPosts/CopyLink";
 import { useNotificationsDispatch } from "../contexts/NotificationsContext";
+import { parseWithZod } from "@conform-to/zod";
+import { NotificationSchema } from "~/routes/notifications";
+import ErrorCallout from "./ErrorCallout";
 
 export interface NotificationGroupInit {
 	id?: string;
@@ -38,7 +46,7 @@ const NotificationGroup = ({
 }: {
 	index: number;
 	group: NotificationGroupInit;
-	lastResult?: { id: string }[] | SubmissionResult<string[]>;
+	lastResult?: SubmissionResult<string[]>;
 }) => {
 	const [format, setFormat] = useState<string | undefined>(
 		group.notificationType || "email",
@@ -56,17 +64,17 @@ const NotificationGroup = ({
 	);
 	const testFetcher = useFetcher();
 	const deleteFetcher = useFetcher();
+
 	const { dispatch } = useNotificationsDispatch();
 
-	useEffect(() => {
-		if (lastResult && Array.isArray(lastResult)) {
-			dispatch({
-				type: "submitted",
-				notification: group,
-				newId: lastResult[0].id,
-			});
-		}
-	}, [lastResult, dispatch, group]);
+	const [form, fields] = useForm({
+		lastResult: lastResult,
+		onValidate({ formData }) {
+			return parseWithZod(formData, { schema: NotificationSchema });
+		},
+		shouldValidate: "onBlur",
+		shouldRevalidate: "onSubmit",
+	});
 
 	const onQueryItemChange = (item: NotificationQuery, index: number) => {
 		if (!item.category || !item.operator || !item.value) {
@@ -101,16 +109,18 @@ const NotificationGroup = ({
 		setQueryItems(newQueryItems);
 	};
 	return (
-		<Form method="POST" action="/notifications">
+		<Form method="POST" action="/notifications" {...getFormProps(form)}>
 			<input type="hidden" name="id" value={group.id} />
 			<Card mt={index > 0 ? "4" : "0"}>
-				{Array.isArray(lastResult) && lastResult[0].id && (
-					<Box mb="4">
-						<Text as="p">
-							<strong>Your notification settings have been saved.</strong>
-						</Text>
-					</Box>
-				)}
+				{lastResult?.initialValue &&
+					group.id &&
+					lastResult?.initialValue.id === group.id && (
+						<Box mb="4">
+							<Text as="p">
+								<strong>Your notification settings have been saved.</strong>
+							</Text>
+						</Box>
+					)}
 				{group.notificationType === "rss" && group.id && (
 					<Box mb="4">
 						<Text as="label" htmlFor="feedUrl" size="3">
@@ -146,9 +156,9 @@ const NotificationGroup = ({
 				<TextInput
 					labelProps={{ children: "Name" }}
 					inputProps={{
-						type: "text",
-						name: `name`,
-						id: `name`,
+						...getInputProps(fields.name, {
+							type: "text",
+						}),
 						defaultValue: group.name,
 						onChange: (e) => {
 							dispatch({
@@ -160,6 +170,7 @@ const NotificationGroup = ({
 							});
 						},
 					}}
+					errors={fields.name.errors}
 				/>
 				<Text as="label" size="3" htmlFor="format">
 					<strong>Delivery format</strong>
@@ -183,6 +194,9 @@ const NotificationGroup = ({
 					<RadioGroup.Item value="email">Email</RadioGroup.Item>
 					<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
 				</RadioGroup.Root>
+				{fields.format.errors && (
+					<ErrorCallout error={fields.format.errors[0]} />
+				)}
 				<Box my="4">
 					<Text as="label" size="3">
 						<strong>Filters</strong>
@@ -226,6 +240,9 @@ const NotificationGroup = ({
 						</Box>
 					</Card>
 				</Box>
+				{fields.queries.errors && (
+					<ErrorCallout error={fields.queries.errors[0]} />
+				)}
 				{testFetcher.data && (
 					<Box width="100%" my="4">
 						<strong>{testFetcher.data} results</strong> found from the last 24

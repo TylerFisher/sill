@@ -8,11 +8,10 @@ import {
 	useNotifications,
 	useNotificationsDispatch,
 } from "../contexts/NotificationsContext";
-import { index } from "drizzle-orm/mysql-core";
 import { uuidv7 } from "uuidv7-js";
 
 interface NotificationFormProps {
-	lastResult?: { id: string }[] | SubmissionResult<string[]>;
+	lastResult?: SubmissionResult<string[]> | undefined;
 }
 const defaultCategory = {
 	id: "url",
@@ -20,7 +19,7 @@ const defaultCategory = {
 	type: "string",
 };
 
-const defaultGroup = (id?: string): NotificationGroupInit => ({
+export const defaultGroup = (id?: string): NotificationGroupInit => ({
 	id,
 	name: "",
 	query: [

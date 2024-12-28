@@ -5,7 +5,9 @@ import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 import Layout from "~/components/nav/Layout";
-import NotificationForm from "~/components/forms/NotificationForm";
+import NotificationForm, {
+	defaultGroup,
+} from "~/components/forms/NotificationForm";
 import PageHeading from "~/components/nav/PageHeading";
 import { Box } from "@radix-ui/themes";
 import { z } from "zod";
@@ -14,6 +16,7 @@ import { data } from "react-router";
 import { notificationGroup } from "~/drizzle/schema.server";
 import { uuidv7 } from "uuidv7-js";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
+import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -74,7 +77,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		feedUrl = `https://sill.social/notifications/rss/${groupId}.rss`;
 	}
 
-	const result = await db
+	await db
 		.insert(notificationGroup)
 		.values({
 			id: groupId,
@@ -98,7 +101,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 			id: notificationGroup.id,
 		});
 
-	return { result };
+	return data({ result: submission.reply() }, { status: 200 });
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -130,6 +133,11 @@ export default function Notifications({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
+	let initial: NotificationGroupInit[] = loaderData.user.notificationGroups;
+	if (loaderData.user.notificationGroups.length === 0) {
+		initial = [defaultGroup(uuidv7())];
+	}
+
 	return (
 		<Layout>
 			<Box mb="4">
@@ -140,7 +148,7 @@ export default function Notifications({
 			</Box>
 			<NotificationsProvider
 				initial={{
-					notifications: loaderData.user.notificationGroups,
+					notifications: initial,
 				}}
 			>
 				<NotificationForm lastResult={actionData?.result} />
