@@ -1,4 +1,4 @@
-import type { Route } from "./+types/topten";
+import type { Route } from "./+types/trending";
 import { eq } from "drizzle-orm";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
@@ -107,7 +107,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 
 			<Layout hideNav={!existingUser}>
 				<Flex justify="between" align="center" mb="4">
-					<Heading as="h2">Top links on Sill</Heading>
+					<Heading as="h2">Trending on Sill</Heading>
 					<Flex align="center" gap="1">
 						<Text>From the last </Text>
 						<Select.Root
@@ -139,7 +139,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 							<Box>
 								{topTen.map((linkPost, index) => (
 									<Box key={linkPost.link?.id} position="relative">
-										<NumberRanking ranking={index + 1} />
+										<NumberRanking ranking={index + 1} layout={layout} />
 										{linkPost.link && (
 											<LinkRep
 												link={{

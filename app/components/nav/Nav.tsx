@@ -1,6 +1,13 @@
 import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation } from "react-router";
-import { Link2, Mail, MessageSquareOff, User, Zap } from "lucide-react";
+import {
+	Link2,
+	Mail,
+	MessageSquareOff,
+	TrendingUp,
+	User,
+	Zap,
+} from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
 import Footer from "./Footer";
@@ -16,6 +23,11 @@ const Nav = ({
 			label: "Links",
 			icon: <Link2 className={styles["nav-list-item-icon"]} />,
 		},
+		// {
+		// 	to: "/links/trending",
+		// 	label: "Trending",
+		// 	icon: <TrendingUp className={styles["nav-list-item-icon"]} />,
+		// },
 		{
 			to: "/connect",
 			label: "Connect",
@@ -65,10 +77,8 @@ const NavItem = ({
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
-						color: location.includes(to)
-							? "var(--accent-11)"
-							: "var(--gray-a11)",
-						fontWeight: location.includes(to) ? "bold" : "normal",
+						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
+						fontWeight: location === to ? "bold" : "normal",
 					}}
 					aria-label={label}
 				>

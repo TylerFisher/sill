@@ -1,10 +1,5 @@
 .ranking-wrapper {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 40px;
-  height: 40px;
-
   background-color: var(--accent-11);
   border-radius: 100%;
   z-index: 1;
