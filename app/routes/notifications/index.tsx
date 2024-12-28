@@ -127,7 +127,6 @@ export default function Notifications({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	console.log(actionData);
 	return (
 		<Layout>
 			<Box mb="4">

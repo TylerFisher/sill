@@ -552,3 +552,69 @@ export const evaluateNotifications = async (
 			return Promise.all(postsPromise);
 		});
 };
+interface TopTenLinks {
+	link: typeof link.$inferSelect;
+	mostRecentPostDate: Date;
+	uniqueActorsCount: number;
+	post: typeof linkPostDenormalized.$inferSelect | undefined;
+}
+
+export interface TopTenResults {
+	count: number;
+	link: typeof link.$inferSelect | null;
+	posts?: (typeof linkPostDenormalized.$inferSelect & { count: number })[];
+	mostRecentPostDate: Date;
+}
+
+export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
+	const start = new Date(Date.now() - time);
+
+	const topTen = await db
+		.select({
+			link,
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+			count: sql<number>`count(*)`.as("count"),
+		})
+		.from(linkPostDenormalized)
+		.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.where(gte(linkPostDenormalized.postDate, start))
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(desc(sql`"count"`), desc(sql`"mostRecentPostDate"`))
+		.limit(10)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const post = await db
+					.select({
+						...getTableColumns(linkPostDenormalized),
+						count:
+							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
+								"count",
+							),
+					})
+					.from(linkPostDenormalized)
+					.where(
+						and(
+							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							gte(linkPostDenormalized.postDate, start),
+						),
+					)
+					.groupBy(linkPostDenormalized.postUrl, linkPostDenormalized.id)
+					.orderBy(
+						desc(
+							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`,
+						),
+					)
+					.limit(1)
+					.then((posts) => posts[0]);
+				return {
+					...result,
+					posts: [post],
+				};
+			});
+			return Promise.all(postsPromise);
+		});
+	return topTen;
+};

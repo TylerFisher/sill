@@ -9,7 +9,7 @@ import type { SubmissionResult } from "@conform-to/react";
 
 interface NotificationFormProps {
 	notificationGroups: (typeof notificationGroup.$inferSelect)[];
-	lastResult?: SubmissionResult<string[]>;
+	lastResult?: string | SubmissionResult<string[]>;
 }
 const defaultCategory = {
 	id: "url",

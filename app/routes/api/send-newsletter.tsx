@@ -4,7 +4,7 @@ import { db } from "~/drizzle/db.server";
 import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import TopLinks from "~/emails/topLinks";
 import RSSLinks from "~/components/rss/RSSLinks";
-import { renderReactEmail } from "~/utils/email.server";
+import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import {
 	filterLinkOccurrences,
 	type MostRecentLinkPosts,
@@ -12,7 +12,6 @@ import {
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
 import { preview, subject } from "~/utils/digestText";
-import { sendEmail } from "~/utils/email.server";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");

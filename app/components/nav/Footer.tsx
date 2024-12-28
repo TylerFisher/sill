@@ -11,11 +11,12 @@ const Footer = ({
 	const theme = useTheme();
 	const layout = useLayout();
 	const location = useLocation();
+
 	return (
 		<Box className={styles.footer}>
 			<Flex gap="2" direction="row" align="center" wrap="wrap">
 				{(location.pathname.includes("/links") ||
-					location.pathname.includes("/digest")) && (
+					location.pathname.includes("digest")) && (
 					<>
 						<LayoutSwitch userPreference={layout} id={layoutFormId} /> ·
 					</>

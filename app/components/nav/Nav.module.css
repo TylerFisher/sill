@@ -13,13 +13,24 @@
 .nav-list-item-icon {
 	width: 24px;
 	height: 24px;
+  vertical-align: middle;
+  line-height: 1;
+  position: relative;
+
 }
+
 .nav-list {
   width: 100%;
 }
 
 .nav-list-item-label {
   display: inline;
+}
+
+@-moz-document url-prefix() {
+  .nav-list-item-icon {
+      transform: translateY(-1px);
+  }
 }
 
 .nav-list-item-btn {

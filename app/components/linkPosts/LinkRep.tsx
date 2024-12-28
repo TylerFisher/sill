@@ -23,6 +23,7 @@ interface LinkRepProps {
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
+	toolbar?: boolean;
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
@@ -46,7 +47,13 @@ const XEmbed = ({ url }: { url: URL }) => {
 	);
 };
 
-const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
+const LinkRep = ({
+	link,
+	instance,
+	bsky,
+	layout,
+	toolbar = true,
+}: LinkRepProps) => {
 	if (!link) return null;
 	const url = new URL(link.url);
 	const host = url.host.replace("www.", "");
@@ -133,18 +140,22 @@ const LinkRep = ({ link, instance, bsky, layout }: LinkRepProps) => {
 					{link.description}
 				</Text>
 			</Box>
-			<Inset mt="4">
-				<Separator orientation="horizontal" size="4" my="4" />
-			</Inset>
-			<Toolbar
-				url={link.url}
-				giftUrl={link.giftUrl}
-				narrowMutePhrase={link.url}
-				broadMutePhrase={host}
-				instance={instance}
-				bsky={bsky}
-				type="link"
-			/>
+			{toolbar && (
+				<>
+					<Inset mt="4">
+						<Separator orientation="horizontal" size="4" my="4" />
+					</Inset>
+					<Toolbar
+						url={link.url}
+						giftUrl={link.giftUrl}
+						narrowMutePhrase={link.url}
+						broadMutePhrase={host}
+						instance={instance}
+						bsky={bsky}
+						type="link"
+					/>
+				</>
+			)}
 		</Card>
 	);
 };

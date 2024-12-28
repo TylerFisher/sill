@@ -1,9 +1,79 @@
 {
-  "id": "285fa0ea-ca7c-4b4b-8208-bda5f4f8af3b",
-  "prevId": "71b6cf0a-e8e5-448e-bf94-3035d27b0db4",
+  "id": "a2b4a044-682d-4a12-96c1-ecfce8101818",
+  "prevId": "285fa0ea-ca7c-4b4b-8208-bda5f4f8af3b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.account_update_queue": {
+      "name": "account_update_queue",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "processedAt": {
+          "name": "processedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retries": {
+          "name": "retries",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "account_update_queue_userId_user_id_fk": {
+          "name": "account_update_queue_userId_user_id_fk",
+          "tableFrom": "account_update_queue",
+          "tableTo": "user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "public.actor": {
       "name": "actor",
       "schema": "",

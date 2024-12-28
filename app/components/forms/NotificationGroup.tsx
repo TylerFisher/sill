@@ -40,9 +40,8 @@ const NotificationGroup = ({
 }: {
 	index: number;
 	group: NotificationGroupInit;
-	lastResult?: SubmissionResult<string[]>;
+	lastResult?: string | SubmissionResult<string[]>;
 }) => {
-	console.log(lastResult);
 	const defaultCategory = {
 		id: "url",
 		name: "Link URL",
@@ -66,7 +65,7 @@ const NotificationGroup = ({
 	const testFetcher = useFetcher();
 
 	const [form, fields] = useForm({
-		lastResult: lastResult,
+		lastResult: typeof lastResult !== "string" ? lastResult : undefined,
 		onValidate({ formData }) {
 			return parseWithZod(formData, { schema: NotificationSchema });
 		},
