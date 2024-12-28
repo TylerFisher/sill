@@ -124,7 +124,10 @@ async function processQueue() {
 				await db
 					.update(notificationGroup)
 					.set({
-						seenLinks: newItems.map((n) => n.link?.url || ""),
+						seenLinks: [
+							...group.seenLinks,
+							...newItems.map((n) => n.link?.url || ""),
+						],
 					})
 					.where(eq(notificationGroup.id, group.id));
 			}
