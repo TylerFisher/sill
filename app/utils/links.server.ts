@@ -77,9 +77,18 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 	for (let i = 0; i < processedResults.length; i += 1000) {
 		const chunk = processedResults.slice(i, i + 1000);
 
+		const MAX_URL_LENGTH = 2712;
 		const links = Object.values(
 			chunk.reduce(
 				(acc, p) => {
+					// Check if URL is too long and warn
+					if (p.link.url.length > MAX_URL_LENGTH) {
+						console.warn(
+							`URL too long for index (${p.link.url.length} bytes): ${p.link.url}`,
+						);
+						return acc; // Skip this link
+					}
+
 					const existing = acc[p.link.url];
 					if (
 						!existing ||
