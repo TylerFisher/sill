@@ -76,6 +76,7 @@ async function processQueue() {
 				});
 
 				await Promise.all(users.map((user) => enqueueJob(user.id)));
+				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
 			}
 		}
 

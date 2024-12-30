@@ -55,7 +55,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		try {
 			links = await filterLinkOccurrences({
 				userId: dbUser.id,
-				fetch: true,
 				hideReposts: digest.hideReposts,
 				limit: digest.topAmount,
 			});
