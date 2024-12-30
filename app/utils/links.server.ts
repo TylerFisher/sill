@@ -86,7 +86,8 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 						console.warn(
 							`URL too long for index (${p.link.url.length} bytes): ${p.link.url}`,
 						);
-						return acc; // Skip this link
+						delete acc[p.link.url]; // Remove the link from accumulator if it exists
+						return acc;
 					}
 
 					const existing = acc[p.link.url];
