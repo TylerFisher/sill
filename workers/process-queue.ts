@@ -1,12 +1,12 @@
 import { db } from "~/drizzle/db.server";
-import { dequeueJobs } from "~/utils/queue.server";
+import { dequeueJobs, enqueueJob } from "~/utils/queue.server";
 import {
 	fetchLinks,
 	insertNewLinks,
 	type ProcessedResult,
 } from "~/utils/links.server";
-import { accountUpdateQueue } from "~/drizzle/schema.server";
-import { eq, sql } from "drizzle-orm";
+import { accountUpdateQueue, user } from "~/drizzle/schema.server";
+import { asc, eq, sql } from "drizzle-orm";
 
 async function processQueue() {
 	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
@@ -69,6 +69,14 @@ async function processQueue() {
       Batch Duration: ${batchDuration}ms
       Avg Job Duration: ${batchDuration / jobs.length}ms
     `);
+		} else {
+			if (process.env.NODE_ENV === "production") {
+				const users = await db.query.user.findMany({
+					orderBy: asc(user.createdAt),
+				});
+
+				await Promise.all(users.map((user) => enqueueJob(user.id)));
+			}
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 1000));
