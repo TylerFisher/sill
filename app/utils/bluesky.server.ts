@@ -104,7 +104,6 @@ export const getBlueskyList = async (
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
-			//@ts-expect-error
 			if (postDate <= checkDate && item.post.cid !== list[0].post.cid) {
 				reachedEnd = true;
 				break;
@@ -494,7 +493,7 @@ export const getLinksFromBluesky = async (
 								`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
 							),
 						),
-					25000,
+					60000,
 				),
 			),
 		]).catch((error) => {
