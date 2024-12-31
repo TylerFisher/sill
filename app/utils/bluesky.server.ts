@@ -83,6 +83,7 @@ export const getBlueskyList = async (
 		}
 
 		if (!response) {
+			console.log("no response");
 			return [];
 		}
 
@@ -94,6 +95,7 @@ export const getBlueskyList = async (
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
 		for (const item of list) {
+			console.log(item);
 			if (item.post.author.handle === accountHandle) continue;
 			if (
 				AppBskyFeedDefs.isReasonRepost(item.reason) &&
@@ -104,7 +106,8 @@ export const getBlueskyList = async (
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
-			if (postDate <= checkDate) {
+			//@ts-expect-error
+			if (postDate <= checkDate && item.post.cid !== list[0].post.cid) {
 				reachedEnd = true;
 				break;
 			}
@@ -456,12 +459,12 @@ export const getLinksFromBluesky = async (
 	});
 	if (!account) return [];
 
-	if (
-		account.mostRecentPostDate &&
-		account.mostRecentPostDate > new Date(Date.now() - 60000) // only fetch once per minute
-	) {
-		return [];
-	}
+	// if (
+	// 	account.mostRecentPostDate &&
+	// 	account.mostRecentPostDate > new Date(Date.now() - 60000) // only fetch once per minute
+	// ) {
+	// 	return [];
+	// }
 
 	const oauthSession = await handleBlueskyOAuth(account);
 	if (!oauthSession) return [];
