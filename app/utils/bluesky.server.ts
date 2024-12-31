@@ -133,7 +133,10 @@ export const getBlueskyList = async (
 		}
 		return listTimeline;
 	} catch (error) {
-		console.error("Error fetching Bluesky list", error);
+		console.error(
+			`Error fetching Bluesky list ${dbList.name}, ${dbList.uri} for ${accountHandle}`,
+			error,
+		);
 		return [];
 	}
 };
@@ -199,7 +202,10 @@ export const getBlueskyTimeline = async (
 		}
 		return timeline;
 	} catch (error) {
-		console.error("Error fetching Bluesky timeline", error);
+		console.error(
+			`Error fetching Bluesky timeline for ${account.handle}`,
+			error,
+		);
 		return [];
 	}
 };
@@ -483,7 +489,9 @@ export const getLinksFromBluesky = async (
 				setTimeout(
 					() =>
 						reject(
-							new Error(`List timeout: ${list.name} for ${account.handle}`),
+							new Error(
+								`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
+							),
 						),
 					25000,
 				),

@@ -113,6 +113,7 @@ jobs:
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
           echo "TRAEFIK_DASHBOARD_AUTH=${{ secrets.TRAEFIK_DASHBOARD_AUTH }}" >> .env
           echo "CRON_API_KEY=${{ secrets.CRON_API_KEY }}" >> .env
+          echo "UPDATE_BATCH_SIZE=${{ secrets.UPDATE_BATCH_SIZE }}" >> .env
 
       - name: Copy .env and docker-compose-prod files to remote server
         uses: appleboy/scp-action@master
