@@ -93,7 +93,7 @@ export const getBlueskyList = async (
 
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
-		for (const item of list) {
+		for (const [index, item] of list.entries()) {
 			if (item.post.author.handle === accountHandle) continue;
 			if (
 				AppBskyFeedDefs.isReasonRepost(item.reason) &&
@@ -104,7 +104,9 @@ export const getBlueskyList = async (
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
-			if (postDate <= checkDate && item.post.cid !== list[0].post.cid) {
+
+			// skip a few posts in case of pinned posts
+			if (postDate <= checkDate && index > 5) {
 				reachedEnd = true;
 				break;
 			}
@@ -121,30 +123,30 @@ export const getBlueskyList = async (
 	try {
 		const listTimeline = await getList();
 		if (listTimeline.length > 0) {
-			let firstPost = listTimeline[0];
-			let date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-				? new Date(firstPost.reason.indexedAt)
-				: new Date(firstPost.post.indexedAt);
+			// let firstPost = listTimeline[0];
+			// let date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+			// 	? new Date(firstPost.reason.indexedAt)
+			// 	: new Date(firstPost.post.indexedAt);
 
-			// Find first post that's within last 24 hours
-			let i = 0;
-			while (
-				i < listTimeline.length &&
-				Date.now() - date.getTime() > ONE_DAY_MS
-			) {
-				i++;
-				if (i < listTimeline.length) {
-					firstPost = listTimeline[i];
-					date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-						? new Date(firstPost.reason.indexedAt)
-						: new Date(firstPost.post.indexedAt);
-				}
-			}
+			// // Find first post that's within last 24 hours
+			// let i = 0;
+			// while (
+			// 	i < listTimeline.length &&
+			// 	Date.now() - date.getTime() > ONE_DAY_MS
+			// ) {
+			// 	i++;
+			// 	if (i < listTimeline.length) {
+			// 		firstPost = listTimeline[i];
+			// 		date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+			// 			? new Date(firstPost.reason.indexedAt)
+			// 			: new Date(firstPost.post.indexedAt);
+			// 	}
+			// }
 
 			await db
 				.update(list)
 				.set({
-					mostRecentPostDate: date,
+					mostRecentPostDate: new Date(),
 				})
 				.where(eq(list.uri, dbList.uri));
 		}
