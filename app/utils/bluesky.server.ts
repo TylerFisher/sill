@@ -89,7 +89,7 @@ export const getBlueskyList = async (
 		const list = response.data.feed;
 		const checkDate = dbList.mostRecentPostDate
 			? dbList.mostRecentPostDate
-			: new Date(Date.now() - 300000);
+			: new Date(Date.now() - ONE_DAY_MS);
 
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
@@ -121,13 +121,30 @@ export const getBlueskyList = async (
 	try {
 		const listTimeline = await getList();
 		if (listTimeline.length > 0) {
-			const firstPost = listTimeline[1]; // skip pinned posts
+			let firstPost = listTimeline[0];
+			let date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+				? new Date(firstPost.reason.indexedAt)
+				: new Date(firstPost.post.indexedAt);
+
+			// Find first post that's within last 24 hours
+			let i = 0;
+			while (
+				i < listTimeline.length &&
+				Date.now() - date.getTime() > ONE_DAY_MS
+			) {
+				i++;
+				if (i < listTimeline.length) {
+					firstPost = listTimeline[i];
+					date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+						? new Date(firstPost.reason.indexedAt)
+						: new Date(firstPost.post.indexedAt);
+				}
+			}
+
 			await db
 				.update(list)
 				.set({
-					mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-						? new Date(firstPost.reason.indexedAt)
-						: new Date(firstPost.post.indexedAt),
+					mostRecentPostDate: date,
 				})
 				.where(eq(list.uri, dbList.uri));
 		}
