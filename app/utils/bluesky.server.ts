@@ -461,14 +461,31 @@ export const getLinksFromBluesky = async (
 	if (!oauthSession) return [];
 
 	const agent = new Agent(oauthSession);
-	const timeline = await getBlueskyTimeline(account, agent);
+	const timelinePromise = getBlueskyTimeline(account, agent);
+	const timeline = await Promise.race([
+		timelinePromise,
+		new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+			setTimeout(() => reject(new Error("Timeline fetch timeout")), 25000),
+		),
+	]).catch((error) => {
+		console.error("Error fetching timeline:", error);
+		return [];
+	});
 
 	const processedResults = (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
 	for (const list of account.lists) {
-		const listPosts = await getBlueskyList(agent, list, account.handle);
+		const listPosts = await Promise.race([
+			getBlueskyList(agent, list, account.handle),
+			new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+				setTimeout(() => reject(new Error("List fetch timeout")), 25000),
+			),
+		]).catch((error) => {
+			console.error("Error fetching list:", error);
+			return [];
+		});
 		processedResults.push(
 			...(
 				await Promise.all(
