@@ -83,7 +83,6 @@ export const getBlueskyList = async (
 		}
 
 		if (!response) {
-			console.log("no response");
 			return [];
 		}
 
@@ -95,7 +94,6 @@ export const getBlueskyList = async (
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
 		for (const item of list) {
-			console.log(item);
 			if (item.post.author.handle === accountHandle) continue;
 			if (
 				AppBskyFeedDefs.isReasonRepost(item.reason) &&
