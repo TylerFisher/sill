@@ -89,7 +89,7 @@ export const getBlueskyList = async (
 		const list = response.data.feed;
 		const checkDate = dbList.mostRecentPostDate
 			? dbList.mostRecentPostDate
-			: new Date(Date.now() - 3600000);
+			: new Date(Date.now() - 300000);
 
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
