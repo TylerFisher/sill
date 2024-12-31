@@ -80,9 +80,19 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 	for (let i = 0; i < processedResults.length; i += 1000) {
 		const chunk = processedResults.slice(i, i + 1000);
 
+		const MAX_URL_LENGTH = 2712;
 		const links = Object.values(
 			chunk.reduce(
 				(acc, p) => {
+					// Check if URL is too long and warn
+					if (p.link.url.length > MAX_URL_LENGTH) {
+						console.warn(
+							`URL too long for index (${p.link.url.length} bytes): ${p.link.url}`,
+						);
+						delete acc[p.link.url]; // Remove the link from accumulator if it exists
+						return acc;
+					}
+
 					const existing = acc[p.link.url];
 					if (
 						!existing ||

@@ -93,7 +93,7 @@ export const getBlueskyList = async (
 
 		let reachedEnd = false;
 		const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
-		for (const item of list) {
+		for (const [index, item] of list.entries()) {
 			if (item.post.author.handle === accountHandle) continue;
 			if (
 				AppBskyFeedDefs.isReasonRepost(item.reason) &&
@@ -104,7 +104,9 @@ export const getBlueskyList = async (
 			const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
 				? new Date(item.reason.indexedAt)
 				: new Date(item.post.indexedAt);
-			if (postDate <= checkDate) {
+
+			// skip a few posts in case of pinned posts
+			if (postDate <= checkDate && index > 5) {
 				reachedEnd = true;
 				break;
 			}
@@ -121,19 +123,39 @@ export const getBlueskyList = async (
 	try {
 		const listTimeline = await getList();
 		if (listTimeline.length > 0) {
-			const firstPost = listTimeline[0];
+			// let firstPost = listTimeline[0];
+			// let date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+			// 	? new Date(firstPost.reason.indexedAt)
+			// 	: new Date(firstPost.post.indexedAt);
+
+			// // Find first post that's within last 24 hours
+			// let i = 0;
+			// while (
+			// 	i < listTimeline.length &&
+			// 	Date.now() - date.getTime() > ONE_DAY_MS
+			// ) {
+			// 	i++;
+			// 	if (i < listTimeline.length) {
+			// 		firstPost = listTimeline[i];
+			// 		date = AppBskyFeedDefs.isReasonRepost(firstPost.reason)
+			// 			? new Date(firstPost.reason.indexedAt)
+			// 			: new Date(firstPost.post.indexedAt);
+			// 	}
+			// }
+
 			await db
 				.update(list)
 				.set({
-					mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-						? new Date(firstPost.reason.indexedAt)
-						: new Date(firstPost.post.indexedAt),
+					mostRecentPostDate: new Date(),
 				})
 				.where(eq(list.uri, dbList.uri));
 		}
 		return listTimeline;
 	} catch (error) {
-		console.error("Error fetching Bluesky list", error);
+		console.error(
+			`Error fetching Bluesky list ${dbList.name}, ${dbList.uri} for ${accountHandle}`,
+			error,
+		);
 		return [];
 	}
 };
@@ -199,7 +221,10 @@ export const getBlueskyTimeline = async (
 		}
 		return timeline;
 	} catch (error) {
-		console.error("Error fetching Bluesky timeline", error);
+		console.error(
+			`Error fetching Bluesky timeline for ${account.handle}`,
+			error,
+		);
 		return [];
 	}
 };
@@ -450,25 +475,50 @@ export const getLinksFromBluesky = async (
 	});
 	if (!account) return [];
 
-	if (
-		account.mostRecentPostDate &&
-		account.mostRecentPostDate > new Date(Date.now() - 60000) // only fetch once per minute
-	) {
-		return [];
-	}
+	// if (
+	// 	account.mostRecentPostDate &&
+	// 	account.mostRecentPostDate > new Date(Date.now() - 60000) // only fetch once per minute
+	// ) {
+	// 	return [];
+	// }
 
 	const oauthSession = await handleBlueskyOAuth(account);
 	if (!oauthSession) return [];
 
 	const agent = new Agent(oauthSession);
-	const timeline = await getBlueskyTimeline(account, agent);
+	const timelinePromise = getBlueskyTimeline(account, agent);
+	const timeline = await Promise.race([
+		timelinePromise,
+		new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+			setTimeout(() => reject(new Error("Timeline fetch timeout")), 60000),
+		),
+	]).catch((error) => {
+		console.error("Error fetching timeline:", error);
+		return [];
+	});
 
 	const processedResults = (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
 	for (const list of account.lists) {
-		const listPosts = await getBlueskyList(agent, list, account.handle);
+		const listPosts = await Promise.race([
+			getBlueskyList(agent, list, account.handle),
+			new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+				setTimeout(
+					() =>
+						reject(
+							new Error(
+								`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
+							),
+						),
+					60000,
+				),
+			),
+		]).catch((error) => {
+			console.error("Error fetching list:", list.name, error);
+			return [];
+		});
 		processedResults.push(
 			...(
 				await Promise.all(

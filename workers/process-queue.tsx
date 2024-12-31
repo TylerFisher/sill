@@ -1,5 +1,5 @@
 import { db } from "~/drizzle/db.server";
-import { dequeueJobs } from "~/utils/queue.server";
+import { dequeueJobs, enqueueJob } from "~/utils/queue.server";
 import {
 	fetchLinks,
 	insertNewLinks,
@@ -12,7 +12,7 @@ import {
 	notificationItem,
 	user,
 } from "~/drizzle/schema.server";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
@@ -36,8 +36,8 @@ async function processQueue() {
 					try {
 						const timeoutPromise = new Promise((_, reject) =>
 							setTimeout(() => {
-								reject(new Error("Job timed out after 30 seconds"));
-							}, 30000),
+								reject(new Error("Job timed out after 120 seconds"));
+							}, 120000),
 						);
 						const jobPromise = (async () => {
 							const links = await fetchLinks(job.userId);
@@ -140,6 +140,15 @@ async function processQueue() {
       Errors: ${results.filter((r) => r.status === "error").length}
       Batch Duration: ${batchDuration}ms
     `);
+		} else {
+			if (process.env.NODE_ENV === "production") {
+				const users = await db.query.user.findMany({
+					orderBy: asc(user.createdAt),
+				});
+
+				await Promise.all(users.map((user) => enqueueJob(user.id)));
+				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+			}
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 1000));
