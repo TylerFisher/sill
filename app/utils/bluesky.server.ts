@@ -121,7 +121,7 @@ export const getBlueskyList = async (
 	try {
 		const listTimeline = await getList();
 		if (listTimeline.length > 0) {
-			const firstPost = listTimeline[0];
+			const firstPost = listTimeline[1]; // skip pinned posts
 			await db
 				.update(list)
 				.set({
