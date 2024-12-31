@@ -497,7 +497,7 @@ export const accountUpdateQueue = pgTable("account_update_queue", {
 	id: uuid().primaryKey().notNull(),
 	userId: uuid()
 		.notNull()
-		.references(() => user.id),
+		.references(() => user.id, { onDelete: "cascade" }),
 	status: text().notNull().default("pending"),
 	createdAt: timestamp().defaultNow(),
 	processedAt: timestamp(),
