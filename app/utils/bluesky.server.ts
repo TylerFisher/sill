@@ -480,10 +480,16 @@ export const getLinksFromBluesky = async (
 		const listPosts = await Promise.race([
 			getBlueskyList(agent, list, account.handle),
 			new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-				setTimeout(() => reject(new Error("List fetch timeout")), 25000),
+				setTimeout(
+					() =>
+						reject(
+							new Error(`List timeout: ${list.name} for ${account.handle}`),
+						),
+					25000,
+				),
 			),
 		]).catch((error) => {
-			console.error("Error fetching list:", error);
+			console.error("Error fetching list:", list.name, error);
 			return [];
 		});
 		processedResults.push(
