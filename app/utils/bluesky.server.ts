@@ -492,8 +492,8 @@ export const getLinksFromBluesky = async (
 		new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
 			setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
 		),
-	]).catch((error) => {
-		console.error("Error fetching timeline:", error);
+	]).catch((e) => {
+		console.error("Error fetching timeline:", e?.constructor?.name);
 		return [];
 	});
 
@@ -515,8 +515,8 @@ export const getLinksFromBluesky = async (
 					60000,
 				),
 			),
-		]).catch((error) => {
-			console.error("Error fetching list:", list.name, error);
+		]).catch((e) => {
+			console.error("Error fetching list:", list.name, e?.constructor?.name);
 			return [];
 		});
 		processedResults.push(
