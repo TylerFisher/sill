@@ -151,10 +151,10 @@ export const getBlueskyList = async (
 				.where(eq(list.uri, dbList.uri));
 		}
 		return listTimeline;
-	} catch (error) {
+	} catch (e) {
 		console.error(
 			`Error fetching Bluesky list ${dbList.name}, ${dbList.uri} for ${accountHandle}`,
-			error,
+			e?.constructor?.name,
 		);
 		return [];
 	}
@@ -220,10 +220,10 @@ export const getBlueskyTimeline = async (
 				.where(eq(blueskyAccount.id, account.id));
 		}
 		return timeline;
-	} catch (error) {
+	} catch (e) {
 		console.error(
 			`Error fetching Bluesky timeline for ${account.handle}`,
-			error,
+			e?.constructor?.name,
 		);
 		return [];
 	}

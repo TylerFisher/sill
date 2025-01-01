@@ -171,4 +171,6 @@ jobs:
             # Remove orphaned Docker containers
             docker container prune -f
             docker image prune -af
+            # manually restart worker
+            docker compose -f "$COMPOSE_FILE" up -d --build worker
             echo "🚀 Deployment complete! 🎉 Services are now up and running. 🌟"
