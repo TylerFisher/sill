@@ -7,7 +7,7 @@
     "build": "NODE_ENV=production react-router build",
     "build:worker": "tsx workers/build.ts",
     "dev": "NODE_ENV=development react-router dev --host",
-    "dev:worker": "tsx watch --env-file .env ./workers/process-queue.ts",
+    "dev:worker": "tsx watch --env-file .env ./workers/process-queue.tsx",
     "generate-secrets": "sh ./scripts/generate-secrets.sh",
     "lint": "biome check",
     "start": "react-router-serve ./build/server/index.js",

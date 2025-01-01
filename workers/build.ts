@@ -3,7 +3,7 @@ import pkg from "../package.json";
 
 esbuild
 	.build({
-		entryPoints: ["./workers/process-queue.ts"],
+		entryPoints: ["./workers/process-queue.tsx"],
 		platform: "node",
 		outfile: "./build/worker.js",
 		format: "esm",

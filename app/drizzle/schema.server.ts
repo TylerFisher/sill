@@ -15,6 +15,7 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
+import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
@@ -206,6 +207,33 @@ export const digestItem = pgTable("digest_item", {
 	userId: uuid()
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const notificationGroup = pgTable("notification_group", {
+	id: uuid().primaryKey().notNull(),
+	name: text().notNull(),
+	query: json().$type<NotificationQuery[]>().notNull(),
+	notificationType: digestType().notNull().default("email"),
+	feedUrl: text(),
+	seenLinks: json().$type<string[]>().notNull().default([]),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	createdAt: timestamp({ precision: 3, mode: "date" })
+		.default(sql`CURRENT_TIMESTAMP`)
+		.notNull(),
+});
+
+export const notificationItem = pgTable("notification_item", {
+	id: uuid().primaryKey().notNull(),
+	notificationGroupId: uuid()
+		.notNull()
+		.references(() => notificationGroup.id, { onDelete: "cascade" }),
+	itemData: json().$type<MostRecentLinkPosts>().notNull(),
+	itemHtml: text(),
+	createdAt: timestamp({ precision: 3, mode: "date" })
+		.default(sql`CURRENT_TIMESTAMP`)
+		.notNull(),
 });
 
 export const mastodonInstance = pgTable("mastodon_instance", {
@@ -538,6 +566,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	mutePhrases: many(mutePhrase),
 	digestSettings: one(digestSettings),
 	digestItems: many(digestItem),
+	notificationGroups: many(notificationGroup),
 }));
 
 export const linkRelations = relations(link, ({ many }) => ({
@@ -701,3 +730,24 @@ export const digestItemRelations = relations(digestItem, ({ one }) => ({
 		references: [user.id],
 	}),
 }));
+
+export const notificationGroupRelations = relations(
+	notificationGroup,
+	({ one, many }) => ({
+		user: one(user, {
+			fields: [notificationGroup.userId],
+			references: [user.id],
+		}),
+		items: many(notificationItem),
+	}),
+);
+
+export const notificationItemRelations = relations(
+	notificationItem,
+	({ one }) => ({
+		group: one(notificationGroup, {
+			fields: [notificationItem.notificationGroupId],
+			references: [notificationGroup.id],
+		}),
+	}),
+);

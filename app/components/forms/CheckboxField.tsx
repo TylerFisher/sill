@@ -26,7 +26,7 @@ const CheckboxField = ({
 	const errorId = errors?.length ? `${id}-error` : undefined;
 	return (
 		<Box>
-			<Flex gap="2">
+			<Flex gap="2" align="center">
 				<Checkbox
 					{...inputProps}
 					aria-invalid={errorId ? true : undefined}

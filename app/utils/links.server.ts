@@ -9,6 +9,8 @@ import {
 	or,
 	sql,
 	getTableColumns,
+	type SQL,
+	notInArray,
 } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
@@ -24,6 +26,7 @@ import {
 	type PgTable,
 	type PgUpdateSetSource,
 } from "drizzle-orm/pg-core";
+import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 
 const PAGE_SIZE = 10;
 
@@ -155,6 +158,39 @@ export function conflictUpdateSetAllColumns<TTable extends PgTable>(
 	) as PgUpdateSetSource<TTable>;
 	return conflictUpdateSet;
 }
+
+const getUniqueActorsCountSql = (postMuteCondition: unknown) => sql<number>`
+        CAST(LEAST(
+          -- Count by normalized names
+          COUNT(DISTINCT 
+            CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+              LOWER(REGEXP_REPLACE(
+                COALESCE(
+                  ${linkPostDenormalized.repostActorName},
+                  ${linkPostDenormalized.actorName}
+                ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+            END
+          ),
+          -- Count by normalized handles
+          COUNT(DISTINCT 
+            CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+              CASE 
+                WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+                  LOWER(substring(
+                    COALESCE(
+                      ${linkPostDenormalized.repostActorHandle},
+                      ${linkPostDenormalized.actorHandle}
+                    ) from '^@?([^@]+)(@|$)'))
+                ELSE
+                  LOWER(replace(replace(
+                    COALESCE(
+                      ${linkPostDenormalized.repostActorHandle},
+                      ${linkPostDenormalized.actorHandle}
+                    ), '.bsky.social', ''), '@', ''))
+              END
+            END
+          )
+        ) as INTEGER)`;
 interface FilterArgs {
 	userId: string;
 	time?: number;
@@ -237,38 +273,8 @@ export const filterLinkOccurrences = async ({
 		.select({
 			link,
 			// Count unique actors based on similar handles or names, excluding duplicates from different networks
-			uniqueActorsCount: sql<number>`
-  CAST(LEAST(
-    -- Count by normalized names
-    COUNT(DISTINCT 
-      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
-        LOWER(REGEXP_REPLACE(
-          COALESCE(
-            ${linkPostDenormalized.repostActorName},
-            ${linkPostDenormalized.actorName}
-          ), '\\s*\\(.*?\\)\\s*', '', 'g'))
-      END
-    ),
-    -- Count by normalized handles
-    COUNT(DISTINCT 
-      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
-        CASE 
-          WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
-            LOWER(substring(
-              COALESCE(
-                ${linkPostDenormalized.repostActorHandle},
-                ${linkPostDenormalized.actorHandle}
-              ) from '^@?([^@]+)(@|$)'))
-          ELSE
-            LOWER(replace(replace(
-              COALESCE(
-                ${linkPostDenormalized.repostActorHandle},
-                ${linkPostDenormalized.actorHandle}
-              ), '.bsky.social', ''), '@', ''))
-        END
-      END
-    )
-  ) as INTEGER)`.as("uniqueActorsCount"),
+			uniqueActorsCount:
+				getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
@@ -358,6 +364,203 @@ export const filterLinkOccurrences = async ({
 		});
 };
 
+export const evaluateNotifications = async (
+	userId: string,
+	queries: NotificationQuery[],
+	seenLinks: string[] = [],
+) => {
+	const start = new Date(Date.now() - ONE_DAY_MS);
+	const mutePhrases = await getMutePhrases(userId);
+	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
+		notIlike(link.url, `%${phrase.phrase}%`),
+		notIlike(link.title, `%${phrase.phrase}%`),
+		notIlike(link.description, `%${phrase.phrase}%`),
+	]);
+	const postMuteCondition =
+		mutePhrases.length > 0
+			? sql`CASE WHEN ${or(
+					...mutePhrases.flatMap((phrase) => [
+						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
+					]),
+				)} THEN NULL ELSE 1 END`
+			: sql`1`;
+
+	const linkSQLQueries: (SQL | undefined)[] = [];
+	const postSQLQueries: (SQL | undefined)[] = [];
+	for (const query of queries) {
+		if (query.category.id === "url" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				linkSQLQueries.push(eq(link.url, query.value));
+			}
+			if (query.operator === "contains") {
+				linkSQLQueries.push(ilike(link.url, `%${query.value}%`));
+			}
+			if (query.operator === "excludes") {
+				linkSQLQueries.push(notIlike(link.url, `%${query.value}%`));
+			}
+		}
+
+		if (query.category.id === "link" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				linkSQLQueries.push(
+					or(eq(link.title, query.value), eq(link.description, query.value)),
+				);
+			}
+			if (query.operator === "contains") {
+				linkSQLQueries.push(
+					or(
+						ilike(link.title, `%${query.value}%`),
+						ilike(link.description, `%${query.value}%`),
+					),
+				);
+			}
+			if (query.operator === "excludes") {
+				linkSQLQueries.push(
+					and(
+						notIlike(link.title, `%${query.value}%`),
+						notIlike(link.description, `%${query.value}%`),
+					),
+				);
+			}
+		}
+
+		if (query.category.id === "post" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				postSQLQueries.push(eq(linkPostDenormalized.postText, query.value));
+			}
+			if (query.operator === "contains") {
+				postSQLQueries.push(
+					ilike(linkPostDenormalized.postText, `%${query.value}%`),
+				);
+			}
+			if (query.operator === "excludes") {
+				postSQLQueries.push(
+					notIlike(linkPostDenormalized.postText, `%${query.value}%`),
+				);
+			}
+		}
+
+		if (query.category.id === "author" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				postSQLQueries.push(
+					or(
+						eq(linkPostDenormalized.actorName, query.value),
+						eq(linkPostDenormalized.actorHandle, query.value),
+					),
+				);
+			}
+			if (query.operator === "contains") {
+				postSQLQueries.push(
+					or(
+						ilike(linkPostDenormalized.actorName, `%${query.value}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${query.value}%`),
+					),
+				);
+			}
+			if (query.operator === "excludes") {
+				postSQLQueries.push(
+					or(
+						notIlike(linkPostDenormalized.actorName, `%${query.value}%`),
+						notIlike(linkPostDenormalized.actorHandle, `%${query.value}%`),
+					),
+				);
+			}
+		}
+
+		if (query.category.id === "repost" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				postSQLQueries.push(
+					or(
+						eq(linkPostDenormalized.repostActorName, query.value),
+						eq(linkPostDenormalized.repostActorHandle, query.value),
+					),
+				);
+			}
+			if (query.operator === "contains") {
+				postSQLQueries.push(
+					or(
+						ilike(linkPostDenormalized.repostActorName, `%${query.value}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${query.value}%`),
+					),
+				);
+			}
+			if (query.operator === "excludes") {
+				postSQLQueries.push(
+					and(
+						notIlike(linkPostDenormalized.repostActorName, `%${query.value}%`),
+						notIlike(
+							linkPostDenormalized.repostActorHandle,
+							`%${query.value}%`,
+						),
+					),
+				);
+			}
+		}
+	}
+
+	const sharesQuery = queries.find(
+		(query) =>
+			query.category.id === "shares" && typeof query.value === "number",
+	);
+
+	return await db
+		.select({
+			link,
+			uniqueActorsCount:
+				getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+		.where(
+			and(
+				eq(linkPostDenormalized.userId, userId),
+				gte(linkPostDenormalized.postDate, start),
+				notInArray(link.url, seenLinks),
+				...urlMuteClauses,
+				...linkSQLQueries,
+				...postSQLQueries,
+			),
+		)
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(
+			sharesQuery
+				? gte(getUniqueActorsCountSql(postMuteCondition), sharesQuery.value)
+				: sql`count(*) > 0`,
+		)
+		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(
+						and(
+							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							eq(linkPostDenormalized.userId, userId),
+							gte(linkPostDenormalized.postDate, start),
+							sql`${postMuteCondition} = 1`,
+						),
+					)
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
+};
 interface TopTenLinks {
 	link: typeof link.$inferSelect;
 	mostRecentPostDate: Date;
@@ -422,6 +625,5 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 			});
 			return Promise.all(postsPromise);
 		});
-
 	return topTen;
 };

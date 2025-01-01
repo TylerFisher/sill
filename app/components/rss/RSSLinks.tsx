@@ -1,7 +1,7 @@
 import { Heading, Text, Link } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSLinkPost from "./RSSLinkPost";
-import { intro, linkPlug, outro, title } from "~/utils/digestText";
+import { intro, linkPlug, outro } from "~/utils/digestText";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];

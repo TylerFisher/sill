@@ -1,6 +1,7 @@
 import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation } from "react-router";
 import {
+	Bell,
 	Link2,
 	Mail,
 	MessageSquareOff,
@@ -37,6 +38,11 @@ const Nav = ({
 			to: "/email",
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
+		},
+		{
+			to: "/notifications",
+			label: "Notifications",
+			icon: <Bell className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/moderation",

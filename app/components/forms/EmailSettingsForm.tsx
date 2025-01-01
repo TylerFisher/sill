@@ -88,9 +88,9 @@ const EmailSettingForm = ({
 			)}
 			{currentSettings?.digestType === "email" && (
 				<Box mb="4">
-					<Text as="p" size="2" mb="4">
+					<Text as="p" size="3" mb="4">
 						Your Daily Digest is currently set to be delivered at{" "}
-						<Badge>
+						<Badge size="3">
 							{selectedHour &&
 								hours[
 									new Date(
@@ -98,15 +98,15 @@ const EmailSettingForm = ({
 									).getHours()
 								]}
 						</Badge>
-						, to <Badge>{email}</Badge>.
+						, to <Badge size="3">{email}</Badge>.
 					</Text>
 					<Link to="/accounts/change-email">
-						<Button size="1">Change your email</Button>
+						<Button size="3">Change your email</Button>
 					</Link>
 				</Box>
 			)}
 			{currentSettings?.digestType === "rss" && (
-				<Box mb="4">
+				<Box mb="6">
 					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
 						RSS URL:
 					</Text>
@@ -137,17 +137,18 @@ const EmailSettingForm = ({
 					</TextField.Root>
 				</Box>
 			)}
-			<Separator size="4" my="4" />
+			<Separator size="4" my="6" />
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
-				<Box>
-					<Text as="label" size="2" htmlFor="digestType">
+				<Box mb="3">
+					<Text as="label" size="3" htmlFor="digestType">
 						<strong>Daily Digest delivery format</strong>
 					</Text>
 					<RadioGroup.Root
 						defaultValue={format}
 						name="digestType"
-						mb="4"
+						mb="6"
 						onValueChange={(value) => setFormat(value)}
+						size="3"
 					>
 						<RadioGroup.Item value="email">Email</RadioGroup.Item>
 						<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
@@ -155,15 +156,16 @@ const EmailSettingForm = ({
 					{fields.digestType.errors && (
 						<ErrorCallout error={fields.digestType.errors[0]} />
 					)}
-					<Box mb="4">
-						<Text as="label" size="2" htmlFor="digestType">
+					<Box mb="6">
+						<Text as="label" size="3" htmlFor="digestType">
 							<strong>Layout</strong>
 						</Text>
 						<RadioGroup.Root
 							defaultValue={currentSettings?.layout || "default"}
 							name="layout"
-							mb="4"
+							mb="6"
 							disabled={format === "rss"}
+							size="3"
 						>
 							<RadioGroup.Item value="default">
 								Default (with images, comfortable spacing)
@@ -187,8 +189,8 @@ const EmailSettingForm = ({
 						)}
 					</Box>
 
-					<Box my="4">
-						<Text as="label" size="2" htmlFor="time">
+					<Box my="6">
+						<Text as="label" size="3" htmlFor="time">
 							<strong>Time to deliver Daily Digest</strong>
 						</Text>
 						<br />
@@ -196,6 +198,7 @@ const EmailSettingForm = ({
 							{...getInputProps(fields.time, { type: "time" })}
 							value={selectedHour}
 							onValueChange={(value) => setSelectedHour(value)}
+							size="3"
 						>
 							<Select.Trigger placeholder="Select a time" />
 							<Select.Content>
@@ -215,22 +218,24 @@ const EmailSettingForm = ({
 							<ErrorCallout error={fields.time.errors[0]} />
 						)}
 					</Box>
-					<Box my="4">
+					<Box my="6">
 						<CheckboxField
 							inputProps={{
 								name: fields.hideReposts.name,
 								id: fields.hideReposts.id,
 								defaultChecked: currentSettings?.hideReposts,
+								size: 3,
 							}}
 							labelProps={{
-								children: "Hide reposts from top links calculation",
+								children: "Exclude reposts from top links calculation",
 								htmlFor: fields.hideReposts.id,
+								size: "3",
 							}}
 							errors={fields.hideReposts.errors}
 						/>
 					</Box>
-					<Box my="4">
-						<Text as="label" size="2" htmlFor="topAmount">
+					<Box mt="6" mb="2">
+						<Text as="label" size="3" htmlFor="topAmount">
 							<strong>{topAmountValue}</strong> links per Daily Digest
 						</Text>
 						<Slider
@@ -239,22 +244,23 @@ const EmailSettingForm = ({
 							name="topAmount"
 							value={topAmountValue}
 							onValueChange={(value) => setTopAmountValue(value)}
+							size="3"
 						/>
 					</Box>
 
 					<Flex gap="2" mt="4">
-						<SubmitButton label="Save" size="2" />
+						<SubmitButton label="Save" size="3" />
 					</Flex>
 				</Box>
 			</fetcher.Form>
 			{currentSettings && (
-				<Box mt="4">
+				<Box mt="2">
 					<Form
 						method="DELETE"
 						action="/email/delete"
 						onSubmit={() => setSelectedHour(undefined)}
 					>
-						<SubmitButton color="red" label="Turn off daily digest" size="2" />
+						<SubmitButton color="red" label="Turn off daily digest" size="3" />
 					</Form>
 				</Box>
 			)}
