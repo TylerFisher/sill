@@ -22,11 +22,13 @@ async function processQueue() {
 				jobs.map(async (job) => {
 					const jobStart = Date.now();
 					try {
-						const timeoutPromise = new Promise((_, reject) =>
-							setTimeout(() => {
+						const timeoutPromise = new Promise((_, reject) => {
+							const timer = setTimeout(() => {
 								reject(new Error("Job timed out after 120 seconds"));
-							}, 120000),
-						);
+							}, 120000);
+							// Clear timer when promise resolves
+							return () => clearTimeout(timer);
+						});
 						const jobPromise = (async () => {
 							const links = await fetchLinks(job.userId);
 							allLinks.push(...links);

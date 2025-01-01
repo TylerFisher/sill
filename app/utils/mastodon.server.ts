@@ -134,10 +134,17 @@ export const getMastodonTimeline = async (
 ) => {
 	const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
-	const client = createRestAPIClient({
-		url: `https://${account.mastodonInstance.instance}`,
-		accessToken: account.accessToken,
-	});
+	let client: mastodon.rest.Client | null = null;
+
+	try {
+		client = createRestAPIClient({
+			url: `https://${account.mastodonInstance.instance}`,
+			accessToken: account.accessToken,
+		});
+	} catch (e) {
+		console.error("Error creating Mastodon client", e);
+		return [];
+	}
 
 	const profile = await client.v1.accounts.verifyCredentials();
 
@@ -281,27 +288,46 @@ export const getLinksFromMastodon = async (
 
 	if (!account) return [];
 
-	const timeline = await getMastodonTimeline(account);
-	const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
-	const processedResults = (
-		await Promise.all(
-			linksOnly.map(async (t) => processMastodonLink(userId, t)),
-		)
-	).filter((p) => p !== null);
+	try {
+		const timelinePromise = getMastodonTimeline(account);
 
-	for (const list of account.lists) {
-		const listPosts = await getMastodonList(list.uri, account);
-		const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
-		processedResults.push(
-			...(
-				await Promise.all(
-					linksOnly.map(async (t) => processMastodonLink(userId, t, list.id)),
-				)
-			).filter((p) => p !== null),
-		);
+		const timeline = await Promise.race([
+			timelinePromise,
+			new Promise<mastodon.v1.Status[]>((_, reject) =>
+				setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
+			),
+		]);
+
+		const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
+		const processedResults = (
+			await Promise.all(
+				linksOnly.map(async (t) => processMastodonLink(userId, t)),
+			)
+		).filter((p) => p !== null);
+
+		for (const list of account.lists) {
+			const listPosts = await Promise.race([
+				getMastodonList(list.uri, account),
+				new Promise<mastodon.v1.Status[]>((_, reject) =>
+					setTimeout(() => reject(new Error("List fetch timeout")), 60000),
+				),
+			]);
+
+			const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
+			processedResults.push(
+				...(
+					await Promise.all(
+						linksOnly.map(async (t) => processMastodonLink(userId, t, list.id)),
+					)
+				).filter((p) => p !== null),
+			);
+		}
+
+		return processedResults;
+	} catch (e) {
+		console.error("Error getting links from Mastodon", e);
+		return [];
 	}
-
-	return processedResults;
 };
 
 export const getMastodonLists = async (account: AccountWithInstance) => {
