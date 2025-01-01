@@ -204,6 +204,13 @@
       "when": 1735676073910,
       "tag": "0028_loose_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1735762465670,
+      "tag": "0029_long_sumo",
+      "breakpoints": true
     }
   ]
 }
