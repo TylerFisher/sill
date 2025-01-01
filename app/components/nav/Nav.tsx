@@ -39,11 +39,11 @@ const Nav = ({
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 		},
-		{
-			to: "/notifications",
-			label: "Notifications",
-			icon: <Bell className={styles["nav-list-item-icon"]} />,
-		},
+		// {
+		// 	to: "/notifications",
+		// 	label: "Notifications",
+		// 	icon: <Bell className={styles["nav-list-item-icon"]} />,
+		// },
 		{
 			to: "/moderation",
 			label: "Mute",
