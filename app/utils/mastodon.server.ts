@@ -325,7 +325,7 @@ export const getLinksFromMastodon = async (
 
 		return processedResults;
 	} catch (e) {
-		console.error("Error getting links from Mastodon", e);
+		console.error("Error getting links from Mastodon:", e?.constructor?.name);
 		return [];
 	}
 };
