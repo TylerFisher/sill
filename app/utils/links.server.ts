@@ -569,7 +569,7 @@ interface TopTenLinks {
 }
 
 export interface TopTenResults {
-	count: number;
+	uniqueActorsCount: number;
 	link: typeof link.$inferSelect | null;
 	posts?: (typeof linkPostDenormalized.$inferSelect & { count: number })[];
 	mostRecentPostDate: Date;
@@ -584,24 +584,22 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
 				"mostRecentPostDate",
 			),
-			count: sql<number>`count(*)`.as("count"),
+			uniqueActorsCount:
+				getUniqueActorsCountSql(sql`'all'`).as("uniqueActorsCount"),
 		})
 		.from(linkPostDenormalized)
 		.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(gte(linkPostDenormalized.postDate, start))
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
-		.orderBy(desc(sql`"count"`), desc(sql`"mostRecentPostDate"`))
+		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
 		.limit(10)
 		.then(async (results) => {
 			const postsPromise = results.map(async (result) => {
 				const post = await db
 					.select({
 						...getTableColumns(linkPostDenormalized),
-						count:
-							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
-								"count",
-							),
+						count: sql<number>`count(*)`.as("count"),
 					})
 					.from(linkPostDenormalized)
 					.where(
