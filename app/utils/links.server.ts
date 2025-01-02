@@ -18,6 +18,8 @@ import {
 	linkPostDenormalized,
 	list,
 	mutePhrase,
+	networkTopTenView,
+	getUniqueActorsCountSql,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -158,39 +160,6 @@ export function conflictUpdateSetAllColumns<TTable extends PgTable>(
 	) as PgUpdateSetSource<TTable>;
 	return conflictUpdateSet;
 }
-
-const getUniqueActorsCountSql = (postMuteCondition: unknown) => sql<number>`
-        CAST(LEAST(
-          -- Count by normalized names
-          COUNT(DISTINCT 
-            CASE WHEN ${postMuteCondition} IS NOT NULL THEN
-              LOWER(REGEXP_REPLACE(
-                COALESCE(
-                  ${linkPostDenormalized.repostActorName},
-                  ${linkPostDenormalized.actorName}
-                ), '\\s*\\(.*?\\)\\s*', '', 'g'))
-            END
-          ),
-          -- Count by normalized handles
-          COUNT(DISTINCT 
-            CASE WHEN ${postMuteCondition} IS NOT NULL THEN
-              CASE 
-                WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
-                  LOWER(substring(
-                    COALESCE(
-                      ${linkPostDenormalized.repostActorHandle},
-                      ${linkPostDenormalized.actorHandle}
-                    ) from '^@?([^@]+)(@|$)'))
-                ELSE
-                  LOWER(replace(replace(
-                    COALESCE(
-                      ${linkPostDenormalized.repostActorHandle},
-                      ${linkPostDenormalized.actorHandle}
-                    ), '.bsky.social', ''), '@', ''))
-              END
-            END
-          )
-        ) as INTEGER)`;
 interface FilterArgs {
 	userId: string;
 	time?: number;
@@ -575,25 +544,12 @@ export interface TopTenResults {
 	mostRecentPostDate: Date;
 }
 
-export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
-	const start = new Date(Date.now() - time);
+export const networkTopTen = async (): Promise<TopTenResults[]> => {
+	const start = new Date(Date.now() - 10800000);
 
 	const topTen = await db
-		.select({
-			link,
-			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-				"mostRecentPostDate",
-			),
-			uniqueActorsCount:
-				getUniqueActorsCountSql(sql`'all'`).as("uniqueActorsCount"),
-		})
-		.from(linkPostDenormalized)
-		.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-		.where(gte(linkPostDenormalized.postDate, start))
-		.groupBy(linkPostDenormalized.linkUrl, link.id)
-		.having(sql`count(*) > 0`)
-		.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
-		.limit(10)
+		.select()
+		.from(networkTopTenView)
 		.then(async (results) => {
 			const postsPromise = results.map(async (result) => {
 				const post = await db

@@ -8,6 +8,7 @@ import {
 } from "~/utils/links.server";
 import {
 	accountUpdateQueue,
+	networkTopTenView,
 	notificationGroup,
 	notificationItem,
 	user,
@@ -143,7 +144,10 @@ async function processQueue() {
       Batch Duration: ${batchDuration}ms
     `);
 		} else {
+			// refresh network top ten
 			if (process.env.NODE_ENV === "production") {
+				await db.refreshMaterializedView(networkTopTenView);
+
 				const users = await db.query.user.findMany({
 					orderBy: asc(user.createdAt),
 				});

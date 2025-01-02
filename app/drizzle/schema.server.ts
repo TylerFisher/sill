@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { desc, eq, getTableColumns, gte, sql } from "drizzle-orm";
 import {
 	boolean,
 	foreignKey,
@@ -6,6 +6,7 @@ import {
 	integer,
 	json,
 	pgEnum,
+	pgMaterializedView,
 	pgTable,
 	text,
 	time,
@@ -750,4 +751,66 @@ export const notificationItemRelations = relations(
 			references: [notificationGroup.id],
 		}),
 	}),
+);
+
+export const getUniqueActorsCountSql = (
+	postMuteCondition: unknown,
+) => sql<number>`
+  CAST(LEAST(
+    -- Count by normalized names
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        LOWER(REGEXP_REPLACE(
+          COALESCE(
+            ${linkPostDenormalized.repostActorName},
+            ${linkPostDenormalized.actorName}
+          ), '\\s*\\(.*?\\)\\s*', '', 'g'))
+      END
+    ),
+    -- Count by normalized handles
+    COUNT(DISTINCT 
+      CASE WHEN ${postMuteCondition} IS NOT NULL THEN
+        CASE 
+          WHEN ${linkPostDenormalized.postType} = 'mastodon' THEN
+            LOWER(substring(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ) from '^@?([^@]+)(@|$)'))
+          ELSE
+            LOWER(replace(replace(
+              COALESCE(
+                ${linkPostDenormalized.repostActorHandle},
+                ${linkPostDenormalized.actorHandle}
+              ), '.bsky.social', ''), '@', ''))
+        END
+      END
+    )
+  ) as INTEGER)`;
+
+export const networkTopTenView = pgMaterializedView("network_top_ten").as(
+	(qb) =>
+		qb
+			.select({
+				link: {
+					...getTableColumns(link),
+				},
+				mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+					"mostRecentPostDate",
+				),
+				uniqueActorsCount:
+					getUniqueActorsCountSql(sql`1`).as("uniqueActorsCount"),
+			})
+			.from(linkPostDenormalized)
+			.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+			.where(
+				gte(
+					linkPostDenormalized.postDate,
+					sql<Date>`now() - interval '3 hours'`,
+				),
+			)
+			.groupBy(linkPostDenormalized.linkUrl, link.id)
+			.having(sql`count(*) > 0`)
+			.orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
+			.limit(10),
 );

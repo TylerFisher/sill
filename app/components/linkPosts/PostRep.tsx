@@ -132,25 +132,23 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 				</>
 			)}
 
-			{instance && bsky && (
-				<img
-					src={
-						post.postType === "bluesky"
-							? "/bluesky-logo.svg"
-							: "/mastodon-logo.svg"
-					}
-					alt=""
-					width="24"
-					height="auto"
-					style={{
-						display: "inline",
-						position: "absolute",
-						top: "10px",
-						right: "10px",
-						opacity: "0.3",
-					}}
-				/>
-			)}
+			<img
+				src={
+					post.postType === "bluesky"
+						? "/bluesky-logo.svg"
+						: "/mastodon-logo.svg"
+				}
+				alt=""
+				width="24"
+				height="auto"
+				style={{
+					display: "inline",
+					position: "absolute",
+					top: "10px",
+					right: "10px",
+					opacity: "0.3",
+				}}
+			/>
 		</Card>
 	);
 };

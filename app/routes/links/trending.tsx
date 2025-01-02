@@ -36,19 +36,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		});
 	}
 
-	const url = new URL(request.url);
-	const timeParam = url.searchParams.get("time");
-	let time = 10800000;
-
-	if (timeParam === "6h") {
-		time = 21600000;
-	} else if (timeParam === "12h") {
-		time = 43200000;
-	} else if (timeParam === "24h") {
-		time = 86400000;
-	}
-
-	const topTen = networkTopTen(time);
+	const topTen = networkTopTen();
 
 	return {
 		existingUser,
@@ -59,21 +47,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 const TopTen = ({ loaderData }: Route.ComponentProps) => {
 	const { existingUser, topTen } = loaderData;
 	const layout = useLayout();
-	const [searchParams, setSearchParams] = useSearchParams();
-	const timeParam = searchParams.get("time") || "3h";
-	const [time, setTime] = useState(timeParam);
-
-	const onSelected = (value: string) => {
-		setTime(value);
-		setSearchParam("time", value);
-	};
-
-	function setSearchParam(param: string, value: string) {
-		setSearchParams((prev) => {
-			prev.set(param, value);
-			return prev;
-		});
-	}
 
 	return (
 		<>
@@ -113,21 +86,6 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 			<Layout hideNav={!existingUser}>
 				<Flex justify="between" align="center" mb="4">
 					<Heading as="h2">Trending links</Heading>
-					<Flex align="center" gap="1">
-						<Text>From the last </Text>
-						<Select.Root
-							value={time}
-							onValueChange={(value) => onSelected(value)}
-						>
-							<Select.Trigger />
-							<Select.Content>
-								<Select.Item value="3h">3 hours</Select.Item>
-								<Select.Item value="6h">6 hours</Select.Item>
-								<Select.Item value="12h">12 hours</Select.Item>
-								<Select.Item value="24h">24 hours</Select.Item>
-							</Select.Content>
-						</Select.Root>
-					</Flex>
 				</Flex>
 
 				<Callout.Root my="4">
