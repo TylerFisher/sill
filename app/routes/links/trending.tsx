@@ -10,8 +10,10 @@ import { useLayout } from "../resources/layout-switch";
 import {
 	Box,
 	Button,
+	Callout,
 	Flex,
 	Heading,
+	Link,
 	Select,
 	Separator,
 	Spinner,
@@ -21,6 +23,9 @@ import { Await, NavLink, useSearchParams } from "react-router";
 import { Suspense, useState } from "react";
 import PostRep from "~/components/linkPosts/PostRep";
 import NumberRanking from "~/components/linkPosts/NumberRanking";
+import { TrendingUp } from "lucide-react";
+
+export const meta: Route.MetaFunction = () => [{ title: "Sill | Trending" }];
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
@@ -107,7 +112,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 
 			<Layout hideNav={!existingUser}>
 				<Flex justify="between" align="center" mb="4">
-					<Heading as="h2">Trending on Sill</Heading>
+					<Heading as="h2">Trending links</Heading>
 					<Flex align="center" gap="1">
 						<Text>From the last </Text>
 						<Select.Root
@@ -124,6 +129,18 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 						</Select.Root>
 					</Flex>
 				</Flex>
+
+				<Callout.Root my="4">
+					<Callout.Icon>
+						<TrendingUp />
+					</Callout.Icon>
+					<Callout.Text>
+						Trending is a list of the most popular links on Sill right now. Sill
+						calculates popularity by looking at the number of accounts who have
+						posted a link on Bluesky or Mastodon. Read more{" "}
+						<Link href="https://docs.sill.social">here</Link>.
+					</Callout.Text>
+				</Callout.Root>
 
 				<Suspense
 					fallback={

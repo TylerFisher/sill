@@ -599,7 +599,10 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 				const post = await db
 					.select({
 						...getTableColumns(linkPostDenormalized),
-						count: sql<number>`count(*)`.as("count"),
+						count:
+							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
+								"count",
+							),
 					})
 					.from(linkPostDenormalized)
 					.where(
@@ -608,12 +611,7 @@ export const networkTopTen = async (time: number): Promise<TopTenResults[]> => {
 							gte(linkPostDenormalized.postDate, start),
 						),
 					)
-					.groupBy(linkPostDenormalized.postUrl, linkPostDenormalized.id)
-					.orderBy(
-						desc(
-							sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`,
-						),
-					)
+					.orderBy(desc(sql`count`))
 					.limit(1)
 					.then((posts) => posts[0]);
 				return {
