@@ -45,13 +45,18 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 const PromoContent = () => (
 	<Flex justify="center" align="center" direction="column" gap="2">
 		<Text as="p">Want to see the most popular links in your own network? </Text>
-		<Text as="p">
+		<Flex gap="2">
 			<NavLink to="/accounts/signup">
 				<Button type="button" size="3">
 					Sign up for Sill
 				</Button>
 			</NavLink>
-		</Text>
+			<NavLink to="/accounts/login">
+				<Button type="button" size="3">
+					Log in
+				</Button>
+			</NavLink>
+		</Flex>
 	</Flex>
 );
 

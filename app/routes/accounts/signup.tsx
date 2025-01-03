@@ -1,8 +1,8 @@
 import type { Route } from "./+types/signup";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Heading } from "@radix-ui/themes";
-import { Form, data, redirect } from "react-router";
+import { Box, Heading, Text } from "@radix-ui/themes";
+import { Form, Link, data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
@@ -122,6 +122,12 @@ const UserSetup = ({ actionData }: Route.ComponentProps) => {
 				/>
 				<SubmitButton label="Sign up" />
 			</Form>
+			<Box mt="5">
+				<Text size="2">Already have an account? </Text>
+				<Link to="/accounts/login">
+					<Text size="2">Log in</Text>
+				</Link>
+			</Box>
 		</Layout>
 	);
 };
