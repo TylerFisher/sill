@@ -51,6 +51,11 @@ const PromoContent = () => (
 					Sign up for Sill
 				</Button>
 			</NavLink>
+			<NavLink to="/accounts/login">
+				<Button type="button" size="3">
+					Log in
+				</Button>
+			</NavLink>
 		</Text>
 	</Flex>
 );
