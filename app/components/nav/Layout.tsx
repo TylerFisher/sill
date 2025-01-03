@@ -33,7 +33,9 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 						<Nav layoutFormId="desktop-layout" themeFormId="desktop-theme" />
 					</aside>
 				)}
-				<main className={styles.content}>{children}</main>
+				<main className={`${styles.content} ${sidebar && styles.grid}`}>
+					{children}
+				</main>
 				{sidebar && <aside className={styles.right}>{sidebar}</aside>}
 			</div>
 		</Container>

@@ -144,10 +144,8 @@ async function processQueue() {
       Batch Duration: ${batchDuration}ms
     `);
 		} else {
-			// refresh network top ten
+			await db.refreshMaterializedView(networkTopTenView);
 			if (process.env.NODE_ENV === "production") {
-				await db.refreshMaterializedView(networkTopTenView);
-
 				const users = await db.query.user.findMany({
 					orderBy: asc(user.createdAt),
 				});

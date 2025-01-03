@@ -38,6 +38,9 @@
   .header-wrapper {
     border-bottom: none;
   }
+  .onboarding-logo {
+    margin-bottom: -2rem;
+  }
 }
 
 

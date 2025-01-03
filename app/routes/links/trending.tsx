@@ -13,14 +13,12 @@ import {
 	Callout,
 	Flex,
 	Heading,
-	Link,
-	Select,
 	Separator,
 	Spinner,
 	Text,
 } from "@radix-ui/themes";
-import { Await, NavLink, useSearchParams } from "react-router";
-import { Suspense, useState } from "react";
+import { Await, NavLink } from "react-router";
+import { Suspense } from "react";
 import PostRep from "~/components/linkPosts/PostRep";
 import NumberRanking from "~/components/linkPosts/NumberRanking";
 import { TrendingUp } from "lucide-react";
@@ -44,6 +42,19 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	};
 };
 
+const PromoContent = () => (
+	<Flex justify="center" align="center" direction="column" gap="2">
+		<Text as="p">Want to see the most popular links in your own network? </Text>
+		<Text as="p">
+			<NavLink to="/accounts/signup">
+				<Button type="button" size="3">
+					Sign up for Sill
+				</Button>
+			</NavLink>
+		</Text>
+	</Flex>
+);
+
 const TopTen = ({ loaderData }: Route.ComponentProps) => {
 	const { existingUser, topTen } = loaderData;
 	const layout = useLayout();
@@ -62,24 +73,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 						borderTop: "1px solid var(--accent-11)",
 					}}
 				>
-					<Flex justify="center" align="center" direction="column" gap="2">
-						<Text as="p">
-							Want to see the most popular links in your own network?{" "}
-						</Text>
-						<Text as="p">
-							{existingUser ? (
-								<NavLink to="/links">
-									<Button type="button">See your top links</Button>
-								</NavLink>
-							) : (
-								<NavLink to="/accounts/signup">
-									<Button type="button" size="4">
-										Sign up for Sill
-									</Button>
-								</NavLink>
-							)}
-						</Text>
-					</Flex>
+					<PromoContent />
 				</Box>
 			)}
 
@@ -94,9 +88,8 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 					</Callout.Icon>
 					<Callout.Text>
 						Trending is a list of the most popular links on Sill right now. Sill
-						calculates popularity by looking at the number of accounts who have
-						posted a link on Bluesky or Mastodon. Read more{" "}
-						<Link href="https://docs.sill.social">here</Link>.
+						calculates popularity by looking at the number of accounts Sill
+						knows about who have posted a link on Bluesky or Mastodon.
 					</Callout.Text>
 				</Callout.Root>
 
@@ -111,7 +104,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 				>
 					<Await resolve={topTen}>
 						{(topTen) => (
-							<Box>
+							<Box mb={!existingUser ? "100px" : "0"}>
 								{topTen.map((linkPost, index) => (
 									<Box key={linkPost.link?.id} position="relative">
 										<NumberRanking ranking={index + 1} layout={layout} />
@@ -150,7 +143,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 												</Box>
 											</>
 										)}
-										<Separator size="4" my="7" />
+										{index < topTen.length - 1 && <Separator size="4" my="7" />}
 									</Box>
 								))}
 							</Box>

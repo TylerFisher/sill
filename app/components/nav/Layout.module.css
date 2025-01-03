@@ -22,7 +22,7 @@
 	padding: 1em;
 	box-shadow: var(--base-card-surface-box-shadow);
 	border-radius: 0;
-	margin: 3.5rem auto 1rem;
+	margin: 2.5rem auto 1rem;
 	width: 100%;
 }
 
@@ -32,10 +32,14 @@
     margin: 0 0.5em;
   }
   .content {
-		grid-column: col-start / span 8;
+		grid-column: col-start 3 / span 8;
     border-radius: var(--radius-4);
-    margin-top: 3.75rem;
 	}
+
+  .content.grid {
+    grid-column: col-start / span 8;
+  }
+  
   .right {
     display: block;
 		grid-column: col-start 9 / span 4;
@@ -66,6 +70,10 @@
     border-radius: var(--radius-4);
     margin-top: 2rem;
 	}
+
+  .content.grid {
+    grid-column: col-start 4 / span 6;
+  }
 
   .right {
     top: 0;
