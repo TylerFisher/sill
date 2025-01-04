@@ -6214,6 +6214,7 @@ opc.to
 opea.st
 openmi.ch
 openview.vc
+open.substack.com
 operaa.me
 opi.link
 opiceb.lu
