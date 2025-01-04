@@ -38,7 +38,7 @@ async function processQueue() {
 						const timeoutPromise = new Promise((_, reject) => {
 							const timer = setTimeout(() => {
 								reject(new Error("Job timed out after 120 seconds"));
-							}, 120000);
+							}, 180000);
 							// Clear timer when promise resolves
 							return () => clearTimeout(timer);
 						});

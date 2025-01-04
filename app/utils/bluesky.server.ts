@@ -490,7 +490,7 @@ export const getLinksFromBluesky = async (
 	const timeline = await Promise.race([
 		timelinePromise,
 		new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-			setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
+			setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000),
 		),
 	]).catch((e) => {
 		console.error("Error fetching timeline:", e?.constructor?.name);
@@ -512,7 +512,7 @@ export const getLinksFromBluesky = async (
 								`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
 							),
 						),
-					60000,
+					120000,
 				),
 			),
 		]).catch((e) => {
