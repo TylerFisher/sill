@@ -87,7 +87,7 @@ function notificationsReducer(
 					if (t.id === action.notification.id) {
 						return {
 							...action.notification,
-							id: action.newId,
+							saved: true,
 						};
 					}
 					return t;

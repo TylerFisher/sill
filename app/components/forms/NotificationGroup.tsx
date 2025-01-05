@@ -32,6 +32,7 @@ export interface NotificationGroupInit {
 	name: string;
 	query: NotificationQuery[];
 	notificationType: "email" | "rss";
+	saved: boolean;
 }
 const defaultCategory = {
 	id: "url",
@@ -121,7 +122,7 @@ const NotificationGroup = ({
 							</Text>
 						</Box>
 					)}
-				{group.notificationType === "rss" && group.id && (
+				{group.notificationType === "rss" && group.saved && (
 					<Box mb="4">
 						<Text as="label" htmlFor="feedUrl" size="3">
 							<strong>RSS URL</strong>
@@ -160,6 +161,7 @@ const NotificationGroup = ({
 							type: "text",
 						}),
 						defaultValue: group.name,
+						autoComplete: "off",
 						onChange: (e) => {
 							dispatch({
 								type: "changed",
@@ -250,7 +252,17 @@ const NotificationGroup = ({
 					</Box>
 				)}
 				<Flex direction="row" gap="2">
-					<Button type="submit">Save notification</Button>
+					<Button
+						type="submit"
+						onClick={() => {
+							dispatch({
+								type: "submitted",
+								notification: group,
+							});
+						}}
+					>
+						Save notification
+					</Button>
 					{group.id && (
 						<Button
 							type="button"

@@ -30,6 +30,7 @@ export const defaultGroup = (id?: string): NotificationGroupInit => ({
 		},
 	],
 	notificationType: "email",
+	saved: false,
 });
 
 const NotificationForm = ({ lastResult }: NotificationFormProps) => {
