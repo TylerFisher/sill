@@ -1,4 +1,4 @@
-import { Box, Callout, Button } from "@radix-ui/themes";
+import { Box, Callout, Button, Text, Link, Flex } from "@radix-ui/themes";
 import { CircleAlert, Plus } from "lucide-react";
 import NotificationGroup, {
 	type NotificationGroupInit,
@@ -33,6 +33,65 @@ export const defaultGroup = (id?: string): NotificationGroupInit => ({
 	saved: false,
 });
 
+export const keywordGroup = (id?: string): NotificationGroupInit => ({
+	id,
+	name: "Links matching a keyword",
+	query: [
+		{
+			category: {
+				id: "link",
+				name: "Link text",
+				type: "string",
+			},
+			operator: "contains",
+			value: "Keyword",
+		},
+	],
+	notificationType: "email",
+	saved: false,
+});
+
+const popularLinksGroup = (id: string): NotificationGroupInit => ({
+	id,
+	name: "Popular links",
+	query: [
+		{
+			category: {
+				id: "shares",
+				name: "Number of shares",
+				type: "number",
+			},
+			operator: "greaterThanEqual",
+			value: 5,
+		},
+	],
+	notificationType: "email",
+	saved: false,
+});
+
+const popularLinksFromDomainGroup = (id: string): NotificationGroupInit => ({
+	id,
+	name: "Popular links from a domain",
+	query: [
+		{
+			category: defaultCategory,
+			operator: "contains",
+			value: "example.com",
+		},
+		{
+			category: {
+				id: "shares",
+				name: "Number of shares",
+				type: "number",
+			},
+			operator: "greaterThanEqual",
+			value: 5,
+		},
+	],
+	notificationType: "email",
+	saved: false,
+});
+
 const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 	const groups = useNotifications();
 	const { dispatch } = useNotificationsDispatch();
@@ -48,6 +107,7 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					Sill's paid plan in the future.
 				</Callout.Text>
 			</Callout.Root>
+
 			{groups.notifications.map((group, index) => (
 				<NotificationGroup
 					key={group.id || index}
@@ -56,7 +116,48 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					lastResult={lastResult}
 				/>
 			))}
-			<Box mt="4">
+			{groups.notifications.length === 0 && (
+				<Text as="p" mb="4">
+					Don't know where to start? Use Sill's notification templates.
+				</Text>
+			)}
+			<Flex direction="column" gap="2" my="4">
+				<Button
+					type="button"
+					onClick={() =>
+						dispatch({
+							type: "added",
+							notification: popularLinksGroup(uuidv7()),
+						})
+					}
+					variant="soft"
+				>
+					Get notifications for popular links in your network
+				</Button>
+				<Button
+					type="button"
+					onClick={() =>
+						dispatch({
+							type: "added",
+							notification: popularLinksFromDomainGroup(uuidv7()),
+						})
+					}
+					variant="soft"
+				>
+					Get notifications for popular links from a domain
+				</Button>
+				<Button
+					type="button"
+					onClick={() =>
+						dispatch({
+							type: "added",
+							notification: keywordGroup(uuidv7()),
+						})
+					}
+					variant="soft"
+				>
+					Get notifications for all links matching a keyword
+				</Button>
 				<Button
 					variant="soft"
 					type="button"
@@ -67,10 +168,9 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 						})
 					}
 				>
-					<Plus width="18" height="18" />
-					Add notification
+					Add custom notification
 				</Button>
-			</Box>
+			</Flex>
 		</Box>
 	);
 };

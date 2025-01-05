@@ -140,7 +140,7 @@ export default function Notifications({
 		}),
 	);
 	if (loaderData.user.notificationGroups.length === 0) {
-		initial = [defaultGroup(uuidv7())];
+		initial = [];
 	}
 
 	return (

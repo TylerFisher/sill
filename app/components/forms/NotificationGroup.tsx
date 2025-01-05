@@ -245,10 +245,14 @@ const NotificationGroup = ({
 				{fields.queries.errors && (
 					<ErrorCallout error={fields.queries.errors[0]} />
 				)}
-				{testFetcher.data && (
+				{(testFetcher.data || testFetcher.data === 0) && (
 					<Box width="100%" my="4">
-						<strong>{testFetcher.data} results</strong> found from the last 24
-						hours.
+						<strong>
+							{testFetcher.data} result{testFetcher.data !== 1 && "s"}
+						</strong>{" "}
+						found from the last 24 hours.{" "}
+						{testFetcher.data === 0 &&
+							"Adjust your filters for better results."}
 					</Box>
 				)}
 				<Flex direction="row" gap="2">
