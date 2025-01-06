@@ -15,7 +15,7 @@ interface PostAuthor {
 
 interface PostAuthorProps {
 	actor: PostAuthor;
-	postDate: (typeof linkPostDenormalized.$inferSelect)["postDate"];
+	postDate?: (typeof linkPostDenormalized.$inferSelect)["postDate"];
 	postUrl: (typeof linkPostDenormalized.$inferSelect)["postUrl"];
 }
 

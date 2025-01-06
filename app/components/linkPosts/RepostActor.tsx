@@ -44,7 +44,6 @@ const MultipleActors = ({ posts }: RepostActorProps) => (
 						actorAvatarUrl: post.repostActorUrl,
 					}}
 					postUrl={post.postUrl}
-					postDate={post.postDate}
 					key={post.actorHandle}
 				/>
 			))}
