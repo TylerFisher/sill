@@ -33,7 +33,9 @@ function normalizeActorHandle(
 	return handle.replace(".bsky.social", "").replace("@", "").toLowerCase();
 }
 
-function getUniqueAvatarUrls(posts: MostRecentLinkPosts["posts"]): string[] {
+export function getUniqueAvatarUrls(
+	posts: MostRecentLinkPosts["posts"],
+): string[] {
 	const actorMap = new Map<string, { avatarUrl: string }>();
 	if (!posts) return [];
 	for (const post of posts) {

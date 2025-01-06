@@ -118,10 +118,10 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 			))}
 			{groups.notifications.length === 0 && (
 				<Text as="p" mb="4">
-					Don't know where to start? Use Sill's notification templates.
+					Don't know where to start? Use Sill's notification templates:
 				</Text>
 			)}
-			<Flex direction="column" gap="2" my="4">
+			<Flex direction="column" gap="3" my="4">
 				<Button
 					type="button"
 					onClick={() =>
@@ -132,7 +132,7 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					}
 					variant="soft"
 				>
-					Get notifications for popular links in your network
+					Popular links in your network
 				</Button>
 				<Button
 					type="button"
@@ -144,7 +144,7 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					}
 					variant="soft"
 				>
-					Get notifications for popular links from a domain
+					Popular links from a domain
 				</Button>
 				<Button
 					type="button"
@@ -156,8 +156,11 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					}
 					variant="soft"
 				>
-					Get notifications for all links matching a keyword
+					All links matching a keyword
 				</Button>
+				{groups.notifications.length === 0 && (
+					<Text as="p">Or start from scratch:</Text>
+				)}
 				<Button
 					variant="soft"
 					type="button"

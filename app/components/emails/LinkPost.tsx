@@ -7,23 +7,81 @@ import {
 	Section,
 	Text,
 } from "@react-email/components";
+import groupBy from "object.groupby";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
+import Post from "./Post";
 
 interface LinkPostProps {
 	linkPost: MostRecentLinkPosts;
-	digestUrl: string;
+	digestUrl?: string;
 	layout: "default" | "dense";
 }
 
-const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
-	const isProduction = process.env.NODE_ENV === "production";
+function normalizeActorName(name: string | null): string | null {
+	if (!name) return null;
+	return name.toLowerCase().replace(/\s*\(.*?\)\s*/g, "");
+}
 
+function normalizeActorHandle(
+	postType: "mastodon" | "bluesky",
+	handle: string | null,
+): string | null {
+	if (!handle) return null;
+
+	if (postType === "mastodon") {
+		const match = handle.match(/^@?([^@]+)(?:@|$)/);
+		return match ? match[1].toLowerCase() : null;
+	}
+	return handle.replace(".bsky.social", "").replace("@", "").toLowerCase();
+}
+
+export function getUniqueAvatarUrls(
+	posts: MostRecentLinkPosts["posts"],
+): string[] {
+	const actorMap = new Map<string, { avatarUrl: string }>();
+	if (!posts) return [];
+	for (const post of posts) {
+		// If there's a repost actor, use that; otherwise use the original actor
+		const actor = post.repostActorHandle
+			? {
+					name: post.repostActorName,
+					handle: post.repostActorHandle,
+					avatarUrl: post.repostActorAvatarUrl,
+				}
+			: {
+					name: post.actorName,
+					handle: post.actorHandle,
+					avatarUrl: post.actorAvatarUrl,
+				};
+
+		const normalizedName = normalizeActorName(actor.name);
+		const normalizedHandle = normalizeActorHandle(post.postType, actor.handle);
+		const identifier = `${normalizedName}|${normalizedHandle}`;
+
+		if (identifier && actor.avatarUrl) {
+			const existing = Array.from(actorMap.keys()).find(
+				(key) =>
+					key.split("|")[0] === normalizedName ||
+					key.split("|")[1] === normalizedHandle,
+			);
+			if (!existing) {
+				actorMap.set(identifier, {
+					avatarUrl: actor.avatarUrl,
+				});
+			}
+		}
+	}
+
+	return Array.from(actorMap.values())
+		.map((entry) => entry.avatarUrl)
+		.filter((url): url is string => url != null);
+}
+
+const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 	if (!linkPost.link || !linkPost.posts) return null;
 	const link = linkPost.link;
-	const allActors = linkPost.posts.map((l) =>
-		l.repostActorHandle ? l.repostActorAvatarUrl : l.actorAvatarUrl,
-	);
-	const uniqueActors = [...new Set(allActors)].filter((a) => a !== null);
+	const uniqueActors = getUniqueAvatarUrls(linkPost.posts);
+	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
 
 	return (
 		<div style={container}>
@@ -54,21 +112,35 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 					</Row>
 				</Section>
 			</Link>
-			{uniqueActors.slice(0, 3).map((actor, i) => (
-				<Img
-					src={actor}
-					loading="lazy"
-					decoding="async"
-					key={actor}
-					style={avatar(i)}
-				/>
-			))}
-			<Text style={accounts}>
-				<Link style={postsLink} href={`${digestUrl}#${link.id}`}>
-					Shared by {uniqueActors.length}{" "}
-					{uniqueActors.length === 1 ? "account" : "accounts"}
-				</Link>
-			</Text>
+			{digestUrl ? (
+				<>
+					{uniqueActors.slice(0, 3).map((actor, i) => (
+						<Img
+							src={actor}
+							loading="lazy"
+							decoding="async"
+							key={actor}
+							style={avatar(i)}
+						/>
+					))}
+					<Text style={accounts}>
+						<Link style={postsLink} href={`${digestUrl}#${link.id}`}>
+							Shared by {uniqueActors.length}{" "}
+							{uniqueActors.length === 1 ? "account" : "accounts"}
+						</Link>
+					</Text>
+				</>
+			) : (
+				<>
+					<Text style={accounts}>
+						Shared by {uniqueActors.length}{" "}
+						{uniqueActors.length === 1 ? "account" : "accounts"}
+					</Text>
+					{Object.entries(groupedPosts).map(([postUrl, group]) => (
+						<Post key={postUrl} group={group} />
+					))}
+				</>
+			)}
 		</div>
 	);
 };

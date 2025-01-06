@@ -2,6 +2,7 @@ import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation } from "react-router";
 import {
 	Bell,
+	CircleHelp,
 	Link2,
 	Mail,
 	MessageSquareOff,
@@ -24,15 +25,10 @@ const Nav = ({
 			label: "Links",
 			icon: <Link2 className={styles["nav-list-item-icon"]} />,
 		},
-		// {
-		// 	to: "/links/trending",
-		// 	label: "Trending",
-		// 	icon: <TrendingUp className={styles["nav-list-item-icon"]} />,
-		// },
 		{
-			to: "/connect",
-			label: "Connect",
-			icon: <Zap className={styles["nav-list-item-icon"]} />,
+			to: "/links/trending",
+			label: "Trending",
+			icon: <TrendingUp className={styles["nav-list-item-icon"]} />,
 		},
 		{
 			to: "/email",
@@ -50,10 +46,20 @@ const Nav = ({
 			icon: <MessageSquareOff className={styles["nav-list-item-icon"]} />,
 		},
 		{
+			to: "/connect",
+			label: "Connect",
+			icon: <Zap className={styles["nav-list-item-icon"]} />,
+		},
+		{
 			to: "/settings",
 			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 		},
+		// {
+		// 	to: "https://docs.sill.social",
+		// 	label: "Help",
+		// 	icon: <CircleHelp className={styles["nav-list-item-icon"]} />,
+		// },
 	];
 	return (
 		<>

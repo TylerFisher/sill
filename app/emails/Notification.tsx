@@ -7,16 +7,9 @@ import type { MostRecentLinkPosts } from "~/utils/links.server";
 interface NotificationProps {
 	links: MostRecentLinkPosts[];
 	groupName: string;
-	name: string | null;
-	digestUrl: string;
 }
 
-const Notification = ({
-	links,
-	groupName,
-	name,
-	digestUrl,
-}: NotificationProps) => {
+const Notification = ({ links, groupName }: NotificationProps) => {
 	return (
 		<EmailLayout preview={preview(links)}>
 			<Heading as="h1">New links found for {groupName}</Heading>
@@ -25,7 +18,6 @@ const Notification = ({
 					<LinkPost
 						key={linkPost.link?.url}
 						linkPost={linkPost}
-						digestUrl={digestUrl}
 						layout={"default"}
 					/>
 					{i < links.length - 1 && <Hr style={hr("default")} />}

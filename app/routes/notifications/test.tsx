@@ -25,6 +25,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	const queries: NotificationQuery[] = JSON.parse(
 		String(formData.get("queries")),
 	);
+	console.log(queries);
 
 	if (!queries.length) {
 		return 0;

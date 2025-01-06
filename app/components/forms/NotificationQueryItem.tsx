@@ -1,4 +1,11 @@
-import { Box, Flex, IconButton, Select, TextField } from "@radix-ui/themes";
+import {
+	Box,
+	Flex,
+	IconButton,
+	Select,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
 import { X } from "lucide-react";
 import { useState } from "react";
 
@@ -42,7 +49,7 @@ const notificationCategories = [
 	{
 		id: "service",
 		name: "Service",
-		type: "string",
+		type: "enum",
 	},
 ];
 
@@ -120,7 +127,7 @@ const NotificationQueryItem = ({
 				<Select.Root size="3" value={operator} onValueChange={onOperatorChange}>
 					<Select.Trigger placeholder="Operator" id="operator" />
 					<Select.Content>
-						{category?.type === "number" ? (
+						{category?.type === "number" && (
 							<>
 								<Select.Item value="equals">Equals</Select.Item>
 								<Select.Item value="greaterThanEqual">
@@ -128,33 +135,51 @@ const NotificationQueryItem = ({
 								</Select.Item>
 								<Select.Item value="greaterThan">Greater than</Select.Item>
 							</>
-						) : (
+						)}
+						{category?.type === "string" && (
 							<>
 								<Select.Item value="contains">Contains</Select.Item>
 								<Select.Item value="equals">Equals</Select.Item>
 								<Select.Item value="excludes">Does not contain</Select.Item>
 							</>
 						)}
+						{category?.type === "enum" && (
+							<Select.Item value="equals">Equals</Select.Item>
+						)}
 					</Select.Content>
 				</Select.Root>
 			</Box>
 			<Box width="100%">
-				<TextField.Root
-					placeholder="Value"
-					id="value"
-					type={category.type === "number" ? "number" : "text"}
-					size="3"
-					onChange={(e) => {
-						onValueChange(
-							category.type === "number" && e.target.valueAsNumber > 0
-								? e.target.valueAsNumber
-								: e.target.value,
-						);
-					}}
-					value={value}
-				>
-					<TextField.Slot />
-				</TextField.Root>
+				{category.type !== "enum" ? (
+					<TextField.Root
+						placeholder="Value"
+						id="value"
+						type={category.type === "number" ? "number" : "text"}
+						size="3"
+						onChange={(e) => {
+							onValueChange(
+								category.type === "number" && e.target.valueAsNumber > 0
+									? e.target.valueAsNumber
+									: e.target.value,
+							);
+						}}
+						value={value}
+					>
+						<TextField.Slot />
+					</TextField.Root>
+				) : (
+					<Select.Root
+						size="3"
+						value={value as string}
+						onValueChange={(value) => onValueChange(value)}
+					>
+						<Select.Trigger placeholder="Value" id="value" />
+						<Select.Content>
+							<Select.Item value="bluesky">Bluesky</Select.Item>
+							<Select.Item value="mastodon">Mastodon</Select.Item>
+						</Select.Content>
+					</Select.Root>
+				)}
 			</Box>
 			{index > 0 && (
 				<Box position="absolute" top="0" right="0">

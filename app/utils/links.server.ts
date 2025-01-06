@@ -20,6 +20,7 @@ import {
 	mutePhrase,
 	networkTopTenView,
 	getUniqueActorsCountSql,
+	postType,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -471,6 +472,14 @@ export const evaluateNotifications = async (
 						),
 					),
 				);
+			}
+		}
+		if (query.category.id === "service" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				const value = postType.enumValues.find((v) => v === query.value);
+				if (value) {
+					postSQLQueries.push(eq(linkPostDenormalized.postType, value));
+				}
 			}
 		}
 	}
