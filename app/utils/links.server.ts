@@ -115,7 +115,9 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 			),
 		);
 
-		const denormalized = chunk.map((p) => p.denormalized);
+		const denormalized = chunk
+			.map((p) => p.denormalized)
+			.filter((p) => p.linkUrl.length <= MAX_URL_LENGTH);
 
 		await db.transaction(async (tx) => {
 			if (links.length > 0)
