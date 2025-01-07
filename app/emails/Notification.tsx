@@ -1,7 +1,7 @@
 import { Button, Heading, Hr, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
-import { outro, preview } from "~/utils/digestText";
+import { outro } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface NotificationProps {
@@ -10,8 +10,14 @@ interface NotificationProps {
 }
 
 const Notification = ({ links, groupName }: NotificationProps) => {
+	const firstLink = links[0].link;
+	if (!firstLink) return null;
+	const host = new URL(firstLink.url).host;
+
 	return (
-		<EmailLayout preview={preview(links)}>
+		<EmailLayout
+			preview={links[0].link?.description || `New link from ${host}`}
+		>
 			<Heading as="h1">New links found for {groupName}</Heading>
 			{links.map((linkPost, i) => (
 				<>

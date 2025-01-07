@@ -10,13 +10,13 @@ const RSSPost = ({
 	const post = group[0];
 	return (
 		<Box key={postUrl}>
-			<RSSRepost group={group} />
-			<Heading as="h4">
-				<Link href={post.actorUrl}>
-					{post.actorName} (@{post.actorHandle})
-				</Link>
-			</Heading>
-			<Blockquote>
+			<Blockquote className="twitter-tweet">
+				<RSSRepost group={group} />
+				<Heading as="h4">
+					<Link href={post.actorUrl}>
+						{post.actorName} (@{post.actorHandle})
+					</Link>
+				</Heading>
 				<Text
 					as="p"
 					dangerouslySetInnerHTML={{
@@ -31,9 +31,11 @@ const RSSPost = ({
 					</Box>
 				)}
 				{post.quotedPostText && (
-					<Blockquote>
+					<Blockquote className="twitter-tweet">
 						<Heading as="h5">
-							{post.quotedActorName} (@{post.quotedActorHandle})
+							<Link href={post.quotedActorUrl || ""}>
+								{post.quotedActorName} (@{post.quotedActorHandle})
+							</Link>
 						</Heading>
 						<Text
 							as="p"
@@ -60,16 +62,15 @@ const RSSPost = ({
 						)}
 					</Blockquote>
 				)}
+				<Text as="p">
+					<Link href={post.postUrl}>
+						<small>
+							View post on{" "}
+							{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
+						</small>
+					</Link>
+				</Text>
 			</Blockquote>
-
-			<Text as="p">
-				<Link href={post.postUrl}>
-					<small>
-						View post on{" "}
-						{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
-					</small>
-				</Link>
-			</Text>
 		</Box>
 	);
 };

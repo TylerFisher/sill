@@ -3,11 +3,13 @@ import {
 	Heading,
 	Img,
 	Link,
+	Markdown,
 	Row,
 	Section,
 	Text,
 } from "@react-email/components";
 import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import { NodeHtmlMarkdown } from "node-html-markdown";
 
 const Post = ({
 	group,
@@ -20,17 +22,17 @@ const Post = ({
 	return (
 		<div style={container}>
 			<Section style={wrapper}>
-				<Row style={row}>
-					<Column style={avatarWrapper}>
-						<Link href={post.actorUrl}>
-							<Img
-								src={post.actorAvatarUrl || ""}
-								style={avatar(reposters.length > 0)}
-							/>
-						</Link>
-					</Column>
-					<Column>
-						<Row>
+				<Row style={topRow}>
+					<Column style={actorWrapper}>
+						<div style={avatarWrapper}>
+							<Link href={post.actorUrl}>
+								<Img
+									src={post.actorAvatarUrl || ""}
+									style={avatar(reposters.length > 0)}
+								/>
+							</Link>
+						</div>
+						<div style={actorText}>
 							{reposters.length > 1 && (
 								<Text style={repostText}>
 									Reposted by {reposters.length} people
@@ -49,60 +51,88 @@ const Post = ({
 									<span style={handle}>@{post.actorHandle}</span>
 								</Link>
 							</Text>
-						</Row>
-						<Row>
-							<Text
-								dangerouslySetInnerHTML={{
-									__html: post.postText,
-								}}
-								style={postText}
-							/>
-							{post.quotedPostText && (
-								<Section style={wrapper}>
-									<Row style={quotedActorRow}>
-										<Column style={quotedActorWrapper}>
-											<div style={quotedAvatarWrapper}>
-												<Link href={post.quotedActorUrl || ""}>
-													<Img
-														src={post.quotedActorAvatarUrl || ""}
-														style={quotedAvatar}
-													/>
-												</Link>
-											</div>
-											<div style={quotedActor}>
-												<Text style={actor}>
-													<Link
-														href={post.quotedActorUrl || ""}
-														style={actorLink}
-													>
-														<strong>{post.quotedActorName}</strong>{" "}
-														<span style={handle}>
-															@{post.quotedActorHandle}
-														</span>
-													</Link>
-												</Text>
-											</div>
-										</Column>
-									</Row>
-									<Row style={quotedTextRow}>
-										<Text
-											dangerouslySetInnerHTML={{
-												__html: post.quotedPostText,
-											}}
-											style={postText}
-										/>
-									</Row>
-								</Section>
-							)}
-						</Row>
-						<Text style={viewPost}>
-							<Link href={post.postUrl} style={viewPostLink}>
-								View post on{" "}
-								{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)}{" "}
-								→
-							</Link>
-						</Text>
+						</div>
 					</Column>
+				</Row>
+				<Row style={bottomRow}>
+					<Markdown
+						markdownCustomStyles={{
+							link: { color: "#9E6C00", textDecoration: "none" },
+							p: {
+								margin: 0,
+								fontSize: "14px",
+								lineHeight: "24px",
+								padding: "0 0 16px",
+							},
+						}}
+					>
+						{NodeHtmlMarkdown.translate(post.postText)}
+					</Markdown>
+					{post.postImages?.map((image) => (
+						<Img
+							key={image.url}
+							src={image.url}
+							alt={image.alt}
+							style={{ width: "100%", height: "auto", margin: "0 0 16px" }}
+						/>
+					))}
+					{post.quotedPostText && (
+						<Section style={wrapper}>
+							<Row style={quotedActorRow}>
+								<Column style={actorWrapper}>
+									<div style={quotedAvatarWrapper}>
+										<Link href={post.quotedActorUrl || ""}>
+											<Img
+												src={post.quotedActorAvatarUrl || ""}
+												style={quotedAvatar}
+											/>
+										</Link>
+									</div>
+									<div style={quotedActor}>
+										<Text style={actor}>
+											<Link href={post.quotedActorUrl || ""} style={actorLink}>
+												<strong>{post.quotedActorName}</strong>{" "}
+												<span style={handle}>@{post.quotedActorHandle}</span>
+											</Link>
+										</Text>
+									</div>
+								</Column>
+							</Row>
+							<Row style={quotedTextRow}>
+								<Markdown
+									markdownCustomStyles={{
+										link: { color: "#9E6C00", textDecoration: "none" },
+										p: {
+											margin: 0,
+											fontSize: "14px",
+											lineHeight: "24px",
+											padding: "0 0 16px",
+										},
+									}}
+								>
+									{NodeHtmlMarkdown.translate(post.quotedPostText)}
+								</Markdown>
+								{post.quotedPostImages?.map((image) => (
+									<Img
+										key={image.url}
+										src={image.url}
+										alt={image.alt}
+										style={{
+											width: "100%",
+											height: "auto",
+											margin: "0 0 16px",
+										}}
+									/>
+								))}
+							</Row>
+						</Section>
+					)}
+					<Text style={viewPost}>
+						<Link href={post.postUrl} style={viewPostLink}>
+							View post on{" "}
+							{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
+						</Link>
+					</Text>
 				</Row>
 			</Section>
 		</div>
@@ -121,21 +151,31 @@ const wrapper = {
 	border: "#D9D9E0 1px solid",
 };
 
-const row = {
-	padding: "12px",
+const topRow = {
+	padding: "12px 12px 0",
+};
+
+const actorWrapper = {
+	verticalAlign: "top",
+};
+
+const actorText = {
+	display: "block",
 };
 
 const avatarWrapper = {
 	verticalAlign: "top",
-	maxWidth: "50px",
+	maxWidth: "37.5px",
+	display: "block",
+	float: "left" as const,
 };
 
 const avatar = (reposts: boolean) => ({
-	width: "40px",
-	height: "40px",
+	width: "30px",
+	height: "30px",
 	borderRadius: "50%",
-	marginRight: "10px",
-	marginTop: reposts ? "10px" : "0",
+	marginRight: "7.5px",
+	marginTop: reposts ? "7.5px" : "0",
 });
 
 const repostText = {
@@ -161,8 +201,14 @@ const handle = {
 	color: "#999",
 };
 
+const bottomRow = {
+	padding: "6px 12px 12px",
+};
+
 const postText = {
 	margin: "0 0 16px",
+	fontSize: "14px",
+	lineHeight: "24px",
 };
 
 const quotedActorRow = {
@@ -173,18 +219,15 @@ const quotedTextRow = {
 	padding: "0 12px",
 };
 
-const quotedActorWrapper = {
-	verticalAlign: "top",
-};
-
 const quotedAvatarWrapper = {
 	maxWidth: "25px",
-	display: "inline-block",
+	display: "block",
+	float: "left" as const,
 	verticalAlign: "bottom",
 };
 
 const quotedActor = {
-	display: "inline-block",
+	display: "block",
 };
 
 const quotedAvatar = {

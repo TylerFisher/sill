@@ -92,21 +92,19 @@ async function processQueue() {
 					group.userId,
 					group.query,
 					group.seenLinks,
+					// group.createdAt,
 				);
 				if (newItems.length > 0) {
 					if (group.notificationType === "email") {
 						const emailBody = {
 							from: "Sill <noreply@e.sill.social>",
 							to: groupUser.email,
-							subject: `New notifications for ${group.name}`,
+							subject:
+								newItems[0].link?.title ||
+								`New Sill notification: ${group.name}`,
 							"o:tag": "notification",
 							...(await renderReactEmail(
-								<Notification
-									links={newItems}
-									groupName={group.name}
-									name={groupUser.name}
-									digestUrl={`https://sill.social/notifications/${group.id}`}
-								/>,
+								<Notification links={newItems} groupName={group.name} />,
 							)),
 						};
 						await sendEmail(emailBody);

@@ -340,8 +340,11 @@ export const evaluateNotifications = async (
 	userId: string,
 	queries: NotificationQuery[],
 	seenLinks: string[] = [],
+	createdAt?: Date,
 ) => {
-	const start = new Date(Date.now() - ONE_DAY_MS);
+	const start = createdAt
+		? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
+		: new Date(Date.now() - ONE_DAY_MS);
 	const mutePhrases = await getMutePhrases(userId);
 	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
 		notIlike(link.url, `%${phrase.phrase}%`),

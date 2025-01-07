@@ -132,10 +132,10 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 				</>
 			) : (
 				<>
-					<Text style={accounts}>
+					<Heading style={accountsHeading} as="h3">
 						Shared by {uniqueActors.length}{" "}
 						{uniqueActors.length === 1 ? "account" : "accounts"}
-					</Text>
+					</Heading>
 					{Object.entries(groupedPosts).map(([postUrl, group]) => (
 						<Post key={postUrl} group={group} />
 					))}
@@ -220,6 +220,9 @@ const accounts = {
 	verticalAlign: "top",
 	margin: "0 0 0 12px",
 };
+
+const accountsHeading = {};
+
 const postsLink = {
 	color: "#9E6C00",
 };
