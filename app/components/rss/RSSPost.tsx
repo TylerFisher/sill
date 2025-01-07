@@ -10,7 +10,7 @@ const RSSPost = ({
 	const post = group[0];
 	return (
 		<Box key={postUrl}>
-			<Blockquote className="twitter-tweet">
+			<Blockquote>
 				<RSSRepost group={group} />
 				<Heading as="h4">
 					<Link href={post.actorUrl}>
@@ -31,7 +31,7 @@ const RSSPost = ({
 					</Box>
 				)}
 				{post.quotedPostText && (
-					<Blockquote className="twitter-tweet">
+					<Blockquote>
 						<Heading as="h5">
 							<Link href={post.quotedActorUrl || ""}>
 								{post.quotedActorName} (@{post.quotedActorHandle})
