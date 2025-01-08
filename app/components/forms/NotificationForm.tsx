@@ -116,9 +116,13 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					lastResult={lastResult}
 				/>
 			))}
-			{groups.notifications.length === 0 && (
+			{groups.notifications.length === 0 ? (
 				<Text as="p" mb="4">
 					Don't know where to start? Use Sill's notification templates:
+				</Text>
+			) : (
+				<Text as="p" my="4">
+					Add another notification. Use Sill's notification templates:
 				</Text>
 			)}
 			<Flex direction="column" gap="3" my="4">
@@ -158,9 +162,7 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 				>
 					All links matching a keyword
 				</Button>
-				{groups.notifications.length === 0 && (
-					<Text as="p">Or start from scratch:</Text>
-				)}
+				<Text as="p">Or start from scratch:</Text>
 				<Button
 					variant="soft"
 					type="button"
