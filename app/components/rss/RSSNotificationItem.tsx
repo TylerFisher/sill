@@ -2,6 +2,7 @@ import { Box, Link, Text } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSPost from "./RSSPost";
+import { notificationOutro } from "~/utils/digestText";
 
 const RSSNotificationItem = ({
 	linkPost,
@@ -32,12 +33,15 @@ const RSSNotificationItem = ({
 				{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}
 			</Text>
 			<hr />
-			{Object.entries(groupedPosts).map(([postUrl, group]) => (
+			{Object.entries(groupedPosts).map(([postUrl, group], index) => (
 				<Box key={postUrl}>
 					<RSSPost postUrl={postUrl} group={group} />
 					<hr />
 				</Box>
 			))}
+			<Text as="p">
+				{notificationOutro("https://sill.social/notifications")}
+			</Text>
 		</Box>
 	);
 };
