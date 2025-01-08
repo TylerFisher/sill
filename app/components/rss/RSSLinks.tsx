@@ -1,7 +1,7 @@
 import { Heading, Text, Link } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSLinkPost from "./RSSLinkPost";
-import { intro, linkPlug, outro } from "~/utils/digestText";
+import { digestOutro, intro, linkPlug } from "~/utils/digestText";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
@@ -35,7 +35,7 @@ const RSSLinks = ({ links, name, digestUrl }: RSSLinksProps) => {
 			<Text as="p">
 				<Link href="https://sill.social/links">See all links on Sill</Link>
 			</Text>
-			<Text as="p">{outro()}</Text>
+			<Text as="p">{digestOutro("https://sill.social/email")}</Text>
 		</article>
 	);
 };

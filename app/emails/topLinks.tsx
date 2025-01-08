@@ -1,8 +1,13 @@
 import { Button, Heading, Hr, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
-import type { digestLayout } from "~/drizzle/schema.server";
-import { intro, linkPlug, outro, preview, title } from "~/utils/digestText";
+import {
+	digestOutro,
+	intro,
+	linkPlug,
+	preview,
+	title,
+} from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface TopLinksProps {
@@ -42,7 +47,7 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>
-			<Text>{outro()}</Text>
+			<Text>{digestOutro("https://sill.social/email")}</Text>
 		</EmailLayout>
 	);
 };

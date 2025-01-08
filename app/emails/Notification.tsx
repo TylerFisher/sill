@@ -1,7 +1,7 @@
 import { Button, Heading, Hr, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
-import { outro } from "~/utils/digestText";
+import { notificationOutro } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface NotificationProps {
@@ -32,7 +32,7 @@ const Notification = ({ links, groupName }: NotificationProps) => {
 			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>
-			<Text>{outro()}</Text>
+			<Text>{notificationOutro("https://sill.social/notifications")}</Text>
 		</EmailLayout>
 	);
 };

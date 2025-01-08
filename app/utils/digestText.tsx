@@ -15,12 +15,21 @@ export const title = "Your Sill Daily Digest";
 export const intro = (name: string | null) =>
 	`Hello${name ? ` ${name}` : ""}, here are your top links from the past 24 hours across your social networks.`;
 
-export const outro = () => (
+export const digestOutro = (settingsUrl: string) => (
 	<>
 		{" "}
 		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
-		Want to stop getting these emails? Adjust your email settings{" "}
-		<a href="https://sill.social/email">here</a>.
+		Want to stop getting the Daily Digest? Adjust your digest settings{" "}
+		<a href={settingsUrl}>here</a>.
+	</>
+);
+
+export const notificationOutro = (settingsUrl: string) => (
+	<>
+		{" "}
+		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
+		Want to stop getting these notifications? Adjust your notification settings{" "}
+		<a href={settingsUrl}>here</a>.
 	</>
 );
 
