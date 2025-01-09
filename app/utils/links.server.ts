@@ -87,6 +87,16 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 		const links = Object.values(
 			chunk.reduce(
 				(acc, p) => {
+					// Remove null bytes from URL and other string fields
+					p.link.url = p.link.url.replace(/\0/g, "");
+					if (p.link.title) p.link.title = p.link.title.replace(/\0/g, "");
+					if (p.link.description)
+						p.link.description = p.link.description.replace(/\0/g, "");
+					if (p.link.imageUrl)
+						p.link.imageUrl = p.link.imageUrl.replace(/\0/g, "");
+					if (p.link.giftUrl)
+						p.link.giftUrl = p.link.giftUrl.replace(/\0/g, "");
+
 					// Check if URL is too long and warn
 					if (p.link.url.length > MAX_URL_LENGTH) {
 						console.warn(
