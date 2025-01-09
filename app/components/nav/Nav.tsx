@@ -35,11 +35,11 @@ const Nav = ({
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 		},
-		// {
-		// 	to: "/notifications",
-		// 	label: "Notifications",
-		// 	icon: <Bell className={styles["nav-list-item-icon"]} />,
-		// },
+		{
+			to: "/notifications",
+			label: "Notifications",
+			icon: <Bell className={styles["nav-list-item-icon"]} />,
+		},
 		{
 			to: "/moderation",
 			label: "Mute",
@@ -55,11 +55,11 @@ const Nav = ({
 			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 		},
-		// {
-		// 	to: "https://docs.sill.social",
-		// 	label: "Help",
-		// 	icon: <CircleHelp className={styles["nav-list-item-icon"]} />,
-		// },
+		{
+			to: "https://docs.sill.social",
+			label: "Help",
+			icon: <CircleHelp className={styles["nav-list-item-icon"]} />,
+		},
 	];
 	return (
 		<>
