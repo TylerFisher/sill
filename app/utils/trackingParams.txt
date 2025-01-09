@@ -127,3 +127,7 @@ tried_redirect
 triedRedirect
 r
 selection
+nname
+nid
+nrid
+nlid
