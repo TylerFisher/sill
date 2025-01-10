@@ -113,15 +113,6 @@ const NotificationGroup = ({
 		<Form method="POST" action="/notifications" {...getFormProps(form)}>
 			<input type="hidden" name="id" value={group.id} />
 			<Card mt={index > 0 ? "4" : "0"}>
-				{lastResult?.initialValue &&
-					group.id &&
-					lastResult?.initialValue.id === group.id && (
-						<Box mb="4">
-							<Text as="p">
-								<strong>Your notification settings have been saved.</strong>
-							</Text>
-						</Box>
-					)}
 				{group.notificationType === "rss" && group.saved && (
 					<Box mb="4">
 						<Text as="label" htmlFor="feedUrl" size="3">
@@ -243,7 +234,9 @@ const NotificationGroup = ({
 					</Card>
 				</Box>
 				{fields.queries.errors && (
-					<ErrorCallout error={fields.queries.errors[0]} />
+					<Box mb="4">
+						<ErrorCallout error={fields.queries.errors[0]} />
+					</Box>
 				)}
 				{(testFetcher.data || testFetcher.data === 0) && (
 					<Box width="100%" my="4">
@@ -291,6 +284,15 @@ const NotificationGroup = ({
 						</Button>
 					)}
 				</Flex>
+				{lastResult?.initialValue &&
+					group.id &&
+					lastResult?.initialValue.id === group.id && (
+						<Box mt="4">
+							<Text as="p">
+								<strong>Your notification settings have been saved.</strong>
+							</Text>
+						</Box>
+					)}
 			</Card>
 		</Form>
 	);

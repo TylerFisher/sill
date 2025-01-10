@@ -1,13 +1,11 @@
 import type { Route } from "./+types/index";
-import { eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 import Layout from "~/components/nav/Layout";
-import NotificationForm, {
-	defaultGroup,
-} from "~/components/forms/NotificationForm";
+import NotificationForm from "~/components/forms/NotificationForm";
 import PageHeading from "~/components/nav/PageHeading";
 import { Box } from "@radix-ui/themes";
 import { z } from "zod";
@@ -45,6 +43,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		throw new Error("Unauthorized");
 	}
 
+	const notificationUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+	});
+
+	if (!notificationUser) {
+		throw new Error("Unauthorized");
+	}
+
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		schema: NotificationSchema.superRefine(async (data, ctx) => {
@@ -54,6 +60,31 @@ export const action = async ({ request }: Route.ActionArgs) => {
 					code: z.ZodIssueCode.custom,
 					message: "At least one query item is required",
 				});
+			}
+
+			const existingGroups = await db.query.notificationGroup.findMany({
+				where: eq(notificationGroup.userId, userId),
+			});
+
+			for (const group of existingGroups) {
+				if (group.name === data.name && group.id !== data.id) {
+					ctx.addIssue({
+						path: ["name"],
+						code: z.ZodIssueCode.custom,
+						message: "A group with this name already exists",
+					});
+				}
+
+				if (
+					JSON.stringify(group.query) === JSON.stringify(data.queries) &&
+					group.id !== data.id
+				) {
+					ctx.addIssue({
+						path: ["queries"],
+						code: z.ZodIssueCode.custom,
+						message: "A group with these queries already exists",
+					});
+				}
 			}
 		}),
 		async: true,

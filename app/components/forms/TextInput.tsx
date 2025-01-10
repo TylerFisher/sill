@@ -1,6 +1,7 @@
 import { Box, Flex, Text, TextField } from "@radix-ui/themes";
 import type React from "react";
 import { useId } from "react";
+import ErrorCallout from "./ErrorCallout";
 
 interface FieldProps {
 	labelProps: React.LabelHTMLAttributes<HTMLLabelElement>;
@@ -32,7 +33,7 @@ const TextInput = ({ labelProps, inputProps, errors }: FieldProps) => {
 			>
 				<TextField.Slot />
 			</TextField.Root>
-			{errorId && <Text size="1">{errors}</Text>}
+			{errorId && errors && errors[0] && <ErrorCallout error={errors[0]} />}
 		</Box>
 	);
 };
