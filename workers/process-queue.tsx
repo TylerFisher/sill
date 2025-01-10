@@ -92,9 +92,12 @@ async function processQueue() {
 					group.userId,
 					group.query,
 					group.seenLinks,
-					// group.createdAt,
+					group.createdAt,
 				);
 				if (newItems.length > 0) {
+					console.log(
+						`sending notification for group ${group.name}, user ${groupUser.email}`,
+					);
 					if (group.notificationType === "email") {
 						const emailBody = {
 							from: "Sill <noreply@e.sill.social>",
