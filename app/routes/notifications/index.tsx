@@ -60,6 +60,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 					code: z.ZodIssueCode.custom,
 					message: "At least one query item is required",
 				});
+				return;
 			}
 
 			const existingGroups = await db.query.notificationGroup.findMany({
@@ -69,10 +70,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
 			for (const group of existingGroups) {
 				if (group.name === data.name && group.id !== data.id) {
 					ctx.addIssue({
-						path: ["name"],
 						code: z.ZodIssueCode.custom,
 						message: "A group with this name already exists",
 					});
+					return;
 				}
 
 				if (
@@ -80,15 +81,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
 					group.id !== data.id
 				) {
 					ctx.addIssue({
-						path: ["queries"],
 						code: z.ZodIssueCode.custom,
 						message: "A group with these queries already exists",
 					});
+					return;
 				}
 			}
 		}),
 		async: true,
 	});
+
+	console.log(submission.status);
 
 	if (submission.status !== "success") {
 		return data(

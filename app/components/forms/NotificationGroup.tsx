@@ -163,7 +163,6 @@ const NotificationGroup = ({
 							});
 						},
 					}}
-					errors={fields.name.errors}
 				/>
 				<Text as="label" size="3" htmlFor="format">
 					<strong>Delivery format</strong>
@@ -187,9 +186,6 @@ const NotificationGroup = ({
 					<RadioGroup.Item value="email">Email</RadioGroup.Item>
 					<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
 				</RadioGroup.Root>
-				{fields.format.errors && (
-					<ErrorCallout error={fields.format.errors[0]} />
-				)}
 				<Box my="4">
 					<Text as="label" size="3">
 						<strong>Filters</strong>
@@ -233,11 +229,6 @@ const NotificationGroup = ({
 						</Box>
 					</Card>
 				</Box>
-				{fields.queries.errors && (
-					<Box mb="4">
-						<ErrorCallout error={fields.queries.errors[0]} />
-					</Box>
-				)}
 				{(testFetcher.data || testFetcher.data === 0) && (
 					<Box width="100%" my="4">
 						<strong>
@@ -289,7 +280,11 @@ const NotificationGroup = ({
 					lastResult?.initialValue.id === group.id && (
 						<Box mt="4">
 							<Text as="p">
-								<strong>Your notification settings have been saved.</strong>
+								{lastResult?.status === "success" ? (
+									<strong>Your notification settings have been saved.</strong>
+								) : (
+									<Text>Error: this notification group already exists</Text>
+								)}
 							</Text>
 						</Box>
 					)}
