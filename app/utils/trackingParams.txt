@@ -131,3 +131,4 @@ nname
 nid
 nrid
 nlid
+rsrc
