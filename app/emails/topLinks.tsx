@@ -1,4 +1,4 @@
-import { Button, Heading, Hr, Text } from "@react-email/components";
+import { Button, Heading, Hr, Link, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
 import {
@@ -27,26 +27,45 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 
 	return (
 		<EmailLayout preview={preview(links)}>
-			<Heading as="h1">{title}</Heading>
-			<Heading as="h3" style={date}>
-				{today}
-			</Heading>
-			<Text>{intro(name)}</Text>
-			<Text>{linkPlug(digestUrl)}</Text>
-			{links.map((linkPost, i) => (
+			{links.length === 0 ? (
 				<>
-					<LinkPost
-						key={linkPost.link?.url}
-						linkPost={linkPost}
-						digestUrl={digestUrl}
-						layout={layout}
-					/>
-					{i < links.length - 1 && <Hr style={hr(layout)} />}
+					<Heading as="h1">Oops, no links!</Heading>
+					<Text>
+						It looks like Sill doesn't have any links for you. This is likely
+						because Sill got out of sync with your Bluesky and/or Mastodon
+						accounts. To address this,{" "}
+						<Link href="https://sill.social">log back into Sill</Link>. You may
+						be redirected to Bluesky or Mastodon to reauthorize Sill.
+					</Text>
+					<Text>
+						If this doesn't work for you, please email{" "}
+						<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+					</Text>
 				</>
-			))}
-			<Button href="https://sill.social/links" style={button}>
-				See all links on Sill
-			</Button>
+			) : (
+				<>
+					<Heading as="h1">{title}</Heading>
+					<Heading as="h3" style={date}>
+						{today}
+					</Heading>
+					<Text>{intro(name)}</Text>
+					<Text>{linkPlug(digestUrl)}</Text>
+					{links.map((linkPost, i) => (
+						<>
+							<LinkPost
+								key={linkPost.link?.url}
+								linkPost={linkPost}
+								digestUrl={digestUrl}
+								layout={layout}
+							/>
+							{i < links.length - 1 && <Hr style={hr(layout)} />}
+						</>
+					))}
+					<Button href="https://sill.social/links" style={button}>
+						See all links on Sill
+					</Button>
+				</>
+			)}
 			<Text>{digestOutro("https://sill.social/email")}</Text>
 		</EmailLayout>
 	);

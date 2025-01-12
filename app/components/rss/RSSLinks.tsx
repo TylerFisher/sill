@@ -19,22 +19,42 @@ const RSSLinks = ({ links, name, digestUrl }: RSSLinksProps) => {
 
 	return (
 		<article>
-			<Heading as="h1">{today}</Heading>
-			<Text as="p">{intro(name)}</Text>
-			<Text as="p">{linkPlug(digestUrl)}</Text>
-			<Text as="p">
-				<hr />
-			</Text>
-			{links.map((linkPost, i) => (
-				<RSSLinkPost
-					key={linkPost.link?.url}
-					linkPost={linkPost}
-					digestUrl={digestUrl}
-				/>
-			))}
-			<Text as="p">
-				<Link href="https://sill.social/links">See all links on Sill</Link>
-			</Text>
+			{links.length === 0 ? (
+				<>
+					<Heading as="h1">Oops, no links!</Heading>
+					<Text as="p">
+						It looks like Sill doesn't have any links for you. This is likely
+						because Sill got out of sync with your Bluesky and/or Mastodon
+						accounts. To address this,{" "}
+						<Link href="https://sill.social">log back into Sill</Link>. You may
+						be redirected to Bluesky or Mastodon to reauthorize Sill.
+					</Text>
+					<Text as="p">
+						If this doesn't work for you, please email{" "}
+						<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+					</Text>
+				</>
+			) : (
+				<>
+					<Heading as="h1">{today}</Heading>
+					<Text as="p">{intro(name)}</Text>
+					<Text as="p">{linkPlug(digestUrl)}</Text>
+					<Text as="p">
+						<hr />
+					</Text>
+					{links.map((linkPost, i) => (
+						<RSSLinkPost
+							key={linkPost.link?.url}
+							linkPost={linkPost}
+							digestUrl={digestUrl}
+						/>
+					))}
+					<Text as="p">
+						<Link href="https://sill.social/links">See all links on Sill</Link>
+					</Text>
+				</>
+			)}
+
 			<Text as="p">{digestOutro("https://sill.social/email")}</Text>
 		</article>
 	);

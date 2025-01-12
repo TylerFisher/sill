@@ -57,10 +57,17 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			}
 			if (error instanceof TokenRefreshError) {
 				const client = await createOAuthClient();
-				const url = await client.authorize(bsky.did, {
-					scope: "atproto transition:generic",
-				});
-				return redirect(url.toString()) as never;
+				try {
+					const url = await client.authorize(bsky.handle, {
+						scope: "atproto transition:generic",
+					});
+					return redirect(url.toString()) as never;
+				} catch (error) {
+					const url = await client.authorize(bsky.did, {
+						scope: "atproto transition:generic",
+					});
+					return redirect(url.toString()) as never;
+				}
 			}
 			if (error instanceof OAuthResolverError) {
 				return redirect("/connect?error=resolver") as never;

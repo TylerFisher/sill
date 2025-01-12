@@ -88,7 +88,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			const emailBody = {
 				from: "Sill <noreply@e.sill.social>",
 				to: dbUser.email,
-				subject: subject,
+				subject: links.length === 0 ? "No links found" : subject,
 				"o:tag": "digest",
 				...(await renderReactEmail(
 					<TopLinks
