@@ -22,7 +22,9 @@ export default [
 	...prefix("api", [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
+		route("seed-plans", "routes/api/seed-plans.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
+		route("stripe-webhook", "routes/api/stripe-webhook.ts"),
 		route("update-accounts", "routes/api/update-accounts.tsx"),
 	]),
 	...prefix("bluesky", [
@@ -68,5 +70,9 @@ export default [
 		route("layout-switch", "routes/resources/layout-switch.tsx"),
 		route("theme-switch", "routes/resources/theme-switch.tsx"),
 	]),
-	route("settings", "routes/settings/index.tsx"),
+	...prefix("settings", [
+		index("routes/settings/index.tsx"),
+		route("checkout", "routes/settings/checkout.tsx"),
+		route("subscription", "routes/settings/subscription.tsx"),
+	]),
 ] satisfies RouteConfig;

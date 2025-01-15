@@ -4,7 +4,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { password, session, user } from "~/drizzle/schema.server";
+import { password, session, subscription, user } from "~/drizzle/schema.server";
 import { authSessionStorage } from "~/utils/session.server";
 import { combineHeaders } from "./misc";
 
@@ -172,6 +172,7 @@ export async function signup({
 				email: email.toLowerCase(),
 				name,
 				emailConfirmed: true,
+				freeTrialEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14),
 			})
 			.returning({
 				id: user.id,
@@ -283,3 +284,30 @@ export async function resetUserPassword({
 		})
 		.where(eq(password.userId, userId));
 }
+
+export type SubscriptionStatus = "free" | "plus" | "trial";
+
+export const isSubscribed = async (
+	userId: string,
+): Promise<SubscriptionStatus> => {
+	const dbUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
+			subscriptions: {
+				where: and(
+					eq(subscription.status, "active"),
+					eq(subscription.userId, userId),
+				),
+			},
+		},
+	});
+	if (!dbUser) return "free";
+
+	const subscribed = dbUser?.subscriptions.length > 0;
+	if (!subscribed && dbUser?.freeTrialEnd) {
+		if (new Date() < dbUser.freeTrialEnd) {
+			return "trial";
+		}
+	}
+	return subscribed ? "plus" : "free";
+};

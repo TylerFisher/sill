@@ -17,6 +17,7 @@ import type {
 import SubmitButton from "./SubmitButton";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 type Account = typeof mastodonAccount.$inferSelect;
 export interface AccountWithInstance extends Account {
@@ -28,12 +29,14 @@ interface MastodonConnectFormProps {
 	account: AccountWithInstance | null;
 	searchParams: URLSearchParams;
 	listOptions: ListOption[];
+	subscribed: SubscriptionStatus;
 }
 
 const MastodonConnectForm = ({
 	account,
 	searchParams,
 	listOptions,
+	subscribed,
 }: MastodonConnectFormProps) => {
 	return (
 		<Card mb="6">
@@ -49,7 +52,6 @@ const MastodonConnectForm = ({
 					<Form action="/mastodon/auth/revoke" method="post">
 						<SubmitButton color="red" label="Disconnect" />
 					</Form>
-					<Lists listOptions={listOptions} account={account} />
 					<Callout.Root mt="4">
 						<Callout.Icon>
 							<CircleAlert width="18" height="18" />
@@ -69,6 +71,11 @@ const MastodonConnectForm = ({
 							to change the setting.
 						</Callout.Text>
 					</Callout.Root>
+					<Lists
+						listOptions={listOptions}
+						account={account}
+						subscribed={subscribed}
+					/>
 				</>
 			) : (
 				<>

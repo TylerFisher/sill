@@ -98,16 +98,6 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 
 	return (
 		<Box>
-			<Callout.Root mb="4">
-				<Callout.Icon>
-					<CircleAlert width="18" height="18" />
-				</Callout.Icon>
-				<Callout.Text size="2">
-					Notifications are free during Sill's beta period. This will be part of
-					Sill's paid plan in the future.
-				</Callout.Text>
-			</Callout.Root>
-
 			{groups.notifications.map((group, index) => (
 				<NotificationGroup
 					key={group.id || index}

@@ -3,11 +3,11 @@ import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import Layout from "~/components/nav/Layout";
 import NotificationForm from "~/components/forms/NotificationForm";
 import PageHeading from "~/components/nav/PageHeading";
-import { Box } from "@radix-ui/themes";
+import { Box, Callout, Link } from "@radix-ui/themes";
 import { z } from "zod";
 import { parseWithZod } from "@conform-to/zod";
 import { data } from "react-router";
@@ -15,6 +15,7 @@ import { notificationGroup } from "~/drizzle/schema.server";
 import { uuidv7 } from "uuidv7-js";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
+import { CircleAlert } from "lucide-react";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -140,6 +141,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
+	const subscribed = await isSubscribed(userId);
 
 	if (!userId) {
 		return redirect("/accounts/login") as never;
@@ -156,7 +158,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		return redirect("/accounts/login") as never;
 	}
 
-	return { user: existingUser };
+	if (subscribed === "free") {
+		return redirect("/settings/subscription") as never;
+	}
+
+	return { user: existingUser, subscribed };
 };
 
 export const meta: Route.MetaFunction = () => [
@@ -190,6 +196,20 @@ export default function Notifications({
 					notifications: initial,
 				}}
 			>
+				{loaderData.subscribed === "trial" && (
+					<Callout.Root mb="4">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text size="2">
+							Notifications are part of Sill+. You have access to Sill+ for the
+							duration of your 14-day free trial.{" "}
+							<Link href="/settings/subscription">Subscribe now</Link> to
+							maintain access.
+						</Callout.Text>
+					</Callout.Root>
+				)}
+
 				<NotificationForm lastResult={actionData?.result} />
 			</NotificationsProvider>
 		</Layout>

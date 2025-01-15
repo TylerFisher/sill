@@ -70,15 +70,6 @@ const EmailSettingForm = ({
 
 	return (
 		<Box>
-			<Callout.Root mb="4">
-				<Callout.Icon>
-					<CircleAlert width="18" height="18" />
-				</Callout.Icon>
-				<Callout.Text size="2">
-					Daily Digests are free during Sill's beta period. This will be part of
-					Sill's paid plan in the future.
-				</Callout.Text>
-			</Callout.Root>
 			{fetcher.data?.result?.status === "success" && (
 				<Box mb="4">
 					<Text as="p">

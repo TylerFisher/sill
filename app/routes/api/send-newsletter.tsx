@@ -12,6 +12,7 @@ import {
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
 import { preview, subject } from "~/utils/digestText";
+import { isSubscribed } from "~/utils/auth.server";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -45,10 +46,15 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 		const dbUser = await db.query.user.findFirst({
 			where: eq(user.id, digest.userId),
+			with: { subscriptions: true },
 		});
 
 		if (!dbUser) {
 			throw new Error("Couldn't find user for email");
+		}
+
+		if ((await isSubscribed(dbUser.id)) === "free") {
+			continue;
 		}
 
 		let links: MostRecentLinkPosts[] = [];

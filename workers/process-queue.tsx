@@ -19,6 +19,7 @@ import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
 import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
+import { isSubscribed } from "~/utils/auth.server";
 
 async function processQueue() {
 	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
@@ -84,8 +85,12 @@ async function processQueue() {
 			for (const group of notificationGroups) {
 				const groupUser = await db.query.user.findFirst({
 					where: eq(user.id, group.userId),
+					with: { subscriptions: true },
 				});
 				if (!groupUser) {
+					continue;
+				}
+				if ((await isSubscribed(groupUser.id)) === "free") {
 					continue;
 				}
 				const newItems = await evaluateNotifications(

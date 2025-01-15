@@ -218,6 +218,20 @@
       "when": 1735853209519,
       "tag": "0030_foamy_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1736895512290,
+      "tag": "0031_typical_stellaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1736909453117,
+      "tag": "0032_supreme_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }
