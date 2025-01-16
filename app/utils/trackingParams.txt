@@ -132,3 +132,4 @@ nid
 nrid
 nlid
 rsrc
+ab_channel
