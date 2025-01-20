@@ -1,5 +1,6 @@
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
+// @ts-expect-error: no types available
 import { Scrollama, Step } from "react-scrollama";
 import styles from "./HeroAnimation.module.css";
 
@@ -107,11 +108,11 @@ const SillView = ({ phase, links }: SillViewProps) => (
 	</Flex>
 );
 
-const ScrollingPosts = ({ posts, phase }) => (
+const ScrollingPosts = ({ posts, phase }: { posts: Post[]; phase: number }) => (
 	<Box className={styles.scrollContainer}>
 		<Box className={styles.scrollContent}>
-			{[...Array(3)].map((_, i) => (
-				<Flex key={i} direction="column" gap="3" mb="3">
+			{[...Array(3)].map((item, i) => (
+				<Flex key={item} direction="column" gap="3" mb="3">
 					{posts.map((post) => (
 						<Post key={`${i}-${post.id}`} post={post} phase={phase} />
 					))}
@@ -168,7 +169,7 @@ const HeroAnimation = () => {
 		},
 	];
 
-	const onStepEnter = ({ data }) => {
+	const onStepEnter = ({ data }: { data: number }) => {
 		setCurrentPhase(data);
 	};
 

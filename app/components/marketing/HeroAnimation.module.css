@@ -272,13 +272,13 @@
 }
 
 .linkTypeB {
-  border-color: var(--grass-9);
-  background: var(--grass-3);
+  border-color: var(--tomato-9);
+  background: var(--tomato-3);
 }
 
 .linkTypeB .linkTitle,
 .linkTypeB .linkDomain {
-  background: var(--grass-5);
+  background: var(--tomato-5);
 }
 
 .shareCount {
