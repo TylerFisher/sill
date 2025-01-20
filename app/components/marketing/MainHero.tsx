@@ -36,7 +36,7 @@ const MainHero = () => {
 					</Box>
 
 					<Heading
-						size={{ initial: "7", sm: "8" }}
+						size={{ initial: "5", sm: "8" }}
 						align={{ initial: "center", sm: "left" }}
 						weight="bold"
 					>
@@ -53,15 +53,11 @@ const MainHero = () => {
 						Sill watches your Bluesky and Mastodon feeds to find the most
 						popular links from your network.
 					</Text>
-					<Flex
-						gap="4"
-						direction={{ initial: "column", sm: "row" }}
-						width="100%"
-					>
+					<Flex gap="4" width="100%" mt="2">
 						<Link to="/accounts/signup" style={{ width: "100%" }}>
 							<Button
 								size={{
-									initial: "3",
+									initial: "2",
 									sm: "4",
 								}}
 								variant="solid"
@@ -73,7 +69,7 @@ const MainHero = () => {
 						<Link to="/accounts/login" style={{ width: "100%" }}>
 							<Button
 								size={{
-									initial: "3",
+									initial: "2",
 									sm: "4",
 								}}
 								variant="outline"
