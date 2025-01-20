@@ -118,7 +118,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
-		fetch: !url.searchParams.get("page"),
+		fetch: false,
 		...options,
 	});
 

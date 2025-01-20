@@ -1,0 +1,61 @@
+.heroWrapper {
+  background-color: var(--accent-1);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.heroWrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(125deg, 
+      var(--accent-4) 0%,
+      transparent 30%,
+      var(--accent-5) 70%
+    );
+  filter: blur(100px);
+  opacity: 0.7;
+  animation: flow 15s ease-in-out infinite alternate;
+  transform: translateZ(0);
+  will-change: transform;
+  z-index: -1;
+}
+
+@keyframes flow {
+  0% {
+    transform: translate3d(-30%, -20%, 0);
+  }
+  50% {
+    transform: translate3d(10%, 20%, 0);
+  }
+  100% {
+    transform: translate3d(-10%, -10%, 0);
+  }
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.logoContainer {
+  margin-bottom: var(--space-5);
+}
+
+.heroText {
+  color: var(--gray-a11);
+  max-width: 600px;
+  width: 100%;
+}
