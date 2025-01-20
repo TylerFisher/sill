@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { useState } from "react";
 // @ts-expect-error: no types available
 import { Scrollama, Step } from "react-scrollama";
@@ -182,7 +182,7 @@ const HeroAnimation = () => {
 							How Sill Works
 						</Heading>
 					</Box>
-					<Box
+					<Card
 						className={`
     ${styles.container} 
     ${currentPhase >= 2 ? styles.showSill : ""} 
@@ -206,7 +206,7 @@ const HeroAnimation = () => {
 								<SillView phase={currentPhase} links={sortedLinks} />
 							</Box>
 						</Box>
-					</Box>
+					</Card>
 				</Box>
 			</Box>
 

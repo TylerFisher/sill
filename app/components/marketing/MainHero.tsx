@@ -23,7 +23,7 @@ const MainHero = () => {
 						align="center"
 						weight="bold"
 					>
-						Your network. Your news. Your way.
+						Stop doomscrolling. Start discovering.
 					</Heading>
 
 					<Text
