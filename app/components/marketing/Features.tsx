@@ -14,21 +14,20 @@ const features = [
 		icon: <Mail />,
 		title: "Daily Digest",
 		description:
-			"Get a curated email of the most important links from your network, delivered at your preferred time.",
+			"Get a curated email or RSS feed of the most important links from your network, delivered at your preferred time.",
 		plusFeature: true,
 	},
 	{
 		icon: <Bell />,
 		title: "Custom Notifications",
 		description:
-			"Set up personalized alerts for specific topics, domains, or when content reaches a certain popularity threshold.",
+			"Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords.",
 		plusFeature: true,
 	},
 	{
 		icon: <ListTodo />,
 		title: "Custom Lists & Feeds",
-		description:
-			"Track links from your favorite custom lists and feeds, separate from your main timeline.",
+		description: "Track links from your favorite custom lists and feeds.",
 		plusFeature: true,
 	},
 ];
@@ -37,7 +36,7 @@ const Features = () => {
 	return (
 		<Box className={styles.features}>
 			<Heading size="8" align="center" mb="6">
-				Your social feed, refined
+				Features
 			</Heading>
 
 			<Grid columns={{ initial: "1", sm: "2" }} gap="4">

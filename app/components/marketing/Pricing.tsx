@@ -8,7 +8,7 @@ const Pricing = () => {
 	return (
 		<Box py="9" id="pricing">
 			<Heading size="8" align="center" mb="6">
-				Simple, transparent pricing
+				Pricing
 			</Heading>
 
 			<Flex

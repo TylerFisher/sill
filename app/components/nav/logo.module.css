@@ -6,9 +6,13 @@
   padding-top: 0.5rem;
 }
 
-@media (min-width: 1025px) {
+.big-logo-heading {
+  font-size: 70px;
+}
+
+@media (min-width: 768px) {
   .big-logo-heading {
-      font-size: 120px;
+      font-size: 90px;
   }
 }
 

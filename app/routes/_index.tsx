@@ -5,11 +5,7 @@ import MainHero from "~/components/marketing/MainHero";
 import HeroAnimation from "~/components/marketing/HeroAnimation";
 import Features from "~/components/marketing/Features";
 import Pricing from "~/components/marketing/Pricing";
-import WhySill from "~/components/marketing/WhySill";
-import {
-	TestimonialSection,
-	testimonials,
-} from "../components/marketing/Testimonial";
+import { TestimonialSection } from "../components/marketing/Testimonial";
 import MarketingFooter from "~/components/marketing/MarketingFooter";
 import { requireAnonymous } from "~/utils/auth.server";
 
@@ -37,6 +33,7 @@ const Index = () => {
 			<MainHero />
 			<Container size="4">
 				<HeroAnimation />
+				<Features />
 				<TestimonialSection />
 				<Pricing />
 			</Container>
