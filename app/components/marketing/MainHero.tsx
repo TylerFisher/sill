@@ -23,6 +23,7 @@ const MainHero = () => {
 				gap="6"
 				justify="between"
 				align="center"
+				className={styles.heroContainer}
 			>
 				<Flex
 					direction="column"
@@ -49,8 +50,8 @@ const MainHero = () => {
 						as="p"
 						color="gray"
 					>
-						Sill watches your Bluesky and Mastodon feeds to surface the most
-						valuable links being shared by your network.
+						Sill watches your Bluesky and Mastodon feeds to find the most
+						popular links from your network.
 					</Text>
 					<Flex
 						gap="4"

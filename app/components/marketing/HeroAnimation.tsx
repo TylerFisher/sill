@@ -36,7 +36,9 @@ const timelinePosts: Post[] = [
 	{ id: 3, link: { id: "B", title: "Another Article" } },
 	{ id: 4, link: { id: "A", title: "Popular Article" } },
 	{ id: 5 },
-	{ id: 6, link: { id: "A", title: "Popular Article" } },
+	{ id: 6 },
+	{ id: 7 },
+	{ id: 8, link: { id: "A", title: "Popular Article" } },
 ];
 
 const Post = ({ post, phase }: PostProps) => (
@@ -111,7 +113,7 @@ const SillView = ({ phase, links }: SillViewProps) => (
 const ScrollingPosts = ({ posts, phase }: { posts: Post[]; phase: number }) => (
 	<Box className={styles.scrollContainer}>
 		<Box className={styles.scrollContent}>
-			{[...Array(3)].map((item, i) => (
+			{[...Array(6)].map((item, i) => (
 				<Flex key={item} direction="column" gap="3" mb="3">
 					{posts.map((post) => (
 						<Post key={`${i}-${post.id}`} post={post} phase={phase} />
@@ -184,10 +186,10 @@ const HeroAnimation = () => {
 					</Box>
 					<Card
 						className={`
-    ${styles.container} 
-    ${currentPhase >= 2 ? styles.showSill : ""} 
-    ${currentPhase >= 4 ? styles.hiddenTimeline : ""}
-  `}
+              ${styles.container} 
+              ${currentPhase >= 2 ? styles.showSill : ""} 
+              ${currentPhase >= 4 ? styles.hiddenTimeline : ""}
+            `}
 					>
 						<Box
 							className={`${styles.column} ${currentPhase >= 4 ? styles.fadeOut : ""}`}

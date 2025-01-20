@@ -21,10 +21,19 @@ const MarketingFooter = () => {
 						</RLink>
 					</Flex>
 
-					<Text align="center">
-						Built by{" "}
-						<RLink href="https://www.tylerjfisher.com">Tyler Fisher</RLink>
-					</Text>
+					<Flex gap="4" wrap="wrap" justify="center">
+						<Text align="center">
+							Built by <RLink href="https://euphonos.studio">Euphonos</RLink>
+						</Text>
+						<RLink href="https://bsky.app/profile/sill.social">
+							<img
+								src="/bluesky-logo.svg"
+								width="18"
+								height="18"
+								alt="Bluesky"
+							/>
+						</RLink>
+					</Flex>
 				</Flex>
 			</Container>
 		</Box>

@@ -10,11 +10,11 @@ import MarketingFooter from "~/components/marketing/MarketingFooter";
 import { requireAnonymous } from "~/utils/auth.server";
 
 export const meta: Route.MetaFunction = () => [
-	{ title: "Sill | Your network. Your news. Your way." },
+	{ title: "Sill | News from your social networks, on your time" },
 	{
 		name: "description",
 		content:
-			"Sill watches your Bluesky and Mastodon feeds to surface the most valuable links being shared by your network. Stay informed without the endless scroll.",
+			"Sill watches your Bluesky and Mastodon feeds to find the most popular links from your network.",
 	},
 ];
 
