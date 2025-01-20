@@ -2,30 +2,3 @@
 .features {
   padding: 80px 0;
 }
-
-.featureCard {
-  position: relative;
-  padding: 24px;
-}
-
-.iconWrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.iconWrapper svg {
-  width: 24px;
-  height: 24px;
-  color: var(--accent-11);
-}
-
-.plusBadge {
-  background-color: var(--accent-9);
-  color: white;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 12px;
-  margin-left: 8px;
-}

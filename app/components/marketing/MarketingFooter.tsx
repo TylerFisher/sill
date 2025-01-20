@@ -29,8 +29,24 @@ const MarketingFooter = () => {
 							<img
 								src="/bluesky-logo.svg"
 								width="18"
+								height="16"
+								alt="Bluesky"
+								style={{
+									display: "inline-block",
+									verticalAlign: "middle",
+								}}
+							/>
+						</RLink>
+						<RLink href="https://bsky.app/profile/sill.social">
+							<img
+								src="/mastodon-logo.svg"
+								width="18"
 								height="18"
 								alt="Bluesky"
+								style={{
+									display: "inline-block",
+									verticalAlign: "middle",
+								}}
 							/>
 						</RLink>
 					</Flex>

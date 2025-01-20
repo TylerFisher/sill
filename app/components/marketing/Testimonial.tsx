@@ -58,11 +58,9 @@ export const testimonials: Testimonial[] = [
 ];
 
 export const TestimonialCard = ({ testimonial }: TestimonialCardProps) => (
-	<Card>
-		<Flex direction="column" gap="4">
-			<Text size="3" style={{ flex: 1 }}>
-				&ldquo;{testimonial.text}&rdquo;
-			</Text>
+	<Card size="3">
+		<Flex direction="column" gap="4" justify="between" height="100%">
+			<Text as="p">&ldquo;{testimonial.text}&rdquo;</Text>
 
 			<Flex gap="3" align="center">
 				<Avatar
@@ -87,10 +85,6 @@ export const TestimonialCard = ({ testimonial }: TestimonialCardProps) => (
 		</Flex>
 	</Card>
 );
-
-interface TestimonialSectionProps {
-	testimonials: Testimonial[];
-}
 
 export const TestimonialSection = () => (
 	<Box py="9">

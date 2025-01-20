@@ -12,7 +12,10 @@ const MainHero = () => {
 		<Flex
 			className={styles.heroWrapper}
 			align="end"
-			pt="9"
+			py={{
+				initial: "6",
+				sm: "9",
+			}}
 			px={{
 				initial: "4",
 				sm: "9",
