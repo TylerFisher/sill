@@ -4,8 +4,14 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { list } from "~/drizzle/schema.server";
 import { eq, and, or } from "drizzle-orm";
+import { getLinksFromBluesky } from "~/utils/bluesky.server";
+import { requireUserId } from "~/utils/auth.server";
+import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import { insertNewLinks } from "~/utils/links.server";
 
 export const action = async ({ request }: Route.ActionArgs) => {
+	const userId = await requireUserId(request);
+
 	try {
 		const formData = await request.formData();
 		const uri = String(formData.get("uri"));
@@ -26,6 +32,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
 				blueskyAccountId: type === "bluesky" ? accountId : null,
 				mastodonAccountId: type === "mastodon" ? accountId : null,
 			});
+
+			if (type === "bluesky") {
+				const links = await getLinksFromBluesky(userId);
+				await insertNewLinks(links);
+			} else if (type === "mastodon") {
+				const links = await getLinksFromMastodon(userId);
+				await insertNewLinks(links);
+			}
 		} else {
 			await db
 				.delete(list)
