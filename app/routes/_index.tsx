@@ -31,7 +31,7 @@ const Index = () => {
 			}}
 		>
 			<MainHero />
-			<Container size="4">
+			<Container size="4" px="4">
 				<HeroAnimation />
 				<Features />
 				<TestimonialSection />

@@ -70,13 +70,15 @@ export const TestimonialCard = ({ testimonial }: TestimonialCardProps) => (
 				/>
 
 				<Flex direction="column">
-					<Link
-						href={testimonial.author.workUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						{testimonial.author.name}
-					</Link>
+					<Text weight="bold">
+						<Link
+							href={testimonial.author.workUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{testimonial.author.name}
+						</Link>
+					</Text>
 					<Text size="2" color="gray">
 						{testimonial.author.title}
 					</Text>

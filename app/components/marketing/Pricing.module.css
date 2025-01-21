@@ -1,19 +1,19 @@
-/* app/components/marketing/Pricing.module.css */
 .card {
-  width: 100%;
-  max-width: 400px;
-  padding: var(--space-5);
+  flex: 1;
 }
 
 .cardHighlighted {
-  width: 100%;
-  max-width: 400px;
-  padding: var(--space-5);
-  background: linear-gradient(to bottom right, var(--accent-2), var(--accent-1));
+  background: linear-gradient(to bottom right, var(--accent-3), var(--accent-1));
 }
 
 .cardHighlighted:after {
   box-shadow: 0 0 0 2px var(--accent-8);
+}
+
+.cardHighlighted h4 {
+  color: var(--accent-11);
+  font-weight: 900;
+  font-style: italic;
 }
 
 .featureList {
@@ -33,4 +33,5 @@
   width: 20px;
   height: 20px;
   color: var(--accent-11);
+  vertical-align: middle;
 }
