@@ -39,7 +39,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		where: eq(digestSettings.userId, userId),
 	});
 
-	return { currentSettings, email: existingUser?.email, subscribed };
+	return { currentSettings, email: existingUser.email, subscribed };
 };
 
 const EmailSettings = ({ loaderData }: Route.ComponentProps) => {

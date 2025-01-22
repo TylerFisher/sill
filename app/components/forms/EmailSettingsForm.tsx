@@ -128,7 +128,6 @@ const EmailSettingForm = ({
 					</TextField.Root>
 				</Box>
 			)}
-			<Separator size="4" my="6" />
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				<Box mb="3">
 					<Text as="label" size="3" htmlFor="digestType">

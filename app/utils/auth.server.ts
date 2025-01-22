@@ -309,5 +309,5 @@ export const isSubscribed = async (
 			return "trial";
 		}
 	}
-	return subscribed ? "plus" : "free";
+	return subscribed ? "trial" : "free";
 };

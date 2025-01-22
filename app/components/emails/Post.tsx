@@ -142,10 +142,12 @@ const Post = ({
 const container = {
 	maxWidth: "500px",
 	margin: "0 auto",
+	width: "100%",
 };
 
 const wrapper = {
 	maxWidth: "100%",
+	width: "100%",
 	margin: "0 0 20px 0",
 	borderRadius: "12px",
 	border: "#D9D9E0 1px solid",

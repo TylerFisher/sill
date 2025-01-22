@@ -69,8 +69,8 @@ const cards = [
 		price: "$0",
 		features: [
 			"Connect Bluesky and Mastodon",
-			"Popular links ranked by your network",
-			"Web interface for browsing links",
+			"Unlimited access to Sill web interface",
+			"Moderation features including mute",
 		],
 		cta: "Get started",
 	},

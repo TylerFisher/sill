@@ -27,23 +27,24 @@ interface TestimonialCardProps {
 export const testimonials: Testimonial[] = [
 	{
 		author: {
-			name: "Ben Collins",
-			title: "CEO, Global Tetrahedron",
+			name: "Tyler Fisher",
+			title: "Founder, Sill",
 			avatarUrl:
-				"https://cdn.bsky.app/img/avatar/plain/did:plc:x4qyokjtdzgl7gmqhsw4ajqj/bafkreihfnahgxywmhcl4fffsa65tk4edrio5bjyy3s3yabr6caymiyl73a@jpeg",
-			workUrl: "https://bsky.app/profile/bencollins.bsky.social",
+				"https://cdn.bsky.app/img/avatar/plain/did:plc:2hgmrwevidwsxundvejdeam5/bafkreif6l4drnpsj5fq3enmww4qarzhxkvj52sc4wzdc353ejqz3v5zfzu@jpeg",
+			workUrl: "https://bsky.app/profile/tylerjfisher.com",
 		},
-		text: "Holy shit I am so excited about this. And it works!!!",
+		text: "Sill has reformed my relationship to social media. Instead of doomscrolling for the latest news, I have a calmer space to read news, while still getting the benefits of my network.",
 	},
 	{
 		author: {
-			name: "Miriam Posner",
-			title: "Asst. Prof., UCLA Information Studies",
-			avatarUrl:
-				"https://cdn.bsky.app/img/avatar/plain/did:plc:rzn6yramffebefeitqifiqqz/bafkreihr4rpkzrgqpaol6pwut645x4yj3ol2n3qselivt2glfy6jcjw7mi@jpeg",
-			workUrl: "https://www.miriamposner.com/",
+			name: "Charlie Meyerson",
+			title:
+				"Publisher of the award-winning daily email news briefing Chicago Public Square",
+			avatarUrl: "/marketing/testimonials/charlie.jpg",
+			workUrl:
+				"https://www.chicagopublicsquare.com/2021/10/the-best-roundup-newsletter-in-chicago.html",
 		},
-		text: "I feel like people are not sufficiently appreciating one of the better things about Bluesky’s API, which is the resurrection of sites that can list the most-posted links by people you follow.",
+		text: "Sill’s a major source of information for me in Chicago Public Square, and for the content that I share with people on Bluesky because—ideally—I’m following people who are smarter than I am. And I’m able then to share the news from people who are smarter than I am with my readers and followers.",
 	},
 	{
 		author: {

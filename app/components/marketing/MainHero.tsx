@@ -53,7 +53,7 @@ const MainHero = () => {
 						as="p"
 						color="gray"
 					>
-						Sill watches your Bluesky and Mastodon feeds to find the most
+						Sill monitors your Bluesky and Mastodon feeds to find the most
 						popular links from your network.
 					</Text>
 					<Flex gap="4" width="100%" mt="2">

@@ -39,6 +39,10 @@ const timelinePosts: Post[] = [
 	{ id: 6 },
 	{ id: 7 },
 	{ id: 8, link: { id: "A", title: "Popular Article" } },
+	{ id: 9, link: { id: "B", title: "Another Article" } },
+	{ id: 10 },
+	{ id: 11 },
+	{ id: 13, link: { id: "A", title: "Popular Article" } },
 ];
 
 const Post = ({ post, phase }: PostProps) => (
@@ -161,12 +165,12 @@ const HeroAnimation = () => {
 	const sortedLinks: SortedLink[] = [
 		{
 			id: "A",
-			count: 3,
+			count: timelinePosts.filter((post) => post.link?.id === "A").length,
 			posts: timelinePosts.filter((post) => post.link?.id === "A"),
 		},
 		{
 			id: "B",
-			count: 1,
+			count: timelinePosts.filter((post) => post.link?.id === "B").length,
 			posts: timelinePosts.filter((post) => post.link?.id === "B"),
 		},
 	];
