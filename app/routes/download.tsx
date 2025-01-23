@@ -142,6 +142,19 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 												Connect lists
 											</Button>
 										</NavLink>
+										<Separator size="4" my="4" />
+										<Heading as="h4" size="4" mb="2">
+											Subscribe to Sill+
+										</Heading>
+										<Text as="p" size="2" mb="2">
+											Sill+ costs $5/month or $50/year. Subscribe now to keep
+											using these features.
+										</Text>
+										<NavLink to="/settings/subscription">
+											<Button variant="solid" size="1" mb="4">
+												Subscribe
+											</Button>
+										</NavLink>
 									</Card>
 								)}
 

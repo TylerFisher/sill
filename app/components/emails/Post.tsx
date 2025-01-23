@@ -22,7 +22,7 @@ const Post = ({
 	return (
 		<div style={container}>
 			<Section style={wrapper}>
-				<Row style={topRow}>
+				<Row>
 					<Column style={actorWrapper}>
 						<div style={avatarWrapper}>
 							<Link href={post.actorUrl}>
@@ -78,7 +78,7 @@ const Post = ({
 					))}
 					{post.quotedPostText && (
 						<Section style={wrapper}>
-							<Row style={quotedActorRow}>
+							<Row>
 								<Column style={actorWrapper}>
 									<div style={quotedAvatarWrapper}>
 										<Link href={post.quotedActorUrl || ""}>
@@ -98,7 +98,7 @@ const Post = ({
 									</div>
 								</Column>
 							</Row>
-							<Row style={quotedTextRow}>
+							<Row>
 								<Markdown
 									markdownCustomStyles={{
 										link: { color: "#9E6C00", textDecoration: "none" },
@@ -151,10 +151,7 @@ const wrapper = {
 	margin: "0 0 20px 0",
 	borderRadius: "12px",
 	border: "#D9D9E0 1px solid",
-};
-
-const topRow = {
-	padding: "12px 12px 0",
+	padding: "12px",
 };
 
 const actorWrapper = {
@@ -204,21 +201,7 @@ const handle = {
 };
 
 const bottomRow = {
-	padding: "6px 12px 12px",
-};
-
-const postText = {
-	margin: "0 0 16px",
-	fontSize: "14px",
-	lineHeight: "24px",
-};
-
-const quotedActorRow = {
-	padding: "12px 12px 0",
-};
-
-const quotedTextRow = {
-	padding: "0 12px",
+	padding: "6px 0 12px",
 };
 
 const quotedAvatarWrapper = {

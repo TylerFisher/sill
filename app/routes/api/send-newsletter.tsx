@@ -52,8 +52,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		if (!dbUser) {
 			throw new Error("Couldn't find user for email");
 		}
+		const subscribed = await isSubscribed(dbUser.id);
 
-		if ((await isSubscribed(dbUser.id)) === "free") {
+		if (subscribed === "free") {
 			continue;
 		}
 
@@ -102,6 +103,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 						name={dbUser.name}
 						digestUrl={digestUrl}
 						layout={digest.layout}
+						subscribed={subscribed}
 					/>,
 				)),
 			};
@@ -118,7 +120,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			});
 			digestItemValues.feedId = rssFeed?.id;
 			digestItemValues.html = renderToString(
-				<RSSLinks links={links} name={dbUser.name} digestUrl={digestUrl} />,
+				<RSSLinks
+					links={links}
+					name={dbUser.name}
+					digestUrl={digestUrl}
+					subscribed={subscribed}
+				/>,
 			);
 		}
 

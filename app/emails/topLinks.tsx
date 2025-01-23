@@ -1,6 +1,8 @@
 import { Button, Heading, Hr, Link, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
+import PlusTrial from "~/components/emails/PlusTrial";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import {
 	digestOutro,
 	intro,
@@ -15,9 +17,16 @@ interface TopLinksProps {
 	name: string | null;
 	digestUrl: string;
 	layout: "default" | "dense";
+	subscribed: SubscriptionStatus;
 }
 
-const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
+const TopLinks = ({
+	links,
+	name,
+	digestUrl,
+	layout,
+	subscribed,
+}: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -48,6 +57,7 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 					<Heading as="h3" style={date}>
 						{today}
 					</Heading>
+					{subscribed === "trial" && <PlusTrial type="Daily Digests" />}
 					<Text>{intro(name)}</Text>
 					<Text>{linkPlug(digestUrl)}</Text>
 					{links.map((linkPost, i) => (

@@ -3,10 +3,12 @@ import groupBy from "object.groupby";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSPost from "./RSSPost";
 import { notificationOutro } from "~/utils/digestText";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 const RSSNotificationItem = ({
 	linkPost,
-}: { linkPost: MostRecentLinkPosts }) => {
+	subscribed,
+}: { linkPost: MostRecentLinkPosts; subscribed: SubscriptionStatus }) => {
 	if (!linkPost.link || !linkPost.posts) return null;
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
 	const host = new URL(linkPost.link.url).host;
@@ -28,6 +30,15 @@ const RSSNotificationItem = ({
 				</small>
 			</Text>
 			<Text as="p">{linkPost.link.description}</Text>
+			{subscribed === "trial" && (
+				<Text as="p">
+					You are on a free trial of Sill+.{" "}
+					<Link href="https://sill.social/settings/subscription">
+						Subscribe now
+					</Link>{" "}
+					to maintain access.
+				</Text>
+			)}
 			<Text as="p">
 				Shared by {linkPost.uniqueActorsCount}{" "}
 				{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}

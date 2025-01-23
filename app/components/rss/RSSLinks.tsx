@@ -2,14 +2,16 @@ import { Heading, Text, Link } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSLinkPost from "./RSSLinkPost";
 import { digestOutro, intro, linkPlug } from "~/utils/digestText";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
 	name: string | null;
 	digestUrl: string;
+	subscribed: SubscriptionStatus;
 }
 
-const RSSLinks = ({ links, name, digestUrl }: RSSLinksProps) => {
+const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -38,6 +40,15 @@ const RSSLinks = ({ links, name, digestUrl }: RSSLinksProps) => {
 				<>
 					<Heading as="h1">{today}</Heading>
 					<Text as="p">{intro(name)}</Text>
+					{subscribed === "trial" && (
+						<Text as="p">
+							You are on a free trial of Sill+.{" "}
+							<Link href="https://sill.social/settings/subscription">
+								Subscribe now
+							</Link>{" "}
+							to maintain access.
+						</Text>
+					)}
 					<Text as="p">{linkPlug(digestUrl)}</Text>
 					<Text as="p">
 						<hr />

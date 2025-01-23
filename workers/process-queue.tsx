@@ -90,7 +90,8 @@ async function processQueue() {
 				if (!groupUser) {
 					continue;
 				}
-				if ((await isSubscribed(groupUser.id)) === "free") {
+				const subscribed = await isSubscribed(groupUser.id);
+				if (subscribed === "free") {
 					continue;
 				}
 				const newItems = await evaluateNotifications(
@@ -112,14 +113,18 @@ async function processQueue() {
 								`New Sill notification: ${group.name}`,
 							"o:tag": "notification",
 							...(await renderReactEmail(
-								<Notification links={newItems} groupName={group.name} />,
+								<Notification
+									links={newItems}
+									groupName={group.name}
+									subscribed={subscribed}
+								/>,
 							)),
 						};
 						await sendEmail(emailBody);
 					} else if (group.notificationType === "rss") {
 						for (const item of newItems) {
 							const html = renderToString(
-								<RSSNotificationItem linkPost={item} />,
+								<RSSNotificationItem linkPost={item} subscribed={subscribed} />,
 							);
 							await db.insert(notificationItem).values({
 								id: uuidv7(),
