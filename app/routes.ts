@@ -21,7 +21,6 @@ export default [
 	]),
 	...prefix("api", [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
-		route("migrate-data", "routes/api/migrate-data.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
 		route("update-accounts", "routes/api/update-accounts.tsx"),
 	]),

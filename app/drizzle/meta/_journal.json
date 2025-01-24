@@ -218,6 +218,13 @@
       "when": 1735853209519,
       "tag": "0030_foamy_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1737724396475,
+      "tag": "0031_living_synch",
+      "breakpoints": true
     }
   ]
 }
