@@ -52,6 +52,7 @@ export const handleBlueskyOAuth = async (account: { did: string }) => {
 		const client = await createOAuthClient();
 		oauthSession = await client.restore(account.did);
 	} catch (error) {
+		console.error("Error restoring Bluesky OAuth session", error);
 		if (error instanceof OAuthResponseError) {
 			const client = await createOAuthClient();
 			oauthSession = await client.restore(account.did);
