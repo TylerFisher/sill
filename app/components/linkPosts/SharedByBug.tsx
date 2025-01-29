@@ -3,6 +3,7 @@ import { Avatar, Button } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./SharedByBug.module.css";
 import { useRef } from "react";
+import { useTheme } from "~/routes/resources/theme-switch";
 
 const SharedByBug = ({
 	uniqueActors,
@@ -14,6 +15,7 @@ const SharedByBug = ({
 	open: boolean;
 }) => {
 	const ref = useRef<HTMLButtonElement>(null);
+	const theme = useTheme();
 
 	const executeScroll = () =>
 		setTimeout(() => {
@@ -34,6 +36,7 @@ const SharedByBug = ({
 				style={{
 					position: open ? "sticky" : "static",
 					zIndex: open ? 5 : 0,
+					backgroundColor: theme === "dark" ? "#2D2305" : "#FFF394",
 				}}
 			>
 				{uniqueActors.slice(0, 3).map((actor, i) => (

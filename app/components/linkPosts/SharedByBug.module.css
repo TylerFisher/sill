@@ -1,11 +1,6 @@
 .bug {
   top: 56px;
-  background-color: #FFF394;
   scroll-margin-top: 56px;
-}
-
-.dark .bug {
-  background-color: #2D2305;
 }
 
 @media (min-width: 1024px) {
