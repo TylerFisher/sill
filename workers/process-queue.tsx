@@ -20,6 +20,8 @@ import { renderToString } from "react-dom/server";
 import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
 
+const MAX_ERRORS_PER_BATCH = 10;
+
 async function processQueue() {
 	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
 
@@ -135,7 +137,7 @@ async function processQueue() {
 					})
 					.where(eq(notificationGroup.id, group.id));
 			}
-
+			const errorCount = results.filter((r) => r.status === "error").length;
 			const batchDuration = Date.now() - batchStart;
 
 			console.log(`[Queue] Batch complete:
@@ -144,6 +146,12 @@ async function processQueue() {
       Errors: ${results.filter((r) => r.status === "error").length}
       Batch Duration: ${batchDuration}ms
     `);
+			if (errorCount >= MAX_ERRORS_PER_BATCH) {
+				console.error(
+					`[Queue] Too many errors (${errorCount}), restarting process...`,
+				);
+				process.exit(1); // Exit with error code to trigger restart
+			}
 		} else {
 			await db.refreshMaterializedView(networkTopTenView);
 			if (process.env.NODE_ENV === "production") {
