@@ -225,6 +225,13 @@
       "when": 1737724396475,
       "tag": "0031_living_synch",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1738350613690,
+      "tag": "0032_slow_nightshade",
+      "breakpoints": true
     }
   ]
 }
