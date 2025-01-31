@@ -127,7 +127,8 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 
 		const denormalized = chunk
 			.map((p) => p.denormalized)
-			.filter((p) => p.linkUrl.length <= MAX_URL_LENGTH);
+			.filter((p) => p.linkUrl.length <= MAX_URL_LENGTH)
+			.filter((p) => p.postDate >= new Date(Date.now() - ONE_DAY_MS));
 
 		await db.transaction(async (tx) => {
 			if (links.length > 0)
