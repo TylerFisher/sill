@@ -31,7 +31,7 @@ const MainHero = () => {
 				<Flex
 					direction="column"
 					align={{ initial: "center", sm: "start" }}
-					gap={{ initial: "4", sm: "6" }}
+					gap={{ initial: "4", sm: "4" }}
 					className={styles.heroContent}
 				>
 					<Box className={styles.logoContainer}>
@@ -39,11 +39,15 @@ const MainHero = () => {
 					</Box>
 
 					<Heading
-						size={{ initial: "5", sm: "8" }}
+						size={{ initial: "5", sm: "7" }}
 						align={{ initial: "center", sm: "left" }}
 						weight="bold"
+						mb="0"
+						style={{
+							textWrap: "balance",
+						}}
 					>
-						News from your social networks, <br /> on your time
+						Top news shared by the people you trust
 					</Heading>
 
 					<Text
@@ -52,9 +56,10 @@ const MainHero = () => {
 						className={styles.heroText}
 						as="p"
 						color="gray"
+						mt="0"
 					>
 						Sill monitors your Bluesky and Mastodon feeds to find the most
-						popular links from your network.
+						popular links in your network.
 					</Text>
 					<Flex gap="4" width="100%" mt="2">
 						<Link to="/accounts/signup" style={{ width: "100%" }}>

@@ -27,13 +27,56 @@ interface TestimonialCardProps {
 export const testimonials: Testimonial[] = [
 	{
 		author: {
-			name: "Tyler Fisher",
-			title: "Founder, Sill",
+			name: "Nieman Lab",
+			title: "Sarah Scire",
 			avatarUrl:
-				"https://cdn.bsky.app/img/avatar/plain/did:plc:2hgmrwevidwsxundvejdeam5/bafkreif6l4drnpsj5fq3enmww4qarzhxkvj52sc4wzdc353ejqz3v5zfzu@jpeg",
-			workUrl: "https://bsky.app/profile/tylerjfisher.com",
+				"https://s2.googleusercontent.com/s2/favicons?domain_url=https://niemanlab.org&sz=128",
+			workUrl:
+				"https://www.niemanlab.org/2024/11/remember-nuzzel-a-similar-news-aggregating-tool-now-exists-for-bluesky/",
 		},
-		text: "Sill has reformed my relationship to social media. Instead of doomscrolling for the latest news, I have a calmer space to read news, while still getting the benefits of my network.",
+		text: "Sill already can act as a time-saver that’ll let you keep up with your network without being glued to social media.",
+	},
+	{
+		author: {
+			name: "Six Colors",
+			title: "Jason Snell",
+			avatarUrl:
+				"https://s2.googleusercontent.com/s2/favicons?domain_url=https://sixcolors.com&sz=128",
+			workUrl:
+				"https://sixcolors.com/link/2024/11/sill-gives-a-nuzzel-vibe-to-mastodon-and-bluesky-links/",
+		},
+		text: "Sill gives a Nuzzel vibe to Mastodon and Bluesky links ... It's extremely promising.",
+	},
+	{
+		author: {
+			name: "Lifehacker",
+			title: "Pranay Parab",
+			avatarUrl:
+				"https://s2.googleusercontent.com/s2/favicons?domain_url=https://lifehacker.com&sz=128",
+			workUrl:
+				"https://lifehacker.com/tech/sill-app-links-in-bluesky-mastodon-feeds",
+		},
+		text: "Sill Is the Best Way to Read Bluesky and Mastodon Links",
+	},
+	{
+		author: {
+			name: "Nick Tsergas",
+			title: "Editor, Canada Healthwatch",
+			avatarUrl: "/marketing/testimonials/nick.jpg",
+			workUrl: "https://bsky.app/profile/nicktsergas.ca",
+		},
+		text: "Sill is a secret weapon for news discovery. I use it to help source and aggregate the most relevant health news from my Bluesky and Mastodon networks, making sure our audience gets timely updates on the most interesting stories.",
+	},
+	{
+		author: {
+			name: "TechCrunch",
+			title: "Sarah Perez",
+			avatarUrl:
+				"https://s2.googleusercontent.com/s2/favicons?domain_url=https://techcrunch.com&sz=128",
+			workUrl:
+				"https://techcrunch.com/2024/11/25/sills-new-app-rounds-up-the-best-links-from-your-bluesky-and-mastodon-network/",
+		},
+		text: "Want to keep up with what everyone’s talking about on alternative social media sites like Bluesky and Mastodon, but don’t have time to constantly scroll through their respective apps? A newly launched link aggregation service called Sill may be able to help.",
 	},
 	{
 		author: {
@@ -44,17 +87,7 @@ export const testimonials: Testimonial[] = [
 			workUrl:
 				"https://www.chicagopublicsquare.com/2021/10/the-best-roundup-newsletter-in-chicago.html",
 		},
-		text: "Sill’s a major source of information for me in Chicago Public Square, and for the content that I share with people on Bluesky because—ideally—I’m following people who are smarter than I am. And I’m able then to share the news from people who are smarter than I am with my readers and followers.",
-	},
-	{
-		author: {
-			name: "Anuj Ahooja",
-			title: "CEO & Executive Director, A New Social",
-			avatarUrl:
-				"https://cdn.bsky.app/img/avatar/plain/did:plc:qvzuhns2asyclcnvcgh3lgbx/bafkreiggxmzguiblzbvsfpf44nhtvchlptauxf4uh2uaej5agc7zag3g24@jpeg",
-			workUrl: "https://bsky.app/profile/quillmatiq.com",
-		},
-		text: "Sill may be my favorite social web tool right now. What an incredible resource for someone that primarily uses social media to collect links and see what discussions are sparking around them.",
+		text: "Sill is a major source of information for me in Chicago Public Square, and for the content that I share with people on Bluesky because—ideally—I’m following people who are smarter than I am.",
 	},
 ];
 
