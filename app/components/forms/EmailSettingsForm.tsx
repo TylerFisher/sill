@@ -70,13 +70,6 @@ const EmailSettingForm = ({
 
 	return (
 		<Box>
-			{fetcher.data?.result?.status === "success" && (
-				<Box mb="4">
-					<Text as="p">
-						<strong>Your Daily Digest settings have been saved.</strong>
-					</Text>
-				</Box>
-			)}
 			{currentSettings?.digestType === "email" && (
 				<Box mb="4">
 					<Text as="p" size="3" mb="4">
@@ -237,7 +230,13 @@ const EmailSettingForm = ({
 							size="3"
 						/>
 					</Box>
-
+					{fetcher.data?.result?.status === "success" && (
+						<Box my="4">
+							<Text as="p">
+								<strong>Your Daily Digest settings have been saved.</strong>
+							</Text>
+						</Box>
+					)}
 					<Flex gap="2" mt="4">
 						<SubmitButton label="Save" size="3" />
 					</Flex>

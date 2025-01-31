@@ -331,7 +331,11 @@ export const getLinksFromMastodon = async (
 
 		return processedResults;
 	} catch (e) {
-		console.error("Error getting links from Mastodon:", e?.constructor?.name);
+		console.error(
+			"Error getting links from Mastodon:",
+			e?.constructor?.name,
+			account.mastodonInstance.instance,
+		);
 		return [];
 	}
 };

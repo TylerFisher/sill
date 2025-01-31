@@ -3,6 +3,7 @@ import { Avatar, Button } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "./SharedByBug.module.css";
 import { useRef } from "react";
+import { useTheme } from "~/routes/resources/theme-switch";
 
 const SharedByBug = ({
 	uniqueActors,
@@ -14,10 +15,13 @@ const SharedByBug = ({
 	open: boolean;
 }) => {
 	const ref = useRef<HTMLButtonElement>(null);
+	const theme = useTheme();
 
 	const executeScroll = () =>
 		setTimeout(() => {
-			ref.current?.scrollIntoView();
+			if (ref.current && ref.current.getBoundingClientRect().top < 0) {
+				ref.current.scrollIntoView();
+			}
 		}, 0);
 	return (
 		<CollapsibleTrigger asChild>
@@ -27,13 +31,15 @@ const SharedByBug = ({
 				className={styles.bug}
 				ref={ref}
 				onClick={() => {
-					if (open) {
-						executeScroll();
-					}
+					executeScroll();
 				}}
 				style={{
 					position: open ? "sticky" : "static",
 					zIndex: open ? 5 : 0,
+					backgroundColor: theme === "dark" ? "#2D2305" : "#FFF394",
+					width: open ? "100%" : "270px",
+					borderRadius: open ? "0" : "1rem",
+					transition: "all 0.3s",
 				}}
 			>
 				{uniqueActors.slice(0, 3).map((actor, i) => (

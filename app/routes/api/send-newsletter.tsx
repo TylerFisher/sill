@@ -27,11 +27,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	const requestUrl = new URL(request.url);
 	const baseUrl = `${requestUrl.origin}/digest`;
-
 	const scheduledDigests = await db.query.digestSettings.findMany();
+	const hour = requestUrl.searchParams.get("hour");
 	const digests = await Promise.all(
 		scheduledDigests.map(async (digest) => {
-			const currentHourUTC = new Date().getUTCHours();
+			const currentHourUTC = hour
+				? Number.parseInt(hour)
+				: new Date().getUTCHours();
 			if (
 				Number.parseInt(digest.scheduledTime.split(":")[0]) === currentHourUTC
 			) {

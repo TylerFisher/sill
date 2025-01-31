@@ -222,15 +222,8 @@
     {
       "idx": 31,
       "version": "7",
-      "when": 1736895512290,
-      "tag": "0031_typical_stellaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "7",
-      "when": 1736909453117,
-      "tag": "0032_supreme_grey_gargoyle",
+      "when": 1737724396475,
+      "tag": "0031_living_synch",
       "breakpoints": true
     }
   ]

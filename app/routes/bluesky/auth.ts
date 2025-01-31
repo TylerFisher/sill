@@ -29,7 +29,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		handle = handle.slice("https://bsky.app/profile/".length);
 	}
 
-	if (!handle.includes(".")) {
+	if (!handle.includes(".") && !handle.startsWith("did:")) {
 		handle = `${handle}.bsky.social`;
 	}
 

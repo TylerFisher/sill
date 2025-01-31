@@ -1,0 +1,8 @@
+.banner {
+  background-color: var(--accent-11);
+  color: var(--accent-1);
+}
+
+.banner a {
+  color: var(--accent-1);
+}

@@ -12,6 +12,7 @@ import {
 import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import {
 	OAuthResponseError,
+	TokenRefreshError,
 	type OAuthSession,
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
@@ -47,7 +48,10 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  * @param account Account object with did
  * @returns Bluesky OAuth session
  */
-export const handleBlueskyOAuth = async (account: { did: string }) => {
+export const handleBlueskyOAuth = async (account: {
+	did: string;
+	handle: string;
+}) => {
 	let oauthSession: OAuthSession | null = null;
 	try {
 		const client = await createOAuthClient();
@@ -56,6 +60,13 @@ export const handleBlueskyOAuth = async (account: { did: string }) => {
 		if (error instanceof OAuthResponseError) {
 			const client = await createOAuthClient();
 			oauthSession = await client.restore(account.did);
+		} else if (error instanceof TokenRefreshError) {
+			console.error(`Token refresh error for ${account.handle}`);
+		} else {
+			console.error(
+				`Error restoring OAuth session for ${account.handle}`,
+				error,
+			);
 		}
 	}
 	return oauthSession;

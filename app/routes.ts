@@ -21,10 +21,9 @@ export default [
 	]),
 	...prefix("api", [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
+		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
-		route("seed-plans", "routes/api/seed-plans.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
-		route("stripe-webhook", "routes/api/stripe-webhook.ts"),
 		route("update-accounts", "routes/api/update-accounts.tsx"),
 	]),
 	...prefix("bluesky", [
