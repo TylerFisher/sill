@@ -206,13 +206,15 @@ export default function OnboardingRoute({
 				<div className="flex items-center justify-between gap-6">
 					<SubmitButton label="Create an account" />
 				</div>
-				<Text as="p" size="1" mt="4">
-					By creating an account you agree to the{" "}
-					<Link href="https://terms.sill.social/privacy.html">
-						Privacy Policy
-					</Link>
-					.
-				</Text>
+				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
+					<Text as="p" size="1" mt="4">
+						By creating an account you agree to the{" "}
+						<Link href="https://terms.sill.social/privacy.html">
+							Privacy Policy
+						</Link>
+						.
+					</Text>
+				)}
 			</Form>
 		</Layout>
 	);

@@ -24,7 +24,7 @@ const features = [
 		description:
 			"See what's trending across the open social web in real-time. Open to everyone, not just people with Sill accounts.",
 		cta: "Explore trending links",
-		ctaUrl: "https://sill.social/links/trending",
+		ctaUrl: `${import.meta.env.VITE_PUBLIC_DOMAIN}/links/trending`,
 	},
 	{
 		title: "Open source",

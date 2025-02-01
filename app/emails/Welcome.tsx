@@ -14,7 +14,9 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Hello{name ? ` ${name}` : ""}, thanks for signing up for Sill!
 				Hopefully, by now, you've connected your Bluesky and/or Mastodon
 				accounts. If not, you can do that{" "}
-				<Link href="https://sill.social/connect">here.</Link>
+				<Link href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/connect`}>
+					here.
+				</Link>
 			</Text>
 
 			<Heading>How Sill Works</Heading>
@@ -26,7 +28,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				follow that share a link, the more popular it is.
 			</Text>
 			<Img
-				src="https://sill.social/marketing/post-example.png"
+				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/post-example.png`}
 				alt="Sill popularity ranking example"
 				style={imgStyles}
 			/>
@@ -43,7 +45,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				it for your own needs as well.
 			</Text>
 			<Img
-				src="https://sill.social/marketing/filters.png"
+				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/filters.png`}
 				alt="Sill feed filters"
 				style={imgStyles}
 			/>
@@ -53,7 +55,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				service, and search for specific phrases, accounts or links.
 			</Text>
 			<Img
-				src="https://sill.social/marketing/mute.png"
+				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/mute.png`}
 				alt="Screenshot of the UI for muting users and domains"
 				style={imgStyles}
 			/>
@@ -61,20 +63,26 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				If you don't want to see posts from certain users or links from certain
 				domains, you can mute them. Use the mute button on a link or a post to
 				add domains and accounts to your mute list. You can also go to{" "}
-				<Link href="https://sill.social/moderation">your mute settings</Link> to
-				manage your mute list and add custom mute phrases.
+				<Link href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/moderation`}>
+					your mute settings
+				</Link>{" "}
+				to manage your mute list and add custom mute phrases.
 			</Text>
 			<Text>
 				Finally, Sill can send you a daily email with the most popular links
 				from your timeline. You can enable this feature{" "}
-				<Link href="https://sill.social/connect">here</Link>.
+				<Link href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/connect`}>here</Link>
+				.
 			</Text>
 
 			<Heading>Send Us Your Feedback!</Heading>
 			<Text>
 				We're always looking to improve Sill. If you have any feedback or
 				suggestions, you can reach out to{" "}
-				<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+				<Link href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+					{import.meta.env.VITE_ADMIN_EMAIL}
+				</Link>
+				.
 			</Text>
 		</EmailLayout>
 	);

@@ -5,7 +5,9 @@ const PlusTrial = ({ type }: { type: string }) => {
 		<Section style={section}>
 			<Text>
 				You are on a free trial of Sill+.{" "}
-				<Link href="https://sill.social/settings/subscription">
+				<Link
+					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
+				>
 					Subscribe today
 				</Link>{" "}
 				to maintain access to your {type}.

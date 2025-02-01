@@ -24,12 +24,16 @@ const Footer = ({
 				<ThemeSwitch userPreference={theme} id={themeFormId} />
 			</Flex>
 			<Flex mb="4" gap="2" direction="row" align="center" wrap="wrap">
+				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
+					<>
+						<Text size="1">
+							<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
+						</Text>
+						·
+					</>
+				)}
 				<Text size="1">
-					<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
-				</Text>
-				·
-				<Text size="1">
-					Built by <Link href="https://www.tylerjfisher.com">Tyler Fisher</Link>
+					Built by <Link href="https://euphonos.studio">Euphonos</Link>
 				</Text>
 			</Flex>
 		</Box>

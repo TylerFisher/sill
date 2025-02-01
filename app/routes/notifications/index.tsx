@@ -92,8 +92,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		async: true,
 	});
 
-	console.log(submission.status);
-
 	if (submission.status !== "success") {
 		return data(
 			{ result: submission.reply() },
@@ -109,7 +107,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	const groupId = id || uuidv7();
 
 	if (format === "rss") {
-		feedUrl = `https://sill.social/notifications/rss/${groupId}.rss`;
+		feedUrl = `${import.meta.env.VITE_PUBLIC_DOMAIN}/notifications/rss/${groupId}.rss`;
 	}
 
 	await db

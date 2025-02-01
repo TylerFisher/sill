@@ -59,10 +59,13 @@ export function Document({
 					name="og:description"
 					content="Sill streamlines your Bluesky and Mastodon feeds to give you a clear picture of what's happening."
 				/>
-				<meta name="og:image" content="https://sill.social/share.png" />
+				<meta
+					name="og:image"
+					content={`${import.meta.env.VITE_PUBLIC_DOMAIN}/share.png`}
+				/>
 				<meta name="og:image:width" content="1200" />
 				<meta name="og:image:height" content="630" />
-				<meta name="og:url" content="https://sill.social" />
+				<meta name="og:url" content={import.meta.env.VITE_PUBLIC_DOMAIN} />
 				<meta name="og:type" content="website" />
 				<meta name="og:site_name" content="Sill" />
 				<link
@@ -138,12 +141,15 @@ export function Document({
 				<meta name="msapplication-TileColor" content="#14120B" />
 				<meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
 				<meta name="theme-color" content="#14120B" />
-				<link rel="canonical" href="https://sill.social" />
-				<script
-					defer
-					data-domain="sill.social"
-					src="https://plausible.io/js/script.outbound-links.pageview-props.tagged-events.js"
-				/>
+				<link rel="canonical" href={import.meta.env.VITE_PUBLIC_DOMAIN} />
+				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
+					<script
+						defer
+						data-domain="sill.social"
+						src="https://plausible.io/js/script.outbound-links.pageview-props.tagged-events.js"
+					/>
+				)}
+
 				<Meta />
 				<Links />
 			</head>

@@ -28,12 +28,17 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 						It looks like Sill doesn't have any links for you. This is likely
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
-						<Link href="https://sill.social">log back into Sill</Link>. You may
-						be redirected to Bluesky or Mastodon to reauthorize Sill.
+						<Link href={`${import.meta.env.VITE_PUBLIC_DOMAIN}`}>
+							log back into Sill
+						</Link>
+						. You may be redirected to Bluesky or Mastodon to reauthorize Sill.
 					</Text>
 					<Text as="p">
 						If this doesn't work for you, please email{" "}
-						<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+						<Link href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+							{import.meta.env.VITE_ADMIN_EMAIL}
+						</Link>
+						.
 					</Text>
 				</>
 			) : (
@@ -43,7 +48,9 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 					{subscribed === "trial" && (
 						<Text as="p">
 							You are on a free trial of Sill+.{" "}
-							<Link href="https://sill.social/settings/subscription">
+							<Link
+								href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
+							>
 								Subscribe now
 							</Link>{" "}
 							to maintain access.
@@ -61,12 +68,16 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 						/>
 					))}
 					<Text as="p">
-						<Link href="https://sill.social/links">See all links on Sill</Link>
+						<Link href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}>
+							See all links on Sill
+						</Link>
 					</Text>
 				</>
 			)}
 
-			<Text as="p">{digestOutro("https://sill.social/email")}</Text>
+			<Text as="p">
+				{digestOutro(`${import.meta.env.VITE_PUBLIC_DOMAIN}/email`)}
+			</Text>
 		</article>
 	);
 };

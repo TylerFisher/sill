@@ -98,6 +98,9 @@ jobs:
           echo "USE_SSL=true" >> .env
           echo "WEB_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}" >> .env
           echo "PUBLIC_URL=https://${{ secrets.PUBLIC_DOMAIN }}" >> .env
+          echo "VITE_PUBLIC_DOMAIN"=${{ secrets.VITE_PUBLIC_DOMAIN }}" >> .env
+          echo "VITE_ADMIN_EMAIL"=${{ secrets.VITE_ADMIN_EMAIL }}" >> .env
+          echo "EMAIL_DOMAIN"=${{ secrets.EMAIL_DOMAIN }}" >> .env
           echo "TRAEFIK_DASHBOARD_DOMAIN=traefik.sill.social" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env

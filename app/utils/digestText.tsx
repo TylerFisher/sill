@@ -21,8 +21,11 @@ export const intro = (name: string | null) =>
 export const digestOutro = (settingsUrl: string) => (
 	<>
 		{" "}
-		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
-		Want to stop getting the Daily Digest? Adjust your digest settings{" "}
+		Feedback? Email{" "}
+		<a href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+			{import.meta.env.VITE_ADMIN_EMAIL}
+		</a>
+		. Want to stop getting the Daily Digest? Adjust your digest settings{" "}
 		<a href={settingsUrl}>here</a>.
 	</>
 );
@@ -30,9 +33,12 @@ export const digestOutro = (settingsUrl: string) => (
 export const notificationOutro = (settingsUrl: string) => (
 	<>
 		{" "}
-		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
-		Want to stop getting these notifications? Adjust your notification settings{" "}
-		<a href={settingsUrl}>here</a>.
+		Feedback? Email{" "}
+		<a href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+			{import.meta.env.VITE_ADMIN_EMAIL}
+		</a>
+		. Want to stop getting these notifications? Adjust your notification
+		settings <a href={settingsUrl}>here</a>.
 	</>
 );
 

@@ -95,7 +95,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 		if (digest.digestType === "email") {
 			const emailBody = {
-				from: "Sill <noreply@e.sill.social>",
+				from: `Sill <noreply@${process.env.EMAIL_DOMAIN}>`,
 				to: dbUser.email,
 				subject: links.length === 0 ? "No links found" : subject,
 				"o:tag": "digest",

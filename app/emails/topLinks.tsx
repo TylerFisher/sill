@@ -43,12 +43,17 @@ const TopLinks = ({
 						It looks like Sill doesn't have any links for you. This is likely
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
-						<Link href="https://sill.social">log back into Sill</Link>. You may
-						be redirected to Bluesky or Mastodon to reauthorize Sill.
+						<Link href={import.meta.env.VITE_PUBLIC_DOMAIN}>
+							log back into Sill
+						</Link>
+						. You may be redirected to Bluesky or Mastodon to reauthorize Sill.
 					</Text>
 					<Text>
 						If this doesn't work for you, please email{" "}
-						<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+						<Link href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+							{import.meta.env.VITE_ADMIN_EMAIL}
+						</Link>
+						.
 					</Text>
 				</>
 			) : (
@@ -71,12 +76,15 @@ const TopLinks = ({
 							{i < links.length - 1 && <Hr style={hr(layout)} />}
 						</>
 					))}
-					<Button href="https://sill.social/links" style={button}>
+					<Button
+						href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}
+						style={button}
+					>
 						See all links on Sill
 					</Button>
 				</>
 			)}
-			<Text>{digestOutro("https://sill.social/email")}</Text>
+			<Text>{digestOutro(`${import.meta.env.VITE_PUBLIC_DOMAIN}/email`)}</Text>
 		</EmailLayout>
 	);
 };

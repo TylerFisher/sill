@@ -108,7 +108,7 @@ async function processQueue() {
 					);
 					if (group.notificationType === "email") {
 						const emailBody = {
-							from: "Sill <noreply@e.sill.social>",
+							from: `Sill <noreply@${process.env.EMAIL_DOMAIN}>`,
 							to: groupUser.email,
 							subject:
 								newItems[0].link?.title ||
