@@ -134,7 +134,7 @@ export function Document({
 					sizes="16x16"
 					href="/favicon-16x16.png"
 				/>
-				<link rel="manifest" href="/manifest.json" />
+				<link rel="manifest" href="/web-manifest.json" />
 				<meta name="msapplication-TileColor" content="#14120B" />
 				<meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
 				<meta name="theme-color" content="#14120B" />
