@@ -30,6 +30,7 @@ const SignupFormSchema = z
 		email: EmailSchema,
 		name: NameSchema,
 		remember: z.boolean().optional(),
+		agree: z.boolean(),
 		redirectTo: z.string().optional(),
 	})
 	.and(PasswordAndConfirmPasswordSchema);
@@ -115,6 +116,17 @@ export const meta: Route.MetaFunction = () => {
 	return [{ title: "Sill | Setup your account" }];
 };
 
+const PrivacyLabel = () => (
+	<Text>
+		You agree to the{" "}
+		<Link href="https://terms.sill.social/terms.html">
+			Terms and Conditions
+		</Link>{" "}
+		and the{" "}
+		<Link href="https://terms.sill.social/privacy.html">Privacy Policy</Link>.
+	</Text>
+);
+
 export default function OnboardingRoute({
 	loaderData,
 	actionData,
@@ -146,7 +158,7 @@ export default function OnboardingRoute({
 				<ErrorList errors={form.errors} id={form.errorId} />
 				<TextInput
 					labelProps={{
-						htmlFor: fields.email.name,
+						htmlFor: fields.email.id,
 						children: "Email",
 					}}
 					inputProps={{
@@ -158,7 +170,7 @@ export default function OnboardingRoute({
 				/>
 				<TextInput
 					labelProps={{
-						htmlFor: fields.name.name,
+						htmlFor: fields.name.id,
 						children: "Name",
 					}}
 					inputProps={{
@@ -168,7 +180,7 @@ export default function OnboardingRoute({
 				/>
 				<TextInput
 					labelProps={{
-						htmlFor: fields.password.name,
+						htmlFor: fields.password.id,
 						children: "Password",
 					}}
 					inputProps={{
@@ -178,7 +190,7 @@ export default function OnboardingRoute({
 				/>
 				<TextInput
 					labelProps={{
-						htmlFor: fields.confirmPassword.name,
+						htmlFor: fields.confirmPassword.id,
 						children: "Confirm password",
 					}}
 					inputProps={{
@@ -190,7 +202,7 @@ export default function OnboardingRoute({
 				<Box mb="5">
 					<CheckboxField
 						labelProps={{
-							htmlFor: fields.remember.name,
+							htmlFor: fields.remember.id,
 							children: "Remember me?",
 						}}
 						inputProps={{
@@ -201,24 +213,25 @@ export default function OnboardingRoute({
 					/>
 				</Box>
 
+				<Box mb="5">
+					<CheckboxField
+						labelProps={{
+							htmlFor: fields.agree.id,
+							children: <PrivacyLabel />,
+						}}
+						inputProps={{
+							id: fields.agree.id,
+							name: fields.agree.name,
+						}}
+						errors={fields.agree.errors}
+					/>
+				</Box>
+
 				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
 
 				<div className="flex items-center justify-between gap-6">
 					<SubmitButton label="Create an account" />
 				</div>
-				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
-					<Text as="p" size="1" mt="4">
-						By creating an account you agree to the{" "}
-						<Link href="https://terms.sill.social/terms.html">
-							Terms and Conditions
-						</Link>{" "}
-						and the{" "}
-						<Link href="https://terms.sill.social/privacy.html">
-							Privacy Policy
-						</Link>
-						.
-					</Text>
-				)}
 			</Form>
 		</Layout>
 	);
