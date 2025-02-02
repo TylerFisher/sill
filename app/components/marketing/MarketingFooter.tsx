@@ -12,16 +12,17 @@ const MarketingFooter = () => {
 					direction={{ initial: "column", sm: "row" }}
 					gap="4"
 				>
-					{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
-						<Flex gap="4" wrap="wrap" justify="center">
-							<RLink href="https://terms.sill.social/privacy.html">
-								Privacy Policy
-							</RLink>
-							<RLink href="https://terms.sill.social/terms.html">
-								Terms of Service
-							</RLink>
-						</Flex>
-					)}
+					{/* {import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && ( */}
+					<Flex gap="4" wrap="wrap" justify="center">
+						<RLink href="https://terms.sill.social/terms.html">
+							Terms of Service
+						</RLink>
+						<RLink href="https://terms.sill.social/privacy.html">
+							Privacy Policy
+						</RLink>
+						<RLink href="https://terms.sill.social/copyright.html">DMCA</RLink>
+					</Flex>
+					{/* )} */}
 
 					<Flex gap="4" wrap="wrap" justify="center">
 						<Text align="center">

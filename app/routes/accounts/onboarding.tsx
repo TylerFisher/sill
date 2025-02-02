@@ -209,6 +209,10 @@ export default function OnboardingRoute({
 				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
 					<Text as="p" size="1" mt="4">
 						By creating an account you agree to the{" "}
+						<Link href="https://terms.sill.social/terms.html">
+							Terms and Conditions
+						</Link>{" "}
+						and the{" "}
 						<Link href="https://terms.sill.social/privacy.html">
 							Privacy Policy
 						</Link>
