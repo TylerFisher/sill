@@ -45,14 +45,24 @@ const TopLinks = ({
 						It looks like Sill doesn't have any links for you. This is likely
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
-						<Link href={import.meta.env.VITE_PUBLIC_DOMAIN}>
+						<Link
+							href={import.meta.env.VITE_PUBLIC_DOMAIN}
+							style={{
+								color: "#9E6C00",
+							}}
+						>
 							log back into Sill
 						</Link>
 						. You may be redirected to Bluesky or Mastodon to reauthorize Sill.
 					</Text>
 					<Text>
 						If this doesn't work for you, please email{" "}
-						<Link href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}>
+						<Link
+							href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+							style={{
+								color: "#9E6C00",
+							}}
+						>
 							{import.meta.env.VITE_ADMIN_EMAIL}
 						</Link>
 						.
