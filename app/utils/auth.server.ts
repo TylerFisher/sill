@@ -1,10 +1,17 @@
 import { redirect } from "react-router";
 import bcrypt from "bcryptjs";
-import { and, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { password, session, subscription, user } from "~/drizzle/schema.server";
+import {
+	password,
+	session,
+	subscription,
+	termsAgreement,
+	termsUpdate,
+	user,
+} from "~/drizzle/schema.server";
 import { authSessionStorage } from "~/utils/session.server";
 import { combineHeaders } from "./misc";
 
@@ -196,6 +203,18 @@ export async function signup({
 				userId: session.userId,
 			});
 
+		const latestTerms = await tx.query.termsUpdate.findFirst({
+			orderBy: desc(termsUpdate.termsDate),
+		});
+
+		if (latestTerms) {
+			await tx.insert(termsAgreement).values({
+				id: uuidv7(),
+				userId: result[0].id,
+				termsUpdateId: latestTerms.id,
+			});
+		}
+
 		return {
 			session: newSession[0],
 		};
@@ -310,4 +329,19 @@ export const isSubscribed = async (
 		}
 	}
 	return subscribed ? "trial" : "free";
+};
+
+export const hasAgreed = async (userId: string) => {
+	const latestTerms = await db.query.termsUpdate.findFirst({
+		orderBy: desc(termsUpdate.termsDate),
+	});
+	if (!latestTerms) return true;
+	const agreed = await db.query.termsAgreement.findFirst({
+		where: and(
+			eq(termsAgreement.termsUpdateId, latestTerms.id),
+			eq(termsAgreement.userId, userId),
+		),
+	});
+	console.log(userId, latestTerms.id, agreed, !!agreed);
+	return !!agreed;
 };

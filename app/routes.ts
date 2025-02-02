@@ -20,6 +20,7 @@ export default [
 		route("verify", "routes/accounts/verify.tsx"),
 	]),
 	...prefix("api", [
+		route("agree-to-terms", "routes/api/agree-to-terms.ts"),
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),

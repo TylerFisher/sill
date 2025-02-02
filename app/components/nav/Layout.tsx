@@ -6,6 +6,7 @@ import Nav from "./Nav";
 import { useRouteLoaderData } from "react-router";
 import type { loader } from "~/root";
 import TrialBanner from "./TrialBanner";
+import AgreeToTerms from "./AgreeToTerms";
 
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;
@@ -47,6 +48,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 					{sidebar && <aside className={styles.right}>{sidebar}</aside>}
 				</div>
 			</Container>
+			{data && !data.agreed && <AgreeToTerms />}
 		</>
 	);
 };

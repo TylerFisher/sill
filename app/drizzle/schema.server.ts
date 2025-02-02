@@ -439,6 +439,22 @@ export const subscription = pgTable("subscription", {
 	cancelAtPeriodEnd: boolean().notNull().default(false),
 });
 
+export const termsUpdate = pgTable("terms_update", {
+	id: uuid().primaryKey().notNull(),
+	termsDate: timestamp().notNull(),
+});
+
+export const termsAgreement = pgTable("terms_agreement", {
+	id: uuid().primaryKey().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	createdAt: timestamp().defaultNow(),
+	termsUpdateId: uuid()
+		.notNull()
+		.references(() => termsUpdate.id, { onDelete: "cascade" }),
+});
+
 export const linkPostDenormalizedRelations = relations(
 	linkPostDenormalized,
 	({ one }) => ({
@@ -621,6 +637,21 @@ export const subscriptionRelations = relations(subscription, ({ one }) => ({
 	price: one(price, {
 		fields: [subscription.priceId],
 		references: [price.id],
+	}),
+}));
+
+export const termsUpdateRelations = relations(termsUpdate, ({ many }) => ({
+	agreements: many(termsAgreement),
+}));
+
+export const termsAgreementRelations = relations(termsAgreement, ({ one }) => ({
+	user: one(user, {
+		fields: [termsAgreement.userId],
+		references: [user.id],
+	}),
+	termsUpdate: one(termsUpdate, {
+		fields: [termsAgreement.termsUpdateId],
+		references: [termsUpdate.id],
 	}),
 }));
 
