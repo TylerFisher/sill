@@ -4,17 +4,14 @@ import {
 	Text,
 	Select,
 	Box,
-	Callout,
 	Slider,
 	Flex,
 	RadioGroup,
 	TextField,
-	Badge,
-	Button,
-	Separator,
+	Link as RLink,
+	Card,
 } from "@radix-ui/themes";
 import { useFetcher, Form, Link } from "react-router";
-import { CircleAlert } from "lucide-react";
 import { useState } from "react";
 import type { digestSettings } from "~/drizzle/schema.server";
 import { type action, EmailSettingsSchema } from "~/routes/email/add";
@@ -71,27 +68,25 @@ const EmailSettingForm = ({
 	return (
 		<Box>
 			{currentSettings?.digestType === "email" && (
-				<Box mb="4">
+				<Card mb="6">
 					<Text as="p" size="3" mb="4">
-						Your Daily Digest is currently set to be delivered at{" "}
-						<Badge size="3">
-							{selectedHour &&
-								hours[
-									new Date(
-										`2000-01-01T${currentSettings.scheduledTime}Z`,
-									).getHours()
-								]}
-						</Badge>
-						, to <Badge size="3">{email}</Badge>.
+						Your Daily Digest will be delivered at{" "}
+						{selectedHour &&
+							hours[
+								new Date(
+									`2000-01-01T${currentSettings.scheduledTime}Z`,
+								).getHours()
+							]}{" "}
+						to {email}.
 					</Text>
-					<Link to="/accounts/change-email">
-						<Button size="3">Change your email</Button>
-					</Link>
-				</Box>
+					<RLink asChild size="3">
+						<Link to="/accounts/change-email">Change email address →</Link>
+					</RLink>
+				</Card>
 			)}
 			{currentSettings?.digestType === "rss" && (
-				<Box mb="6">
-					<Text as="label" size="2" htmlFor="rssUrl" mr="2">
+				<Card mb="6">
+					<Text as="label" size="3" htmlFor="rssUrl" mr="2">
 						RSS URL:
 					</Text>
 					<TextField.Root
@@ -119,17 +114,63 @@ const EmailSettingForm = ({
 							/>
 						</TextField.Slot>
 					</TextField.Root>
-				</Box>
+				</Card>
 			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
-				<Box mb="3">
+				<Box my="5">
+					<Text as="label" size="3" htmlFor="time">
+						<strong>Delivery time</strong>
+					</Text>
+					<br />
+					<Select.Root
+						{...getInputProps(fields.time, { type: "time" })}
+						value={selectedHour}
+						onValueChange={(value) => setSelectedHour(value)}
+						size="3"
+					>
+						<Select.Trigger placeholder="Select a time" />
+						<Select.Content position="popper">
+							{hours.map((hour, index) => {
+								const localDate = new Date();
+								localDate.setHours(index, 0, 0, 0);
+								const utcHour = localDate.toISOString().substring(11, 16);
+								return (
+									<Select.Item key={hour} value={utcHour}>
+										{hour}
+									</Select.Item>
+								);
+							})}
+						</Select.Content>
+					</Select.Root>
+					{fields.time.errors && <ErrorCallout error={fields.time.errors[0]} />}
+				</Box>
+				<Box
+					my="5"
+					maxWidth={{
+						initial: "100%",
+						xs: "50%",
+					}}
+				>
+					<Text as="label" size="3" htmlFor="topAmount">
+						<strong>{topAmountValue}</strong> links per Daily Digest
+					</Text>
+					<Slider
+						min={1}
+						max={20}
+						name="topAmount"
+						value={topAmountValue}
+						onValueChange={(value) => setTopAmountValue(value)}
+						size="3"
+						mt="2"
+					/>
+				</Box>
+				<Box my="5">
 					<Text as="label" size="3" htmlFor="digestType">
 						<strong>Daily Digest delivery format</strong>
 					</Text>
 					<RadioGroup.Root
 						defaultValue={format}
 						name="digestType"
-						mb="6"
 						onValueChange={(value) => setFormat(value)}
 						size="3"
 					>
@@ -139,14 +180,13 @@ const EmailSettingForm = ({
 					{fields.digestType.errors && (
 						<ErrorCallout error={fields.digestType.errors[0]} />
 					)}
-					<Box mb="6">
+					<Box my="5">
 						<Text as="label" size="3" htmlFor="digestType">
-							<strong>Layout</strong>
+							<strong>Layout (email only)</strong>
 						</Text>
 						<RadioGroup.Root
 							defaultValue={currentSettings?.layout || "default"}
 							name="layout"
-							mb="6"
 							disabled={format === "rss"}
 							size="3"
 						>
@@ -160,48 +200,8 @@ const EmailSettingForm = ({
 						{fields.layout.errors && (
 							<ErrorCallout error={fields.layout.errors[0]} />
 						)}
-						{format === "rss" && (
-							<Callout.Root mb="4">
-								<Callout.Icon>
-									<CircleAlert width="18" height="18" />
-								</Callout.Icon>
-								<Callout.Text size="2">
-									Layout configuration is only available for email digests.
-								</Callout.Text>
-							</Callout.Root>
-						)}
 					</Box>
-
-					<Box my="6">
-						<Text as="label" size="3" htmlFor="time">
-							<strong>Time to deliver Daily Digest</strong>
-						</Text>
-						<br />
-						<Select.Root
-							{...getInputProps(fields.time, { type: "time" })}
-							value={selectedHour}
-							onValueChange={(value) => setSelectedHour(value)}
-							size="3"
-						>
-							<Select.Trigger placeholder="Select a time" />
-							<Select.Content>
-								{hours.map((hour, index) => {
-									const localDate = new Date();
-									localDate.setHours(index, 0, 0, 0);
-									const utcHour = localDate.toISOString().substring(11, 16);
-									return (
-										<Select.Item key={hour} value={utcHour}>
-											{hour}
-										</Select.Item>
-									);
-								})}
-							</Select.Content>
-						</Select.Root>
-						{fields.time.errors && (
-							<ErrorCallout error={fields.time.errors[0]} />
-						)}
-					</Box>
-					<Box my="6">
+					<Box my="5">
 						<CheckboxField
 							inputProps={{
 								name: fields.hideReposts.name,
@@ -217,21 +217,8 @@ const EmailSettingForm = ({
 							errors={fields.hideReposts.errors}
 						/>
 					</Box>
-					<Box mt="6" mb="2">
-						<Text as="label" size="3" htmlFor="topAmount">
-							<strong>{topAmountValue}</strong> links per Daily Digest
-						</Text>
-						<Slider
-							min={1}
-							max={20}
-							name="topAmount"
-							value={topAmountValue}
-							onValueChange={(value) => setTopAmountValue(value)}
-							size="3"
-						/>
-					</Box>
 					{fetcher.data?.result?.status === "success" && (
-						<Box my="4">
+						<Box my="5">
 							<Text as="p">
 								<strong>Your Daily Digest settings have been saved.</strong>
 							</Text>
@@ -243,7 +230,7 @@ const EmailSettingForm = ({
 				</Box>
 			</fetcher.Form>
 			{currentSettings && (
-				<Box mt="2">
+				<Box>
 					<Form
 						method="DELETE"
 						action="/email/delete"
