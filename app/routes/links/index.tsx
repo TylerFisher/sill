@@ -118,7 +118,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
-		fetch: false,
+		fetch: process.env.NODE_ENV === "development",
 		...options,
 	});
 

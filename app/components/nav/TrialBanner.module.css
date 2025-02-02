@@ -1,8 +1,16 @@
 .banner {
-  background-color: var(--accent-11);
-  color: var(--accent-1);
+  background-color: var(--accent-3);
+  color: var(--accent-11);
+  top: 57px;
+  position: relative;
 }
 
 .banner a {
-  color: var(--accent-1);
+  color: var(--accent-11);
+}
+
+@media (min-width: 1024px) {
+  .banner {
+    top: 0;
+  }
 }

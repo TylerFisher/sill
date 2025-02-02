@@ -9,6 +9,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import { stripe } from "~/utils/stripe.server";
 import type Stripe from "stripe";
 import {
+	Box,
 	Card,
 	DataList,
 	Flex,
@@ -16,7 +17,6 @@ import {
 	RadioCards,
 	Text,
 } from "@radix-ui/themes";
-import PageHeading from "~/components/nav/PageHeading";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Subscription" },
@@ -192,9 +192,17 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 	const { sub, stripeSub } = loaderData;
 	return (
 		<Layout>
-			<PageHeading
-				title={sub ? "Manage your Sill+ subscription" : "Subscribe to Sill+"}
-			/>
+			<Heading
+				as="h2"
+				size="8"
+				style={{
+					fontWeight: 900,
+					fontStyle: "italic",
+					color: "var(--accent-11)",
+				}}
+			>
+				sill+
+			</Heading>
 			{sub ? (
 				<div>
 					<Card mb="6">
@@ -278,25 +286,61 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 					</Form>
 				</div>
 			) : (
-				<Form method="POST">
-					<RadioCards.Root name="interval" defaultValue="month" size="1" my="3">
-						<RadioCards.Item value="month">
-							<Flex direction="column" gap="1">
-								<Text weight="bold">Monthly</Text>
-								<Text>$5/month</Text>
-							</Flex>
-						</RadioCards.Item>
-						<RadioCards.Item value="year">
-							<Flex direction="column" gap="1">
-								<Text weight="bold">Annual</Text>
-								<Text>$50/year</Text>
-							</Flex>
-						</RadioCards.Item>
-					</RadioCards.Root>
-					<Flex direction="column" gap="3">
-						<SubmitButton label="Subscribe" name="intent" value="subscribe" />
-					</Flex>
-				</Form>
+				<Box mt="4">
+					<Text as="p" mb="4">
+						Subscribe to Sill+ to get access to exclusive features and support
+						the development of Sill. With Sill+, you get access to:
+					</Text>
+					<Heading as="h4" size="3" mb="2">
+						Daily Digest
+					</Heading>
+					<Text as="p" mb="4">
+						Get a daily curated email or RSS feed of the most popular links from
+						your network, delivered at your preferred time.
+					</Text>
+					<Heading as="h4" size="3" mb="2">
+						Custom Notifications
+					</Heading>
+					<Text as="p" mb="4">
+						Set up personalized email or RSS alerts for any criteria you define,
+						from popularity thresholds to specific keywords.
+					</Text>
+					<Heading as="h4" size="3" mb="2">
+						Custom Lists & Feeds
+					</Heading>
+					<Text as="p" mb="4">
+						Track links from your favorite custom lists and feeds on Bluesky or
+						Mastodon.
+					</Text>
+
+					<Heading as="h3" size="4" mb="2">
+						Subscribe now
+					</Heading>
+					<Form method="POST">
+						<RadioCards.Root
+							name="interval"
+							defaultValue="month"
+							size="1"
+							my="3"
+						>
+							<RadioCards.Item value="month">
+								<Flex direction="column" gap="1">
+									<Text weight="bold">Monthly</Text>
+									<Text>$5/month</Text>
+								</Flex>
+							</RadioCards.Item>
+							<RadioCards.Item value="year">
+								<Flex direction="column" gap="1">
+									<Text weight="bold">Annual</Text>
+									<Text>$50/year</Text>
+								</Flex>
+							</RadioCards.Item>
+						</RadioCards.Root>
+						<Flex direction="column" gap="3">
+							<SubmitButton label="Subscribe" name="intent" value="subscribe" />
+						</Flex>
+					</Form>
+				</Box>
 			)}
 		</Layout>
 	);
