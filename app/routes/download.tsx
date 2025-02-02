@@ -4,6 +4,7 @@ import {
 	Button,
 	Card,
 	Heading,
+	Link,
 	Separator,
 	Spinner,
 	Text,
@@ -82,6 +83,14 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 								<Text as="p" mb="4">
 									Your timeline was downloaded, and you are ready to use Sill.
 								</Text>
+
+								<Text as="p" mb="4">
+									<NavLink to="/links">
+										<Button variant="solid">
+											View your most popular links
+										</Button>
+									</NavLink>
+								</Text>
 								{subscribed === "trial" && (
 									<Card mb="4">
 										<Heading
@@ -101,70 +110,54 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 											{existingUser.freeTrialEnd?.toLocaleDateString()}. With
 											Sill+, you can access the following features:
 										</Text>
-										<Heading as="h4" size="4" mb="2">
-											Daily Digest
-										</Heading>
-										<Text as="p" size="2" mb="2">
-											Receive a daily briefing via email or RSS with the most
-											popular links in your network, scheduled at your preferred
-											time.
-										</Text>
-										<NavLink to="/email">
-											<Button variant="solid" size="1">
-												Setup Daily Digest
-											</Button>
-										</NavLink>
+										<Box my="5">
+											<Heading as="h4" size="4" mb="2">
+												Daily Digest
+											</Heading>
+											<Text as="p" size="2" mb="2">
+												Get a daily curated email or RSS feed of the most
+												popular links from your network, delivered at your
+												preferred time.
+											</Text>
+											<Link asChild size="2">
+												<NavLink to="/email">Setup Daily Digest →</NavLink>
+											</Link>
+										</Box>
 
-										<Separator size="4" my="4" />
-
-										<Heading as="h4" size="4" mb="2">
-											Custom notifications
-										</Heading>
-										<Text as="p" size="2" mb="2">
-											Receive notifications via email or RSS when links match
-											keywords, share counts, domains, and more.
-										</Text>
-										<NavLink to="/notifications">
-											<Button variant="solid" size="1">
-												Setup Notifications
-											</Button>
-										</NavLink>
-										<Separator size="4" my="4" />
-
-										<Heading as="h4" size="4" mb="2">
-											Connect lists and feeds
-										</Heading>
-										<Text as="p" size="2" mb="2">
-											Have Sill monitor any custom lists or feeds you use.
-										</Text>
-										<NavLink to="/connect">
-											<Button variant="solid" size="1" mb="4">
-												Connect lists
-											</Button>
-										</NavLink>
-										<Separator size="4" my="4" />
-										<Heading as="h4" size="4" mb="2">
-											Subscribe to Sill+
-										</Heading>
-										<Text as="p" size="2" mb="2">
-											Sill+ costs $5/month or $50/year. Subscribe now to keep
-											using these features.
-										</Text>
+										<Box my="5">
+											<Heading as="h4" size="4" mb="2">
+												Custom notifications
+											</Heading>
+											<Text as="p" size="2" mb="2">
+												Set up personalized email or RSS alerts for any criteria
+												you define, from popularity thresholds to specific
+												keywords.
+											</Text>
+											<Link asChild size="2">
+												<NavLink to="/notifications">
+													Setup notifications →
+												</NavLink>
+											</Link>
+										</Box>
+										<Box my="5">
+											<Heading as="h4" size="4" mb="2">
+												Connect lists and feeds
+											</Heading>
+											<Text as="p" size="2" mb="2">
+												Track links from your favorite custom lists and feeds on
+												Bluesky or Mastodon.
+											</Text>
+											<Link asChild size="2">
+												<NavLink to="/connect">Connect lists →</NavLink>
+											</Link>
+										</Box>
 										<NavLink to="/settings/subscription">
-											<Button variant="solid" size="1" mb="4">
-												Subscribe
+											<Button variant="solid" size="2" mb="4">
+												Subscribe now
 											</Button>
 										</NavLink>
 									</Card>
 								)}
-
-								<Text as="p" mb="4">
-									<NavLink to="/links">
-										<Button variant="solid">
-											View your most popular links
-										</Button>
-									</NavLink>
-								</Text>
 							</Box>
 						);
 					}}

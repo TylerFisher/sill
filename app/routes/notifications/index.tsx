@@ -200,8 +200,7 @@ export default function Notifications({
 							<CircleAlert width="18" height="18" />
 						</Callout.Icon>
 						<Callout.Text size="2">
-							Notifications are part of Sill+. You have access to Sill+ for the
-							duration of your 14-day free trial.{" "}
+							Notifications are part of Sill+.{" "}
 							<Link href="/settings/subscription">Subscribe now</Link> to
 							maintain access.
 						</Callout.Text>
