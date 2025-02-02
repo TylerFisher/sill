@@ -106,6 +106,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 						digestUrl={digestUrl}
 						layout={digest.layout}
 						subscribed={subscribed}
+						freeTrialEnd={dbUser.freeTrialEnd}
 					/>,
 				)),
 			};

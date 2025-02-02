@@ -18,6 +18,7 @@ interface TopLinksProps {
 	digestUrl: string;
 	layout: "default" | "dense";
 	subscribed: SubscriptionStatus;
+	freeTrialEnd: Date | null;
 }
 
 const TopLinks = ({
@@ -26,6 +27,7 @@ const TopLinks = ({
 	digestUrl,
 	layout,
 	subscribed,
+	freeTrialEnd,
 }: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
@@ -62,7 +64,9 @@ const TopLinks = ({
 					<Heading as="h3" style={date}>
 						{today}
 					</Heading>
-					{subscribed === "trial" && <PlusTrial type="Daily Digests" />}
+					{subscribed === "trial" && freeTrialEnd && (
+						<PlusTrial type="Daily Digests" endDate={freeTrialEnd} />
+					)}
 					<Text>{intro(name)}</Text>
 					<Text>{linkPlug(digestUrl)}</Text>
 					{links.map((linkPost, i) => (

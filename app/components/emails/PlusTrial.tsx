@@ -1,10 +1,13 @@
 import { Link, Section, Text } from "@react-email/components";
+import { daysRemaining } from "~/utils/misc";
 
-const PlusTrial = ({ type }: { type: string }) => {
+const PlusTrial = ({ type, endDate }: { type: string; endDate: Date }) => {
+	const remaining = daysRemaining(endDate);
+	const days = remaining === 1 ? "day" : "days";
 	return (
 		<Section style={section}>
 			<Text>
-				You are on a free trial of Sill+.{" "}
+				You have {remaining} {days} remaining in your Sill+ free trial.{" "}
 				<Link
 					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
 				>

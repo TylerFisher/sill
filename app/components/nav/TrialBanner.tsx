@@ -4,6 +4,8 @@ import styles from "./TrialBanner.module.css";
 import { daysRemaining } from "~/utils/misc";
 
 const TrialBanner = ({ endDate }: { endDate: Date }) => {
+	const remaining = daysRemaining(endDate);
+	const days = remaining === 1 ? "day" : "days";
 	return (
 		<Flex
 			justify="center"
@@ -13,8 +15,8 @@ const TrialBanner = ({ endDate }: { endDate: Date }) => {
 			className={styles.banner}
 		>
 			<Text>
-				You have {daysRemaining(endDate)} days remaining in your Sill+ free
-				trial. <Link to="/settings/subscription">Subscribe now</Link>.
+				You have {remaining} {days} remaining in your Sill+ free trial.{" "}
+				<Link to="/settings/subscription">Subscribe now</Link>.
 			</Text>
 		</Flex>
 	);

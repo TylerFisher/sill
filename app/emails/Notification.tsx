@@ -10,9 +10,15 @@ interface NotificationProps {
 	links: MostRecentLinkPosts[];
 	groupName: string;
 	subscribed: SubscriptionStatus;
+	freeTrialEnd: Date | null;
 }
 
-const Notification = ({ links, groupName, subscribed }: NotificationProps) => {
+const Notification = ({
+	links,
+	groupName,
+	subscribed,
+	freeTrialEnd,
+}: NotificationProps) => {
 	const firstLink = links[0].link;
 	if (!firstLink) return null;
 	const host = new URL(firstLink.url).host;
@@ -22,7 +28,9 @@ const Notification = ({ links, groupName, subscribed }: NotificationProps) => {
 			preview={links[0].link?.description || `New link from ${host}`}
 		>
 			<Heading as="h1">New links found for {groupName}</Heading>
-			{subscribed === "trial" && <PlusTrial type="notifications" />}
+			{subscribed === "trial" && freeTrialEnd && (
+				<PlusTrial type="notifications" endDate={freeTrialEnd} />
+			)}
 			{links.map((linkPost, i) => (
 				<>
 					<LinkPost

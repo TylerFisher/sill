@@ -119,6 +119,7 @@ async function processQueue() {
 									links={newItems}
 									groupName={group.name}
 									subscribed={subscribed}
+									freeTrialEnd={groupUser.freeTrialEnd}
 								/>,
 							)),
 						};
