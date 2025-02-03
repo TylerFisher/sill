@@ -132,7 +132,7 @@ export const getMastodonTimeline = async (
 		};
 	},
 ) => {
-	const yesterday = new Date(Date.now() - ONE_DAY_MS);
+	const yesterday = new Date(Date.now() - 10800000);
 
 	let client: mastodon.rest.Client | null = null;
 
@@ -294,7 +294,7 @@ export const getLinksFromMastodon = async (
 		const timeline = await Promise.race([
 			timelinePromise,
 			new Promise<mastodon.v1.Status[]>((_, reject) =>
-				setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000),
+				setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
 			),
 		]);
 
@@ -309,7 +309,7 @@ export const getLinksFromMastodon = async (
 			const listPosts = await Promise.race([
 				getMastodonList(list.uri, account),
 				new Promise<mastodon.v1.Status[]>((_, reject) =>
-					setTimeout(() => reject(new Error("List fetch timeout")), 120000),
+					setTimeout(() => reject(new Error("List fetch timeout")), 60000),
 				),
 			]);
 
