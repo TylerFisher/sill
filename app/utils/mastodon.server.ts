@@ -294,7 +294,7 @@ export const getLinksFromMastodon = async (
 		const timeline = await Promise.race([
 			timelinePromise,
 			new Promise<mastodon.v1.Status[]>((_, reject) =>
-				setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
+				setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000),
 			),
 		]);
 
@@ -309,7 +309,7 @@ export const getLinksFromMastodon = async (
 			const listPosts = await Promise.race([
 				getMastodonList(list.uri, account),
 				new Promise<mastodon.v1.Status[]>((_, reject) =>
-					setTimeout(() => reject(new Error("List fetch timeout")), 60000),
+					setTimeout(() => reject(new Error("List fetch timeout")), 120000),
 				),
 			]);
 
