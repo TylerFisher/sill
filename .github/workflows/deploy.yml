@@ -124,17 +124,17 @@ jobs:
           source: ".env,docker-compose-deploy.yml"
           target: "/tmp"
 
-      - name: Create dozzle/data directory and copy user.yml
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            sudo mkdir -p ${{ env.ROOT_DIRECTORY }}/dozzle/data
-            cat ${{ secrets.DOZZLE_USER_YAML }} > ${{ env.ROOT_DIRECTORY }}/dozzle/data/users.yml
-            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} ${{ env.ROOT_DIRECTORY }}/dozzle
-            sudo chmod 600 ${{ env.ROOT_DIRECTORY }}/dozzle/data/users.yml
+      # - name: Create dozzle/data directory and copy user.yml
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ secrets.HOST }}
+      #     username: ${{ secrets.USER }}
+      #     key: ${{ secrets.SSH_KEY }}
+      #     script: |
+      #       sudo mkdir -p ${{ env.ROOT_DIRECTORY }}/dozzle/data
+      #       cat ${{ secrets.DOZZLE_USER_YAML }} > ${{ env.ROOT_DIRECTORY }}/dozzle/data/users.yml
+      #       sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} ${{ env.ROOT_DIRECTORY }}/dozzle
+      #       sudo chmod 600 ${{ env.ROOT_DIRECTORY }}/dozzle/data/users.yml
 
       - name: Move files to ROOT_DIRECTORY and set permissions
         uses: appleboy/ssh-action@v1.0.3
