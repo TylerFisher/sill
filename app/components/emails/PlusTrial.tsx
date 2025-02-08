@@ -8,10 +8,7 @@ const PlusTrial = ({ type, endDate }: { type: string; endDate: Date }) => {
 		<Section style={section}>
 			<Text>
 				You have {remaining} {days} remaining in your Sill+ free trial.{" "}
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
-					style={link}
-				>
+				<Link href="https://sill.social/settings/subscription" style={link}>
 					Subscribe today
 				</Link>{" "}
 				to maintain access to your {type}.

@@ -41,17 +41,10 @@ const Notification = ({
 					{i < links.length - 1 && <Hr style={hr("default")} />}
 				</>
 			))}
-			<Button
-				href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}
-				style={button}
-			>
+			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>
-			<Text>
-				{notificationOutro(
-					`${import.meta.env.VITE_PUBLIC_DOMAIN}/notifications`,
-				)}
-			</Text>
+			<Text>{notificationOutro("https://sill.social/notifications")}</Text>
 		</EmailLayout>
 	);
 };

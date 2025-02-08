@@ -93,7 +93,7 @@ const EmailSettingForm = ({
 						type="url"
 						name="rssUrl"
 						id="rssUrl"
-						value={`${import.meta.env.VITE_PUBLIC_DOMAIN}/digest/${currentSettings?.userId}.rss`}
+						value={`https://sill.social/digest/${currentSettings?.userId}.rss`}
 						readOnly
 					>
 						<TextField.Slot />
@@ -105,7 +105,7 @@ const EmailSettingForm = ({
 							}}
 						>
 							<CopyLink
-								url={`${import.meta.env.VITE_PUBLIC_DOMAIN}/digest/${currentSettings?.userId}.rss`}
+								url={`https://sill.social/digest/${currentSettings?.userId}.rss`}
 								textPositioning={{
 									position: "absolute",
 									top: "-28px",

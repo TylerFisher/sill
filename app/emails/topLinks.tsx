@@ -46,7 +46,7 @@ const TopLinks = ({
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
 						<Link
-							href={import.meta.env.VITE_PUBLIC_DOMAIN}
+							href="https://sill.social"
 							style={{
 								color: "#9E6C00",
 							}}
@@ -58,12 +58,12 @@ const TopLinks = ({
 					<Text>
 						If this doesn't work for you, please email{" "}
 						<Link
-							href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+							href="mailto:tyler@sill.social"
 							style={{
 								color: "#9E6C00",
 							}}
 						>
-							{import.meta.env.VITE_ADMIN_EMAIL}
+							tyler@sill.social
 						</Link>
 						.
 					</Text>
@@ -90,15 +90,12 @@ const TopLinks = ({
 							{i < links.length - 1 && <Hr style={hr(layout)} />}
 						</>
 					))}
-					<Button
-						href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}
-						style={button}
-					>
+					<Button href="https://sill.social/links" style={button}>
 						See all links on Sill
 					</Button>
 				</>
 			)}
-			<Text>{digestOutro(`${import.meta.env.VITE_PUBLIC_DOMAIN}/email`)}</Text>
+			<Text>{digestOutro("https://sill.social/email")}</Text>
 		</EmailLayout>
 	);
 };

@@ -33,9 +33,7 @@ const RSSNotificationItem = ({
 			{subscribed === "trial" && (
 				<Text as="p">
 					You are on a free trial of Sill+.{" "}
-					<Link
-						href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
-					>
+					<Link href="https://sill.social/settings/subscription">
 						Subscribe now
 					</Link>{" "}
 					to maintain access.
@@ -53,9 +51,7 @@ const RSSNotificationItem = ({
 				</Box>
 			))}
 			<Text as="p">
-				{notificationOutro(
-					`${import.meta.env.VITE_PUBLIC_DOMAIN}/notifications`,
-				)}
+				{notificationOutro("https://sill.social/notifications")}
 			</Text>
 		</Box>
 	);

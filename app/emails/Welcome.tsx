@@ -14,10 +14,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Hello{name ? ` ${name}` : ""}, thanks for signing up for Sill!
 				Hopefully, by now, you've connected your Bluesky and/or Mastodon
 				accounts. If not, you can do that{" "}
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/connect`}
-					style={linkStyles}
-				>
+				<Link href="https://sill.social/connect" style={linkStyles}>
 					here.
 				</Link>
 			</Text>
@@ -37,7 +34,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Counting unique actors protects against one account spamming your feed.
 			</Text>
 			<Img
-				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/post-example.png`}
+				src="https://sill.social/marketing/post-example.png"
 				alt="Sill popularity ranking example"
 				style={imgStyles}
 			/>
@@ -51,7 +48,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 			<Heading as="h2">How to Use Sill</Heading>
 			<Text>Sill offers a few different ways to filter your feed.</Text>
 			<Img
-				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/filters.png`}
+				src="https://sill.social/marketing/filters.png"
 				alt="Sill feed filters"
 				style={imgStyles}
 			/>
@@ -64,7 +61,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				items from the last 3 hours that are not reposts.
 			</Text>
 			<Img
-				src={`${import.meta.env.VITE_PUBLIC_DOMAIN}/marketing/mute.png`}
+				src="https://sill.social/marketing/mute.png"
 				alt="Screenshot of the UI for muting users and domains"
 				style={imgStyles}
 			/>
@@ -72,30 +69,19 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				If you don't want to see posts from certain users or links from certain
 				domains, you can mute them. Use the mute button on a link or a post to
 				add domains and accounts to your mute list. You can also go to{" "}
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/moderation`}
-					style={linkStyles}
-				>
+				<Link href="https://sill.social/moderation" style={linkStyles}>
 					your mute settings
 				</Link>{" "}
 				to manage your mute list and add custom mute phrases.
 			</Text>
-			<Heading as="h2">Your trial of Sill+</Heading>
-			<Text>
-				By signing up for a new account with Sill, you've been given a free
-				14-day trial of Sill+. Sill+ is a paid subscription that offers a few
-				extra features:
-			</Text>
+			<Heading as="h2">Additional features</Heading>
 			<Heading as="h4">Daily Digest</Heading>
 			<Text>
 				Get a daily curated email or RSS feed of the most popular links from
 				your network, delivered at your preferred time.
 			</Text>
 			<Text>
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/email`}
-					style={linkStyles}
-				>
+				<Link href="https://sill.social/email" style={linkStyles}>
 					Set up your Daily Digest →
 				</Link>
 			</Text>
@@ -105,10 +91,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				from popularity thresholds to specific keywords.
 			</Text>
 			<Text>
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/notifications`}
-					style={linkStyles}
-				>
+				<Link href="https://sill.social/notifications" style={linkStyles}>
 					Set up custom notifications →
 				</Link>
 			</Text>
@@ -118,33 +101,17 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Mastodon.
 			</Text>
 			<Text>
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/connect`}
-					style={linkStyles}
-				>
+				<Link href="https://sill.social/connect" style={linkStyles}>
 					Connect your lists →
 				</Link>
-			</Text>
-			<Text>
-				A Sill+ subscription is $5/month or $50/year. You can sign up for Sill+{" "}
-				<Link
-					href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/settings/subscription`}
-					style={linkStyles}
-				>
-					here
-				</Link>
-				.
 			</Text>
 
 			<Heading as="h2">Send Us Your Feedback!</Heading>
 			<Text>
 				We're always looking to improve Sill. If you have any feedback or
 				suggestions, you can reach out to{" "}
-				<Link
-					href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
-					style={linkStyles}
-				>
-					{import.meta.env.VITE_ADMIN_EMAIL}
+				<Link href={"mailto:tyler@sill.social"} style={linkStyles}>
+					tyler@sill.social
 				</Link>
 				.
 			</Text>

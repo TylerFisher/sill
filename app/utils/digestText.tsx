@@ -23,13 +23,13 @@ export const digestOutro = (settingsUrl: string) => (
 		{" "}
 		Feedback? Email{" "}
 		<a
-			href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+			href="mailto:tyler@sill.social"
 			style={{
 				color: "#9E6C00",
 				textDecoration: "none",
 			}}
 		>
-			{import.meta.env.VITE_ADMIN_EMAIL}
+			tyler@sill.social
 		</a>
 		. Want to stop getting the Daily Digest? Adjust your digest settings{" "}
 		<a
@@ -50,13 +50,13 @@ export const notificationOutro = (settingsUrl: string) => (
 		{" "}
 		Feedback? Email{" "}
 		<a
-			href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+			href="mailto:tyler@sill.social"
 			style={{
 				color: "#9E6C00",
 				textDecoration: "none",
 			}}
 		>
-			{import.meta.env.VITE_ADMIN_EMAIL}
+			tyler@sill.social
 		</a>
 		. Want to stop getting these notifications? Adjust your notification
 		settings{" "}
