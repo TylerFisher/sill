@@ -1,15 +1,18 @@
-import { Box, Text, Flex, Heading, Callout } from "@radix-ui/themes";
+import { Box, Text, Flex, Heading, Callout, Link } from "@radix-ui/themes";
 import ListSwitch, { type ListOption } from "./ListSwitch";
 import type { AccountWithInstance } from "./MastodonConnectForm";
 import type { blueskyAccount } from "~/drizzle/schema.server";
-import { Circle, CircleAlert } from "lucide-react";
+import { CircleAlert } from "lucide-react";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 const Lists = ({
 	listOptions,
 	account,
+	subscribed,
 }: {
 	listOptions: ListOption[];
 	account: AccountWithInstance | typeof blueskyAccount.$inferSelect;
+	subscribed: SubscriptionStatus;
 }) => {
 	return (
 		<Box mt="4">
@@ -20,22 +23,39 @@ const Lists = ({
 				Sill will track any enabled lists for new links. Sill works best with
 				chronological lists rather than algorithmic ones.
 			</Text>
-			{listOptions.length > 0 && (
-				<Flex direction="column" gap="4">
-					{listOptions.map((list) => (
-						<ListSwitch key={list.uri} item={list} account={account} />
-					))}
-				</Flex>
+			{subscribed === "free" ? (
+				<Callout.Root mt="4">
+					<Callout.Icon>
+						<CircleAlert width="18" height="18" />
+					</Callout.Icon>
+					<Callout.Text>
+						Access to lists requires a Sill+ subscription.{" "}
+						<Link href="/settings/subscription">Subscribe now.</Link>
+					</Callout.Text>
+				</Callout.Root>
+			) : (
+				<>
+					{listOptions.length > 0 && (
+						<Flex direction="column" gap="4">
+							{listOptions.map((list) => (
+								<ListSwitch key={list.uri} item={list} account={account} />
+							))}
+						</Flex>
+					)}
+					{subscribed === "trial" && (
+						<Callout.Root mt="4">
+							<Callout.Icon>
+								<CircleAlert width="18" height="18" />
+							</Callout.Icon>
+							<Callout.Text>
+								Lists are part of Sill+.{" "}
+								<Link href="/settings/subscription">Subscribe now</Link> to
+								maintain access.
+							</Callout.Text>
+						</Callout.Root>
+					)}
+				</>
 			)}
-			<Callout.Root mt="4">
-				<Callout.Icon>
-					<CircleAlert width="18" height="18" />
-				</Callout.Icon>
-				<Callout.Text>
-					Access to lists is free during Sill's beta period. This will be part
-					of Sill's paid plan in the future.
-				</Callout.Text>
-			</Callout.Root>
 		</Box>
 	);
 };

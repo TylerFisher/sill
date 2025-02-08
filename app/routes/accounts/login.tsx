@@ -1,7 +1,14 @@
 import type { Route } from "./+types/login";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Callout,
+	Flex,
+	Link as RLink,
+	Heading,
+	Text,
+} from "@radix-ui/themes";
 import { data, Form, Link, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
@@ -11,10 +18,10 @@ import { login, requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { handleNewSession } from "~/utils/login.server";
 import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
-
 import ErrorList from "~/components/forms/ErrorList";
 import Layout from "~/components/nav/Layout";
 import SubmitButton from "~/components/forms/SubmitButton";
+import { CircleAlert } from "lucide-react";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Login" }];
 
@@ -88,7 +95,22 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Login</Heading>
+				<Heading size="8">Log in</Heading>
+			</Box>
+			<Box mb="5">
+				<Callout.Root color="red">
+					<Callout.Icon>
+						<CircleAlert />
+					</Callout.Icon>
+					<Callout.Text>
+						Sill recently experienced data loss. If you had a Sill account
+						before February 8, 2025, you may need to{" "}
+						<RLink asChild>
+							<Link to="/accounts/signup">sign up</Link>
+						</RLink>{" "}
+						again. We apologize for the inconvenience.
+					</Callout.Text>
+				</Callout.Root>
 			</Box>
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
@@ -125,9 +147,11 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 							errors={fields.remember.errors}
 						/>
 						<Box>
-							<Link to="/accounts/forgot-password">
-								<Text size="2">Forgot password?</Text>
-							</Link>
+							<RLink asChild>
+								<Link to="/accounts/forgot-password">
+									<Text size="2">Forgot password?</Text>
+								</Link>
+							</RLink>
 						</Box>
 					</Flex>
 				</Box>
@@ -138,15 +162,17 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 
 				<Box mt="5">
 					<Text size="2">New here? </Text>
-					<Link
-						to={
-							redirectTo
-								? `/accounts/signup?${encodeURIComponent(redirectTo)}`
-								: "/accounts/signup"
-						}
-					>
-						<Text size="2">Create an account</Text>
-					</Link>
+					<RLink asChild>
+						<Link
+							to={
+								redirectTo
+									? `/accounts/signup?${encodeURIComponent(redirectTo)}`
+									: "/accounts/signup"
+							}
+						>
+							<Text size="2">Create an account</Text>.
+						</Link>
+					</RLink>
 				</Box>
 			</Form>
 		</Layout>

@@ -23,13 +23,24 @@ const Footer = ({
 				)}
 				<ThemeSwitch userPreference={theme} id={themeFormId} />
 			</Flex>
+			<Flex mb="1" gap="1" direction="row" align="center" wrap="wrap">
+				<>
+					<Text size="1">
+						<Link href="https://terms.sill.social/terms.html">Terms</Link>
+					</Text>
+					·
+					<Text size="1">
+						<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
+					</Text>
+					·
+					<Text size="1">
+						<Link href="https://terms.sill.social/copyright.html">DMCA</Link>
+					</Text>
+				</>
+			</Flex>
 			<Flex mb="4" gap="2" direction="row" align="center" wrap="wrap">
 				<Text size="1">
-					<Link href="https://terms.sill.social/privacy.html">Privacy</Link>
-				</Text>
-				·
-				<Text size="1">
-					Built by <Link href="https://www.tylerjfisher.com">Tyler Fisher</Link>
+					Built by <Link href="https://euphonos.studio">Euphonos</Link>
 				</Text>
 			</Flex>
 		</Box>

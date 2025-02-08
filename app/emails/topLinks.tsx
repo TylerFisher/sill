@@ -1,6 +1,8 @@
 import { Button, Heading, Hr, Link, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
+import PlusTrial from "~/components/emails/PlusTrial";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import {
 	digestOutro,
 	intro,
@@ -15,9 +17,18 @@ interface TopLinksProps {
 	name: string | null;
 	digestUrl: string;
 	layout: "default" | "dense";
+	subscribed: SubscriptionStatus;
+	freeTrialEnd: Date | null;
 }
 
-const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
+const TopLinks = ({
+	links,
+	name,
+	digestUrl,
+	layout,
+	subscribed,
+	freeTrialEnd,
+}: TopLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -34,12 +45,27 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 						It looks like Sill doesn't have any links for you. This is likely
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
-						<Link href="https://sill.social">log back into Sill</Link>. You may
-						be redirected to Bluesky or Mastodon to reauthorize Sill.
+						<Link
+							href={import.meta.env.VITE_PUBLIC_DOMAIN}
+							style={{
+								color: "#9E6C00",
+							}}
+						>
+							log back into Sill
+						</Link>
+						. You may be redirected to Bluesky or Mastodon to reauthorize Sill.
 					</Text>
 					<Text>
 						If this doesn't work for you, please email{" "}
-						<Link href="mailto:tyler@sill.social">tyler@sill.social</Link>.
+						<Link
+							href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+							style={{
+								color: "#9E6C00",
+							}}
+						>
+							{import.meta.env.VITE_ADMIN_EMAIL}
+						</Link>
+						.
 					</Text>
 				</>
 			) : (
@@ -48,6 +74,9 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 					<Heading as="h3" style={date}>
 						{today}
 					</Heading>
+					{subscribed === "trial" && freeTrialEnd && (
+						<PlusTrial type="Daily Digests" endDate={freeTrialEnd} />
+					)}
 					<Text>{intro(name)}</Text>
 					<Text>{linkPlug(digestUrl)}</Text>
 					{links.map((linkPost, i) => (
@@ -61,12 +90,15 @@ const TopLinks = ({ links, name, digestUrl, layout }: TopLinksProps) => {
 							{i < links.length - 1 && <Hr style={hr(layout)} />}
 						</>
 					))}
-					<Button href="https://sill.social/links" style={button}>
+					<Button
+						href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}
+						style={button}
+					>
 						See all links on Sill
 					</Button>
 				</>
 			)}
-			<Text>{digestOutro("https://sill.social/email")}</Text>
+			<Text>{digestOutro(`${import.meta.env.VITE_PUBLIC_DOMAIN}/email`)}</Text>
 		</EmailLayout>
 	);
 };

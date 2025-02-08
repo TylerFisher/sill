@@ -1,11 +1,7 @@
 import type { Route } from "./+types/connect";
 import { Box } from "@radix-ui/themes";
-import {
-	type LoaderFunctionArgs,
-	type MetaFunction,
-	redirect,
-} from "react-router";
-import { useLoaderData, useSearchParams } from "react-router";
+import { redirect } from "react-router";
+import { useSearchParams } from "react-router";
 import { eq } from "drizzle-orm";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -14,7 +10,7 @@ import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import PageHeading from "~/components/nav/PageHeading";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
 
@@ -49,9 +45,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		return redirect("accounts/login") as never;
 	}
 
+	const subscribed = await isSubscribed(userId);
+
 	const listOptions: ListOption[] = [];
 
-	if (existingUser.blueskyAccounts.length > 0) {
+	if (existingUser.blueskyAccounts.length > 0 && subscribed) {
 		try {
 			listOptions.push(
 				...(await getBlueskyLists(existingUser.blueskyAccounts[0])),
@@ -61,7 +59,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 	}
 
-	if (existingUser.mastodonAccounts.length > 0) {
+	if (existingUser.mastodonAccounts.length > 0 && subscribed !== "free") {
 		try {
 			listOptions.push(
 				...(await getMastodonLists(existingUser.mastodonAccounts[0])),
@@ -71,11 +69,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 	}
 
-	return { user: existingUser, listOptions };
+	return { user: existingUser, listOptions, subscribed };
 };
 
 const Connect = ({ loaderData }: Route.ComponentProps) => {
-	const { user, listOptions } = loaderData;
+	const { user, listOptions, subscribed } = loaderData;
 	if (!user) return null;
 	const [searchParams] = useSearchParams();
 	const onboarding = searchParams.get("onboarding");
@@ -89,11 +87,13 @@ const Connect = ({ loaderData }: Route.ComponentProps) => {
 			</Box>
 			<BlueskyConnectForm
 				account={user.blueskyAccounts[0]}
+				subscribed={subscribed}
 				searchParams={searchParams}
 				listOptions={listOptions.filter((l) => l.type === "bluesky")}
 			/>
 			<MastodonConnectForm
 				account={user.mastodonAccounts[0]}
+				subscribed={subscribed}
 				searchParams={searchParams}
 				listOptions={listOptions.filter((l) => l.type === "mastodon")}
 			/>

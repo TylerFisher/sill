@@ -13,27 +13,26 @@ import type { blueskyAccount } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 interface BlueskyConnectFormProps {
 	account: typeof blueskyAccount.$inferSelect | null;
 	searchParams: URLSearchParams;
 	listOptions: ListOption[];
+	subscribed: SubscriptionStatus;
 }
 
 const BlueskyConnectForm = ({
 	account,
 	searchParams,
 	listOptions,
+	subscribed,
 }: BlueskyConnectFormProps) => {
 	return (
 		<Card mb="6">
 			<Heading size="5" mb="1">
 				Bluesky
 			</Heading>
-			{/* <Text size="2" as="p" mb="3">
-				Bluesky is experiencing some issues right now. We will reenable
-				connection when Bluesky is stable.
-			</Text> */}
 			{account ? (
 				<>
 					<Text size="2" as="p" mb="3">
@@ -42,7 +41,11 @@ const BlueskyConnectForm = ({
 					<Form action="/bluesky/auth/revoke" method="post">
 						<SubmitButton label="Disconnect" color="red" size="2" />
 					</Form>
-					<Lists listOptions={listOptions} account={account} />
+					<Lists
+						listOptions={listOptions}
+						account={account}
+						subscribed={subscribed}
+					/>
 				</>
 			) : (
 				<Form action="/bluesky/auth" method="GET">
@@ -67,7 +70,7 @@ const BlueskyConnectForm = ({
 								We couldn't find a Bluesky account with that handle. Please try
 								again. Make sure you use the full handle (e.g.
 								myusername.bsky.social). If you use a custom domain as your
-								handle, use that instead (e.g. tylerjfisher.com).
+								handle, use that instead (e.g. sill.social).
 							</Callout.Text>
 						</Callout.Root>
 					)}

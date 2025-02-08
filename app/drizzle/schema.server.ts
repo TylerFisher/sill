@@ -270,6 +270,8 @@ export const user = pgTable(
 		id: uuid().primaryKey().notNull(),
 		email: text().notNull().unique(),
 		name: text(),
+		customerId: text().unique(),
+		freeTrialEnd: timestamp({ precision: 3, mode: "date" }),
 		createdAt: timestamp({ precision: 3, mode: "date" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
@@ -398,6 +400,61 @@ export const accountUpdateRelations = relations(
 	}),
 );
 
+export const plan = pgTable("plan", {
+	id: uuid().primaryKey().notNull(),
+	stripeId: text().unique().notNull(),
+	name: text().notNull(),
+	description: text(),
+	createdAt: timestamp().defaultNow(),
+});
+
+export const price = pgTable("price", {
+	id: uuid().primaryKey().notNull(),
+	stripeId: text().unique().notNull(),
+	amount: integer().notNull(),
+	currency: text().notNull(),
+	interval: text().notNull(),
+	planId: uuid()
+		.notNull()
+		.references(() => plan.id),
+	createdAt: timestamp().defaultNow(),
+});
+
+export const subscription = pgTable("subscription", {
+	id: uuid().primaryKey().notNull(),
+	stripeId: text().unique().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	planId: uuid()
+		.notNull()
+		.references(() => plan.id),
+	priceId: uuid()
+		.notNull()
+		.references(() => price.id),
+	status: text().notNull(),
+	createdAt: timestamp().defaultNow(),
+	periodStart: timestamp(),
+	periodEnd: timestamp(),
+	cancelAtPeriodEnd: boolean().notNull().default(false),
+});
+
+export const termsUpdate = pgTable("terms_update", {
+	id: uuid().primaryKey().notNull(),
+	termsDate: timestamp().notNull(),
+});
+
+export const termsAgreement = pgTable("terms_agreement", {
+	id: uuid().primaryKey().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	createdAt: timestamp().defaultNow(),
+	termsUpdateId: uuid()
+		.notNull()
+		.references(() => termsUpdate.id, { onDelete: "cascade" }),
+});
+
 export const linkPostDenormalizedRelations = relations(
 	linkPostDenormalized,
 	({ one }) => ({
@@ -426,6 +483,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	digestSettings: one(digestSettings),
 	digestItems: many(digestItem),
 	notificationGroups: many(notificationGroup),
+	subscriptions: many(subscription),
 }));
 
 export const passwordRelations = relations(password, ({ one }) => ({
@@ -553,6 +611,49 @@ export const notificationItemRelations = relations(
 		}),
 	}),
 );
+
+export const planRelations = relations(plan, ({ one, many }) => ({
+	prices: many(price),
+	subscriptions: many(subscription),
+}));
+
+export const priceRelations = relations(price, ({ one, many }) => ({
+	plan: one(plan, {
+		fields: [price.planId],
+		references: [plan.id],
+	}),
+	subscriptions: many(subscription),
+}));
+
+export const subscriptionRelations = relations(subscription, ({ one }) => ({
+	user: one(user, {
+		fields: [subscription.userId],
+		references: [user.id],
+	}),
+	plan: one(plan, {
+		fields: [subscription.planId],
+		references: [plan.id],
+	}),
+	price: one(price, {
+		fields: [subscription.priceId],
+		references: [price.id],
+	}),
+}));
+
+export const termsUpdateRelations = relations(termsUpdate, ({ many }) => ({
+	agreements: many(termsAgreement),
+}));
+
+export const termsAgreementRelations = relations(termsAgreement, ({ one }) => ({
+	user: one(user, {
+		fields: [termsAgreement.userId],
+		references: [user.id],
+	}),
+	termsUpdate: one(termsUpdate, {
+		fields: [termsAgreement.termsUpdateId],
+		references: [termsUpdate.id],
+	}),
+}));
 
 export const getUniqueActorsCountSql = (
 	postMuteCondition: unknown,

@@ -12,6 +12,7 @@ import {
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
 import { preview, subject } from "~/utils/digestText";
+import { isSubscribed } from "~/utils/auth.server";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -47,10 +48,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 		const dbUser = await db.query.user.findFirst({
 			where: eq(user.id, digest.userId),
+			with: { subscriptions: true },
 		});
 
 		if (!dbUser) {
 			throw new Error("Couldn't find user for email");
+		}
+		const subscribed = await isSubscribed(dbUser.id);
+
+		if (subscribed === "free") {
+			continue;
 		}
 
 		let links: MostRecentLinkPosts[] = [];
@@ -88,7 +95,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 		if (digest.digestType === "email") {
 			const emailBody = {
-				from: "Sill <noreply@e.sill.social>",
+				from: `Sill <noreply@${process.env.EMAIL_DOMAIN}>`,
 				to: dbUser.email,
 				subject: links.length === 0 ? "No links found" : subject,
 				"o:tag": "digest",
@@ -98,6 +105,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 						name={dbUser.name}
 						digestUrl={digestUrl}
 						layout={digest.layout}
+						subscribed={subscribed}
+						freeTrialEnd={dbUser.freeTrialEnd}
 					/>,
 				)),
 			};
@@ -114,7 +123,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			});
 			digestItemValues.feedId = rssFeed?.id;
 			digestItemValues.html = renderToString(
-				<RSSLinks links={links} name={dbUser.name} digestUrl={digestUrl} />,
+				<RSSLinks
+					links={links}
+					name={dbUser.name}
+					digestUrl={digestUrl}
+					subscribed={subscribed}
+				/>,
 			);
 		}
 

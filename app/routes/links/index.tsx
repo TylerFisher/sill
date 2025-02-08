@@ -22,7 +22,7 @@ import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
-import { requireUserId } from "~/utils/auth.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
@@ -38,6 +38,7 @@ export const config = {
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
+	const subscribed = await isSubscribed(userId);
 
 	// Check if we need to reauthenticate with Bluesky
 	const bsky = await db.query.blueskyAccount.findFirst({
@@ -117,16 +118,20 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const links = filterLinkOccurrences({
 		userId,
 		time,
-		fetch: false,
+		fetch: process.env.NODE_ENV === "development",
 		...options,
 	});
+
+	const lists = subscribed
+		? [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])]
+		: [];
 
 	return {
 		links,
 		key: uuidv7(),
 		instance: mastodon?.mastodonInstance.instance,
 		bsky: bsky?.handle,
-		lists: [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])],
+		lists,
 	};
 };
 

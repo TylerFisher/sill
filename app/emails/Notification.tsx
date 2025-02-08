@@ -1,15 +1,24 @@
 import { Button, Heading, Hr, Text } from "@react-email/components";
 import EmailLayout from "~/components/emails/Layout";
 import LinkPost from "~/components/emails/LinkPost";
+import PlusTrial from "~/components/emails/PlusTrial";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import { notificationOutro } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface NotificationProps {
 	links: MostRecentLinkPosts[];
 	groupName: string;
+	subscribed: SubscriptionStatus;
+	freeTrialEnd: Date | null;
 }
 
-const Notification = ({ links, groupName }: NotificationProps) => {
+const Notification = ({
+	links,
+	groupName,
+	subscribed,
+	freeTrialEnd,
+}: NotificationProps) => {
 	const firstLink = links[0].link;
 	if (!firstLink) return null;
 	const host = new URL(firstLink.url).host;
@@ -19,6 +28,9 @@ const Notification = ({ links, groupName }: NotificationProps) => {
 			preview={links[0].link?.description || `New link from ${host}`}
 		>
 			<Heading as="h1">New links found for {groupName}</Heading>
+			{subscribed === "trial" && freeTrialEnd && (
+				<PlusTrial type="notifications" endDate={freeTrialEnd} />
+			)}
 			{links.map((linkPost, i) => (
 				<>
 					<LinkPost
@@ -29,10 +41,17 @@ const Notification = ({ links, groupName }: NotificationProps) => {
 					{i < links.length - 1 && <Hr style={hr("default")} />}
 				</>
 			))}
-			<Button href="https://sill.social/links" style={button}>
+			<Button
+				href={`${import.meta.env.VITE_PUBLIC_DOMAIN}/links`}
+				style={button}
+			>
 				See all links on Sill
 			</Button>
-			<Text>{notificationOutro("https://sill.social/notifications")}</Text>
+			<Text>
+				{notificationOutro(
+					`${import.meta.env.VITE_PUBLIC_DOMAIN}/notifications`,
+				)}
+			</Text>
 		</EmailLayout>
 	);
 };

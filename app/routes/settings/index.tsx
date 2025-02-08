@@ -8,7 +8,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Account Settings" },
@@ -16,11 +16,12 @@ export const meta: Route.MetaFunction = () => [
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);
+	const subscribed = await isSubscribed(userId);
 	const existingUser = await db.query.user.findFirst({
 		where: eq(user.id, userId),
 	});
 	invariantResponse(existingUser, "User not found", { status: 404 });
-	return { user: existingUser };
+	return { user: existingUser, subscribed };
 }
 
 export default function EditUserProfile({ loaderData }: Route.ComponentProps) {
@@ -85,6 +86,20 @@ export default function EditUserProfile({ loaderData }: Route.ComponentProps) {
 							</Button>
 						</Link>
 					</Box>
+					{/* <Box>
+						<Link to="/settings/subscription">
+							<Button
+								variant="soft"
+								style={{
+									width: "100%",
+								}}
+							>
+								{loaderData.subscribed === "plus"
+									? "Manage subscription"
+									: "Subscribe to Sill+"}
+							</Button>
+						</Link>
+					</Box> */}
 
 					<AlertDialog.Root>
 						<AlertDialog.Trigger>

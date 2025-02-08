@@ -18,12 +18,14 @@ const EmailLayout = ({ children, preview }: EmailLayoutProps) => {
 			<Head />
 			<Preview>{preview}</Preview>
 			<Body style={bodyStyles}>
-				<Img
-					src="https://sill.social/email-banner.png"
-					alt="Sill logo"
-					style={imgStyles}
-				/>
-				<Container style={containerStyles}>{children}</Container>
+				<Container style={containerStyles}>
+					<Img
+						src="https://sill.social/email-banner.png"
+						alt="Sill logo"
+						style={imgStyles}
+					/>
+					{children}
+				</Container>
 			</Body>
 		</Html>
 	);

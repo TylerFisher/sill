@@ -12,6 +12,7 @@ import {
 	isShortenedLink,
 	normalizeLink,
 } from "./normalizeLink";
+import { isSubscribed } from "./auth.server";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -305,22 +306,27 @@ export const getLinksFromMastodon = async (
 			)
 		).filter((p) => p !== null);
 
-		for (const list of account.lists) {
-			const listPosts = await Promise.race([
-				getMastodonList(list.uri, account),
-				new Promise<mastodon.v1.Status[]>((_, reject) =>
-					setTimeout(() => reject(new Error("List fetch timeout")), 60000),
-				),
-			]);
+		const subscribed = await isSubscribed(userId);
+		if (subscribed !== "free") {
+			for (const list of account.lists) {
+				const listPosts = await Promise.race([
+					getMastodonList(list.uri, account),
+					new Promise<mastodon.v1.Status[]>((_, reject) =>
+						setTimeout(() => reject(new Error("List fetch timeout")), 60000),
+					),
+				]);
 
-			const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
-			processedResults.push(
-				...(
-					await Promise.all(
-						linksOnly.map(async (t) => processMastodonLink(userId, t, list.id)),
-					)
-				).filter((p) => p !== null),
-			);
+				const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
+				processedResults.push(
+					...(
+						await Promise.all(
+							linksOnly.map(async (t) =>
+								processMastodonLink(userId, t, list.id),
+							),
+						)
+					).filter((p) => p !== null),
+				);
+			}
 		}
 
 		return processedResults;

@@ -19,6 +19,7 @@ import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
 import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
+import { isSubscribed } from "~/utils/auth.server";
 
 const MAX_ERRORS_PER_BATCH = 10;
 
@@ -86,8 +87,13 @@ async function processQueue() {
 			for (const group of notificationGroups) {
 				const groupUser = await db.query.user.findFirst({
 					where: eq(user.id, group.userId),
+					with: { subscriptions: true },
 				});
 				if (!groupUser) {
+					continue;
+				}
+				const subscribed = await isSubscribed(groupUser.id);
+				if (subscribed === "free") {
 					continue;
 				}
 				const newItems = await evaluateNotifications(
@@ -102,21 +108,26 @@ async function processQueue() {
 					);
 					if (group.notificationType === "email") {
 						const emailBody = {
-							from: "Sill <noreply@e.sill.social>",
+							from: `Sill <noreply@${process.env.EMAIL_DOMAIN}>`,
 							to: groupUser.email,
 							subject:
 								newItems[0].link?.title ||
 								`New Sill notification: ${group.name}`,
 							"o:tag": "notification",
 							...(await renderReactEmail(
-								<Notification links={newItems} groupName={group.name} />,
+								<Notification
+									links={newItems}
+									groupName={group.name}
+									subscribed={subscribed}
+									freeTrialEnd={groupUser.freeTrialEnd}
+								/>,
 							)),
 						};
 						await sendEmail(emailBody);
 					} else if (group.notificationType === "rss") {
 						for (const item of newItems) {
 							const html = renderToString(
-								<RSSNotificationItem linkPost={item} />,
+								<RSSNotificationItem linkPost={item} subscribed={subscribed} />,
 							);
 							await db.insert(notificationItem).values({
 								id: uuidv7(),

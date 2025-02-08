@@ -7,7 +7,7 @@
 
 .header-wrapper {
   border-bottom: 1px solid var(--gray-a6);
-  z-index: 2;
+  z-index: 10;
   background-color: var(--accent-2);
 }
 

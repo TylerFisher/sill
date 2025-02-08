@@ -21,25 +21,71 @@ export const intro = (name: string | null) =>
 export const digestOutro = (settingsUrl: string) => (
 	<>
 		{" "}
-		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
-		Want to stop getting the Daily Digest? Adjust your digest settings{" "}
-		<a href={settingsUrl}>here</a>.
+		Feedback? Email{" "}
+		<a
+			href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+			style={{
+				color: "#9E6C00",
+				textDecoration: "none",
+			}}
+		>
+			{import.meta.env.VITE_ADMIN_EMAIL}
+		</a>
+		. Want to stop getting the Daily Digest? Adjust your digest settings{" "}
+		<a
+			href={settingsUrl}
+			style={{
+				color: "#9E6C00",
+				textDecoration: "none",
+			}}
+		>
+			here
+		</a>
+		.
 	</>
 );
 
 export const notificationOutro = (settingsUrl: string) => (
 	<>
 		{" "}
-		Feedback? Email <a href="mailto:tyler@sill.social">tyler@sill.social</a>.
-		Want to stop getting these notifications? Adjust your notification settings{" "}
-		<a href={settingsUrl}>here</a>.
+		Feedback? Email{" "}
+		<a
+			href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`}
+			style={{
+				color: "#9E6C00",
+				textDecoration: "none",
+			}}
+		>
+			{import.meta.env.VITE_ADMIN_EMAIL}
+		</a>
+		. Want to stop getting these notifications? Adjust your notification
+		settings{" "}
+		<a
+			href={settingsUrl}
+			style={{
+				color: "#9E6C00",
+				textDecoration: "none",
+			}}
+		>
+			here
+		</a>
+		.
 	</>
 );
 
 export const linkPlug = (digestUrl: string) => (
 	<>
 		View all of these links and the posts that shared them on{" "}
-		<a href={digestUrl}>Sill</a>.
+		<a
+			href={digestUrl}
+			style={{
+				color: "#9E6C00",
+				textDecoration: "none",
+			}}
+		>
+			Sill
+		</a>
+		.
 	</>
 );
 
