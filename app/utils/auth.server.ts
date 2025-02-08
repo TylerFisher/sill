@@ -322,13 +322,14 @@ export const isSubscribed = async (
 	});
 	if (!dbUser) return "free";
 
-	const subscribed = dbUser?.subscriptions.length > 0;
-	if (!subscribed && dbUser?.freeTrialEnd) {
-		if (new Date() < dbUser.freeTrialEnd) {
-			return "trial";
-		}
-	}
-	return subscribed ? "trial" : "free";
+	// const subscribed = dbUser?.subscriptions.length > 0;
+	// if (!subscribed && dbUser?.freeTrialEnd) {
+	// 	if (new Date() < dbUser.freeTrialEnd) {
+	// 		return "trial";
+	// 	}
+	// }
+
+	return "plus";
 };
 
 export const hasAgreed = async (userId: string) => {
@@ -342,6 +343,6 @@ export const hasAgreed = async (userId: string) => {
 			eq(termsAgreement.userId, userId),
 		),
 	});
-	console.log(userId, latestTerms.id, agreed, !!agreed);
+	// console.log(userId, latestTerms.id, agreed, !!agreed);
 	return !!agreed;
 };

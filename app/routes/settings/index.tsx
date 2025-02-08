@@ -86,7 +86,7 @@ export default function EditUserProfile({ loaderData }: Route.ComponentProps) {
 							</Button>
 						</Link>
 					</Box>
-					<Box>
+					{/* <Box>
 						<Link to="/settings/subscription">
 							<Button
 								variant="soft"
@@ -99,7 +99,7 @@ export default function EditUserProfile({ loaderData }: Route.ComponentProps) {
 									: "Subscribe to Sill+"}
 							</Button>
 						</Link>
-					</Box>
+					</Box> */}
 
 					<AlertDialog.Root>
 						<AlertDialog.Trigger>

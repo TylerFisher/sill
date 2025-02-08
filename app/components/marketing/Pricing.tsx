@@ -74,24 +74,12 @@ const cards = [
 		],
 		cta: "Get started",
 	},
-	{
-		title: "sill+",
-		price: "$5/month or $50/year",
-		features: [
-			"All free features",
-			"Daily Digest via email or RSS",
-			"Custom notifications",
-			"Watch custom lists and feeds",
-		],
-		cta: "Try free for 14 days",
-		highlight: true,
-	},
 ];
 
 const Pricing = () => {
 	return (
 		<Box py="9" maxWidth="800px" mx="auto">
-			<Heading size="8" align="center" mb="6">
+			{/* <Heading size="8" align="center" mb="6">
 				Pricing
 			</Heading>
 
@@ -103,6 +91,22 @@ const Pricing = () => {
 				{cards.map((card) => (
 					<PricingCard key={card.title} {...card} />
 				))}
+			</Flex> */}
+			<Flex direction="row" gap="4" justify="center" width="100%">
+				<Box width="100%">
+					<Link to="/accounts/signup">
+						<Button size="3" style={{ width: "100%" }}>
+							Get started
+						</Button>
+					</Link>
+				</Box>
+				<Box width="100%">
+					<Link to="accounts/login">
+						<Button size="3" style={{ width: "100%" }}>
+							Log in
+						</Button>
+					</Link>
+				</Box>
 			</Flex>
 		</Box>
 	);

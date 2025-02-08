@@ -43,13 +43,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		.then(() => ({ promise: "success" }))
 		.catch(() => ({ promise: "error" }));
 
-	return { promise, service, existingUser, subscribed };
+	return { promise, service };
 };
 
 const Download = ({ loaderData }: Route.ComponentProps) => {
-	const { promise, service, existingUser, subscribed } = loaderData;
+	const { promise, service } = loaderData;
 
-	console.log(existingUser);
 	return (
 		<Layout hideNav>
 			<Suspense
@@ -84,80 +83,58 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 									Your timeline was downloaded, and you are ready to use Sill.
 								</Text>
 
-								<Text as="p" mb="4">
-									<NavLink to="/links">
-										<Button variant="solid">
-											View your most popular links
-										</Button>
-									</NavLink>
-								</Text>
-								{subscribed === "trial" && (
-									<Card mb="4">
-										<Heading
-											as="h3"
-											size="8"
-											mb="2"
-											style={{
-												fontWeight: 900,
-												fontStyle: "italic",
-												color: "var(--accent-11)",
-											}}
-										>
-											sill+
-										</Heading>
-										<Text as="p" size="3" mb="4">
-											You have a free trial of Sill+ until{" "}
-											{existingUser.freeTrialEnd?.toLocaleDateString()}. With
-											Sill+, you can access the following features:
-										</Text>
-										<Box my="5">
-											<Heading as="h4" size="4" mb="2">
-												Daily Digest
-											</Heading>
-											<Text as="p" size="2" mb="2">
-												Get a daily curated email or RSS feed of the most
-												popular links from your network, delivered at your
-												preferred time.
-											</Text>
-											<Link asChild size="2">
-												<NavLink to="/email">Setup Daily Digest →</NavLink>
-											</Link>
-										</Box>
-
-										<Box my="5">
-											<Heading as="h4" size="4" mb="2">
-												Custom notifications
-											</Heading>
-											<Text as="p" size="2" mb="2">
-												Set up personalized email or RSS alerts for any criteria
-												you define, from popularity thresholds to specific
-												keywords.
-											</Text>
-											<Link asChild size="2">
-												<NavLink to="/notifications">
-													Setup notifications →
-												</NavLink>
-											</Link>
-										</Box>
-										<Box my="5">
-											<Heading as="h4" size="4" mb="2">
-												Connect lists and feeds
-											</Heading>
-											<Text as="p" size="2" mb="2">
-												Track links from your favorite custom lists and feeds on
-												Bluesky or Mastodon.
-											</Text>
-											<Link asChild size="2">
-												<NavLink to="/connect">Connect lists →</NavLink>
-											</Link>
-										</Box>
-										<NavLink to="/settings/subscription">
-											<Button variant="solid" size="2" mb="4">
-												Subscribe now
-											</Button>
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Your links
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										See what's trending across your network in real-time.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/links">
+											View your most popular links →
 										</NavLink>
-									</Card>
-								)}
+									</Link>
+								</Card>
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Connect
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Connect your Bluesky and Mastodon accounts, plus any lists
+										or feeds you subscribe to.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/connect">
+											Connect more accounts and lists →
+										</NavLink>
+									</Link>
+								</Card>
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Daily Digest
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Get a daily curated email or RSS feed of the most popular
+										links from your network, delivered at your preferred time.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/email">Setup Daily Digest →</NavLink>
+									</Link>
+								</Card>
+
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Custom notifications
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Set up personalized email or RSS alerts for any criteria you
+										define, from popularity thresholds to specific keywords.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/notifications">Setup notifications →</NavLink>
+									</Link>
+								</Card>
 							</Box>
 						);
 					}}
