@@ -1,8 +1,7 @@
-import { useFetcher } from "react-router";
+import type { useFetcher } from "react-router";
 import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
 import type { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 import { useState } from "react";
-import { set } from "zod";
 
 export interface ListOption {
 	name: string;
@@ -16,10 +15,10 @@ interface ListSwitchProps {
 	account:
 		| typeof blueskyAccount.$inferSelect
 		| typeof mastodonAccount.$inferSelect;
+	fetcher: ReturnType<typeof useFetcher>;
 }
 
-const ListSwitch = ({ item, account }: ListSwitchProps) => {
-	const fetcher = useFetcher();
+const ListSwitch = ({ item, account, fetcher }: ListSwitchProps) => {
 	const [checked, setChecked] = useState(item.subscribed);
 
 	const onCheckedChange = (e: boolean) => {

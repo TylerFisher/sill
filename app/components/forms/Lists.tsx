@@ -4,6 +4,7 @@ import type { AccountWithInstance } from "./MastodonConnectForm";
 import type { blueskyAccount } from "~/drizzle/schema.server";
 import { CircleAlert } from "lucide-react";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import { useFetcher } from "react-router";
 
 const Lists = ({
 	listOptions,
@@ -14,6 +15,7 @@ const Lists = ({
 	account: AccountWithInstance | typeof blueskyAccount.$inferSelect;
 	subscribed: SubscriptionStatus;
 }) => {
+	const fetcher = useFetcher();
 	return (
 		<Box mt="4">
 			<Heading size="3" mb="2">
@@ -38,7 +40,12 @@ const Lists = ({
 					{listOptions.length > 0 && (
 						<Flex direction="column" gap="4">
 							{listOptions.map((list) => (
-								<ListSwitch key={list.uri} item={list} account={account} />
+								<ListSwitch
+									key={list.uri}
+									item={list}
+									account={account}
+									fetcher={fetcher}
+								/>
 							))}
 						</Flex>
 					)}
