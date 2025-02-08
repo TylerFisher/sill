@@ -2,7 +2,7 @@ import { Box, Heading, Text } from "@radix-ui/themes";
 
 interface PageHeadingProps {
 	title: string;
-	dek: string;
+	dek?: string;
 }
 
 const PageHeading = ({ title, dek }: PageHeadingProps) => {
@@ -11,7 +11,7 @@ const PageHeading = ({ title, dek }: PageHeadingProps) => {
 			<Heading as="h2" size="6" mb="4">
 				{title}
 			</Heading>
-			<Text>{dek}</Text>
+			{dek && <Text>{dek}</Text>}
 		</Box>
 	);
 };

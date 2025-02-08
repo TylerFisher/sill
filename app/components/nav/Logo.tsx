@@ -15,12 +15,10 @@ const Logo = ({ extraBig }: { extraBig?: boolean }) => {
 			<Link to="/" className={styles["logo-link"]}>
 				Sill
 				<Text
-					size={{
-						initial: "1",
-						md: "3",
-					}}
-					weight="regular"
+					as="span"
+					size="2"
 					style={{
+						fontWeight: 400,
 						fontStyle: "normal",
 					}}
 				>

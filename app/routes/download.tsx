@@ -1,17 +1,41 @@
 import type { Route } from "./+types/download";
-import { Box, Button, Flex, Spinner, Text } from "@radix-ui/themes";
-import { Await, Link } from "react-router";
+import {
+	Box,
+	Button,
+	Card,
+	Heading,
+	Link,
+	Separator,
+	Spinner,
+	Text,
+} from "@radix-ui/themes";
+import { Await, NavLink, redirect } from "react-router";
 import { Suspense } from "react";
 import Layout from "~/components/nav/Layout";
-import { requireUserId } from "~/utils/auth.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { filterLinkOccurrences } from "~/utils/links.server";
+import { eq } from "drizzle-orm";
+import { user } from "~/drizzle/schema.server";
+import { db } from "~/drizzle/db.server";
 
-export const meta: Route.MetaFunction = () => [
-	{ title: "Sill | Downloading..." },
-];
+export const meta: Route.MetaFunction = () => [{ title: "Sill | Downloading" }];
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
+			subscriptions: true,
+			blueskyAccounts: true,
+			mastodonAccounts: true,
+		},
+	});
+
+	if (!existingUser) {
+		return redirect("/accounts/login") as never;
+	}
+
+	const subscribed = await isSubscribed(userId);
 	const params = new URL(request.url).searchParams;
 	const service = params.get("service");
 
@@ -43,38 +67,74 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 					errorElement={
 						<Box>
 							<Text as="p" mb="4">
-								Failed to download your timeline. Please try again later.
+								Failed to download your timeline. Please refresh the page to try
+								again.
 							</Text>
-							<Link to="/connect">
-								<Button>Connect more accounts</Button>
-							</Link>
 						</Box>
 					}
 				>
-					{({ promise }) => {
+					{() => {
 						return (
 							<Box>
+								<Heading as="h2" mb="2" size="7">
+									Congratulations!
+								</Heading>
 								<Text as="p" mb="4">
-									Successfully downloaded your timeline. We will keep your
-									account updated in the background going forward.
+									Your timeline was downloaded, and you are ready to use Sill.
 								</Text>
-								<Flex
-									gap="2"
-									direction={{
-										initial: "column",
-										sm: "row",
-									}}
-								>
-									<Link to="/connect">
-										<Button>Connect more accounts</Button>
+
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Your links
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										See what's trending across your network in real-time.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/links">
+											View your most popular links →
+										</NavLink>
 									</Link>
-									<Link to="/email">
-										<Button>Setup daily email</Button>
+								</Card>
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Connect
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Connect your Bluesky and Mastodon accounts, plus any lists
+										or feeds you subscribe to.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/connect">
+											Connect more accounts and lists →
+										</NavLink>
 									</Link>
-									<Link to="/links">
-										<Button>View your links</Button>
+								</Card>
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Daily Digest
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Get a daily curated email or RSS feed of the most popular
+										links from your network, delivered at your preferred time.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/email">Setup Daily Digest →</NavLink>
 									</Link>
-								</Flex>
+								</Card>
+
+								<Card my="5">
+									<Heading as="h4" size="4" mb="2">
+										Custom notifications
+									</Heading>
+									<Text as="p" size="2" mb="2">
+										Set up personalized email or RSS alerts for any criteria you
+										define, from popularity thresholds to specific keywords.
+									</Text>
+									<Link asChild size="2">
+										<NavLink to="/notifications">Setup notifications →</NavLink>
+									</Link>
+								</Card>
 							</Box>
 						);
 					}}

@@ -32,6 +32,7 @@ import {
 	isShortenedLink,
 	normalizeLink,
 } from "./normalizeLink";
+import { isSubscribed } from "./auth.server";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;
@@ -512,31 +513,34 @@ export const getLinksFromBluesky = async (
 		await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
 	).filter((p) => p !== null);
 
-	for (const list of account.lists) {
-		const listPosts = await Promise.race([
-			getBlueskyList(agent, list, account.handle),
-			new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-				setTimeout(
-					() =>
-						reject(
-							new Error(
-								`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
+	const subscribed = await isSubscribed(userId);
+	if (subscribed !== "free") {
+		for (const list of account.lists) {
+			const listPosts = await Promise.race([
+				getBlueskyList(agent, list, account.handle),
+				new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+					setTimeout(
+						() =>
+							reject(
+								new Error(
+									`List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
+								),
 							),
-						),
-					120000,
+						120000,
+					),
 				),
-			),
-		]).catch((e) => {
-			console.error("Error fetching list:", list.name, e?.constructor?.name);
-			return [];
-		});
-		processedResults.push(
-			...(
-				await Promise.all(
-					listPosts.map(async (t) => processBlueskyLink(userId, t, list.id)),
-				)
-			).filter((p) => p !== null),
-		);
+			]).catch((e) => {
+				console.error("Error fetching list:", list.name, e?.constructor?.name);
+				return [];
+			});
+			processedResults.push(
+				...(
+					await Promise.all(
+						listPosts.map(async (t) => processBlueskyLink(userId, t, list.id)),
+					)
+				).filter((p) => p !== null),
+			);
+		}
 	}
 
 	// const linksToFetch = processedResults

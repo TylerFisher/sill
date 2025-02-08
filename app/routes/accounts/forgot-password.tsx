@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forgot-password";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Heading, Text } from "@radix-ui/themes";
+import { Box, Callout, Heading, Link as RLink, Text } from "@radix-ui/themes";
 import { data, redirect } from "react-router";
 import { Form, Link, useFetcher } from "react-router";
 import { eq } from "drizzle-orm";
@@ -18,6 +18,7 @@ import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
+import { CircleAlert } from "lucide-react";
 
 const ForgotPasswordSchema = z.object({
 	email: EmailSchema,
@@ -112,6 +113,21 @@ export default function ForgotPasswordRoute() {
 					No worries, we'll send you reset instructions
 				</Text>
 			</Box>
+			<Box mb="5">
+				<Callout.Root color="red">
+					<Callout.Icon>
+						<CircleAlert />
+					</Callout.Icon>
+					<Callout.Text>
+						Sill recently experienced data loss. If you had a Sill account
+						before February 8, 2025, you may need to{" "}
+						<RLink asChild>
+							<Link to="/accounts/signup">sign up</Link>
+						</RLink>{" "}
+						again. We apologize for the inconvenience.
+					</Callout.Text>
+				</Callout.Root>
+			</Box>
 
 			<Form method="POST" {...getFormProps(form)}>
 				<HoneypotInputs />
@@ -129,12 +145,14 @@ export default function ForgotPasswordRoute() {
 				<Box mb="5">
 					<SubmitButton label="Reset Password" />
 				</Box>
-				<Link
-					to="/accounts/login"
-					className="mt-11 text-center text-body-sm font-bold"
-				>
-					Back to Login
-				</Link>
+				<RLink asChild>
+					<Link
+						to="/accounts/login"
+						className="mt-11 text-center text-body-sm font-bold"
+					>
+						<Text size="2">Go back to login</Text>
+					</Link>
+				</RLink>
 			</Form>
 		</Layout>
 	);
