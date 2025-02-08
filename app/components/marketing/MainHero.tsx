@@ -1,9 +1,18 @@
 // app/components/marketing/MainHero.tsx
-import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Callout,
+	Flex,
+	Heading,
+	Text,
+	Link as RLink,
+} from "@radix-ui/themes";
 import { Link } from "react-router";
 import styles from "./MainHero.module.css";
 import Logo from "../nav/Logo";
 import { useTheme } from "~/routes/resources/theme-switch";
+import { CircleAlert } from "lucide-react";
 
 const MainHero = () => {
 	const theme = useTheme();
@@ -87,6 +96,21 @@ const MainHero = () => {
 							</Button>
 						</Link>
 					</Flex>
+					<Box mt="5">
+						<Callout.Root color="red">
+							<Callout.Icon>
+								<CircleAlert />
+							</Callout.Icon>
+							<Callout.Text>
+								Sill recently experienced data loss. If you had a Sill account
+								before February 8, 2025, you may need to{" "}
+								<RLink asChild>
+									<Link to="/accounts/signup">sign up</Link>
+								</RLink>{" "}
+								again. We apologize for the inconvenience.
+							</Callout.Text>
+						</Callout.Root>
+					</Box>
 				</Flex>
 
 				{/* Right image container */}
