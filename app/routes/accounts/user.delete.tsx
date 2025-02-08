@@ -13,7 +13,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		where: eq(user.id, userId),
 	});
 
-	if (existingUser?.customerId) {
+	if (stripe && existingUser?.customerId) {
 		const stripeSubs = await stripe.subscriptions.list({
 			customer: existingUser.customerId,
 			status: "all",

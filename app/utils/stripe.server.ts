@@ -4,14 +4,12 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { plan, price, subscription, user } from "~/drizzle/schema.server";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-	throw new Error("No STRIPE_SECRET_KEY provided");
-}
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-	apiVersion: "2024-12-18.acacia",
-	typescript: true,
-});
+export const stripe = process.env.STRIPE_SECRET_KEY
+	? new Stripe(process.env.STRIPE_SECRET_KEY!, {
+			apiVersion: "2024-12-18.acacia",
+			typescript: true,
+		})
+	: null;
 
 export const syncStripeDataToDb = async (customerId: string) => {
 	const existingUser = await db.query.user.findFirst({
