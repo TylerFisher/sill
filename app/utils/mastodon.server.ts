@@ -133,7 +133,7 @@ export const getMastodonTimeline = async (
 		};
 	},
 ) => {
-	const yesterday = new Date(Date.now() - ONE_DAY_MS);
+	const yesterday = new Date(Date.now() - 10800000);
 
 	let client: mastodon.rest.Client | null = null;
 

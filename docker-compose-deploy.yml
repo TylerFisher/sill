@@ -74,6 +74,7 @@ services:
       - db
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
+    restart: always
 
   remix:
     image: ghcr.io/tylerfisher/sill/remix:latest
