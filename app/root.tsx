@@ -160,13 +160,11 @@ export function Document({
 				<meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
 				<meta name="theme-color" content="#14120B" />
 				<link rel="canonical" href={import.meta.env.VITE_PUBLIC_DOMAIN} />
-				{import.meta.env.VITE_PUBLIC_DOMAIN.includes("sill.social") && (
-					<script
-						defer
-						data-domain="sill.social"
-						src="https://plausible.io/js/script.outbound-links.pageview-props.tagged-events.js"
-					/>
-				)}
+				<script
+					defer
+					data-domain="sill.social"
+					src="https://plausible.io/js/script.outbound-links.pageview-props.tagged-events.js"
+				/>
 
 				<Meta />
 				<Links />
