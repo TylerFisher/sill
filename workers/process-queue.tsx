@@ -170,9 +170,9 @@ async function processQueue() {
 					orderBy: asc(user.createdAt),
 				});
 
-				// slow down the queue processing if there are less than 500 users
-				if (users.length < 500) {
-					await new Promise((resolve) => setTimeout(resolve, 15000));
+				// slow down the queue processing if there are less than BATCH_SIZE users
+				if (users.length < BATCH_SIZE) {
+					await new Promise((resolve) => setTimeout(resolve, 60000));
 				}
 
 				await Promise.all(users.map((user) => enqueueJob(user.id)));
