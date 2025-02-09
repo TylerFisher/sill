@@ -175,6 +175,11 @@ async function processQueue() {
 					await new Promise((resolve) => setTimeout(resolve, 60000));
 				}
 
+				// delete completed jobs
+				await db
+					.delete(accountUpdateQueue)
+					.where(eq(accountUpdateQueue.status, "completed"));
+
 				await Promise.all(users.map((user) => enqueueJob(user.id)));
 				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
 			}
