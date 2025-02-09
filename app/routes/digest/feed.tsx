@@ -20,7 +20,10 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	});
 
 	if (!existingUser) {
-		throw new Error("User not found");
+		throw new Response(null, {
+			status: 404,
+			statusText: "Not Found",
+		});
 	}
 
 	const feedWithItems = await db.query.digestRssFeed.findFirst({
