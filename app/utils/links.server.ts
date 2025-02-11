@@ -110,6 +110,7 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 					if (
 						!existing ||
 						(p.link.title && !existing.title) ||
+						(p.link.title && existing.title === "Main link in OG tweet") || // handle news-feed.bsky.social bs
 						(p.link.description && !existing.description) ||
 						(p.link.imageUrl && !existing.imageUrl) ||
 						(p.link.giftUrl && !existing.giftUrl)
