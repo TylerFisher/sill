@@ -355,12 +355,19 @@ const getDetectedLink = async (
 	} else {
 		detectedLink = {
 			uri: externalRecord.external.uri,
-			title: externalRecord.external.title,
+			title: await handleLinkTitle(externalRecord.external.title),
 			description: externalRecord.external.description,
 			imageUrl: externalRecord.external.thumb,
 		};
 	}
 	return detectedLink;
+};
+
+const handleLinkTitle = async (title: string) => {
+	if (title === "Main link in OG tweet") {
+		return "";
+	}
+	return title;
 };
 
 /**
