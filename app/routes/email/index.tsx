@@ -63,6 +63,15 @@ const EmailSettings = ({ loaderData }: Route.ComponentProps) => {
 					</Callout.Text>
 				</Callout.Root>
 			)}
+			<Callout.Root mb="4">
+				<Callout.Icon>
+					<CircleAlert width="18" height="18" />
+				</Callout.Icon>
+				<Callout.Text size="2">
+					Daily Digests are free during Sill's beta period. Sill will charge for
+					this feature in the future.
+				</Callout.Text>
+			</Callout.Root>
 
 			<EmailSettingForm currentSettings={currentSettings} email={email} />
 		</Layout>

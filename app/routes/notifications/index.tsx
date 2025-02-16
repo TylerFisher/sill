@@ -206,6 +206,15 @@ export default function Notifications({
 						</Callout.Text>
 					</Callout.Root>
 				)}
+				<Callout.Root mb="4">
+					<Callout.Icon>
+						<CircleAlert width="18" height="18" />
+					</Callout.Icon>
+					<Callout.Text size="2">
+						Notifications are free during Sill's beta period. Sill will charge
+						for this feature in the future.
+					</Callout.Text>
+				</Callout.Root>
 
 				<NotificationForm lastResult={actionData?.result} />
 			</NotificationsProvider>

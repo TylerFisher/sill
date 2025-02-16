@@ -61,6 +61,15 @@ const Lists = ({
 							</Callout.Text>
 						</Callout.Root>
 					)}
+					<Callout.Root mt="4">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text size="2">
+							Lists are free during Sill's beta period. Sill will charge for
+							this feature in the future.
+						</Callout.Text>
+					</Callout.Root>
 				</>
 			)}
 		</Box>
