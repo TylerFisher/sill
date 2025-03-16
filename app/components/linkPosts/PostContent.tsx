@@ -16,6 +16,15 @@ interface PostContentProps {
 
 const PostContent = ({ post }: PostContentProps) => {
 	if (!post) return null;
+
+	// Process post text to add target="_blank" and rel attributes to all links
+	if (post.postText) {
+		post.postText = post.postText.replace(
+			/<a href/g,
+			'<a target="_blank" rel="noopener noreferrer" href',
+		);
+	}
+
 	return (
 		<>
 			<Text
