@@ -15,6 +15,7 @@ import { Box, Callout, Heading, Link, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import SearchField from "~/components/forms/SearchField";
+import { useLayout } from "../resources/layout-switch";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
@@ -103,6 +104,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	const { bookmarks, subscribed, bsky, instance } = loaderData;
+	const layout = useLayout();
 
 	const groupedBookmarks = bookmarks.reduce(
 		(groups, bookmark) => {
@@ -157,7 +159,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 									linkPost={bookmark.posts}
 									instance={instance}
 									bsky={bsky}
-									layout="default"
+									layout={layout}
 									bookmarks={bookmarks}
 								/>
 							))}
