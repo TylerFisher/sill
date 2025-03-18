@@ -2,11 +2,11 @@ import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import {
 	Bell,
+	Bookmark,
 	CircleHelp,
 	Link2,
 	Mail,
 	MessageSquareOff,
-	Plus,
 	TrendingUp,
 	User,
 	Zap,
@@ -33,6 +33,12 @@ const Nav = ({
 			label: "Trending",
 			icon: <TrendingUp className={styles["nav-list-item-icon"]} />,
 			plus: false,
+		},
+		{
+			to: "/bookmarks",
+			label: "Bookmarks",
+			icon: <Bookmark className={styles["nav-list-item-icon"]} />,
+			plus: true,
 		},
 		{
 			to: "/email",

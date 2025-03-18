@@ -24,7 +24,6 @@ import {
 	conflictUpdateSetAllColumns,
 	type ProcessedResult,
 } from "./links.server";
-import ogs from "open-graph-scraper";
 import type { ListOption } from "~/components/forms/ListSwitch";
 import {
 	getFullUrl,
@@ -605,74 +604,6 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
 		}
 	}
 	return foundLink;
-};
-
-export const processLinks = async (links: (typeof link.$inferInsert)[]) => {
-	const metadata = await Promise.all(
-		links.map(async (link) => {
-			return fetchLinkMetadata(link.url);
-		}),
-	).then((results) => results.filter((r) => r !== undefined && r !== null));
-
-	await db
-		.insert(link)
-		.values(metadata)
-		.onConflictDoUpdate({
-			target: link.url,
-			set: conflictUpdateSetAllColumns(link),
-		});
-};
-
-/**
- * Fetches metadata for a link and inserts it into the database
- * Used by the link metadata fetcher queue in Redis
- * @param uri URI to fetch metadata for
- * @returns void
- */
-export const fetchLinkMetadata = async (uri: string) => {
-	const url = new URL(uri);
-	// The GOVERNMENT OF MANITOBA can't make html
-	if (
-		url.hostname === "news.gov.mb.ca" ||
-		uri === "https://tinyurl.com/jcyff8eh"
-	) {
-		return {
-			id: uuidv7(),
-			url: uri,
-			title: "",
-			description: null,
-			imageUrl: null,
-		};
-	}
-
-	const userAgent =
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
-
-	try {
-		const metadata = await ogs({
-			url: uri,
-			blacklist: ["news.gov.mb.ca"],
-			fetchOptions: {
-				headers: {
-					"user-agent": userAgent,
-				},
-			},
-		});
-
-		if (metadata.result.success) {
-			return {
-				id: uuidv7(),
-				url: metadata.result.ogUrl || uri,
-				title: metadata.result.ogTitle || "",
-				description: metadata.result.ogDescription || null,
-				imageUrl: metadata.result.ogImage
-					? metadata.result.ogImage[0].url
-					: null,
-			};
-		}
-	} catch (e) {
-		console.error(`Failed to fetch link ${uri}`, e);
-	}
 };
 
 const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {

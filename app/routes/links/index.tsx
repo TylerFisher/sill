@@ -20,7 +20,11 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
-import { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
+import {
+	blueskyAccount,
+	mastodonAccount,
+	bookmark,
+} from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import {
@@ -88,6 +92,10 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		},
 	});
 
+	const bookmarks = await db.query.bookmark.findMany({
+		where: eq(bookmark.userId, userId),
+	});
+
 	const url = new URL(request.url);
 
 	const options = {
@@ -132,6 +140,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		instance: mastodon?.mastodonInstance.instance,
 		bsky: bsky?.handle,
 		lists,
+		bookmarks,
 	};
 };
 
@@ -248,6 +257,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 										instance={loaderData.instance}
 										bsky={loaderData.bsky}
 										layout={layout}
+										bookmarks={loaderData.bookmarks}
 									/>
 								</div>
 							))}
@@ -260,6 +270,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 											instance={loaderData.instance}
 											bsky={loaderData.bsky}
 											layout={layout}
+											bookmarks={loaderData.bookmarks}
 										/>
 									))}
 								</div>
@@ -285,11 +296,13 @@ export const LinkPost = ({
 	instance,
 	bsky,
 	layout,
+	bookmarks,
 }: {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
+	bookmarks: (typeof bookmark.$inferSelect)[];
 }) => {
 	const location = useLocation();
 	return (
@@ -300,6 +313,7 @@ export const LinkPost = ({
 				bsky={bsky}
 				layout={layout}
 				autoExpand={location.hash.substring(1) === linkPost.link?.id}
+				bookmarks={bookmarks}
 			/>
 			<Separator
 				my={layout === "dense" ? "5" : "7"}

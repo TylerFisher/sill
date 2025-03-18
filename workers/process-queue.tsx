@@ -5,9 +5,11 @@ import {
 	insertNewLinks,
 	evaluateNotifications,
 	type ProcessedResult,
+	filterLinkOccurrences,
 } from "~/utils/links.server";
 import {
 	accountUpdateQueue,
+	bookmark,
 	networkTopTenView,
 	notificationGroup,
 	notificationItem,
@@ -34,13 +36,14 @@ async function processQueue() {
 			console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
 			const allLinks: ProcessedResult[] = [];
 			const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
+			const bookmarks: (typeof bookmark.$inferSelect)[] = [];
 			const results = await Promise.all(
 				jobs.map(async (job) => {
 					const jobStart = Date.now();
 					try {
 						const timeoutPromise = new Promise((_, reject) => {
 							const timer = setTimeout(() => {
-								reject(new Error("Job timed out after 120 seconds"));
+								reject(new Error("Job timed out after 3 minutes"));
 							}, 180000);
 							// Clear timer when promise resolves
 							return () => clearTimeout(timer);
@@ -53,7 +56,12 @@ async function processQueue() {
 								where: eq(notificationGroup.userId, job.userId),
 							});
 
+							const userBookmarks = await db.query.bookmark.findMany({
+								where: eq(bookmark.userId, job.userId),
+							});
+
 							notificationGroups.push(...groups);
+							bookmarks.push(...userBookmarks);
 							await db
 								.update(accountUpdateQueue)
 								.set({
@@ -148,6 +156,61 @@ async function processQueue() {
 					})
 					.where(eq(notificationGroup.id, group.id));
 			}
+
+			for (const userBookmark of bookmarks) {
+				const posts = userBookmark.posts;
+				const newPosts = await filterLinkOccurrences({
+					userId: userBookmark.userId,
+					url: userBookmark.linkUrl,
+				});
+
+				if (newPosts.length > 0) {
+					for (const newPost of newPosts[0].posts) {
+						if (!posts.posts?.some((p) => p.id === newPost.id)) {
+							posts.posts?.push(newPost);
+						}
+					}
+
+					// Update uniqueActorsCount by counting unique actors
+					const uniqueActors = new Set();
+
+					// Collect all actors from posts
+					for (const post of posts.posts || []) {
+						// Determine which actor to use (repost actor or original actor)
+						const actorHandle = post.repostActorHandle || post.actorHandle;
+						const actorName = post.repostActorHandle
+							? post.repostActorName
+							: post.actorName;
+
+						// Normalize the handle based on post type
+						const normalizedHandle =
+							post.postType === "mastodon"
+								? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
+								: actorHandle
+										.replace(".bsky.social", "")
+										.replace("@", "")
+										.toLowerCase();
+
+						if (normalizedHandle) {
+							const normalizedName = actorName
+								?.toLowerCase()
+								.replace(/\s*\(.*?\)\s*/g, "");
+							uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
+						}
+					}
+
+					// Update the uniqueActorsCount in the posts object
+					posts.uniqueActorsCount = uniqueActors.size;
+
+					await db
+						.update(bookmark)
+						.set({
+							posts: posts,
+						})
+						.where(eq(bookmark.id, userBookmark.id));
+				}
+			}
+
 			const errorCount = results.filter((r) => r.status === "error").length;
 			const batchDuration = Date.now() - batchStart;
 

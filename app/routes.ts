@@ -34,6 +34,11 @@ export default [
 		route("auth/revoke", "routes/bluesky/auth.revoke.ts"),
 		route("auth/restore", "routes/bluesky/auth.restore.ts"),
 	]),
+	...prefix("bookmarks", [
+		route("add", "routes/bookmarks/add.ts"),
+		route("delete", "routes/bookmarks/delete.ts"),
+		index("routes/bookmarks/index.tsx"),
+	]),
 	route("client-metadata.json", "routes/client-metadata.ts"),
 	route("connect", "routes/connect.tsx"),
 	...prefix("digest", [
