@@ -165,24 +165,21 @@ async function processQueue() {
 				});
 
 				if (newPosts.length > 0) {
-					for (const newPost of newPosts[0].posts) {
+					for (const newPost of newPosts[0].posts.reverse()) {
 						if (!posts.posts?.some((p) => p.id === newPost.id)) {
-							posts.posts?.push(newPost);
+							posts.posts?.unshift(newPost);
 						}
 					}
 
 					// Update uniqueActorsCount by counting unique actors
 					const uniqueActors = new Set();
 
-					// Collect all actors from posts
 					for (const post of posts.posts || []) {
-						// Determine which actor to use (repost actor or original actor)
 						const actorHandle = post.repostActorHandle || post.actorHandle;
 						const actorName = post.repostActorHandle
 							? post.repostActorName
 							: post.actorName;
 
-						// Normalize the handle based on post type
 						const normalizedHandle =
 							post.postType === "mastodon"
 								? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
@@ -228,24 +225,24 @@ async function processQueue() {
 			}
 		} else {
 			await db.refreshMaterializedView(networkTopTenView);
-			if (process.env.NODE_ENV === "production") {
-				const users = await db.query.user.findMany({
-					orderBy: asc(user.createdAt),
-				});
+			// if (process.env.NODE_ENV === "production") {
+			const users = await db.query.user.findMany({
+				orderBy: asc(user.createdAt),
+			});
 
-				// slow down the queue processing if there are less than BATCH_SIZE users
-				if (users.length < BATCH_SIZE) {
-					await new Promise((resolve) => setTimeout(resolve, 60000));
-				}
-
-				// delete completed jobs
-				await db
-					.delete(accountUpdateQueue)
-					.where(eq(accountUpdateQueue.status, "completed"));
-
-				await Promise.all(users.map((user) => enqueueJob(user.id)));
-				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+			// slow down the queue processing if there are less than BATCH_SIZE users
+			if (users.length < BATCH_SIZE) {
+				await new Promise((resolve) => setTimeout(resolve, 60000));
 			}
+
+			// delete completed jobs
+			await db
+				.delete(accountUpdateQueue)
+				.where(eq(accountUpdateQueue.status, "completed"));
+
+			await Promise.all(users.map((user) => enqueueJob(user.id)));
+			console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+			// }
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 1000));
