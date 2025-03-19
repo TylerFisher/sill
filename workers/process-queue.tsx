@@ -225,24 +225,24 @@ async function processQueue() {
 			}
 		} else {
 			await db.refreshMaterializedView(networkTopTenView);
-			// if (process.env.NODE_ENV === "production") {
-			const users = await db.query.user.findMany({
-				orderBy: asc(user.createdAt),
-			});
+			if (process.env.NODE_ENV === "production") {
+				const users = await db.query.user.findMany({
+					orderBy: asc(user.createdAt),
+				});
 
-			// slow down the queue processing if there are less than BATCH_SIZE users
-			if (users.length < BATCH_SIZE) {
-				await new Promise((resolve) => setTimeout(resolve, 60000));
+				// slow down the queue processing if there are less than BATCH_SIZE users
+				if (users.length < BATCH_SIZE) {
+					await new Promise((resolve) => setTimeout(resolve, 60000));
+				}
+
+				// delete completed jobs
+				await db
+					.delete(accountUpdateQueue)
+					.where(eq(accountUpdateQueue.status, "completed"));
+
+				await Promise.all(users.map((user) => enqueueJob(user.id)));
+				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
 			}
-
-			// delete completed jobs
-			await db
-				.delete(accountUpdateQueue)
-				.where(eq(accountUpdateQueue.status, "completed"));
-
-			await Promise.all(users.map((user) => enqueueJob(user.id)));
-			console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
-			// }
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 1000));
