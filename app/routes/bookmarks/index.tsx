@@ -152,31 +152,29 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 					</Callout.Text>
 				</Callout.Root>
 			)}
+			<Box mb="6" key="search">
+				<Form method="GET">
+					<SearchField />
+				</Form>
+			</Box>
 			<Box my="4">
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (
-						<>
-							<Box mb="6" key="search">
-								<Form method="GET">
-									<SearchField />
-								</Form>
-							</Box>
-							<Box key={date} mb="6">
-								<Heading as="h3" size="4" mb="3">
-									{date}
-								</Heading>
-								{dateBookmarks.map((bookmark) => (
-									<LinkPost
-										key={bookmark.id}
-										linkPost={bookmark.posts}
-										instance={instance}
-										bsky={bsky}
-										layout={layout}
-										bookmarks={bookmarks}
-									/>
-								))}
-							</Box>
-						</>
+						<Box key={date} mb="6">
+							<Heading as="h3" size="4" mb="3">
+								{date}
+							</Heading>
+							{dateBookmarks.map((bookmark) => (
+								<LinkPost
+									key={bookmark.id}
+									linkPost={bookmark.posts}
+									instance={instance}
+									bsky={bsky}
+									layout={layout}
+									bookmarks={bookmarks}
+								/>
+							))}
+						</Box>
 					))
 				) : (
 					<Card>
