@@ -36,7 +36,9 @@ const Toolbar = ({
 					left: "1.8em",
 				}}
 			/>
-			<BookmarkLink url={url} isBookmarked={isBookmarked} />
+			{type === "link" && (
+				<BookmarkLink url={url} isBookmarked={isBookmarked} />
+			)}
 			<OpenLink url={giftUrl || url} isGift={!!giftUrl} />
 			<MuteActions
 				narrowMutePhrase={narrowMutePhrase}

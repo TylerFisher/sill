@@ -11,8 +11,16 @@ import Layout from "~/components/nav/Layout";
 import { LinkPost } from "~/routes/links";
 import { Form, redirect } from "react-router";
 import PageHeading from "~/components/nav/PageHeading";
-import { Box, Callout, Heading, Link, Text } from "@radix-ui/themes";
-import { CircleAlert } from "lucide-react";
+import {
+	Box,
+	Callout,
+	Card,
+	Heading,
+	IconButton,
+	Link,
+	Text,
+} from "@radix-ui/themes";
+import { CircleAlert, Bookmark } from "lucide-react";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import SearchField from "~/components/forms/SearchField";
 import { useLayout } from "../resources/layout-switch";
@@ -166,7 +174,18 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 						</Box>
 					))
 				) : (
-					<Text as="p">No bookmarks yet</Text>
+					<Card>
+						<Text as="p" mb="4">
+							You haven't bookmarked any links yet.
+						</Text>
+						<Text as="p">
+							Bookmark posts using the bookmark icon{" "}
+							<IconButton variant="ghost" size="1">
+								<Bookmark />
+							</IconButton>{" "}
+							on links <Link href="/links">in your feed</Link>.
+						</Text>
+					</Card>
 				)}
 			</Box>
 		</Layout>
