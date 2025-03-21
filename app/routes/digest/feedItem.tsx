@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
 	blueskyAccount,
+	bookmark,
 	digestItem,
 	mastodonAccount,
 } from "~/drizzle/schema.server";
@@ -53,6 +54,10 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 		},
 	});
 
+	const bookmarks = await db.query.bookmark.findMany({
+		where: eq(bookmark.userId, userId),
+	});
+
 	for (const item of feedItem.json) {
 		if (!item.posts) {
 			continue;
@@ -69,11 +74,12 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 		pubDate: feedItem.pubDate,
 		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
+		bookmarks,
 	};
 };
 
 const DigestFeedItem = ({ loaderData }: Route.ComponentProps) => {
-	const { links, bsky, instance, pubDate } = loaderData;
+	const { links, bsky, instance, pubDate, bookmarks } = loaderData;
 	const date = new Intl.DateTimeFormat("en-US", {
 		weekday: "long",
 		year: "numeric",
@@ -97,6 +103,7 @@ const DigestFeedItem = ({ loaderData }: Route.ComponentProps) => {
 						instance={instance}
 						bsky={bsky}
 						layout={layout}
+						bookmarks={bookmarks}
 					/>
 				</div>
 			))}

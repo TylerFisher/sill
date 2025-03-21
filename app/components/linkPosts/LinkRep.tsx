@@ -24,6 +24,7 @@ interface LinkRepProps {
 	bsky: string | undefined;
 	layout: "dense" | "default";
 	toolbar?: boolean;
+	isBookmarked: boolean;
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
@@ -53,6 +54,7 @@ const LinkRep = ({
 	bsky,
 	layout,
 	toolbar = true,
+	isBookmarked,
 }: LinkRepProps) => {
 	if (!link) return null;
 	const url = new URL(link.url);
@@ -153,6 +155,7 @@ const LinkRep = ({
 						instance={instance}
 						bsky={bsky}
 						type="link"
+						isBookmarked={isBookmarked}
 					/>
 				</>
 			)}

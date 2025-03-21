@@ -2,7 +2,13 @@ import type { Route } from "./+types/item";
 import { db } from "~/drizzle/db.server";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import { and, desc, eq, gte, ilike, notIlike, or, sql } from "drizzle-orm";
-import { link, linkPostDenormalized } from "~/drizzle/schema.server";
+import {
+	link,
+	linkPostDenormalized,
+	blueskyAccount,
+	mastodonAccount,
+	bookmark,
+} from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 import { getMutePhrases } from "~/utils/links.server";
 import Layout from "~/components/nav/Layout";
@@ -23,6 +29,25 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	if (!dbLink) {
 		throw new Response("Link not found", { status: 404 });
 	}
+
+	const bsky = await db.query.blueskyAccount.findFirst({
+		where: eq(blueskyAccount.userId, userId),
+	});
+
+	const mastodon = await db.query.mastodonAccount.findFirst({
+		where: eq(mastodonAccount.userId, userId),
+		with: {
+			mastodonInstance: {
+				columns: {
+					instance: true,
+				},
+			},
+		},
+	});
+
+	const bookmarks = await db.query.bookmark.findMany({
+		where: eq(bookmark.userId, userId),
+	});
 
 	const mutePhrases = await getMutePhrases(userId);
 	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
@@ -92,7 +117,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 			return Promise.all(postsPromise);
 		});
 
-	return grouped[0] || null;
+	return {
+		links: grouped[0],
+		bsky: bsky?.handle,
+		mastodon: mastodon?.mastodonInstance.instance,
+		bookmarks,
+	};
 }
 
 export default function LinkRoute({ loaderData }: Route.ComponentProps) {
@@ -101,11 +131,12 @@ export default function LinkRoute({ loaderData }: Route.ComponentProps) {
 	return (
 		<Layout>
 			<LinkPostRep
-				instance={undefined}
-				bsky={undefined}
-				linkPost={loaderData}
+				instance={loaderData.mastodon}
+				bsky={loaderData.bsky}
+				linkPost={loaderData.links}
 				autoExpand={true}
 				layout={layout}
+				bookmarks={loaderData.bookmarks}
 			/>
 		</Layout>
 	);

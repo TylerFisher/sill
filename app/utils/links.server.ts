@@ -186,6 +186,7 @@ interface FilterArgs {
 	fetch?: boolean;
 	selectedList?: string;
 	limit?: number;
+	url?: string;
 }
 
 const DEFAULT_HIDE_REPOSTS = false;
@@ -211,6 +212,7 @@ export const filterLinkOccurrences = async ({
 	fetch = DEFAULT_FETCH,
 	selectedList = "all",
 	limit = PAGE_SIZE,
+	url = undefined,
 }: FilterArgs) => {
 	if (fetch) {
 		try {
@@ -269,6 +271,7 @@ export const filterLinkOccurrences = async ({
 			and(
 				eq(linkPostDenormalized.userId, userId),
 				gte(linkPostDenormalized.postDate, start),
+				url ? eq(link.url, url) : undefined,
 				listRecord ? eq(linkPostDenormalized.listId, listRecord.id) : undefined,
 				...urlMuteClauses,
 				service !== "all"
