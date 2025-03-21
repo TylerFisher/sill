@@ -136,7 +136,10 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 
 	return (
 		<Layout>
-			<PageHeading title="Bookmarks" />
+			<PageHeading
+				title="Bookmarks"
+				dek="Sill can save links you bookmark for easy access later. If you bookmark a link, Sill will track all posts sharing that link for you."
+			/>
 			{subscribed === "trial" && (
 				<Callout.Root mb="4">
 					<Callout.Icon>
@@ -150,28 +153,30 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 				</Callout.Root>
 			)}
 			<Box my="4">
-				<Box mb="6">
-					<Form method="GET">
-						<SearchField />
-					</Form>
-				</Box>
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (
-						<Box key={date} mb="6">
-							<Heading as="h3" size="4" mb="3">
-								{date}
-							</Heading>
-							{dateBookmarks.map((bookmark) => (
-								<LinkPost
-									key={bookmark.id}
-									linkPost={bookmark.posts}
-									instance={instance}
-									bsky={bsky}
-									layout={layout}
-									bookmarks={bookmarks}
-								/>
-							))}
-						</Box>
+						<>
+							<Box mb="6" key="search">
+								<Form method="GET">
+									<SearchField />
+								</Form>
+							</Box>
+							<Box key={date} mb="6">
+								<Heading as="h3" size="4" mb="3">
+									{date}
+								</Heading>
+								{dateBookmarks.map((bookmark) => (
+									<LinkPost
+										key={bookmark.id}
+										linkPost={bookmark.posts}
+										instance={instance}
+										bsky={bsky}
+										layout={layout}
+										bookmarks={bookmarks}
+									/>
+								))}
+							</Box>
+						</>
 					))
 				) : (
 					<Card>
