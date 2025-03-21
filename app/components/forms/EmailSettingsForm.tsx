@@ -72,11 +72,14 @@ const EmailSettingForm = ({
 					<Text as="p" size="3" mb="4">
 						Your Daily Digest will be delivered at{" "}
 						{selectedHour &&
-							hours[
-								new Date(
+							(() => {
+								// Convert UTC time from DB to local time
+								const utcTime = new Date(
 									`2000-01-01T${currentSettings.scheduledTime}Z`,
-								).getHours()
-							]}{" "}
+								);
+								const localHour = utcTime.getHours();
+								return hours[localHour + 1];
+							})()}{" "}
 						to {email}.
 					</Text>
 					<RLink asChild size="3">
