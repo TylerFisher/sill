@@ -41,7 +41,7 @@ const Nav = ({
 			plus: true,
 		},
 		{
-			to: "/email",
+			to: "/digest/",
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 			plus: true,
@@ -65,7 +65,7 @@ const Nav = ({
 			plus: false,
 		},
 		{
-			to: "/settings",
+			to: "/settings/",
 			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 			plus: false,
@@ -114,8 +114,10 @@ const NavItem = ({
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
-						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
-						fontWeight: location === to ? "bold" : "normal",
+						color: location.includes(to)
+							? "var(--accent-11)"
+							: "var(--gray-a11)",
+						fontWeight: location.includes(to) ? "bold" : "normal",
 					}}
 					aria-label={label}
 				>

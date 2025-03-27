@@ -44,12 +44,15 @@ export default [
 	...prefix("digest", [
 		route(":userId/:feedItemId", "routes/digest/feedItem.tsx"),
 		route(":userId.rss", "routes/digest/feed.tsx"),
+		route("archive", "routes/digest/archive.tsx"),
+		route("settings", "routes/digest/settings.tsx"),
+		index("routes/digest/index.tsx"),
 	]),
 	route("download", "routes/download.tsx"),
 	...prefix("email", [
-		index("routes/email/index.tsx"),
 		route("add", "routes/email/add.tsx"),
 		route("delete", "routes/email/delete.tsx"),
+		index("routes/email/index.tsx"),
 	]),
 	route("jwks.json", "routes/jwks.ts"),
 	...prefix("links", [

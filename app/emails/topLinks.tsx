@@ -46,7 +46,7 @@ const TopLinks = ({
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
 						<Link
-							href="https://sill.social"
+							href="https://sill.social/connect"
 							style={{
 								color: "#9E6C00",
 							}}
@@ -95,7 +95,7 @@ const TopLinks = ({
 					</Button>
 				</>
 			)}
-			<Text>{digestOutro("https://sill.social/email")}</Text>
+			<Text>{digestOutro("https://sill.social/digest/settings")}</Text>
 		</EmailLayout>
 	);
 };
