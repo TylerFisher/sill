@@ -27,11 +27,11 @@ const features = [
 		ctaUrl: "https://sill.social/links/trending",
 	},
 	{
-		title: "Open source",
+		title: "Bookmarks",
 		description:
-			"The entire codebase is open source, so you can host your own instance and customize it to your needs.",
-		cta: "View on GitHub",
-		ctaUrl: "https://github.com/TylerFisher/sill",
+			"Save links to your bookmarks for easy access and organization.",
+		cta: "Learn more about bookmarks",
+		ctaUrl: "https://docs.sill.social/sill-plus/bookmarks/",
 	},
 	{
 		title: "Custom Lists & Feeds",

@@ -34,17 +34,25 @@ export default [
 		route("auth/revoke", "routes/bluesky/auth.revoke.ts"),
 		route("auth/restore", "routes/bluesky/auth.restore.ts"),
 	]),
+	...prefix("bookmarks", [
+		route("add", "routes/bookmarks/add.ts"),
+		route("delete", "routes/bookmarks/delete.ts"),
+		index("routes/bookmarks/index.tsx"),
+	]),
 	route("client-metadata.json", "routes/client-metadata.ts"),
 	route("connect", "routes/connect.tsx"),
 	...prefix("digest", [
 		route(":userId/:feedItemId", "routes/digest/feedItem.tsx"),
 		route(":userId.rss", "routes/digest/feed.tsx"),
+		route("archive", "routes/digest/archive.tsx"),
+		route("settings", "routes/digest/settings.tsx"),
+		index("routes/digest/index.tsx"),
 	]),
 	route("download", "routes/download.tsx"),
 	...prefix("email", [
-		index("routes/email/index.tsx"),
 		route("add", "routes/email/add.tsx"),
 		route("delete", "routes/email/delete.tsx"),
+		index("routes/email/index.tsx"),
 	]),
 	route("jwks.json", "routes/jwks.ts"),
 	...prefix("links", [

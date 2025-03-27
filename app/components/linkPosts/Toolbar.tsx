@@ -3,7 +3,7 @@ import CopyLink from "./CopyLink";
 import ShareLink from "./ShareLink";
 import OpenLink from "./OpenLink";
 import MuteActions from "./MuteActions";
-
+import BookmarkLink from "./BookmarkLink";
 interface ToolbarProps {
 	url: string;
 	giftUrl?: string | null;
@@ -12,6 +12,7 @@ interface ToolbarProps {
 	type: "post" | "link";
 	instance: string | undefined;
 	bsky: string | undefined;
+	isBookmarked: boolean;
 }
 
 const Toolbar = ({
@@ -22,6 +23,7 @@ const Toolbar = ({
 	type,
 	instance,
 	bsky,
+	isBookmarked = false,
 }: ToolbarProps) => {
 	return (
 		<Flex justify="between" mx="1" mt="4">
@@ -34,6 +36,9 @@ const Toolbar = ({
 					left: "1.8em",
 				}}
 			/>
+			{type === "link" && (
+				<BookmarkLink url={url} isBookmarked={isBookmarked} />
+			)}
 			<OpenLink url={giftUrl || url} isGift={!!giftUrl} />
 			<MuteActions
 				narrowMutePhrase={narrowMutePhrase}

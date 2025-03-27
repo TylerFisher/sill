@@ -123,6 +123,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 												bsky={undefined}
 												layout={layout}
 												toolbar={false}
+												isBookmarked={false}
 											/>
 										)}
 

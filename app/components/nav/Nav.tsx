@@ -2,11 +2,11 @@ import { Button } from "@radix-ui/themes";
 import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import {
 	Bell,
+	Bookmark,
 	CircleHelp,
 	Link2,
 	Mail,
 	MessageSquareOff,
-	Plus,
 	TrendingUp,
 	User,
 	Zap,
@@ -35,7 +35,13 @@ const Nav = ({
 			plus: false,
 		},
 		{
-			to: "/email",
+			to: "/bookmarks",
+			label: "Bookmarks",
+			icon: <Bookmark className={styles["nav-list-item-icon"]} />,
+			plus: true,
+		},
+		{
+			to: "/digest/",
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 			plus: true,
@@ -59,7 +65,7 @@ const Nav = ({
 			plus: false,
 		},
 		{
-			to: "/settings",
+			to: "/settings/",
 			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 			plus: false,
@@ -108,8 +114,10 @@ const NavItem = ({
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
-						color: location === to ? "var(--accent-11)" : "var(--gray-a11)",
-						fontWeight: location === to ? "bold" : "normal",
+						color: location.includes(to)
+							? "var(--accent-11)"
+							: "var(--gray-a11)",
+						fontWeight: location.includes(to) ? "bold" : "normal",
 					}}
 					aria-label={label}
 				>

@@ -455,6 +455,20 @@ export const termsAgreement = pgTable("terms_agreement", {
 		.references(() => termsUpdate.id, { onDelete: "cascade" }),
 });
 
+export const bookmark = pgTable("bookmark", {
+	id: uuid().primaryKey().notNull(),
+	posts: json().$type<MostRecentLinkPosts>().notNull(),
+	userId: uuid()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	linkUrl: text()
+		.notNull()
+		.references(() => link.url),
+	createdAt: timestamp({ precision: 3, mode: "date" })
+		.default(sql`CURRENT_TIMESTAMP`)
+		.notNull(),
+});
+
 export const linkPostDenormalizedRelations = relations(
 	linkPostDenormalized,
 	({ one }) => ({
@@ -484,6 +498,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
 	digestItems: many(digestItem),
 	notificationGroups: many(notificationGroup),
 	subscriptions: many(subscription),
+	bookmarks: many(bookmark),
 }));
 
 export const passwordRelations = relations(password, ({ one }) => ({
@@ -652,6 +667,17 @@ export const termsAgreementRelations = relations(termsAgreement, ({ one }) => ({
 	termsUpdate: one(termsUpdate, {
 		fields: [termsAgreement.termsUpdateId],
 		references: [termsUpdate.id],
+	}),
+}));
+
+export const bookmarkRelations = relations(bookmark, ({ one }) => ({
+	user: one(user, {
+		fields: [bookmark.userId],
+		references: [user.id],
+	}),
+	link: one(link, {
+		fields: [bookmark.linkUrl],
+		references: [link.url],
 	}),
 }));
 
