@@ -215,9 +215,9 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (
 						<Box key={date} mb="6">
-							{/* <Heading as="h3" size="4" mb="3">
+							<Heading as="h3" size="4" mb="3">
 								{date}
-							</Heading> */}
+							</Heading>
 							{dateBookmarks.map((bookmark) => (
 								<LinkPost
 									key={bookmark.id}
