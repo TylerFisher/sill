@@ -6,10 +6,10 @@ import {
 } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import Layout from "~/components/nav/Layout";
 import { LinkPost } from "~/routes/links";
-import { Form, redirect } from "react-router";
+import { Form, redirect, useFetcher, useSearchParams } from "react-router";
 import PageHeading from "~/components/nav/PageHeading";
 import {
 	Box,
@@ -24,6 +24,9 @@ import { CircleAlert, Bookmark } from "lucide-react";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import SearchField from "~/components/forms/SearchField";
 import { useLayout } from "../resources/layout-switch";
+import { useEffect, useRef, useState } from "react";
+import { uuidv7 } from "uuidv7-js";
+import { debounce } from "ts-debounce";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
@@ -61,35 +64,23 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const url = new URL(request.url);
 	const query = url.searchParams.get("query");
+	const page = url.searchParams.get("page") || "1";
 
-	let bookmarks: BookmarkWithLinkPosts[] = await db.query.bookmark.findMany({
-		where: eq(bookmark.userId, userId),
+	const bookmarks: BookmarkWithLinkPosts[] = await db.query.bookmark.findMany({
+		where: and(
+			eq(bookmark.userId, userId),
+			query
+				? or(
+						sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
+						sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
+						sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`,
+					)
+				: undefined,
+		),
 		orderBy: desc(bookmark.createdAt),
+		limit: 10,
+		offset: (Number.parseInt(page) - 1) * 10,
 	});
-
-	if (query) {
-		// Filter bookmarks based on the query string
-		bookmarks = bookmarks.filter((bookmark) => {
-			// Check if the link URL contains the query
-			if (bookmark.linkUrl.toLowerCase().includes(query.toLowerCase())) {
-				return true;
-			}
-
-			// Check if the posts object contains title or description that matches the query
-			if (
-				bookmark.posts.link?.title
-					?.toLowerCase()
-					.includes(query.toLowerCase()) ||
-				bookmark.posts.link?.description
-					?.toLowerCase()
-					.includes(query.toLowerCase())
-			) {
-				return true;
-			}
-
-			return false;
-		});
-	}
 
 	for (const bookmark of bookmarks) {
 		if (!bookmark.posts.posts) {
@@ -107,6 +98,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		subscribed,
 		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
+		key: uuidv7(),
 	};
 }
 
@@ -114,7 +106,69 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	const { bookmarks, subscribed, bsky, instance } = loaderData;
 	const layout = useLayout();
 
-	const groupedBookmarks = bookmarks.reduce(
+	const [searchParams] = useSearchParams();
+	const page = Number.parseInt(searchParams.get("page") || "1");
+	const [nextPage, setNextPage] = useState(page + 1);
+	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
+	const [fetchedBookmarks, setFetchedBookmarks] =
+		useState<BookmarkWithLinkPosts[]>(bookmarks);
+	const [key, setKey] = useState(loaderData.key);
+	const fetcher = useFetcher<typeof loader>();
+	const formRef = useRef<HTMLFormElement>(null);
+
+	function setupIntersectionObserver() {
+		const $form = formRef.current;
+		if (!$form) return;
+		const debouncedSubmit = debounce(submitForm, 1000, {
+			isImmediate: true,
+		});
+		const observer = new IntersectionObserver((entries) => {
+			if (entries[0].isIntersecting) {
+				debouncedSubmit();
+				observer.unobserve($form);
+			}
+		});
+		observer.observe($form);
+		setObserver(observer);
+	}
+
+	function submitForm() {
+		const $form = formRef.current;
+		if (!$form) return;
+		fetcher.submit($form, { preventScrollReset: true });
+		setNextPage(nextPage + 1);
+	}
+
+	const debouncedObserver = debounce(setupIntersectionObserver, 100, {
+		isImmediate: true,
+	});
+
+	// Setup intersection observer after promise is resolved
+	useEffect(() => {
+		if (!observer) {
+			setTimeout(debouncedObserver, 100);
+		}
+	});
+
+	// When the fetcher has returned new links, set the state and reset the observer
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
+	useEffect(() => {
+		if (fetcher.state === "idle" && fetcher.data?.bookmarks) {
+			if (fetcher.data.bookmarks.length > 0) {
+				setFetchedBookmarks(fetchedBookmarks.concat(fetcher.data.bookmarks));
+				setupIntersectionObserver();
+			}
+		}
+	}, [fetcher, fetchedBookmarks.concat]);
+
+	// A new key signifies the server loader got new data. Clear the pagination state.
+	useEffect(() => {
+		if (key !== loaderData.key) {
+			setKey(loaderData.key);
+		}
+	}, [key, loaderData.key]);
+
+	const groupedBookmarks = fetchedBookmarks.reduce(
 		(groups, bookmark) => {
 			const date = new Date(bookmark.createdAt).toLocaleDateString("en-US", {
 				year: "numeric",
@@ -161,9 +215,9 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (
 						<Box key={date} mb="6">
-							<Heading as="h3" size="4" mb="3">
+							{/* <Heading as="h3" size="4" mb="3">
 								{date}
-							</Heading>
+							</Heading> */}
 							{dateBookmarks.map((bookmark) => (
 								<LinkPost
 									key={bookmark.id}
@@ -190,6 +244,14 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 						</Text>
 					</Card>
 				)}
+				<Box position="absolute" top="90%">
+					<fetcher.Form method="GET" preventScrollReset ref={formRef}>
+						<input type="hidden" name="page" value={nextPage} />
+						{[...searchParams.entries()].map(([key, value]) => (
+							<input key={key} type="hidden" name={key} value={value} />
+						))}
+					</fetcher.Form>
+				</Box>
 			</Box>
 		</Layout>
 	);
