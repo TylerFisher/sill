@@ -1,6 +1,8 @@
 import { JoseKey } from "@atproto/jwk-jose";
-import { NodeOAuthClient } from "@atproto/oauth-client-node";
+import { NodeOAuthClient, type RuntimeLock } from "@atproto/oauth-client-node";
 import { SessionStore, StateStore } from "./storage";
+import { sql } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
 
 let oauthClient: NodeOAuthClient | null = null;
 const isProduction = process.env.NODE_ENV === "production";
@@ -42,6 +44,31 @@ export const createOAuthClient = async () => {
 		keyset: [privateKey],
 		stateStore: new StateStore(),
 		sessionStore: new SessionStore(),
+		requestLock,
 	});
 	return oauthClient;
+};
+
+// Helper to convert string key to bigint for pg_advisory_xact_lock
+function stringToHash(str: string): bigint {
+	let hash = 0n;
+	for (let i = 0; i < str.length; i++) {
+		hash = (hash * 31n + BigInt(str.charCodeAt(i))) % 2n ** 63n;
+	}
+	return hash;
+}
+
+export const requestLock: RuntimeLock = async (key, fn) => {
+	return await db.transaction(async (tx) => {
+		const lockId = stringToHash(key);
+
+		await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockId})`);
+
+		try {
+			return await fn();
+		} finally {
+			// Lock is automatically released when transaction commits/rolls back
+			// No explicit unlock needed with pg_advisory_xact_lock
+		}
+	});
 };
