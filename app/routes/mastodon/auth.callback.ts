@@ -19,7 +19,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	});
 
 	if (!userId || !dbInstance || !code) {
-		throw new Error("Could not retrieve instance or code");
+		return redirect("/connect?error=instance");
 	}
 
 	const tokenData = await getAccessToken(

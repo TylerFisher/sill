@@ -62,7 +62,7 @@ const BlueskyConnectForm = ({
 					</TextField.Root>
 					<SubmitButton size="2" label="Connect" />
 					{searchParams.get("error") === "resolver" && (
-						<Callout.Root mt="4">
+						<Callout.Root mt="4" color="red">
 							<Callout.Icon>
 								<CircleAlert width="18" height="18" />
 							</Callout.Icon>
@@ -75,7 +75,7 @@ const BlueskyConnectForm = ({
 						</Callout.Root>
 					)}
 					{searchParams.get("error") === "denied" && (
-						<Callout.Root mt="4">
+						<Callout.Root mt="4" color="red">
 							<Callout.Icon>
 								<CircleAlert width="18" height="18" />
 							</Callout.Icon>
@@ -86,7 +86,7 @@ const BlueskyConnectForm = ({
 						</Callout.Root>
 					)}
 					{searchParams.get("error") === "oauth" && (
-						<Callout.Root mt="4">
+						<Callout.Root mt="4" color="red">
 							<Callout.Icon>
 								<CircleAlert width="18" height="18" />
 							</Callout.Icon>

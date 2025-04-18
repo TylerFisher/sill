@@ -96,7 +96,7 @@ const MastodonConnectForm = ({
 						</TextField.Root>
 						<SubmitButton label="Connect" size="2" />
 						{searchParams.get("error") === "instance" && (
-							<Callout.Root mt="4">
+							<Callout.Root mt="4" color="red">
 								<Callout.Icon>
 									<CircleAlert width="18" height="18" />
 								</Callout.Icon>
