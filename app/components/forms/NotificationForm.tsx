@@ -1,5 +1,4 @@
-import { Box, Callout, Button, Text, Link, Flex } from "@radix-ui/themes";
-import { CircleAlert, Plus } from "lucide-react";
+import { Box, Button, Text, Flex } from "@radix-ui/themes";
 import NotificationGroup, {
 	type NotificationGroupInit,
 } from "./NotificationGroup";
@@ -9,9 +8,11 @@ import {
 	useNotificationsDispatch,
 } from "../contexts/NotificationsContext";
 import { uuidv7 } from "uuidv7-js";
+import type { list } from "~/drizzle/schema.server";
 
 interface NotificationFormProps {
 	lastResult?: SubmissionResult<string[]> | undefined;
+	allLists: (typeof list.$inferSelect)[];
 }
 const defaultCategory = {
 	id: "url",
@@ -92,7 +93,7 @@ const popularLinksFromDomainGroup = (id: string): NotificationGroupInit => ({
 	saved: false,
 });
 
-const NotificationForm = ({ lastResult }: NotificationFormProps) => {
+const NotificationForm = ({ lastResult, allLists }: NotificationFormProps) => {
 	const groups = useNotifications();
 	const { dispatch } = useNotificationsDispatch();
 
@@ -104,6 +105,7 @@ const NotificationForm = ({ lastResult }: NotificationFormProps) => {
 					index={index}
 					group={group}
 					lastResult={lastResult}
+					allLists={allLists}
 				/>
 			))}
 			{groups.notifications.length === 0 ? (

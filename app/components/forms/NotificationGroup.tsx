@@ -25,7 +25,7 @@ import CopyLink from "../linkPosts/CopyLink";
 import { useNotificationsDispatch } from "../contexts/NotificationsContext";
 import { parseWithZod } from "@conform-to/zod";
 import { NotificationSchema } from "~/routes/notifications";
-import ErrorCallout from "./ErrorCallout";
+import type { list } from "~/drizzle/schema.server";
 
 export interface NotificationGroupInit {
 	id?: string;
@@ -44,10 +44,12 @@ const NotificationGroup = ({
 	index,
 	group,
 	lastResult,
+	allLists,
 }: {
 	index: number;
 	group: NotificationGroupInit;
 	lastResult?: SubmissionResult<string[]>;
+	allLists: (typeof list.$inferSelect)[];
 }) => {
 	const [format, setFormat] = useState<string | undefined>(
 		group.notificationType || "email",
@@ -204,6 +206,7 @@ const NotificationGroup = ({
 									item={item}
 									setter={onQueryItemChange}
 									remover={onQueryItemRemove}
+									allLists={allLists}
 								/>
 								<Separator size="4" my="4" />
 							</Box>

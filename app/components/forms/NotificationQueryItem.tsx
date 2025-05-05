@@ -1,58 +1,17 @@
-import {
-	Box,
-	Flex,
-	IconButton,
-	Select,
-	Text,
-	TextField,
-} from "@radix-ui/themes";
+import { Box, Flex, IconButton, Select, TextField } from "@radix-ui/themes";
 import { X } from "lucide-react";
 import { useState } from "react";
+import type { list } from "~/drizzle/schema.server";
 
 interface NotificationCategory {
 	id: string;
 	name: string;
 	type: string;
+	values?: {
+		id: string;
+		name: string;
+	}[];
 }
-
-const notificationCategories = [
-	{
-		id: "url",
-		name: "Link URL",
-		type: "string",
-	},
-	{
-		id: "link",
-		name: "Link text",
-		type: "string",
-	},
-	{
-		id: "shares",
-		name: "Number of shares",
-		type: "number",
-	},
-	{
-		id: "author",
-		name: "Post author",
-		type: "string",
-	},
-	{
-		id: "post",
-		name: "Post text",
-		type: "string",
-	},
-	{
-		id: "repost",
-		name: "Repost author",
-		type: "string",
-	},
-	{
-		id: "service",
-		name: "Service",
-		type: "enum",
-	},
-];
-
 export interface NotificationQuery {
 	category: NotificationCategory;
 	operator: string;
@@ -64,6 +23,7 @@ interface NotificationQueryItemProps {
 	item: NotificationQuery;
 	setter: (item: NotificationQuery, index: number) => void;
 	remover: (index: number) => void;
+	allLists: (typeof list.$inferSelect)[];
 }
 
 const NotificationQueryItem = ({
@@ -71,13 +31,74 @@ const NotificationQueryItem = ({
 	item,
 	setter,
 	remover,
+	allLists,
 }: NotificationQueryItemProps) => {
 	const [category, setCategory] = useState<NotificationCategory>(item.category);
 	const [operator, setOperator] = useState<string>(item.operator);
 	const [value, setValue] = useState<string | number>(item.value);
 
-	const onCategoryChange = (value: string) => {
-		const category = notificationCategories.find((c) => c.id === value);
+	const notificationCategories: NotificationCategory[] = [
+		{
+			id: "url",
+			name: "Link URL",
+			type: "string",
+		},
+		{
+			id: "link",
+			name: "Link text",
+			type: "string",
+		},
+		{
+			id: "shares",
+			name: "Number of shares",
+			type: "number",
+		},
+		{
+			id: "author",
+			name: "Post author",
+			type: "string",
+		},
+		{
+			id: "post",
+			name: "Post text",
+			type: "string",
+		},
+		{
+			id: "repost",
+			name: "Repost author",
+			type: "string",
+		},
+		{
+			id: "service",
+			name: "Service",
+			type: "enum",
+			values: [
+				{
+					id: "bluesky",
+					name: "Bluesky",
+				},
+				{
+					id: "mastodon",
+					name: "Mastodon",
+				},
+			],
+		},
+	];
+
+	if (allLists.length > 0) {
+		notificationCategories.push({
+			id: "list",
+			name: "List name",
+			type: "enum",
+			values: allLists.map((list) => ({
+				id: list.id,
+				name: list.name,
+			})),
+		});
+	}
+
+	const onCategoryChange = (v: string) => {
+		const category = notificationCategories.find((c) => c.id === v);
 		if (!category) {
 			return;
 		}
@@ -88,14 +109,14 @@ const NotificationQueryItem = ({
 		setter({ category, operator, value }, index);
 	};
 
-	const onOperatorChange = (operator: string) => {
-		setOperator(operator);
-		setter({ category, operator, value }, index);
+	const onOperatorChange = (o: string) => {
+		setOperator(o);
+		setter({ category, operator: o, value }, index);
 	};
 
-	const onValueChange = (value: string | number) => {
-		setValue(value);
-		setter({ category, operator, value }, index);
+	const onValueChange = (v: string | number) => {
+		setValue(v);
+		setter({ category, operator, value: v }, index);
 	};
 
 	return (
@@ -144,7 +165,10 @@ const NotificationQueryItem = ({
 							</>
 						)}
 						{category?.type === "enum" && (
-							<Select.Item value="equals">Equals</Select.Item>
+							<>
+								<Select.Item value="equals">Equals</Select.Item>
+								<Select.Item value="excludes">Does not equal</Select.Item>
+							</>
 						)}
 					</Select.Content>
 				</Select.Root>
@@ -175,8 +199,11 @@ const NotificationQueryItem = ({
 					>
 						<Select.Trigger placeholder="Value" id="value" />
 						<Select.Content>
-							<Select.Item value="bluesky">Bluesky</Select.Item>
-							<Select.Item value="mastodon">Mastodon</Select.Item>
+							{category.values?.map((value) => (
+								<Select.Item key={value.id} value={value.id}>
+									{value.name}
+								</Select.Item>
+							))}
 						</Select.Content>
 					</Select.Root>
 				)}

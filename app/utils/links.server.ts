@@ -11,6 +11,8 @@ import {
 	getTableColumns,
 	type SQL,
 	notInArray,
+	not,
+	ne,
 } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
@@ -465,6 +467,19 @@ export const evaluateNotifications = async (
 			}
 		}
 
+		if (query.category.id === "list" && typeof query.value === "string") {
+			if (query.operator === "equals") {
+				postSQLQueries.push(eq(linkPostDenormalized.listId, query.value));
+			}
+			if (query.operator === "excludes") {
+				postSQLQueries.push(
+					or(
+						ne(linkPostDenormalized.listId, query.value),
+						isNull(linkPostDenormalized.listId),
+					),
+				);
+			}
+		}
 		if (query.category.id === "repost" && typeof query.value === "string") {
 			if (query.operator === "equals") {
 				postSQLQueries.push(
@@ -499,6 +514,12 @@ export const evaluateNotifications = async (
 				const value = postType.enumValues.find((v) => v === query.value);
 				if (value) {
 					postSQLQueries.push(eq(linkPostDenormalized.postType, value));
+				}
+			}
+			if (query.operator === "excludes") {
+				const value = postType.enumValues.find((v) => v === query.value);
+				if (value) {
+					postSQLQueries.push(ne(linkPostDenormalized.postType, value));
 				}
 			}
 		}

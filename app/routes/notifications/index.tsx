@@ -149,6 +149,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		where: eq(user.id, userId),
 		with: {
 			notificationGroups: true,
+			blueskyAccounts: {
+				with: {
+					lists: true,
+				},
+			},
+			mastodonAccounts: {
+				with: {
+					lists: true,
+				},
+			},
 		},
 	});
 
@@ -180,6 +190,11 @@ export default function Notifications({
 	if (loaderData.user.notificationGroups.length === 0) {
 		initial = [];
 	}
+
+	const allLists = [
+		...loaderData.user.blueskyAccounts.flatMap((account) => account.lists),
+		...loaderData.user.mastodonAccounts.flatMap((account) => account.lists),
+	];
 
 	return (
 		<Layout>
@@ -216,7 +231,7 @@ export default function Notifications({
 					</Callout.Text>
 				</Callout.Root>
 
-				<NotificationForm lastResult={actionData?.result} />
+				<NotificationForm lastResult={actionData?.result} allLists={allLists} />
 			</NotificationsProvider>
 		</Layout>
 	);
