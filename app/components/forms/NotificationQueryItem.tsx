@@ -1,6 +1,6 @@
 import { Box, Flex, IconButton, Select, TextField } from "@radix-ui/themes";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { list } from "~/drizzle/schema.server";
 
 interface NotificationCategory {
@@ -96,6 +96,30 @@ const NotificationQueryItem = ({
 			})),
 		});
 	}
+
+	// Update category values when allLists changes or when component mounts
+	useEffect(() => {
+		if (category.id === "list" && allLists.length > 0) {
+			const newValues = allLists.map((list) => ({
+				id: list.id,
+				name: list.name,
+			}));
+
+			// Only update if the values have actually changed
+			const currentValues = category.values || [];
+			const hasChanged =
+				JSON.stringify(currentValues) !== JSON.stringify(newValues);
+
+			if (hasChanged) {
+				const updatedCategory = {
+					...category,
+					values: newValues,
+				};
+				setCategory(updatedCategory);
+				setter({ ...item, category: updatedCategory }, index);
+			}
+		}
+	}, [allLists, category, index, item, setter]);
 
 	const onCategoryChange = (v: string) => {
 		const category = notificationCategories.find((c) => c.id === v);
