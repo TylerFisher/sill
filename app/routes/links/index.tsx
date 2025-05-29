@@ -315,11 +315,11 @@ export const LinkPost = ({
 				autoExpand={location.hash.substring(1) === linkPost.link?.id}
 				bookmarks={bookmarks}
 			/>
-			<Separator
-				my={layout === "dense" ? "5" : "7"}
-				size="4"
-				orientation="horizontal"
-			/>
+			{layout === "default" ? (
+				<Separator my="7" size="4" orientation="horizontal" />
+			) : (
+				<Box my="5" />
+			)}
 		</div>
 	);
 };

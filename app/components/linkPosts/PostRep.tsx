@@ -9,9 +9,16 @@ interface PostRepProps {
 	instance: string | undefined;
 	bsky: string | undefined;
 	toolbar?: boolean;
+	layout: "default" | "dense";
 }
 
-const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
+const PostRep = ({
+	group,
+	instance,
+	bsky,
+	toolbar = true,
+	layout = "default",
+}: PostRepProps) => {
 	const post = group[0];
 	const reposters = group
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
@@ -36,8 +43,8 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 				>
 					<Avatar
 						size={{
-							initial: "2",
-							sm: "3",
+							initial: layout === "dense" ? "1" : "2",
+							sm: layout === "dense" ? "2" : "3",
 						}}
 						src={post.actorAvatarUrl || undefined}
 						radius="full"
@@ -58,6 +65,7 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 						}}
 						postUrl={post.postUrl}
 						postDate={post.postDate}
+						layout={layout}
 					/>
 					<PostContent
 						post={{
@@ -65,6 +73,7 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 							postType: post.postType,
 							postImages: post.postImages,
 						}}
+						layout={layout}
 					/>
 				</Box>
 			</Flex>
@@ -104,6 +113,7 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 							}}
 							postUrl={post.quotedPostUrl}
 							postDate={post.quotedPostDate}
+							layout={layout}
 						/>
 					</Flex>
 					<PostContent
@@ -112,15 +122,18 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 							postType: post.quotedPostType || "bluesky",
 							postImages: post.quotedPostImages,
 						}}
+						layout={layout}
 					/>
 				</Card>
 			)}
 
 			{toolbar && (
 				<>
-					<Inset mt="4">
-						<Separator size="4" my="4" />
-					</Inset>
+					{layout === "default" && (
+						<Inset mt="4">
+							<Separator size="4" my="4" />
+						</Inset>
+					)}
 					<Toolbar
 						url={post.postUrl}
 						narrowMutePhrase={post.postUrl}
@@ -128,6 +141,8 @@ const PostRep = ({ group, instance, bsky, toolbar = true }: PostRepProps) => {
 						type="post"
 						instance={instance}
 						bsky={bsky}
+						isBookmarked={false}
+						layout={layout}
 					/>
 				</>
 			)}

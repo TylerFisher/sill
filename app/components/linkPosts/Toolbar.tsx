@@ -13,6 +13,7 @@ interface ToolbarProps {
 	instance: string | undefined;
 	bsky: string | undefined;
 	isBookmarked: boolean;
+	layout: "default" | "dense";
 }
 
 const Toolbar = ({
@@ -24,6 +25,7 @@ const Toolbar = ({
 	instance,
 	bsky,
 	isBookmarked = false,
+	layout = "default"
 }: ToolbarProps) => {
 	return (
 		<Flex justify="between" mx="1" mt="4">
