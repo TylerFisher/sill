@@ -41,7 +41,7 @@ const Nav = ({
 			plus: true,
 		},
 		{
-			to: "/digest/",
+			to: "/digest",
 			label: "Daily Digest",
 			icon: <Mail className={styles["nav-list-item-icon"]} />,
 			plus: true,
@@ -65,7 +65,7 @@ const Nav = ({
 			plus: false,
 		},
 		{
-			to: "/settings/",
+			to: "/settings",
 			label: "Account",
 			icon: <User className={styles["nav-list-item-icon"]} />,
 			plus: false,
@@ -106,6 +106,11 @@ const NavItem = ({
 	icon,
 	location,
 }: { to: string; label: string; icon: ReactElement; location: string }) => {
+	const toEnding = to.split("/").pop() || "";
+	const locationEnding = location.split("/").pop() || "";
+
+	console.log(toEnding, locationEnding, locationEnding.includes(toEnding));
+
 	return (
 		<li className={styles["nav-list-item"]}>
 			<NavLink to={to} aria-label={label} viewTransition>
@@ -114,17 +119,17 @@ const NavItem = ({
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
-						color: location.includes(to)
+						color: locationEnding.includes(toEnding)
 							? "var(--accent-11)"
 							: "var(--gray-a11)",
-						fontWeight: location.includes(to) ? "bold" : "normal",
+						fontWeight: locationEnding.includes(toEnding) ? "bold" : "normal",
 					}}
 					aria-label={label}
 				>
 					{icon} <span className={styles["nav-list-item-label"]}>{label}</span>
 				</Button>
 			</NavLink>
-		</li>
+		</li >
 	);
 };
 
