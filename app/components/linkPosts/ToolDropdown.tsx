@@ -9,6 +9,7 @@ import {
 import CopyToClipboard from "react-copy-to-clipboard";
 import { Ellipsis } from "lucide-react";
 import { useFetcher } from "react-router";
+import styles from "./ToolDropdown.module.css";
 
 interface ToolDropdownProps {
 	url: string;
@@ -53,13 +54,11 @@ const ToolDropdown = ({
 						<DropdownMenu.Item>
 							<Button
 								type="submit"
+								className={styles.submitButtonDropdown}
+								variant="ghost"
 								style={{
-									width: "100%",
-									color: "black",
-									textAlign: "left",
 									paddingLeft: "0.33rem",
 								}}
-								variant="ghost"
 							>
 								{isBookmarked ? "Unbookmark" : "Bookmark"}
 							</Button>
@@ -129,7 +128,7 @@ const ToolDropdown = ({
 									<Button
 										type="submit"
 										variant="ghost"
-										style={{ width: "100%", color: "black" }}
+										className={styles.submitButtonDropdown}
 									>
 										Mute this link
 									</Button>
@@ -144,10 +143,7 @@ const ToolDropdown = ({
 									/>
 									<Button
 										type="submit"
-										style={{
-											width: "100%",
-											color: "black",
-										}}
+										className={styles.submitButtonDropdown}
 										variant="ghost"
 									>
 										Mute all links from {broadMutePhrase}
