@@ -8,26 +8,27 @@ import {
 } from "@radix-ui/themes";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { Ellipsis } from "lucide-react";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useFetcher } from "react-router";
 
 interface ToolDropdownProps {
-	link: MostRecentLinkPosts["link"];
+	url: string;
+	giftUrl?: string | null;
 	instance: string | undefined;
 	bsky: string | undefined;
 	narrowMutePhrase: string;
 	broadMutePhrase: string;
+	isBookmarked: boolean;
 }
 
 const ToolDropdown = ({
-	link,
+	url,
+	giftUrl,
 	bsky,
 	instance,
 	narrowMutePhrase,
 	broadMutePhrase,
+	isBookmarked = false,
 }: ToolDropdownProps) => {
-	if (!link) return <div />;
-
 	const fetcher = useFetcher();
 
 	return (
@@ -40,15 +41,35 @@ const ToolDropdown = ({
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
 					<DropdownMenu.Item>
-						<CopyToClipboard text={link.url}>
+						<CopyToClipboard text={url}>
 							<Text>Copy</Text>
 						</CopyToClipboard>
 					</DropdownMenu.Item>
-					<DropdownMenu.Item>Bookmark</DropdownMenu.Item>
-					{link.giftUrl && (
+					<fetcher.Form
+						method={isBookmarked ? "DELETE" : "POST"}
+						action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
+					>
+						<input type="hidden" name="url" value={url} />
+						<DropdownMenu.Item>
+							<Button
+								type="submit"
+								style={{
+									width: "100%",
+									color: "black",
+									textAlign: "left",
+									paddingLeft: "0.33rem",
+								}}
+								variant="ghost"
+							>
+								{isBookmarked ? "Unbookmark" : "Bookmark"}
+							</Button>
+						</DropdownMenu.Item>
+					</fetcher.Form>
+
+					{giftUrl && (
 						<DropdownMenu.Item>
 							<Link
-								href={link.giftUrl}
+								href={giftUrl}
 								target="_blank"
 								rel="noreferrer"
 								color="gray"
@@ -66,7 +87,7 @@ const ToolDropdown = ({
 							<DropdownMenu.Item>
 								{bsky && (
 									<Link
-										href={`https://bsky.app/intent/compose?text=${encodeURIComponent(link.url)}`}
+										href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
 										target="_blank"
 										rel="noreferrer"
 										aria-label="Share on Bluesky"
@@ -81,7 +102,7 @@ const ToolDropdown = ({
 							<DropdownMenu.Item>
 								{instance && (
 									<Link
-										href={`https://${instance}/share?text=${encodeURIComponent(link.url)}`}
+										href={`https://${instance}/share?text=${encodeURIComponent(url)}`}
 										target="_blank"
 										rel="noreferrer"
 										aria-label="Share on Mastodon"

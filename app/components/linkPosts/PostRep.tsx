@@ -4,6 +4,7 @@ import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import Toolbar from "./Toolbar";
 import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import ToolDropdown from "./ToolDropdown";
 interface PostRepProps {
 	group: (typeof linkPostDenormalized.$inferSelect)[];
 	instance: string | undefined;
@@ -134,6 +135,7 @@ const PostRep = ({
 							<Separator size="4" my="4" />
 						</Inset>
 					)}
+
 					<Toolbar
 						url={post.postUrl}
 						narrowMutePhrase={post.postUrl}

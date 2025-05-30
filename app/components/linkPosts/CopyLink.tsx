@@ -6,7 +6,8 @@ import CopyToClipboard from "react-copy-to-clipboard";
 const CopyLink = ({
 	url,
 	textPositioning,
-}: { url: string; textPositioning: object }) => {
+	layout,
+}: { url: string; textPositioning: object; layout: "default" | "dense" }) => {
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -29,9 +30,15 @@ const CopyLink = ({
 					type="button"
 				>
 					{copied ? (
-						<Check width="18" height="18" />
+						<Check
+							width={layout === "default" ? "18" : "14"}
+							height={layout === "default" ? "18" : "14"}
+						/>
 					) : (
-						<Copy width="18" height="18" />
+						<Copy
+							width={layout === "default" ? "18" : "14"}
+							height={layout === "default" ? "18" : "14"}
+						/>
 					)}
 				</IconButton>
 			</CopyToClipboard>

@@ -173,9 +173,11 @@ const LinkRep = ({
 			)}
 			{toolbar && layout === "dense" && (
 				<ToolDropdown
-					link={link}
+					url={link.url}
+					giftUrl={link.giftUrl}
 					instance={instance}
 					bsky={bsky}
+					isBookmarked={isBookmarked}
 					narrowMutePhrase={link.url}
 					broadMutePhrase={host}
 				/>
