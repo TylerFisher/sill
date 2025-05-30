@@ -6,10 +6,12 @@ const MuteActions = ({
 	narrowMutePhrase,
 	broadMutePhrase,
 	type,
+	layout,
 }: {
 	narrowMutePhrase: string;
 	broadMutePhrase: string;
 	type: "post" | "link";
+	layout: "default" | "dense";
 }) => {
 	const fetcher = useFetcher();
 
@@ -22,7 +24,10 @@ const MuteActions = ({
 					size="1"
 					title="Mute options"
 				>
-					<MessageSquareOff width="18" height="18" />
+					<MessageSquareOff
+						width={layout === "default" ? "18" : "14"}
+						height={layout === "default" ? "18" : "14"}
+					/>
 				</IconButton>
 			</Popover.Trigger>
 			<Popover.Content>

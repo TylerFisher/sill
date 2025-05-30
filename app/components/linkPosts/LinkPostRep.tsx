@@ -1,5 +1,5 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Box } from "@radix-ui/themes";
+import { Box, Card } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import { useState } from "react";
 import LinkRep from "~/components/linkPosts/LinkRep";
@@ -76,6 +76,25 @@ export function getUniqueAvatarUrls(
 		.filter((url): url is string => url != null);
 }
 
+interface WrapperComponentProps extends React.PropsWithChildren {
+	layout: "default" | "dense";
+}
+
+const WrapperComponent = ({ layout, children }: WrapperComponentProps) => {
+	if (layout === "dense") {
+		return (
+			<Card
+				style={{
+					overflow: "visible", // allow sticky
+				}}
+			>
+				{children}
+			</Card>
+		);
+	}
+	return <Box>{children}</Box>;
+};
+
 const LinkPostRep = ({
 	linkPost,
 	instance,
@@ -94,7 +113,7 @@ const LinkPostRep = ({
 	);
 
 	return (
-		<Box key={linkPost.link.url}>
+		<WrapperComponent layout={layout} key={linkPost.link.url}>
 			<LinkRep
 				link={linkPost.link}
 				instance={instance}
@@ -111,6 +130,7 @@ const LinkPostRep = ({
 					uniqueActors={uniqueActors}
 					uniqueActorsCount={linkPost.uniqueActorsCount}
 					open={open}
+					layout={layout}
 				/>
 				<Collapsible.Content>
 					<Box mt="5">
@@ -120,12 +140,13 @@ const LinkPostRep = ({
 								group={group}
 								instance={instance}
 								bsky={bsky}
+								layout={layout}
 							/>
 						))}
 					</Box>
 				</Collapsible.Content>
 			</Collapsible.Root>
-		</Box>
+		</WrapperComponent>
 	);
 };
 

@@ -11,6 +11,7 @@ import {
 	Box,
 	Button,
 	Callout,
+	Card,
 	Flex,
 	Heading,
 	Separator,
@@ -111,46 +112,58 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 						{(topTen) => (
 							<Box mb={!existingUser ? "100px" : "0"}>
 								{topTen.map((linkPost, index) => (
-									<Box key={linkPost.link?.id} position="relative">
-										<NumberRanking ranking={index + 1} layout={layout} />
-										{linkPost.link && (
-											<LinkRep
-												link={{
-													...linkPost.link,
-													url: linkPost.link.giftUrl || linkPost.link.url,
-												}}
-												instance={undefined}
-												bsky={undefined}
-												layout={layout}
-												toolbar={false}
-												isBookmarked={false}
-											/>
+									<>
+										<Card key={linkPost.link?.id}>
+											<NumberRanking ranking={index + 1} layout={layout} />
+											{linkPost.link && (
+												<LinkRep
+													link={{
+														...linkPost.link,
+														url: linkPost.link.giftUrl || linkPost.link.url,
+													}}
+													instance={undefined}
+													bsky={undefined}
+													layout={layout}
+													toolbar={false}
+													isBookmarked={false}
+												/>
+											)}
+
+											{linkPost.posts && (
+												<>
+													<Heading
+														as="h3"
+														size={layout === "dense" ? "1" : "3"}
+													>
+														Most popular post
+													</Heading>
+													<Box mt="-4">
+														<PostRep
+															group={linkPost.posts.map((post) => ({
+																...post,
+																repostActorAvatarUrl: null,
+																repostActorHandle: null,
+																repostActorName: null,
+																repostActorUrl: null,
+															}))}
+															key={linkPost.posts[0].postUrl}
+															instance={undefined}
+															bsky={undefined}
+															toolbar={false}
+															layout={layout}
+														/>
+													</Box>
+												</>
+											)}
+										</Card>
+										{index < topTen.length - 1 && layout === "default" && (
+											<Separator size="4" my="7" />
 										)}
 
-										{linkPost.posts && (
-											<>
-												<Heading as="h3" size="3">
-													Most popular post
-												</Heading>
-												<Box mt="-4">
-													<PostRep
-														group={linkPost.posts.map((post) => ({
-															...post,
-															repostActorAvatarUrl: null,
-															repostActorHandle: null,
-															repostActorName: null,
-															repostActorUrl: null,
-														}))}
-														key={linkPost.posts[0].postUrl}
-														instance={undefined}
-														bsky={undefined}
-														toolbar={false}
-													/>
-												</Box>
-											</>
+										{index < topTen.length - 1 && layout === "dense" && (
+											<Box my="5" />
 										)}
-										{index < topTen.length - 1 && <Separator size="4" my="7" />}
-									</Box>
+									</>
 								))}
 							</Box>
 						)}

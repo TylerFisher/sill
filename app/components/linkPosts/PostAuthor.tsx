@@ -17,13 +17,14 @@ interface PostAuthorProps {
 	actor: PostAuthor;
 	postDate?: (typeof linkPostDenormalized.$inferSelect)["postDate"];
 	postUrl: (typeof linkPostDenormalized.$inferSelect)["postUrl"];
+	layout: "default" | "dense";
 }
 
-const PostAuthor = ({ actor, postDate, postUrl }: PostAuthorProps) => (
+const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => (
 	<Text
 		size={{
-			initial: "2",
-			sm: "3",
+			initial: layout === "dense" ? "1" : "2",
+			sm: layout === "dense" ? "2" : "3",
 		}}
 		weight="bold"
 		as="p"

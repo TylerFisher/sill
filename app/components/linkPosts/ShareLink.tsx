@@ -4,14 +4,22 @@ import { Share } from "lucide-react";
 const SingleAccountShare = ({
 	url,
 	instance,
-}: { url: string; instance: string | undefined }) => {
+	layout,
+}: {
+	url: string;
+	instance: string | undefined;
+	layout: "default" | "dense";
+}) => {
 	const link = instance
 		? `https://${instance}/share?text=${encodeURIComponent(url)}`
 		: `https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`;
 	return (
 		<Link href={link} target="_blank" rel="noreferrer" aria-label="Share">
 			<IconButton aria-label="Share" variant="ghost" title="Share">
-				<Share width="18" height="18" />
+				<Share
+					width={layout === "default" ? "18" : "14"}
+					height={layout === "default" ? "18" : "14"}
+				/>
 			</IconButton>
 		</Link>
 	);
@@ -21,13 +29,22 @@ const ShareLink = ({
 	url,
 	instance,
 	bsky,
-}: { url: string; instance: string | undefined; bsky: string | undefined }) => {
+	layout,
+}: {
+	url: string;
+	instance: string | undefined;
+	bsky: string | undefined;
+	layout: "default" | "dense";
+}) => {
 	if (instance && bsky) {
 		return (
 			<Popover.Root>
 				<Popover.Trigger aria-label="Share" title="Share">
 					<IconButton aria-label="Share" variant="ghost" title="Share">
-						<Share width="18" height="18" />
+						<Share
+							width={layout === "default" ? "18" : "14"}
+							height={layout === "default" ? "18" : "14"}
+						/>
 					</IconButton>
 				</Popover.Trigger>
 				<Popover.Content>
@@ -70,7 +87,7 @@ const ShareLink = ({
 		);
 	}
 
-	return <SingleAccountShare url={url} instance={instance} />;
+	return <SingleAccountShare url={url} instance={instance} layout={layout} />;
 };
 
 export default ShareLink;

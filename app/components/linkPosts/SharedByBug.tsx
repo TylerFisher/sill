@@ -9,10 +9,12 @@ const SharedByBug = ({
 	uniqueActors,
 	uniqueActorsCount,
 	open,
+	layout,
 }: {
 	uniqueActors: (string | null)[];
 	uniqueActorsCount: number;
 	open: boolean;
+	layout: "default" | "dense";
 }) => {
 	const ref = useRef<HTMLButtonElement>(null);
 	const theme = useTheme();
@@ -23,11 +25,12 @@ const SharedByBug = ({
 				ref.current.scrollIntoView();
 			}
 		}, 0);
+
 	return (
 		<CollapsibleTrigger asChild>
 			<Button
 				variant="soft"
-				size="2"
+				size={layout === "dense" ? "1" : "2"}
 				className={styles.bug}
 				ref={ref}
 				onClick={() => {
@@ -36,10 +39,12 @@ const SharedByBug = ({
 				style={{
 					position: open ? "sticky" : "static",
 					zIndex: open ? 5 : 0,
-					backgroundColor: theme === "dark" ? "#2D2305" : "#FFF394",
-					width: open ? "100%" : "270px",
+					backgroundColor:
+						layout === "dense" && !open ? "inherit" : "var(--accent-3)",
+					width: open ? "100%" : layout === "dense" ? "inherit" : "270px",
 					borderRadius: open ? "0" : "1rem",
 					transition: "all 0.3s",
+					padding: 0,
 				}}
 			>
 				{uniqueActors.slice(0, 3).map((actor, i) => (

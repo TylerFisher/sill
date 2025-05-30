@@ -12,9 +12,10 @@ interface Post {
 }
 interface PostContentProps {
 	post: Post;
+	layout: "default" | "dense";
 }
 
-const PostContent = ({ post }: PostContentProps) => {
+const PostContent = ({ post, layout }: PostContentProps) => {
 	if (!post) return null;
 
 	// Process post text to add target="_blank" and rel attributes to all links
@@ -33,8 +34,8 @@ const PostContent = ({ post }: PostContentProps) => {
 				}}
 				className={styles["post-content"]}
 				size={{
-					initial: "2",
-					sm: "3",
+					initial: layout === "dense" ? "1" : "2",
+					sm: layout === "dense" ? "2" : "3",
 				}}
 				as={post.postType === "bluesky" ? "p" : "div"}
 			/>

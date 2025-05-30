@@ -1,7 +1,11 @@
 import { Link, IconButton } from "@radix-ui/themes";
 import { ExternalLink, Gift } from "lucide-react";
 
-const OpenLink = ({ url, isGift }: { url: string; isGift: boolean }) => {
+const OpenLink = ({
+	url,
+	isGift,
+	layout,
+}: { url: string; isGift: boolean; layout: "default" | "dense" }) => {
 	const label = isGift ? "Open gift link" : "Open in new tab";
 	return (
 		<Link
@@ -22,9 +26,15 @@ const OpenLink = ({ url, isGift }: { url: string; isGift: boolean }) => {
 				}}
 			>
 				{isGift ? (
-					<Gift width="20" height="20" />
+					<Gift
+						width={layout === "default" ? "20" : "16"}
+						height={layout === "default" ? "20" : "16"}
+					/>
 				) : (
-					<ExternalLink width="18" height="18" />
+					<ExternalLink
+						width={layout === "default" ? "18" : "14"}
+						height={layout === "default" ? "18" : "14"}
+					/>
 				)}
 			</IconButton>
 		</Link>
