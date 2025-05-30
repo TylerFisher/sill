@@ -2,9 +2,7 @@ import {
 	AspectRatio,
 	Box,
 	Card,
-	DropdownMenu,
 	Flex,
-	IconButton,
 	Inset,
 	Link,
 	Separator,
@@ -16,11 +14,9 @@ import { ClientOnly } from "remix-utils/client-only";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
 import Toolbar from "./Toolbar";
+import ToolDropdown from "./ToolDropdown";
 import { useTheme } from "~/routes/resources/theme-switch";
 import LinkTitle from "./link/LinkTitle";
-import { Ellipsis } from "lucide-react";
-import BookmarkLink from "./BookmarkLink";
-import CopyToClipboard from "react-copy-to-clipboard";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
@@ -176,82 +172,13 @@ const LinkRep = ({
 				</>
 			)}
 			{toolbar && layout === "dense" && (
-				<Box position="absolute" bottom="2" right="3">
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							<IconButton variant="ghost">
-								<Ellipsis width={16} height={16} />
-							</IconButton>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Content>
-							<DropdownMenu.Item>
-								<CopyToClipboard text={link.url}>
-									<Text>Copy</Text>
-								</CopyToClipboard>
-							</DropdownMenu.Item>
-							<DropdownMenu.Item>Bookmark</DropdownMenu.Item>
-							{link.giftUrl && (
-								<DropdownMenu.Item>
-									<Link
-										href={link.giftUrl}
-										target="_blank"
-										rel="noreferrer"
-										color="gray"
-										highContrast
-										underline="none"
-									>
-										Open gift link
-									</Link>
-								</DropdownMenu.Item>
-							)}
-
-							<DropdownMenu.Sub>
-								<DropdownMenu.SubTrigger>Share</DropdownMenu.SubTrigger>
-								<DropdownMenu.SubContent>
-									<DropdownMenu.Item>
-										{bsky && (
-											<Link
-												href={`https://bsky.app/intent/compose?text=${encodeURIComponent(link.url)}`}
-												target="_blank"
-												rel="noreferrer"
-												aria-label="Share on Bluesky"
-												color="gray"
-												highContrast
-												underline="none"
-											>
-												Share on Bluesky
-											</Link>
-										)}
-									</DropdownMenu.Item>
-									<DropdownMenu.Item>
-										{instance && (
-											<Link
-												href={`https://${instance}/share?text=${encodeURIComponent(link.url)}`}
-												target="_blank"
-												rel="noreferrer"
-												aria-label="Share on Mastodon"
-												color="gray"
-												highContrast
-												underline="none"
-											>
-												Share on Mastodon
-											</Link>
-										)}
-									</DropdownMenu.Item>
-								</DropdownMenu.SubContent>
-							</DropdownMenu.Sub>
-							<DropdownMenu.Sub>
-								<DropdownMenu.SubTrigger>Mute</DropdownMenu.SubTrigger>
-								<DropdownMenu.SubContent>
-									<DropdownMenu.Item>Mute this link</DropdownMenu.Item>
-									<DropdownMenu.Item>
-										Mute all links from this domain
-									</DropdownMenu.Item>
-								</DropdownMenu.SubContent>
-							</DropdownMenu.Sub>
-						</DropdownMenu.Content>
-					</DropdownMenu.Root>
-				</Box>
+				<ToolDropdown
+					link={link}
+					instance={instance}
+					bsky={bsky}
+					narrowMutePhrase={link.url}
+					broadMutePhrase={host}
+				/>
 			)}
 		</WrapperComponent>
 	);
