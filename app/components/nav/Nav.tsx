@@ -109,8 +109,6 @@ const NavItem = ({
 	const toEnding = to.split("/").pop() || "";
 	const locationEnding = location.split("/").pop() || "";
 
-	console.log(toEnding, locationEnding, locationEnding.includes(toEnding));
-
 	return (
 		<li className={styles["nav-list-item"]}>
 			<NavLink to={to} aria-label={label} viewTransition>
@@ -129,7 +127,7 @@ const NavItem = ({
 					{icon} <span className={styles["nav-list-item-label"]}>{label}</span>
 				</Button>
 			</NavLink>
-		</li >
+		</li>
 	);
 };
 
