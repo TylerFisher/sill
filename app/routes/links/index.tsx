@@ -98,6 +98,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	const url = new URL(request.url);
 
+	const minSharesParam = url.searchParams.get("minShares");
+	const minShares = minSharesParam
+		? Number.parseInt(minSharesParam)
+		: undefined;
+
 	const options = {
 		hideReposts: url.searchParams.get("reposts") === "true",
 		sort: url.searchParams.get("sort") || "popularity",
@@ -110,6 +115,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			: "all",
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
 		selectedList: url.searchParams.get("list") || "all",
+		minShares: minShares && minShares > 0 ? minShares : undefined,
 	};
 
 	const timeParam = url.searchParams.get("time");
