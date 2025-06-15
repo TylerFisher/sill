@@ -5,6 +5,9 @@ import FilterButtonGroup, {
 } from "~/components/forms/FilterButtonGroup";
 import type { list } from "~/drizzle/schema.server";
 import SearchField from "./SearchField";
+import { useFilterStorage } from "~/hooks/useFilterStorage";
+import NumberInput from "./NumberInput";
+import styles from "./LinkFilters.module.css";
 
 const LinkFilters = ({
 	showService,
@@ -16,6 +19,7 @@ const LinkFilters = ({
 	reverse?: boolean;
 }) => {
 	const [searchParams, setSearchParams] = useSearchParams();
+	useFilterStorage();
 
 	function setSearchParam(param: string, value: string) {
 		setSearchParams((prev) => {
@@ -26,11 +30,35 @@ const LinkFilters = ({
 
 	function clearSearchParams() {
 		setSearchParams([]);
+		// Clear filter preferences from localStorage
+		try {
+			localStorage.removeItem("sill-filter-preferences");
+		} catch (error) {
+			console.warn(
+				"Failed to clear filter preferences from localStorage:",
+				error,
+			);
+		}
 	}
 
 	const buttonGroups: ButtonGroup[] = [
 		{
-			heading: "Show posts from the last",
+			heading: "Sort By",
+			defaultValue: searchParams.get("sort") || "popularity",
+			param: "sort",
+			buttons: [
+				{
+					value: "newest",
+					label: "Newest",
+				},
+				{
+					value: "popularity",
+					label: "Most popular",
+				},
+			],
+		},
+		{
+			heading: "Time Range",
 			defaultValue: searchParams.get("time") || "24h",
 			param: "time",
 			buttons: [
@@ -53,32 +81,17 @@ const LinkFilters = ({
 			],
 		},
 		{
-			heading: "Exclude reposts",
+			heading: "Reposts",
 			defaultValue: searchParams.get("reposts") || "false",
 			param: "reposts",
 			buttons: [
 				{
-					value: "true",
-					label: "Yes",
-				},
-				{
 					value: "false",
-					label: "No",
-				},
-			],
-		},
-		{
-			heading: "Sort by",
-			defaultValue: searchParams.get("sort") || "popularity",
-			param: "sort",
-			buttons: [
-				{
-					value: "newest",
-					label: "Newest",
+					label: "Include",
 				},
 				{
-					value: "popularity",
-					label: "Most popular",
+					value: "true",
+					label: "Exclude",
 				},
 			],
 		},
@@ -127,7 +140,7 @@ const LinkFilters = ({
 	}
 
 	return (
-		<>
+		<div className={styles["filter-container"]}>
 			<Flex direction={reverse ? "column-reverse" : "column"}>
 				<Box mt={reverse ? "3" : "6"} mb={reverse ? "6" : "0"}>
 					<Form method="GET">
@@ -135,23 +148,33 @@ const LinkFilters = ({
 					</Form>
 				</Box>
 				<Box mt="6">
-					{buttonGroups.map((group, index) => (
-						<FilterButtonGroup
-							key={group.heading}
-							heading={group.heading}
-							param={group.param}
-							buttonData={group.buttons}
-							setter={setSearchParam}
-							defaultValue={group.defaultValue}
+					<div className={styles["secondary-filters"]}>
+						<NumberInput
+							param="minShares"
+							heading="Min. Shares"
+							min={1}
+							placeholder="1"
 						/>
-					))}
+						{buttonGroups.map((group) => (
+							<FilterButtonGroup
+								key={group.heading}
+								heading={group.heading}
+								param={group.param}
+								buttonData={group.buttons}
+								setter={setSearchParam}
+								defaultValue={group.defaultValue}
+							/>
+						))}
+					</div>
 				</Box>
 			</Flex>
 
 			{searchParams.size > 0 && (
-				<Button onClick={clearSearchParams}>Reset to defaults</Button>
+				<div className={styles["filter-actions"]}>
+					<Button onClick={clearSearchParams}>Reset to defaults</Button>
+				</div>
 			)}
-		</>
+		</div>
 	);
 };
 

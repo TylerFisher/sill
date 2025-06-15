@@ -1,11 +1,13 @@
 import { Button, TextField } from "@radix-ui/themes";
-import { useSearchParams } from "react-router";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
+import { useFilterStorage } from "~/hooks/useFilterStorage";
 
 const SearchField = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [query, setQuery] = useState(searchParams.get("query") || "");
+	useFilterStorage();
 
 	function setSearchParam(param: string, value: string) {
 		setQuery(value);
