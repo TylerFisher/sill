@@ -55,6 +55,10 @@ const FilterButtonGroup = ({
 			<Select.Root
 				value={searchParam || defaultValue}
 				onValueChange={onSelected}
+				size={{
+					initial: "3",
+					sm: "2",
+				}}
 			>
 				{navigation.state === "loading" && buttonSelected ? (
 					<Select.Trigger>

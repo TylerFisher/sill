@@ -58,7 +58,10 @@ const NumberInput = ({
 				placeholder={placeholder}
 				min={min}
 				max={max}
-				size="2"
+				size={{
+					initial: "3",
+					sm: "2",
+				}}
 				style={{ width: "80px" }}
 			/>
 		</Box>
