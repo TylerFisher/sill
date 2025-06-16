@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
+	blueskyAccount,
 	link,
 	linkPostDenormalized,
 	list,
@@ -23,6 +24,8 @@ import {
 	networkTopTenView,
 	getUniqueActorsCountSql,
 	postType,
+	type mastodonAccount,
+	user,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
@@ -49,6 +52,10 @@ export interface ProcessedResult {
 	denormalized: typeof linkPostDenormalized.$inferInsert;
 }
 
+export interface PlatformMutes {
+	words: string[];
+}
+
 /**
  * Fetches links from Mastodon and Bluesky
  * @param userId ID for logged in user
@@ -69,10 +76,26 @@ export const fetchLinks = async (
  * @param userId ID for logged in user
  * @returns All mute phrases for the user
  */
-export const getMutePhrases = async (userId: string) => {
-	return await db.query.mutePhrase.findMany({
+export const getMutePhrases = async (
+	userId: string,
+	bsky?: typeof blueskyAccount.$inferSelect,
+	mastodon?: typeof mastodonAccount.$inferInsert,
+) => {
+	const mutePhrases = await db.query.mutePhrase.findMany({
 		where: eq(mutePhrase.userId, userId),
 	});
+
+	let phrases: string[] = mutePhrases.map((phrase) => phrase.phrase);
+
+	if (bsky?.mutes?.words) {
+		phrases = phrases.concat(bsky.mutes?.words);
+	}
+
+	if (mastodon?.mutes?.words) {
+		phrases = phrases.concat(mastodon.mutes.words);
+	}
+
+	return phrases;
 };
 
 /**
@@ -234,27 +257,39 @@ export const filterLinkOccurrences = async ({
 		});
 	}
 
+	const dbUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
+			blueskyAccounts: true,
+			mastodonAccounts: true,
+		},
+	});
+
 	const offset = (page - 1) * PAGE_SIZE;
 	const start = new Date(Date.now() - time);
-	const mutePhrases = await getMutePhrases(userId);
+	const mutePhrases = await getMutePhrases(
+		userId,
+		dbUser?.blueskyAccounts[0] || undefined,
+		dbUser?.mastodonAccounts[0] || undefined,
+	);
 	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-		notIlike(link.url, `%${phrase.phrase}%`),
-		notIlike(link.title, `%${phrase.phrase}%`),
-		notIlike(link.description, `%${phrase.phrase}%`),
+		notIlike(link.url, `%${phrase}%`),
+		notIlike(link.title, `%${phrase}%`),
+		notIlike(link.description, `%${phrase}%`),
 	]);
 	const postMuteCondition =
 		mutePhrases.length > 0
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
-						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postText, `%${phrase}%`),
+						ilike(linkPostDenormalized.postUrl, `%${phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase}%`),
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;
@@ -305,7 +340,9 @@ export const filterLinkOccurrences = async ({
 		.having(
 			and(
 				sql`count(*) > 0`,
-				minShares ? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}` : undefined,
+				minShares
+					? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}`
+					: undefined,
 			),
 		)
 		.orderBy(
@@ -369,25 +406,38 @@ export const evaluateNotifications = async (
 	const start = createdAt
 		? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
 		: new Date(Date.now() - ONE_DAY_MS);
-	const mutePhrases = await getMutePhrases(userId);
+
+	const dbUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
+			blueskyAccounts: true,
+			mastodonAccounts: true,
+		},
+	});
+
+	const mutePhrases = await getMutePhrases(
+		userId,
+		dbUser?.blueskyAccounts[0] || undefined,
+		dbUser?.mastodonAccounts[0] || undefined,
+	);
 	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-		notIlike(link.url, `%${phrase.phrase}%`),
-		notIlike(link.title, `%${phrase.phrase}%`),
-		notIlike(link.description, `%${phrase.phrase}%`),
+		notIlike(link.url, `%${phrase}%`),
+		notIlike(link.title, `%${phrase}%`),
+		notIlike(link.description, `%${phrase}%`),
 	]);
 	const postMuteCondition =
 		mutePhrases.length > 0
 			? sql`CASE WHEN ${or(
 					...mutePhrases.flatMap((phrase) => [
-						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
+						ilike(linkPostDenormalized.postText, `%${phrase}%`),
+						ilike(linkPostDenormalized.postUrl, `%${phrase}%`),
+						ilike(linkPostDenormalized.actorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.actorHandle, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedPostText, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedActorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase}%`),
+						ilike(linkPostDenormalized.repostActorName, `%${phrase}%`),
+						ilike(linkPostDenormalized.repostActorHandle, `%${phrase}%`),
 					]),
 				)} THEN NULL ELSE 1 END`
 			: sql`1`;

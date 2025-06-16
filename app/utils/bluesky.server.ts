@@ -20,10 +20,7 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount, link, list, postType } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
-import {
-	conflictUpdateSetAllColumns,
-	type ProcessedResult,
-} from "./links.server";
+import type { ProcessedResult } from "./links.server";
 import type { ListOption } from "~/components/forms/ListSwitch";
 import {
 	getFullUrl,
@@ -219,6 +216,7 @@ export const getBlueskyTimeline = async (
 
 	try {
 		const timeline = await getTimeline();
+		const mutes = await getBlueskyMutes(agent);
 		if (timeline.length > 0) {
 			const firstPost = timeline[0];
 			await db
@@ -227,6 +225,7 @@ export const getBlueskyTimeline = async (
 					mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
 						? new Date(firstPost.reason.indexedAt)
 						: new Date(firstPost.post.indexedAt),
+					mutes: { words: mutes.map((mute) => mute.value) },
 				})
 				.where(eq(blueskyAccount.id, account.id));
 		}
@@ -699,3 +698,20 @@ export const getBlueskyLists = async (account: AccountWithLists) => {
 
 	return listOptions;
 };
+
+
+const getBlueskyMutes = async (agent: Agent) => {
+	const prefs = await agent.getPreferences();
+
+	const validMutes = prefs.moderationPrefs.mutedWords.filter((word) => {
+		if (
+			(!word.expiresAt || new Date(word.expiresAt) > new Date()) &&
+			word.actorTarget !== "exclude-following" &&
+			word.targets.includes("content")
+		) {
+			return true;
+		}
+	});
+
+	return validMutes;
+}
