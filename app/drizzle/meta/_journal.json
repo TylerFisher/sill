@@ -253,6 +253,13 @@
       "when": 1742253711731,
       "tag": "0035_whole_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1750104752746,
+      "tag": "0036_noisy_shockwave",
+      "breakpoints": true
     }
   ]
 }

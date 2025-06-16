@@ -179,10 +179,12 @@ export const getMastodonTimeline = async (
 	}
 
 	if (timeline.length > 0) {
+		const mutes = await getMastodonMutes(client);
 		await db
 			.update(mastodonAccount)
 			.set({
 				mostRecentPostId: timeline[0].id,
+				mutes: { words: mutes.map((mute) => mute.keyword) }
 			})
 			.where(eq(mastodonAccount.id, account.id));
 	}
@@ -358,3 +360,18 @@ export const getMastodonLists = async (account: AccountWithInstance) => {
 
 	return listOptions;
 };
+
+export const getMastodonMutes = async (client: mastodon.rest.Client) => {
+	const filters = await client.v2.filters.list();
+	let muteWords: mastodon.v2.Filter["keywords"] = [];
+	for (const filter of filters) {
+		if (
+			(!filter.expiresAt || new Date(filter.expiresAt) > new Date()) &&
+			filter.filterAction === "hide" &&
+			filter.context.includes("home")
+		) {
+			muteWords = muteWords.concat(filter.keywords);
+		}
+	}
+	return muteWords;
+}

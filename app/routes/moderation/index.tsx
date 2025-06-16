@@ -1,7 +1,7 @@
 import type { Route } from "./+types/index";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Flex, Heading, IconButton, Separator } from "@radix-ui/themes";
+import { Box, Flex, Heading, IconButton, Link, Separator, Text } from "@radix-ui/themes";
 import { data, Form, useFetcher } from "react-router";
 import { eq } from "drizzle-orm";
 import { X } from "lucide-react";
@@ -13,7 +13,7 @@ import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import { db } from "~/drizzle/db.server";
-import { mutePhrase } from "~/drizzle/schema.server";
+import { mutePhrase, user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 
 const MutePhraseSchema = z.object({
@@ -26,6 +26,25 @@ export const meta: Route.MetaFunction = () => [
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
+	const dbUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+		with: {
+			blueskyAccounts: {
+				columns: {
+					mutes: true,
+				},
+			},
+			mastodonAccounts: {
+				columns: {
+					mutes: true,
+				},
+				with: {
+					mastodonInstance: true,
+				},
+			},
+		}
+	});
+
 	const phrases = await db.query.mutePhrase.findMany({
 		where: eq(mutePhrase.userId, userId),
 		columns: {
@@ -35,6 +54,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	return {
 		phrases,
+		blueskyMutes: dbUser?.blueskyAccounts[0]?.mutes,
+		mastodonMutes: dbUser?.mastodonAccounts[0]?.mutes,
+		instance: dbUser?.mastodonAccounts[0]?.mastodonInstance.instance,
 		newPhrase: "",
 	};
 };
@@ -144,6 +166,42 @@ const MutePhraseSettings = ({
 				))}
 			</ul>
 			{loaderData.phrases.length > 0 && <Separator size="4" my="6" />}
+			{loaderData.blueskyMutes && loaderData.blueskyMutes.words.length > 0 && (
+				<Box>
+					<Heading as="h3" size="4">Muted phrases from Bluesky</Heading>
+					<Text as="p" size="2" color="gray" mb="2">Manage your Bluesky mute phrases <Link href={`https://bsky.app/moderation`}>here</Link>.</Text>
+
+					<ul
+						style={{
+							listStyle: "none",
+							padding: 0,
+						}}
+					>
+						{loaderData.blueskyMutes?.words.map((word) => (
+							<li key={word}>{word}</li>
+						))}
+					</ul>
+					<Separator size="4" my="6" />
+				</Box>
+			)}
+
+			{loaderData.mastodonMutes && loaderData.mastodonMutes.words.length > 0 && (
+				<Box>
+					<Heading as="h3" size="4">Muted phrases from Mastodon</Heading>
+					<Text as="p" size="2" color="gray" mb="2">Manage your Mastodon mute phrases <Link href={`https://${loaderData.instance}/filters`}>here</Link>.</Text>
+					<ul
+						style={{
+							listStyle: "none",
+							padding: 0,
+						}}
+					>
+						{loaderData.mastodonMutes?.words.map((word) => (
+							<li key={word}>{word}</li>
+						))}
+					</ul>
+					<Separator size="4" my="6" />
+				</Box>
+			)}
 			<Form method="POST" {...getFormProps(addForm)}>
 				<ErrorList errors={addForm.errors} id={addForm.errorId} />
 				<TextInput
