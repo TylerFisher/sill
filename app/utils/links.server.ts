@@ -189,6 +189,7 @@ interface FilterArgs {
 	selectedList?: string;
 	limit?: number;
 	url?: string;
+	minShares?: number;
 }
 
 const DEFAULT_HIDE_REPOSTS = false;
@@ -215,6 +216,7 @@ export const filterLinkOccurrences = async ({
 	selectedList = "all",
 	limit = PAGE_SIZE,
 	url = undefined,
+	minShares = undefined,
 }: FilterArgs) => {
 	if (fetch) {
 		try {
@@ -300,7 +302,12 @@ export const filterLinkOccurrences = async ({
 			),
 		)
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
-		.having(sql`count(*) > 0`)
+		.having(
+			and(
+				sql`count(*) > 0`,
+				minShares ? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}` : undefined,
+			),
+		)
 		.orderBy(
 			sort === "popularity"
 				? desc(sql`"uniqueActorsCount"`)
