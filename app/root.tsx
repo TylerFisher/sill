@@ -12,6 +12,7 @@ import type React from "react";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
+import "pdfjs-dist/web/pdf_viewer.css";
 import { Theme as RadixTheme } from "@radix-ui/themes";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
@@ -25,6 +26,12 @@ import { getUserId, hasAgreed, isSubscribed } from "./utils/auth.server";
 import { db } from "./drizzle/db.server";
 import { eq } from "drizzle-orm";
 import { user } from "./drizzle/schema.server";
+import { GlobalWorkerOptions } from "pdfjs-dist";
+
+GlobalWorkerOptions.workerSrc = new URL(
+	"pdfjs-dist/build/pdf.worker.mjs",
+	import.meta.url,
+).toString();
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const honeyProps = honeypot.getInputProps();

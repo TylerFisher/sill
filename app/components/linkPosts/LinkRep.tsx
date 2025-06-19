@@ -18,6 +18,7 @@ import ToolDropdown from "./ToolDropdown";
 import { useTheme } from "~/routes/resources/theme-switch";
 import LinkTitle from "./link/LinkTitle";
 const { Tweet } = ReactTweet;
+import PDFEmbed from "../pdf/Embed";
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
@@ -73,13 +74,18 @@ const LinkRep = ({
 	const host = url.host.replace("www.", "");
 	const theme = useTheme();
 
+	const title = url.href.endsWith(".pdf")
+		? `PDF from ${host}`
+		: link.title || link.url;
+
 	return (
 		<WrapperComponent layout={layout}>
 			{link.imageUrl &&
 				layout === "default" &&
 				url.hostname !== "www.youtube.com" &&
 				url.hostname !== "youtu.be" &&
-				url.hostname !== "twitter.com" && (
+				url.hostname !== "twitter.com" &&
+				!url.href.endsWith(".pdf") && (
 					<Inset mb="4" className={styles.inset}>
 						<AspectRatio ratio={16 / 9}>
 							<Link
@@ -113,6 +119,11 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
+			{url.href.endsWith(".pdf") && layout === "default" && (
+				<Inset mb="5" className={styles.inset}>
+					<PDFEmbed url={url} />
+				</Inset>
+			)}
 			<Box
 				position="relative"
 				mt={link.imageUrl && layout === "default" ? "3" : "0"}
@@ -136,12 +147,7 @@ const LinkRep = ({
 						</Text>
 					</Flex>
 				)}
-				<LinkTitle
-					title={link.title || link.url}
-					href={link.url}
-					layout={layout}
-					host={host}
-				/>
+				<LinkTitle title={title} href={link.url} layout={layout} host={host} />
 				<Text
 					as="p"
 					size={{
