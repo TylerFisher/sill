@@ -38,12 +38,12 @@ const MarketingFooter = () => {
 								}}
 							/>
 						</RLink>
-						<RLink href="https://bsky.app/profile/sill.social">
+						<RLink href="https://mastodon.social/@sillapp" rel="me">
 							<img
 								src="/mastodon-logo.svg"
 								width="18"
 								height="18"
-								alt="Bluesky"
+								alt="Mastodon"
 								style={{
 									display: "inline-block",
 									verticalAlign: "middle",
