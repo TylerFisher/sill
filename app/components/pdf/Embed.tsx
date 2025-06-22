@@ -10,11 +10,6 @@ interface PDFEmbedProps {
 const PDFEmbed = ({ url }: PDFEmbedProps) => {
 	const [error, setError] = useState<string | null>(null);
 
-	const handleError = (errorMessage: string) => {
-		setError(errorMessage);
-		setLoading(false);
-	};
-
 	if (error) {
 		return (
 			<div
@@ -61,14 +56,13 @@ const PDFEmbed = ({ url }: PDFEmbedProps) => {
 	return (
 		<div style={{ position: "relative" }}>
 			<Root
-				source={`/api/pdf-proxy?url=${encodeURIComponent(url.href)}`}
+				source={`https://proxy.corsfix.com/?url=${encodeURIComponent(url.href)}`}
 				style={{
 					width: "100%",
 					height: "600px",
 					backgroundColor: "var(--accent-1)",
 				}}
 				isZoomFitWidth={true}
-				onError={(error: Error) => handleError(error.message)}
 			>
 				<ZoomControls />
 				<Pages

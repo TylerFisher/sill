@@ -24,7 +24,6 @@ export default [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
-		route("pdf-proxy", "routes/api/pdf-proxy.ts"),
 		route("seed-plans", "routes/api/seed-plans.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
 		route("update-accounts", "routes/api/update-accounts.tsx"),
