@@ -7,6 +7,7 @@ import PostRep from "~/components/linkPosts/PostRep";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import SharedByBug from "./SharedByBug";
 import type { bookmark } from "~/drizzle/schema.server";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
@@ -14,6 +15,7 @@ export interface LinkPostRepProps {
 	layout: "dense" | "default";
 	autoExpand?: boolean;
 	bookmarks: (typeof bookmark.$inferSelect)[];
+	subscribed: SubscriptionStatus;
 }
 
 function normalizeActorName(name: string | null): string | null {
@@ -102,6 +104,7 @@ const LinkPostRep = ({
 	layout,
 	autoExpand = false,
 	bookmarks = [],
+	subscribed,
 }: LinkPostRepProps) => {
 	if (!linkPost) return null;
 	if (!linkPost.posts || !linkPost.link) return null;
@@ -120,6 +123,7 @@ const LinkPostRep = ({
 				bsky={bsky}
 				layout={layout}
 				isBookmarked={isBookmarked}
+				subscribed={subscribed}
 			/>
 			<Collapsible.Root
 				className="CollapsibleRoot"

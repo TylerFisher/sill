@@ -26,7 +26,11 @@ import {
 	bookmark,
 } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import {
+	isSubscribed,
+	requireUserId,
+	type SubscriptionStatus,
+} from "~/utils/auth.server";
 import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
@@ -136,9 +140,10 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		...options,
 	});
 
-	const lists = subscribed
-		? [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])]
-		: [];
+	const lists =
+		subscribed !== "free"
+			? [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])]
+			: [];
 
 	return {
 		links,
@@ -147,6 +152,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		bsky: bsky?.handle,
 		lists,
 		bookmarks,
+		subscribed,
 	};
 };
 
@@ -264,6 +270,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 										bsky={loaderData.bsky}
 										layout={layout}
 										bookmarks={loaderData.bookmarks}
+										subscribed={loaderData.subscribed}
 									/>
 								</div>
 							))}
@@ -277,6 +284,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 											bsky={loaderData.bsky}
 											layout={layout}
 											bookmarks={loaderData.bookmarks}
+											subscribed={loaderData.subscribed}
 										/>
 									))}
 								</div>
@@ -303,12 +311,14 @@ export const LinkPost = ({
 	bsky,
 	layout,
 	bookmarks,
+	subscribed,
 }: {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
 	bookmarks: (typeof bookmark.$inferSelect)[];
+	subscribed: SubscriptionStatus;
 }) => {
 	const location = useLocation();
 	return (
@@ -320,6 +330,7 @@ export const LinkPost = ({
 				layout={layout}
 				autoExpand={location.hash.substring(1) === linkPost.link?.id}
 				bookmarks={bookmarks}
+				subscribed={subscribed}
 			/>
 			{layout === "default" ? (
 				<Separator my="7" size="4" orientation="horizontal" />

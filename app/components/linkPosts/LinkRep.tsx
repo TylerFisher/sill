@@ -17,6 +17,7 @@ import Toolbar from "./Toolbar";
 import ToolDropdown from "./ToolDropdown";
 import { useTheme } from "~/routes/resources/theme-switch";
 import LinkTitle from "./link/LinkTitle";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 const { Tweet } = ReactTweet;
 
 interface LinkRepProps {
@@ -26,6 +27,7 @@ interface LinkRepProps {
 	layout: "dense" | "default";
 	toolbar?: boolean;
 	isBookmarked: boolean;
+	subscribed: SubscriptionStatus;
 }
 
 const YoutubeEmbed = ({ url }: { url: URL }) => {
@@ -67,6 +69,7 @@ const LinkRep = ({
 	layout,
 	toolbar = true,
 	isBookmarked,
+	subscribed,
 }: LinkRepProps) => {
 	if (!link) return null;
 	const url = new URL(link.url);
@@ -168,6 +171,7 @@ const LinkRep = ({
 						type="link"
 						isBookmarked={isBookmarked}
 						layout={layout}
+						subscribed={subscribed}
 					/>
 				</>
 			)}

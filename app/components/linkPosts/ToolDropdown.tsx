@@ -10,6 +10,7 @@ import CopyToClipboard from "react-copy-to-clipboard";
 import { Ellipsis } from "lucide-react";
 import { useFetcher } from "react-router";
 import styles from "./ToolDropdown.module.css";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 interface ToolDropdownProps {
 	url: string;
@@ -19,6 +20,7 @@ interface ToolDropdownProps {
 	narrowMutePhrase: string;
 	broadMutePhrase: string;
 	isBookmarked: boolean;
+	subscribed?: SubscriptionStatus;
 }
 
 const ToolDropdown = ({
@@ -29,6 +31,7 @@ const ToolDropdown = ({
 	narrowMutePhrase,
 	broadMutePhrase,
 	isBookmarked = false,
+	subscribed,
 }: ToolDropdownProps) => {
 	const fetcher = useFetcher();
 
@@ -46,24 +49,26 @@ const ToolDropdown = ({
 							<Text>Copy</Text>
 						</CopyToClipboard>
 					</DropdownMenu.Item>
-					<fetcher.Form
-						method={isBookmarked ? "DELETE" : "POST"}
-						action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
-					>
-						<input type="hidden" name="url" value={url} />
-						<DropdownMenu.Item>
-							<Button
-								type="submit"
-								className={styles.submitButtonDropdown}
-								variant="ghost"
-								style={{
-									paddingLeft: "0.33rem",
-								}}
-							>
-								{isBookmarked ? "Unbookmark" : "Bookmark"}
-							</Button>
-						</DropdownMenu.Item>
-					</fetcher.Form>
+					{subscribed !== "free" && (
+						<fetcher.Form
+							method={isBookmarked ? "DELETE" : "POST"}
+							action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
+						>
+							<input type="hidden" name="url" value={url} />
+							<DropdownMenu.Item>
+								<Button
+									type="submit"
+									className={styles.submitButtonDropdown}
+									variant="ghost"
+									style={{
+										paddingLeft: "0.33rem",
+									}}
+								>
+									{isBookmarked ? "Unbookmark" : "Bookmark"}
+								</Button>
+							</DropdownMenu.Item>
+						</fetcher.Form>
+					)}
 
 					{giftUrl && (
 						<DropdownMenu.Item>

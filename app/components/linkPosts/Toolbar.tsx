@@ -4,6 +4,7 @@ import ShareLink from "./ShareLink";
 import OpenLink from "./OpenLink";
 import MuteActions from "./MuteActions";
 import BookmarkLink from "./BookmarkLink";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 interface ToolbarProps {
 	url: string;
 	giftUrl?: string | null;
@@ -14,6 +15,7 @@ interface ToolbarProps {
 	bsky: string | undefined;
 	isBookmarked: boolean;
 	layout: "default" | "dense";
+	subscribed?: SubscriptionStatus;
 }
 
 const Toolbar = ({
@@ -26,6 +28,7 @@ const Toolbar = ({
 	bsky,
 	isBookmarked = false,
 	layout = "default",
+	subscribed,
 }: ToolbarProps) => {
 	return (
 		<Flex justify="between" mx="1" mt="4">
@@ -39,7 +42,7 @@ const Toolbar = ({
 				}}
 				layout={layout}
 			/>
-			{type === "link" && (
+			{type === "link" && subscribed !== "free" && (
 				<BookmarkLink url={url} isBookmarked={isBookmarked} />
 			)}
 			<OpenLink url={giftUrl || url} isGift={!!giftUrl} layout={layout} />
