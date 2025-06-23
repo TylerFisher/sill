@@ -7,9 +7,8 @@ import {
 	Link2,
 	Mail,
 	MessageSquareOff,
+	Settings,
 	TrendingUp,
-	User,
-	Zap,
 } from "lucide-react";
 import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
@@ -59,15 +58,9 @@ const Nav = ({
 			plus: false,
 		},
 		{
-			to: "/connect",
-			label: "Connect",
-			icon: <Zap className={styles["nav-list-item-icon"]} />,
-			plus: false,
-		},
-		{
 			to: "/settings",
-			label: "Account",
-			icon: <User className={styles["nav-list-item-icon"]} />,
+			label: "Settings",
+			icon: <Settings className={styles["nav-list-item-icon"]} />,
 			plus: false,
 		},
 		{
