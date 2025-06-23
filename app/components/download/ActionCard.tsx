@@ -20,8 +20,8 @@ export default function ActionCard({
 	buttonVariant = "outline",
 }: ActionCardProps) {
 	return (
-		<Card size="3">
-			<Flex direction="column" gap="3">
+		<Card size="3" style={{ height: "100%" }}>
+			<Flex direction="column" gap="3" style={{ height: "100%" }}>
 				<Flex align="center" justify="between">
 					<Heading as="h3" size="5">
 						{title}
@@ -32,7 +32,7 @@ export default function ActionCard({
 						</Badge>
 					)}
 				</Flex>
-				<Text color="gray" size="3">
+				<Text color="gray" size="3" style={{ flexGrow: 1 }}>
 					{description}
 				</Text>
 				<Button asChild size="3" variant={buttonVariant}>

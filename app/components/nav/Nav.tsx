@@ -6,7 +6,6 @@ import {
 	CircleHelp,
 	Link2,
 	Mail,
-	MessageSquareOff,
 	Settings,
 	TrendingUp,
 } from "lucide-react";

@@ -9,6 +9,9 @@ import { HandleResolver } from "@atproto/identity";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
+	const referrer =
+		request.headers.get("referer") || "/accounts/onboarding/social";
+
 	let handle = requestUrl.searchParams.get("handle");
 	if (typeof handle !== "string") {
 		throw new Error("Invalid handle");
@@ -58,10 +61,14 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 					});
 					return redirect(url.toString());
 				} catch {
-					return redirect("/connect?error=resolver");
+					const errorUrl = new URL(referrer);
+					errorUrl.searchParams.set("error", "resolver");
+					return redirect(errorUrl.toString());
 				}
 			}
-			return redirect("/connect?error=resolver");
+			const errorUrl = new URL(referrer);
+			errorUrl.searchParams.set("error", "resolver");
+			return redirect(errorUrl.toString());
 		}
 		throw error;
 	}

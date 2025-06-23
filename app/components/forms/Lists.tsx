@@ -5,6 +5,7 @@ import type { blueskyAccount } from "~/drizzle/schema.server";
 import { CircleAlert } from "lucide-react";
 import type { SubscriptionStatus } from "~/utils/auth.server";
 import { useFetcher } from "react-router";
+import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
 
 const Lists = ({
 	listOptions,
@@ -43,6 +44,9 @@ const Lists = ({
 				</Callout.Root>
 			) : (
 				<>
+					{subscribed === "trial" && (
+						<SubscriptionCallout featureName="Lists" />
+					)}
 					<Text as="p" size="2" mb="4">
 						Sill will track any enabled lists for new links. Sill works best
 						with chronological lists rather than algorithmic ones.
@@ -59,27 +63,6 @@ const Lists = ({
 							))}
 						</Flex>
 					)}
-					{subscribed === "trial" && (
-						<Callout.Root mt="4">
-							<Callout.Icon>
-								<CircleAlert width="18" height="18" />
-							</Callout.Icon>
-							<Callout.Text>
-								Lists are part of Sill+.{" "}
-								<Link href="/settings/subscription">Subscribe now</Link> to
-								maintain access.
-							</Callout.Text>
-						</Callout.Root>
-					)}
-					<Callout.Root mt="4">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text size="2">
-							Lists are free during Sill's beta period. Sill will charge for
-							this feature in the future.
-						</Callout.Text>
-					</Callout.Root>
 				</>
 			)}
 		</Box>

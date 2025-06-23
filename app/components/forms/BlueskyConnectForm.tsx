@@ -96,20 +96,6 @@ const BlueskyConnectForm = ({
 							</Callout.Text>
 						</Callout.Root>
 					)}
-					<Callout.Root mt="4">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							Sill uses Bluesky's new{" "}
-							<Link href="https://docs.bsky.app/blog/oauth-atproto">
-								OAuth authentication system
-							</Link>
-							. When you enter your handle, you will be redirected to Bluesky
-							and asked to login with your password. Sill will never see your
-							password.
-						</Callout.Text>
-					</Callout.Root>
 				</Form>
 			)}
 		</Card>

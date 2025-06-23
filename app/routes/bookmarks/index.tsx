@@ -27,6 +27,7 @@ import { useLayout } from "../resources/layout-switch";
 import { useEffect, useRef, useState } from "react";
 import { uuidv7 } from "uuidv7-js";
 import { debounce } from "ts-debounce";
+import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
@@ -195,16 +196,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 				dek="Sill can save links you bookmark for easy access later. If you bookmark a link, Sill will track all posts sharing that link for you."
 			/>
 			{subscribed === "trial" && (
-				<Callout.Root mb="4">
-					<Callout.Icon>
-						<CircleAlert width="18" height="18" />
-					</Callout.Icon>
-					<Callout.Text size="2">
-						Bookmarks are part of Sill+.{" "}
-						<Link href="/settings/subscription">Subscribe now</Link> to maintain
-						access.
-					</Callout.Text>
-				</Callout.Root>
+				<SubscriptionCallout featureName="Bookmarks" />
 			)}
 			<Box mb="6" key="search">
 				<Form method="GET">

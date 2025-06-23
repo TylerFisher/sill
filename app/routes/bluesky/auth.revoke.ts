@@ -14,5 +14,5 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 	await db.delete(blueskyAccount).where(eq(blueskyAccount.userId, userId));
 
-	return redirect("/connect");
+	return redirect("/settings?tab=connect");
 };

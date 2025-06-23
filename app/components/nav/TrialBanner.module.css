@@ -1,12 +1,8 @@
 .banner {
-  background-color: var(--accent-3);
-  color: var(--accent-11);
+  background-color: var(--accent-a3);
+  color: var(--accent-a11);
   top: 57px;
   position: relative;
-}
-
-.banner a {
-  color: var(--accent-11);
 }
 
 .text {

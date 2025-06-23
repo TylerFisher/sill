@@ -39,7 +39,7 @@ const MastodonConnectForm = ({
 	subscribed,
 }: MastodonConnectFormProps) => {
 	return (
-		<Card mb="6">
+		<Card>
 			<Heading as="h3" size="5" mb="1">
 				Mastodon
 			</Heading>
@@ -57,10 +57,9 @@ const MastodonConnectForm = ({
 							<CircleAlert width="18" height="18" />
 						</Callout.Icon>
 						<Callout.Text>
-							For best performance with Sill, we recommend that you turn off the
-							"Group boosts in timelines" setting in your Mastodon preferences.
-							Turning this off allows us to show you everyone who posted or
-							reposted a particular link. You can go{" "}
+							To show you everyone who posted or reposted a particular link, we
+							recommend that you turn off the "Group boosts in timelines"
+							setting in your Mastodon preferences. You can go{" "}
 							<Link
 								href={`https://${account.mastodonInstance.instance}/settings/preferences/other`}
 								target="_blank"
@@ -112,12 +111,13 @@ const MastodonConnectForm = ({
 							<CircleAlert width="18" height="18" />
 						</Callout.Icon>
 						<Callout.Text>
-							For best performance with Sill, we recommend that you turn off the
-							"Group boosts in timelines" setting in your Mastodon preferences{" "}
-							<strong>before you connect</strong>. Turning this off allows us to
-							show you everyone who posted or reposted a particular link. Go to{" "}
-							<code>https://your-instance/settings/preferences/other</code> to
-							turn off the setting.
+							To show you everyone who posted or reposted a particular link, we
+							recommend that you turn off the "
+							<Link href="https://docs.joinmastodon.org/user/preferences/#misc">
+								Group boosts in timelines
+							</Link>
+							" setting in your Mastodon preferences{" "}
+							<strong>before you connect</strong>.
 						</Callout.Text>
 					</Callout.Root>
 				</>

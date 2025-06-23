@@ -16,6 +16,7 @@ import { uuidv7 } from "uuidv7-js";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
 import { CircleAlert } from "lucide-react";
+import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -210,16 +211,7 @@ export default function Notifications({
 				}}
 			>
 				{loaderData.subscribed === "trial" && (
-					<Callout.Root mb="4">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text size="2">
-							Notifications are part of Sill+.{" "}
-							<Link href="/settings/subscription">Subscribe now</Link> to
-							maintain access.
-						</Callout.Text>
-					</Callout.Root>
+					<SubscriptionCallout featureName="Notifications" />
 				)}
 				<NotificationForm lastResult={actionData?.result} allLists={allLists} />
 			</NotificationsProvider>

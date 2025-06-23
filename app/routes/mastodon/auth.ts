@@ -9,6 +9,8 @@ import { createInstanceCookie } from "~/utils/session.server";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
+	const referrer =
+		request.headers.get("referer") || "/accounts/onboarding/social";
 	let instance = requestUrl.searchParams.get("instance");
 
 	if (!instance) {
@@ -31,7 +33,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	}
 
 	if (!instance.includes(".")) {
-		return redirect("/connect?error=instance");
+		const errorUrl = new URL(referrer);
+		errorUrl.searchParams.set("error", "instance");
+		return redirect(errorUrl.toString());
 	}
 
 	let instanceData = await db.query.mastodonInstance.findFirst({
@@ -71,7 +75,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			instanceData = insert[0];
 		} catch (error) {
 			console.error(error);
-			return redirect("/connect?error=instance");
+			const errorUrl = new URL(referrer);
+			errorUrl.searchParams.set("error", "instance");
+			return redirect(errorUrl.toString());
 		}
 	}
 

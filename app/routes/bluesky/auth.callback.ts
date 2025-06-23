@@ -15,11 +15,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const url = new URL(request.url);
 	if (url.searchParams.get("error_description") === "Access denied") {
-		return redirect("/connect?error=denied");
+		return redirect("/accounts/onboarding/social?error=denied");
 	}
 
 	if (url.searchParams.get("error")) {
-		return redirect("/connect?error=oauth");
+		return redirect("/accounts/onboarding/social?error=oauth");
 	}
 
 	try {

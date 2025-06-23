@@ -10,6 +10,7 @@ import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import { db } from "~/drizzle/db.server";
 import { digestSettings, user, digestItem } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
@@ -80,22 +81,30 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		{} as Record<string, { month: string; year: number; items: typeof items }>,
 	);
 
-	return { 
-		currentSettings, 
-		email: existingUser.email, 
-		subscribed, 
-		itemsByMonth, 
+	return {
+		currentSettings,
+		email: existingUser.email,
+		subscribed,
+		itemsByMonth,
 		userId,
-		hasSettings: !!currentSettings 
+		hasSettings: !!currentSettings,
 	};
 };
 
 export default function Digest({ loaderData }: Route.ComponentProps) {
-	const { currentSettings, email, subscribed, itemsByMonth, userId, hasSettings } = loaderData;
+	const {
+		currentSettings,
+		email,
+		subscribed,
+		itemsByMonth,
+		userId,
+		hasSettings,
+	} = loaderData;
 	const [searchParams] = useSearchParams();
-	
+
 	// Default to archive if settings exist, otherwise default to settings
-	const defaultValue = searchParams.get("tab") || (hasSettings ? "archive" : "settings");
+	const defaultValue =
+		searchParams.get("tab") || (hasSettings ? "archive" : "settings");
 
 	return (
 		<Layout>
@@ -104,14 +113,18 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 					<Tabs.Trigger value="archive">Archive</Tabs.Trigger>
 					<Tabs.Trigger value="settings">Settings</Tabs.Trigger>
 				</Tabs.List>
-				
+
 				<Tabs.Content value="archive">
 					<Box mb="6">
 						<PageHeading
 							title="Daily Digest Archive"
 							dek="View past editions of your Daily Digest. Click on a month to view the editions for that month."
 						/>
+						{subscribed === "trial" && (
+							<SubscriptionCallout featureName="Daily Digests" />
+						)}
 					</Box>
+
 					<Box>
 						{Object.entries(itemsByMonth).map(
 							([monthYear, { month, year, items }], index) => (
@@ -128,29 +141,21 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 						)}
 					</Box>
 				</Tabs.Content>
-				
+
 				<Tabs.Content value="settings">
 					<Box mb="6">
 						<PageHeading
 							title="Daily Digest Settings"
 							dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest using the form below."
 						/>
+						{subscribed === "trial" && (
+							<SubscriptionCallout featureName="Daily Digests" />
+						)}
 					</Box>
-					{subscribed === "trial" && (
-						<Callout.Root mb="4">
-							<Callout.Icon>
-								<CircleAlert width="18" height="18" />
-							</Callout.Icon>
-							<Callout.Text size="2">
-								Daily Digests are part of Sill+.{" "}
-								<Link href="/settings/subscription">Subscribe now</Link> to maintain
-								access.
-							</Callout.Text>
-						</Callout.Root>
-					)}
+
 					<EmailSettingForm currentSettings={currentSettings} email={email} />
 				</Tabs.Content>
 			</Tabs.Root>
 		</Layout>
 	);
-};
+}

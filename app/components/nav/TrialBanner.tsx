@@ -1,5 +1,4 @@
-import { Flex, Text } from "@radix-ui/themes";
-import { Link } from "react-router";
+import { Callout, Flex, Link, Text } from "@radix-ui/themes";
 import styles from "./TrialBanner.module.css";
 import { daysRemaining } from "~/utils/misc";
 
@@ -19,7 +18,11 @@ const TrialBanner = ({ endDate }: { endDate: Date }) => {
 		</Text>
 	);
 
-	const subscribeLink = <Link to="/settings/subscription">Subscribe now</Link>;
+	const subscribeLink = (
+		<Link highContrast href="/settings/subscription">
+			Subscribe now
+		</Link>
+	);
 
 	return (
 		<Flex

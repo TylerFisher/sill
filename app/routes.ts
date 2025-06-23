@@ -13,6 +13,7 @@ export default [
 		route("login", "routes/accounts/login.tsx"),
 		route("logout", "routes/accounts/logout.tsx"),
 		route("onboarding", "routes/accounts/onboarding.tsx"),
+		route("onboarding/social", "routes/accounts/onboarding.social.tsx"),
 		route("password", "routes/accounts/password.tsx"),
 		route("reset-password", "routes/accounts/reset-password.tsx"),
 		route("signup", "routes/accounts/signup.tsx"),

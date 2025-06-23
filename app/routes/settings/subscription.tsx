@@ -4,9 +4,8 @@ import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { and, eq, not } from "drizzle-orm";
 import { subscription, user } from "~/drizzle/schema.server";
-import { Box, Button, Flex, Heading } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid, Heading } from "@radix-ui/themes";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
-import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { useEffect } from "react";
 import { useTheme } from "../resources/theme-switch";
 import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
@@ -49,10 +48,6 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 	const { sub, products, email, name } = loaderData;
 	const theme = useTheme();
 
-	useEffect(() => {
-		PolarEmbedCheckout.init();
-	}, []);
-
 	return (
 		<Layout>
 			{sub ? (
@@ -71,36 +66,43 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 			) : (
 				<Box>
 					<SubscriptionHeader />
-					<Flex direction="column" gap="4" mb="4">
+					<Grid
+						columns={{
+							initial: "1",
+							sm: "2",
+						}}
+						gap="4"
+						mb="4"
+					>
 						<FeatureCard
 							icon={<Mail size={24} />}
 							title="Daily Digests"
 							description="Get a daily curated email or RSS feed of the most popular links from your network, delivered at your preferred time."
-							benefit="Never miss trending content again"
+							benefit="Never miss trending stories again"
 							url="https://docs.sill.social/sill-plus/daily-digest"
 						/>
 						<FeatureCard
 							icon={<Bell size={24} />}
-							title="Custom Notifications"
+							title="Notifications"
 							description="Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords."
 							benefit="Stay ahead of the conversation"
 							url="https://docs.sill.social/sill-plus/notifications"
 						/>
 						<FeatureCard
 							icon={<List size={24} />}
-							title="Track Lists & Feeds"
+							title="Lists & Feeds"
 							description="Track links from your favorite custom lists and feeds on Bluesky or Mastodon."
 							benefit="Follow your interests precisely"
 							url="https://docs.sill.social/sill-plus/lists"
 						/>
 						<FeatureCard
 							icon={<Bookmark size={24} />}
-							title="Unlimited Bookmarks"
-							description="Save links to your bookmarks for easy access and organization. Sill will continue scanning for posts linking to your bookmarks indefinitely."
-							benefit="Never lose track of important content"
+							title="Bookmarks"
+							description="Save links to your bookmarks for easy access and organization."
+							benefit="Never lose important stories"
 							url="https://docs.sill.social/sill-plus/bookmarks"
 						/>
-					</Flex>
+					</Grid>
 
 					<SubscriptionPricingCard
 						products={products}

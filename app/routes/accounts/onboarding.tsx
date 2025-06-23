@@ -134,7 +134,7 @@ export default function OnboardingRoute({
 	const { email } = loaderData;
 	const [searchParams] = useSearchParams();
 	const redirectTo =
-		searchParams.get("redirectTo") || "/connect?onboarding=true";
+		searchParams.get("redirectTo") || "/accounts/onboarding/social";
 
 	const [form, fields] = useForm({
 		id: "onboarding-form",

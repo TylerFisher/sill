@@ -1,6 +1,6 @@
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Grid } from "@radix-ui/themes";
 import ActionCard from "./ActionCard";
-import WelcomeTrialBanner from "./WelcomeTrialBanner";
+import PageHeading from "~/components/nav/PageHeading";
 import type { SubscriptionStatus } from "~/utils/auth.server";
 
 export default function WelcomeContent({
@@ -8,14 +8,18 @@ export default function WelcomeContent({
 }: { subscribed: SubscriptionStatus }) {
 	return (
 		<Box maxWidth="600px">
-			<Heading as="h2" mb="2" size="8">
-				Welcome!
-			</Heading>
-			<Text as="p" mb="6" size="4" color="gray">
-				Here's everything you can do with Sill.
-			</Text>
+			<PageHeading
+				title="You're all set!"
+				dek="Your accounts are connected and ready to go. Start exploring popular links from your network or set up additional features below."
+			/>
 
-			<Flex direction="column" gap="4">
+			<Grid
+				columns={{
+					initial: "1",
+					sm: "2",
+				}}
+				gap="4"
+			>
 				<ActionCard
 					title="View Your Links"
 					description="See what's trending across your network in real-time. Your personalized link feed is ready to explore."
@@ -23,7 +27,12 @@ export default function WelcomeContent({
 					buttonTo="/links"
 					buttonVariant="solid"
 				/>
-
+				<ActionCard
+					title="Connect"
+					description="Add more Bluesky and Mastodon accounts, plus subscribe to additional lists and feeds."
+					buttonText="Connect accounts"
+					buttonTo="/settings?tab=connect"
+				/>
 				{subscribed !== "free" && (
 					<ActionCard
 						title="Daily Digest"
@@ -36,21 +45,14 @@ export default function WelcomeContent({
 
 				{subscribed !== "free" && (
 					<ActionCard
-						title="Custom Notifications"
+						title="Notifications"
 						description="Create personalized alerts for trending topics, keywords, or popularity thresholds."
 						buttonText="Create notifications"
 						buttonTo="/notifications"
 						isPremium
 					/>
 				)}
-
-				<ActionCard
-					title="Connect More Accounts"
-					description="Add more Bluesky and Mastodon accounts, plus subscribe to additional lists and feeds."
-					buttonText="Connect accounts"
-					buttonTo="/settings?tab=connect"
-				/>
-			</Flex>
+			</Grid>
 		</Box>
 	);
 }
