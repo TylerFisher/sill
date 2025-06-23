@@ -19,7 +19,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	});
 
 	if (!userId || !dbInstance || !code) {
-		return redirect("/connect?error=instance");
+		return redirect("/settings?tabs=connect&error=instance");
 	}
 
 	const tokenData = await getAccessToken(

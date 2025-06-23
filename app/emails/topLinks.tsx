@@ -46,7 +46,7 @@ const TopLinks = ({
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
 						<Link
-							href="https://sill.social/connect"
+							href="https://sill.social/settings?tab=connect"
 							style={{
 								color: "#9E6C00",
 							}}

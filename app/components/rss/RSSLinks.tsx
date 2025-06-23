@@ -28,8 +28,10 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 						It looks like Sill doesn't have any links for you. This is likely
 						because Sill got out of sync with your Bluesky and/or Mastodon
 						accounts. To address this,{" "}
-						<Link href="https://sill.social/connect">log back into Sill</Link>.
-						You may be redirected to Bluesky or Mastodon to reauthorize Sill.
+						<Link href="https://sill.social/settings?tab=connect">
+							log back into Sill
+						</Link>
+						. You may be redirected to Bluesky or Mastodon to reauthorize Sill.
 					</Text>
 					<Text as="p">
 						If this doesn't work for you, please email{" "}

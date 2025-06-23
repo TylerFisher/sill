@@ -36,7 +36,6 @@ export default [
 		route("auth", "routes/bluesky/auth.ts"),
 		route("auth/callback", "routes/bluesky/auth.callback.ts"),
 		route("auth/revoke", "routes/bluesky/auth.revoke.ts"),
-		route("auth/restore", "routes/bluesky/auth.restore.ts"),
 	]),
 	...prefix("bookmarks", [
 		route("add", "routes/bookmarks/add.ts"),

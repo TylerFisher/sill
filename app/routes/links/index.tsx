@@ -79,7 +79,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 				}
 			}
 			if (error instanceof OAuthResolverError) {
-				return redirect("/connect?error=resolver") as never;
+				return redirect("/settings?tab=connect&error=resolver") as never;
 			}
 		}
 	}

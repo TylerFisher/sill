@@ -14,7 +14,10 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Hello{name ? ` ${name}` : ""}, thanks for signing up for Sill!
 				Hopefully, by now, you've connected your Bluesky and/or Mastodon
 				accounts. If not, you can do that{" "}
-				<Link href="https://sill.social/connect" style={linkStyles}>
+				<Link
+					href="https://sill.social/settings?tab=connect"
+					style={linkStyles}
+				>
 					here.
 				</Link>
 			</Text>
@@ -101,7 +104,10 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => {
 				Mastodon.
 			</Text>
 			<Text>
-				<Link href="https://sill.social/connect" style={linkStyles}>
+				<Link
+					href="https://sill.social/settings?tab=connect"
+					style={linkStyles}
+				>
 					Connect your lists →
 				</Link>
 			</Text>
