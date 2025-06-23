@@ -15,6 +15,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	}
 
 	handle = handle.trim();
+	// Strip invisible Unicode control and format characters
+	handle = handle.replace(/[\p{Cc}\p{Cf}]/gu, "");
 	handle = handle.toLocaleLowerCase();
 
 	if (handle.startsWith("@")) {
