@@ -1,4 +1,5 @@
 import { Box, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Sparkles } from "lucide-react";
 
 interface Product {
 	id: string;
@@ -24,16 +25,18 @@ export default function SubscriptionPricingCard({
 		<Card
 			style={{
 				background: "var(--accent-3)",
-				border: "2px solid var(--accent-7)",
 			}}
 		>
 			<Box p="6">
 				<Heading as="h3" size="6" mb="2" align="center" color="yellow">
-					🎯 Subscribe today
+					<Sparkles
+						style={{ display: "inline", verticalAlign: "middle" }}
+						size="20"
+					/>{" "}
+					Subscribe today
 				</Heading>
 				<Text as="p" size="4" align="center" mb="4" weight="medium">
-					Join hundreds of users who've transformed their social media
-					workflow
+					Join hundreds of users who've transformed their social media workflow
 				</Text>
 				<Flex direction="column" gap="4" align="center">
 					<Flex gap="3" align="center" justify="center" wrap="wrap">
@@ -59,7 +62,7 @@ export default function SubscriptionPricingCard({
 						))}
 					</Flex>
 					<Text as="p" size="3" color="gray" align="center">
-						✅ Cancel anytime • ✅ Instant access
+						Instant access, cancel any time
 					</Text>
 				</Flex>
 			</Box>

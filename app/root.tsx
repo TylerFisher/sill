@@ -21,7 +21,12 @@ import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme";
 import { getLayout } from "./utils/layout.server";
-import { getUserId, hasAgreed, isSubscribed } from "./utils/auth.server";
+import {
+	getUserId,
+	hasAgreed,
+	isSubscribed,
+	type SubscriptionStatus,
+} from "./utils/auth.server";
 import { db } from "./drizzle/db.server";
 import { eq } from "drizzle-orm";
 import { user } from "./drizzle/schema.server";
@@ -29,7 +34,7 @@ import { user } from "./drizzle/schema.server";
 export async function loader({ request }: Route.LoaderArgs) {
 	const honeyProps = honeypot.getInputProps();
 	const userId = await getUserId(request);
-	let subscribed = "free";
+	let subscribed: SubscriptionStatus = "free";
 	let dbUser = null;
 	let agreed = true;
 	if (userId) {

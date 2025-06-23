@@ -1,4 +1,4 @@
-import { Button } from "@radix-ui/themes";
+import { Button, Text } from "@radix-ui/themes";
 import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import {
 	Bell,
@@ -91,7 +91,18 @@ const Nav = ({
 				</ul>
 				{data?.subscribed === "free" && (
 					<NavLink to="/settings/subscription">
-						<Button variant="soft">Upgrade to Sill+</Button>
+						<Button variant="soft">
+							Upgrade to
+							<Text
+								style={{
+									fontWeight: 900,
+									fontStyle: "italic",
+								}}
+								ml="-1"
+							>
+								sill+
+							</Text>
+						</Button>
 					</NavLink>
 				)}
 			</nav>

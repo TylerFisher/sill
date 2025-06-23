@@ -35,6 +35,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 					<Header
 						headerClass={hideNav ? "onboarding-logo" : "mobile-logo"}
 						hideNav={hideNav || false}
+						subscribed={data?.subscribed}
 					/>
 					{!hideNav && (
 						<aside className={styles.side}>

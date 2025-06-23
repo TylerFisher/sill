@@ -32,6 +32,7 @@ const features = [
 			"Save links to your bookmarks for easy access and organization.",
 		cta: "Learn more about bookmarks",
 		ctaUrl: "https://docs.sill.social/sill-plus/bookmarks/",
+		plus: true,
 	},
 	{
 		title: "Custom Lists & Feeds",
@@ -39,6 +40,7 @@ const features = [
 			"Track links from your favorite custom lists and feeds on Bluesky or Mastodon.",
 		cta: "Learn more about custom lists",
 		ctaUrl: "https://docs.sill.social/sill-plus/lists/",
+		plus: true,
 	},
 	{
 		title: "Daily Digest",
@@ -46,6 +48,7 @@ const features = [
 			"Get a daily curated email or RSS feed of the most popular links from your network, delivered at your preferred time.",
 		cta: "Learn more about the Daily Digest",
 		ctaUrl: "https://docs.sill.social/sill-plus/daily-digest/",
+		plus: true,
 	},
 	{
 		title: "Custom Notifications",
@@ -53,6 +56,7 @@ const features = [
 			"Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords.",
 		cta: "Learn more about custom notifications",
 		ctaUrl: "https://docs.sill.social/sill-plus/notifications/",
+		plus: true,
 	},
 ];
 
@@ -67,7 +71,22 @@ const Features = () => {
 				{features.map((feature) => (
 					<Card size="3" key={feature.title} className={styles.featureCard}>
 						<Flex direction="column" gap="2">
-							<Heading size="4">{feature.title}</Heading>
+							<Flex align="center" gap="2">
+								<Heading size="4">{feature.title}</Heading>
+								{feature.plus && (
+									<Badge color="yellow" variant="solid" size="1">
+										<Text
+											style={{
+												fontStyle: "italic",
+												fontWeight: "900",
+												color: "#9E6C00",
+											}}
+										>
+											sill+
+										</Text>
+									</Badge>
+								)}
+							</Flex>
 							<Text size="2" color="gray">
 								{feature.description}
 							</Text>

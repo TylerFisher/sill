@@ -14,9 +14,33 @@ const TrialBanner = ({ endDate }: { endDate: Date }) => {
 			px="4"
 			className={styles.banner}
 		>
-			<Text>
-				You have {remaining} {days} remaining in your Sill+ free trial.{" "}
-				<Link to="/settings/subscription">Subscribe now</Link>.
+			<Text className={styles.text}>
+				<span className={styles.desktop}>
+					{remaining} {days} left in your{" "}
+					<Text
+						color="yellow"
+						style={{
+							fontWeight: 900,
+							fontStyle: "italic",
+						}}
+					>
+						sill+
+					</Text>{" "}
+					trial. <Link to="/settings/subscription">Subscribe now</Link>.
+				</span>
+				<span className={styles.mobile}>
+					{remaining} {days} of{" "}
+					<Text
+						color="yellow"
+						style={{
+							fontWeight: 900,
+							fontStyle: "italic",
+						}}
+					>
+						sill+
+					</Text>{" "}
+					left. <Link to="/settings/subscription">Subscribe now</Link>.
+				</span>
 			</Text>
 		</Flex>
 	);

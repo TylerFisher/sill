@@ -1,13 +1,20 @@
-import { Box, Dialog, IconButton } from "@radix-ui/themes";
+import { Box, Button, Dialog, IconButton, Text } from "@radix-ui/themes";
 import styles from "./Header.module.css";
 import Nav from "./Nav";
 import { Menu } from "lucide-react";
 import Logo from "./Logo";
+import { NavLink } from "react-router";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
 const Header = ({
 	headerClass,
 	hideNav,
-}: { headerClass: string; hideNav: boolean }) => {
+	subscribed,
+}: {
+	headerClass: string;
+	hideNav: boolean;
+	subscribed?: SubscriptionStatus;
+}) => {
 	return (
 		<header className={styles[headerClass]}>
 			<Box
@@ -47,6 +54,33 @@ const Header = ({
 					</Box>
 				)}
 				<Logo />
+				{subscribed === "free" && (
+					<Box
+						position="absolute"
+						top="0.8rem"
+						right="1rem"
+						display={{
+							initial: "inline-block",
+							md: "none",
+						}}
+					>
+						<NavLink to="/settings/subscription">
+							<Button variant="soft">
+								Get
+								<Text
+									style={{
+										fontWeight: 900,
+										fontStyle: "italic",
+										marginTop: "1px",
+									}}
+									ml="-1"
+								>
+									sill+
+								</Text>
+							</Button>
+						</NavLink>
+					</Box>
+				)}
 			</Box>
 		</header>
 	);
