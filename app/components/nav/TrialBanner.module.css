@@ -14,24 +14,9 @@
   text-align: center;
 }
 
-.mobile {
-  display: inline;
-}
-
-.desktop {
-  display: none;
-}
 
 @media (min-width: 1024px) {
   .banner {
     top: 0;
-  }
-  
-  .mobile {
-    display: none;
-  }
-  
-  .desktop {
-    display: inline;
   }
 }
