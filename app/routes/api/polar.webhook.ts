@@ -10,19 +10,37 @@ export const action = Webhooks({
 	onCustomerStateChanged: async (payload) => {
 		console.log("customer state changed", payload);
 
-		if (!payload.data.externalId) {
-			console.error("Did not receive external ID from payload");
+		let foundUsers: { id: string }[] = [];
+
+		// Set Polar customer ID
+		if (payload.data.externalId) {
+			// Primary approach: match by external ID
+			foundUsers = await db
+				.update(user)
+				.set({
+					customerId: payload.data.id,
+				})
+				.where(eq(user.id, payload.data.externalId))
+				.returning({
+					id: user.id,
+				});
+		} else if (payload.data.email) {
+			// Fallback approach: match by email
+			console.log("No external ID found, falling back to email matching");
+			foundUsers = await db
+				.update(user)
+				.set({
+					customerId: payload.data.id,
+				})
+				.where(eq(user.email, payload.data.email))
+				.returning({
+					id: user.id,
+				});
+		} else {
+			console.error("Neither external ID nor email available in payload");
 			return;
 		}
-		const foundUsers = await db
-			.update(user)
-			.set({
-				customerId: payload.data.id,
-			})
-			.where(eq(user.id, payload.data.externalId))
-			.returning({
-				id: user.id,
-			});
+
 		if (foundUsers.length === 0) {
 			console.error("Could not find user");
 			return;
@@ -30,21 +48,8 @@ export const action = Webhooks({
 
 		const dbUser = foundUsers[0];
 
-		const product = await db.query.polarProduct.findFirst({
-			where: eq(
-				polarProduct.polarId,
-				payload.data.activeSubscriptions[0].productId,
-			),
-		});
-
-		if (!product) {
-			console.error("Could not find product");
-			return;
-		}
+		// Update lapsed subs
 		if (payload.data.activeSubscriptions.length === 0) {
-			console.error("No active subscriptions");
-
-			// Update lapsed subs
 			await db
 				.update(subscription)
 				.set({
@@ -59,7 +64,16 @@ export const action = Webhooks({
 
 			return;
 		}
+		// Update active subs
 		const polarSubscription = payload.data.activeSubscriptions[0];
+		const product = await db.query.polarProduct.findFirst({
+			where: eq(polarProduct.polarId, polarSubscription.productId),
+		});
+
+		if (!product) {
+			console.error("Could not find product");
+			return;
+		}
 
 		await db
 			.insert(subscription)
