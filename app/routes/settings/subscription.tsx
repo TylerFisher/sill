@@ -71,7 +71,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 			) : (
 				<Box>
 					<SubscriptionHeader />
-					<Flex direction="column" gap="4" mb="8">
+					<Flex direction="column" gap="4" mb="4">
 						<FeatureCard
 							icon={<Mail size={24} />}
 							title="Daily Digests"

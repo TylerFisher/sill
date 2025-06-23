@@ -4,7 +4,7 @@
 
 .featureCard:hover {
 	border-color: var(--yellow-7);
-	background-color: var(--gray-2);
+	background-color: var(--yellow-2);
 	transform: translateY(-1px);
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

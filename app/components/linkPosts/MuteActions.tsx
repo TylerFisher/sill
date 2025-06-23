@@ -32,7 +32,7 @@ const MuteActions = ({
 			</Popover.Trigger>
 			<Popover.Content>
 				<Flex gap="4" direction="column">
-					<fetcher.Form method="POST" action="/moderation">
+					<fetcher.Form method="POST" action="/api/mute/add">
 						<input type="hidden" name="newPhrase" value={narrowMutePhrase} />
 						<Button
 							type="submit"
@@ -43,7 +43,7 @@ const MuteActions = ({
 							{type === "post" ? "Mute this post" : "Mute this link"}
 						</Button>
 					</fetcher.Form>
-					<fetcher.Form method="POST" action="/moderation">
+					<fetcher.Form method="POST" action="/api/mute/add">
 						<input type="hidden" name="newPhrase" value={broadMutePhrase} />
 						<Button
 							type="submit"

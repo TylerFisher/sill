@@ -1,20 +1,39 @@
 import type { Route } from "./+types/index";
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
-import { Box, Button, Flex, Heading, Tabs } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Flex,
+	Heading,
+	IconButton,
+	Separator,
+	Tabs,
+	Text,
+} from "@radix-ui/themes";
 import { AlertDialog, DataList } from "@radix-ui/themes";
-import { Form, Link, useSearchParams } from "react-router";
+import { data, Form, Link, useSearchParams, useFetcher } from "react-router";
 import { eq } from "drizzle-orm";
+import { X } from "lucide-react";
+import { z } from "zod";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
+import ErrorList from "~/components/forms/ErrorList";
 import type { ListOption } from "~/components/forms/ListSwitch";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import SubmitButton from "~/components/forms/SubmitButton";
+import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
+import { mutePhrase, user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
+
+const MutePhraseSchema = z.object({
+	newPhrase: z.string().trim(),
+});
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Settings" }];
 
@@ -61,24 +80,43 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 	}
 
-	return { user: existingUser, subscribed, listOptions };
+	const phrases = await db.query.mutePhrase.findMany({
+		where: eq(mutePhrase.userId, userId),
+		columns: {
+			phrase: true,
+		},
+	});
+
+	return { user: existingUser, subscribed, listOptions, phrases };
 }
 
 export default function Settings({ loaderData }: Route.ComponentProps) {
-	const { user, listOptions, subscribed } = loaderData;
+	const { user, listOptions, subscribed, phrases } = loaderData;
 	const [searchParams] = useSearchParams();
+	const fetcher = useFetcher({ key: "delete-mute" });
 	const signedUpOn = new Intl.DateTimeFormat("en-US", {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
 	}).format(new Date(user.createdAt));
 
+	const defaultValue = searchParams.get("tab") || "account";
+
+	const [addForm, addFields] = useForm({
+		onValidate({ formData }) {
+			return parseWithZod(formData, { schema: MutePhraseSchema });
+		},
+		shouldValidate: "onBlur",
+		shouldRevalidate: "onInput",
+	});
+
 	return (
 		<Layout>
-			<Tabs.Root defaultValue="account">
+			<Tabs.Root defaultValue={defaultValue}>
 				<Tabs.List mb="4">
 					<Tabs.Trigger value="account">Account</Tabs.Trigger>
 					<Tabs.Trigger value="connect">Connections</Tabs.Trigger>
+					<Tabs.Trigger value="moderation">Moderation</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="account">
 					<Box>
@@ -142,9 +180,22 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
 											width: "100%",
 										}}
 									>
-										{subscribed === "plus"
-											? "Manage subscription"
-											: "Subscribe to Sill+"}
+										{subscribed === "plus" ? (
+											<Text>
+												Manage{" "}
+												<Text style={{ fontWeight: 900, fontStyle: "italic" }}>
+													sill+
+												</Text>{" "}
+												subscription
+											</Text>
+										) : (
+											<Text>
+												Upgrade to{" "}
+												<Text style={{ fontWeight: 900, fontStyle: "italic" }}>
+													sill+
+												</Text>{" "}
+											</Text>
+										)}
 									</Button>
 								</Link>
 							</Box>
@@ -217,6 +268,72 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
 						searchParams={searchParams}
 						listOptions={listOptions.filter((l) => l.type === "mastodon")}
 					/>
+				</Tabs.Content>
+				<Tabs.Content value="moderation">
+					<Box mb="6">
+						<PageHeading
+							title="Mute settings"
+							dek="Mute phrases in order to keep any links, posts, or accounts with
+								these phrases from appearing in your timeline. You can also mute domains or account handles."
+						/>
+					</Box>
+					{phrases.length > 0 && (
+						<Box mb="2">
+							<Heading as="h3" size="4">
+								Muted phrases
+							</Heading>
+						</Box>
+					)}
+					<ul
+						style={{
+							listStyle: "none",
+							padding: 0,
+						}}
+					>
+						{phrases.map((phrase) => (
+							<li key={phrase.phrase}>
+								<fetcher.Form method="DELETE" action="/api/mute/delete">
+									<Flex my="4" align="center">
+										<input
+											name="phrase"
+											readOnly={true}
+											aria-readonly={true}
+											value={phrase.phrase}
+											style={{
+												border: "none",
+												padding: "0",
+												background: "none",
+												width: "100%",
+											}}
+										/>
+										<IconButton
+											size="1"
+											variant="soft"
+											aria-label="Delete phrase"
+										>
+											<X width="12" height="12" />
+										</IconButton>
+									</Flex>
+								</fetcher.Form>
+							</li>
+						))}
+					</ul>
+					{phrases.length > 0 && <Separator size="4" my="6" />}
+					<fetcher.Form
+						method="POST"
+						action="/api/mute/add"
+						{...getFormProps(addForm)}
+					>
+						<ErrorList errors={addForm.errors} id={addForm.errorId} />
+						<TextInput
+							labelProps={{ children: "New mute phrase" }}
+							inputProps={{
+								...getInputProps(addFields.newPhrase, { type: "text" }),
+							}}
+							errors={addFields.newPhrase.errors}
+						/>
+						<SubmitButton label="Submit" size="2" />
+					</fetcher.Form>
 				</Tabs.Content>
 			</Tabs.Root>
 		</Layout>

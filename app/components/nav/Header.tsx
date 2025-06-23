@@ -53,7 +53,7 @@ const Header = ({
 						</Dialog.Root>
 					</Box>
 				)}
-				<Logo />
+				<Logo subscribed={subscribed} />
 				{subscribed === "free" && (
 					<Box
 						position="absolute"

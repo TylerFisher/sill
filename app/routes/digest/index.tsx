@@ -1,9 +1,19 @@
-import { requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/index";
-import { eq } from "drizzle-orm";
-import { redirect } from "react-router";
-import { user, digestSettings } from "~/drizzle/schema.server";
+import { eq, desc } from "drizzle-orm";
+import { useSearchParams } from "react-router";
+import { Box, Callout, Link, Tabs } from "@radix-ui/themes";
+import { CircleAlert } from "lucide-react";
+import EmailSettingForm from "~/components/forms/EmailSettingsForm";
+import Layout from "~/components/nav/Layout";
+import PageHeading from "~/components/nav/PageHeading";
+import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import { db } from "~/drizzle/db.server";
+import { digestSettings, user, digestItem } from "~/drizzle/schema.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
+
+export const meta: Route.MetaFunction = () => [
+	{ title: "Sill | Daily Digest" },
+];
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
@@ -15,8 +25,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		});
 	}
 
+	const subscribed = await isSubscribed(userId);
+
 	const existingUser = await db.query.user.findFirst({
 		where: eq(user.id, userId),
+		with: { subscriptions: true },
 	});
 
 	if (!existingUser) {
@@ -26,13 +39,118 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		});
 	}
 
-	const settings = await db.query.digestSettings.findFirst({
+	if (subscribed === "free") {
+		throw new Response(null, {
+			status: 403,
+			statusText: "Forbidden - Upgrade required",
+		});
+	}
+
+	const currentSettings = await db.query.digestSettings.findFirst({
 		where: eq(digestSettings.userId, userId),
 	});
 
-	if (settings) {
-		return redirect("/digest/archive");
-	}
+	// Get archive items
+	const items = await db.query.digestItem.findMany({
+		columns: {
+			id: true,
+			pubDate: true,
+		},
+		where: eq(digestItem.userId, userId),
+		orderBy: desc(digestItem.pubDate),
+	});
 
-	return redirect("/digest/settings");
+	// Group items by month
+	const itemsByMonth = items.reduce(
+		(acc, item) => {
+			const date = new Date(item.pubDate);
+			const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
+
+			if (!acc[monthYear]) {
+				acc[monthYear] = {
+					month: date.toLocaleString("default", { month: "long" }),
+					year: date.getFullYear(),
+					items: [],
+				};
+			}
+
+			acc[monthYear].items.push(item);
+			return acc;
+		},
+		{} as Record<string, { month: string; year: number; items: typeof items }>,
+	);
+
+	return { 
+		currentSettings, 
+		email: existingUser.email, 
+		subscribed, 
+		itemsByMonth, 
+		userId,
+		hasSettings: !!currentSettings 
+	};
+};
+
+export default function Digest({ loaderData }: Route.ComponentProps) {
+	const { currentSettings, email, subscribed, itemsByMonth, userId, hasSettings } = loaderData;
+	const [searchParams] = useSearchParams();
+	
+	// Default to archive if settings exist, otherwise default to settings
+	const defaultValue = searchParams.get("tab") || (hasSettings ? "archive" : "settings");
+
+	return (
+		<Layout>
+			<Tabs.Root defaultValue={defaultValue}>
+				<Tabs.List mb="4">
+					<Tabs.Trigger value="archive">Archive</Tabs.Trigger>
+					<Tabs.Trigger value="settings">Settings</Tabs.Trigger>
+				</Tabs.List>
+				
+				<Tabs.Content value="archive">
+					<Box mb="6">
+						<PageHeading
+							title="Daily Digest Archive"
+							dek="View past editions of your Daily Digest. Click on a month to view the editions for that month."
+						/>
+					</Box>
+					<Box>
+						{Object.entries(itemsByMonth).map(
+							([monthYear, { month, year, items }], index) => (
+								<Box key={monthYear} mb="4">
+									<MonthCollapsible
+										month={month}
+										year={year}
+										items={items}
+										userId={userId}
+										index={index}
+									/>
+								</Box>
+							),
+						)}
+					</Box>
+				</Tabs.Content>
+				
+				<Tabs.Content value="settings">
+					<Box mb="6">
+						<PageHeading
+							title="Daily Digest Settings"
+							dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest using the form below."
+						/>
+					</Box>
+					{subscribed === "trial" && (
+						<Callout.Root mb="4">
+							<Callout.Icon>
+								<CircleAlert width="18" height="18" />
+							</Callout.Icon>
+							<Callout.Text size="2">
+								Daily Digests are part of Sill+.{" "}
+								<Link href="/settings/subscription">Subscribe now</Link> to maintain
+								access.
+							</Callout.Text>
+						</Callout.Root>
+					)}
+					<EmailSettingForm currentSettings={currentSettings} email={email} />
+				</Tabs.Content>
+			</Tabs.Root>
+		</Layout>
+	);
 };

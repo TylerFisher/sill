@@ -1,8 +1,12 @@
-import { Heading, Text } from "@radix-ui/themes";
+import { Heading } from "@radix-ui/themes";
 import { Link } from "react-router";
 import styles from "./logo.module.css";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 
-const Logo = ({ extraBig }: { extraBig?: boolean }) => {
+const Logo = ({
+	extraBig,
+	subscribed,
+}: { extraBig?: boolean; subscribed?: SubscriptionStatus | null }) => {
 	return (
 		<Heading
 			size={{
@@ -13,7 +17,7 @@ const Logo = ({ extraBig }: { extraBig?: boolean }) => {
 			mb="2"
 		>
 			<Link to="/" className={styles["logo-link"]}>
-				Sill
+				Sill{subscribed === "plus" && "+"}
 			</Link>
 		</Heading>
 	);

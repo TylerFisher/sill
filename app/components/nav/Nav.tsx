@@ -52,12 +52,6 @@ const Nav = ({
 			plus: true,
 		},
 		{
-			to: "/moderation",
-			label: "Mute",
-			icon: <MessageSquareOff className={styles["nav-list-item-icon"]} />,
-			plus: false,
-		},
-		{
 			to: "/settings",
 			label: "Settings",
 			icon: <Settings className={styles["nav-list-item-icon"]} />,

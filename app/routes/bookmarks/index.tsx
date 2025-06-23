@@ -200,7 +200,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 						<CircleAlert width="18" height="18" />
 					</Callout.Icon>
 					<Callout.Text size="2">
-						Daily Digests are part of Sill+.{" "}
+						Bookmarks are part of Sill+.{" "}
 						<Link href="/settings/subscription">Subscribe now</Link> to maintain
 						access.
 					</Callout.Text>

@@ -24,6 +24,8 @@ export default [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
+		route("mute/add", "routes/api/mute.add.ts"),
+		route("mute/delete", "routes/api/mute.delete.ts"),
 		route("polar/webhook", "routes/api/polar.webhook.ts"),
 		route("polar/seed", "routes/api/polar.seed.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
@@ -41,12 +43,9 @@ export default [
 		index("routes/bookmarks/index.tsx"),
 	]),
 	route("client-metadata.json", "routes/client-metadata.ts"),
-	route("connect", "routes/connect.tsx"),
 	...prefix("digest", [
 		route(":userId/:feedItemId", "routes/digest/feedItem.tsx"),
 		route(":userId.rss", "routes/digest/feed.tsx"),
-		route("archive", "routes/digest/archive.tsx"),
-		route("settings", "routes/digest/settings.tsx"),
 		index("routes/digest/index.tsx"),
 	]),
 	route("download", "routes/download.tsx"),
@@ -65,10 +64,6 @@ export default [
 		route("auth", "routes/mastodon/auth.ts"),
 		route("auth/callback", "routes/mastodon/auth.callback.ts"),
 		route("auth/revoke", "routes/mastodon/auth.revoke.ts"),
-	]),
-	...prefix("moderation", [
-		index("routes/moderation/index.tsx"),
-		route("mute/delete", "routes/moderation/mute.delete.ts"),
 	]),
 	...prefix("notifications", [
 		index("routes/notifications/index.tsx"),

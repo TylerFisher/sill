@@ -21,22 +21,32 @@ const Lists = ({
 			<Heading size="3" mb="2">
 				Lists
 			</Heading>
-			<Text as="p" size="2" mb="4">
-				Sill will track any enabled lists for new links. Sill works best with
-				chronological lists rather than algorithmic ones.
-			</Text>
+
 			{subscribed === "free" ? (
 				<Callout.Root mt="4">
 					<Callout.Icon>
 						<CircleAlert width="18" height="18" />
 					</Callout.Icon>
 					<Callout.Text>
-						Access to lists requires a Sill+ subscription.{" "}
+						Access to lists requires a{" "}
+						<Text
+							style={{
+								fontStyle: "italic",
+								fontWeight: 900,
+							}}
+						>
+							sill+
+						</Text>{" "}
+						subscription.{" "}
 						<Link href="/settings/subscription">Subscribe now.</Link>
 					</Callout.Text>
 				</Callout.Root>
 			) : (
 				<>
+					<Text as="p" size="2" mb="4">
+						Sill will track any enabled lists for new links. Sill works best
+						with chronological lists rather than algorithmic ones.
+					</Text>
 					{listOptions.length > 0 && (
 						<Flex direction="column" gap="4">
 							{listOptions.map((list) => (

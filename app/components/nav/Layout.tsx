@@ -39,7 +39,11 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 					/>
 					{!hideNav && (
 						<aside className={styles.side}>
-							<Header headerClass="desktop-logo" hideNav={false} />
+							<Header
+								headerClass="desktop-logo"
+								hideNav={false}
+								subscribed={data?.subscribed}
+							/>
 							<Nav layoutFormId="desktop-layout" themeFormId="desktop-theme" />
 						</aside>
 					)}

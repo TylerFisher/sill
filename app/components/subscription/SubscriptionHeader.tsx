@@ -3,27 +3,28 @@ import { Box, Heading, Text } from "@radix-ui/themes";
 export default function SubscriptionHeader() {
 	return (
 		<Box mb="6" style={{ textAlign: "center" }}>
-			<Heading
-				as="h2"
-				size="9"
-				style={{
-					fontWeight: 900,
-					fontStyle: "italic",
-				}}
-				align="center"
-				color="yellow"
-				mb="4"
-			>
-				sill+
-			</Heading>
 			<Text
 				as="p"
-				size="6"
+				size={{
+					initial: "6",
+					md: "7",
+				}}
 				align="center"
-				weight="medium"
+				weight="bold"
+				color="yellow"
 				style={{ maxWidth: "600px", margin: "0 auto" }}
 			>
-				Stop doomscrolling. Let Sill do the work for you.
+				Stop doomscrolling. Get{" "}
+				<Text
+					color="yellow"
+					style={{
+						fontWeight: 900,
+						fontStyle: "italic",
+					}}
+				>
+					sill+
+				</Text>
+				.
 			</Text>
 		</Box>
 	);
