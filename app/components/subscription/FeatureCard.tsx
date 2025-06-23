@@ -1,10 +1,13 @@
-import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import type { ReactElement } from "react";
+import styles from "./FeatureCard.module.css";
 
 interface FeatureCardProps {
-	icon: string;
+	icon: ReactElement;
 	title: string;
 	description: string;
 	benefit: string;
+	url?: string;
 }
 
 export default function FeatureCard({
@@ -12,35 +15,44 @@ export default function FeatureCard({
 	title,
 	description,
 	benefit,
+	url,
 }: FeatureCardProps) {
-	return (
-		<Card style={{ background: "var(--accent-2)" }}>
-			<Box p="5">
-				<Flex align="center" gap="3" mb="3">
-					<Box
-						style={{
-							background: "var(--accent-9)",
-							borderRadius: "50%",
-							width: "40px",
-							height: "40px",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<Text size="6">{icon}</Text>
-					</Box>
-					<Heading as="h3" size="5" color="yellow">
+	const content = (
+		<Box
+			p="4"
+			style={{
+				border: "1px solid var(--gray-6)",
+				borderRadius: "var(--radius-3)",
+				transition: "all 0.2s ease",
+			}}
+			className={styles.featureCard}
+		>
+			<Flex align="start" gap="3" mb="3">
+				<Box style={{ minWidth: "2rem", color: "var(--accent-11)" }}>
+					{icon}
+				</Box>
+				<Box>
+					<Heading as="h3" size="4" mb="2">
 						{title}
 					</Heading>
-				</Flex>
-				<Text as="p" size="4" mb="3">
-					{description}
-				</Text>
-				<Text as="p" size="3" color="gray" weight="medium">
-					{benefit}
-				</Text>
-			</Box>
-		</Card>
+					<Text as="p" size="3" mb="2" color="gray">
+						{description}
+					</Text>
+					<Text as="p" size="2" weight="medium" color="yellow">
+						{benefit}
+					</Text>
+				</Box>
+			</Flex>
+		</Box>
 	);
+
+	if (url) {
+		return (
+			<a href={url} target="_blank" rel="noopener noreferrer" className={styles.featureCardLink}>
+				{content}
+			</a>
+		);
+	}
+
+	return content;
 }
