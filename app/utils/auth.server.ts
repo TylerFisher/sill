@@ -329,7 +329,7 @@ export const isSubscribed = async (
 		}
 	}
 
-	return "free";
+	return "plus";
 };
 
 export const hasAgreed = async (userId: string) => {

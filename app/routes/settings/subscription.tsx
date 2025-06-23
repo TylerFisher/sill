@@ -51,20 +51,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	};
 };
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
-
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
-
-	if (!existingUser) {
-		return new Response(null);
-	}
-
-	return redirect("/settings/checkout");
-};
-
 const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 	const { sub, products, email, name } = loaderData;
 	const theme = useTheme();
@@ -88,11 +74,15 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 			</Heading>
 			{sub ? (
 				<div>
-					<Card mb="6">
+					<Card mt="4" mb="6">
 						<DataList.Root>
 							<DataList.Item align="center">
 								<DataList.Label>Subscription status</DataList.Label>
-								<DataList.Value>{`${sub.status[0].toLocaleUpperCase()}${sub.status.slice(1)}`}</DataList.Value>
+								<DataList.Value>
+									{sub.cancelAtPeriodEnd
+										? "Cancelled"
+										: `${sub.status[0].toLocaleUpperCase()}${sub.status.slice(1)}`}
+								</DataList.Value>
 							</DataList.Item>
 							<DataList.Item align="center">
 								<DataList.Label>Plan</DataList.Label>
@@ -101,7 +91,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 							<DataList.Item align="center">
 								<DataList.Label>Price</DataList.Label>
 								<DataList.Value>
-									${sub.polarProduct.amount}/{sub.polarProduct.interval}
+									${sub.polarProduct.amount / 100}/{sub.polarProduct.interval}
 								</DataList.Value>
 							</DataList.Item>
 							<DataList.Item align="center">
@@ -122,41 +112,15 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 							</DataList.Item>
 						</DataList.Root>
 					</Card>
-					<Form method="POST">
-						<input type="hidden" name="subscriptionId" value={sub.polarId} />
-						<Flex direction="column" gap="3">
+					<Flex direction="column" gap="3">
+						<a href="/settings/portal">
 							{sub.cancelAtPeriodEnd || sub.status === "canceled" ? (
-								<SubmitButton
-									label="Reactivate subscription"
-									name="intent"
-									value="reactivate"
-									variant="soft"
-								/>
+								<Button size="2">Reactivate subscription</Button>
 							) : (
-								<>
-									<SubmitButton
-										label={`Switch to ${sub.polarProduct.interval === "year" ? "monthly" : "yearly"} billing`}
-										name="intent"
-										value="switch"
-										variant="soft"
-									/>
-									<SubmitButton
-										label="Update payment method"
-										name="intent"
-										value="Update"
-										variant="soft"
-									/>
-									<SubmitButton
-										label="Cancel subscription"
-										name="intent"
-										value="cancel"
-										color="red"
-										variant="soft"
-									/>
-								</>
+								<Button size="2">Manage subscription</Button>
 							)}
-						</Flex>
-					</Form>
+						</a>
+					</Flex>
 				</div>
 			) : (
 				<Box mt="4">

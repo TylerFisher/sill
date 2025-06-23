@@ -83,6 +83,7 @@ export default [
 	...prefix("settings", [
 		index("routes/settings/index.tsx"),
 		route("checkout", "routes/settings/checkout.tsx"),
+		route("portal", "routes/settings/portal.tsx"),
 		route("subscription", "routes/settings/subscription.tsx"),
 	]),
 ] satisfies RouteConfig;
