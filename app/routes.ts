@@ -24,9 +24,10 @@ export default [
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
-		route("seed-plans", "routes/api/seed-plans.ts"),
+		route("polar/webhook", "routes/api/polar.webhook.ts"),
+		route("polar/seed", "routes/api/polar.seed.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
-		route("update-accounts", "routes/api/update-accounts.tsx"),
+		route("update-accounts", "routes/api/update-accounts.ts"),
 	]),
 	...prefix("bluesky", [
 		route("auth", "routes/bluesky/auth.ts"),
@@ -81,7 +82,7 @@ export default [
 	]),
 	...prefix("settings", [
 		index("routes/settings/index.tsx"),
-		// route("checkout", "routes/settings/checkout.tsx"),
-		// route("subscription", "routes/settings/subscription.tsx"),
+		route("checkout", "routes/settings/checkout.tsx"),
+		route("subscription", "routes/settings/subscription.tsx"),
 	]),
 ] satisfies RouteConfig;

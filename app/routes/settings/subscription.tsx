@@ -3,20 +3,22 @@ import type { Route } from "./+types/subscription";
 import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { and, eq, not } from "drizzle-orm";
-import { plan, subscription, user } from "~/drizzle/schema.server";
+import { subscription, user } from "~/drizzle/schema.server";
 import { Form, redirect } from "react-router";
 import SubmitButton from "~/components/forms/SubmitButton";
-import { stripe } from "~/utils/stripe.server";
-import type Stripe from "stripe";
 import {
 	Box,
+	Button,
 	Card,
 	DataList,
 	Flex,
 	Heading,
-	RadioCards,
+	Separator,
 	Text,
 } from "@radix-ui/themes";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
+import { useEffect } from "react";
+import { useTheme } from "../resources/theme-switch";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Subscription" },
@@ -25,26 +27,28 @@ export const meta: Route.MetaFunction = () => [
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
 
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.id, userId),
+	});
+
 	const sub = await db.query.subscription.findFirst({
 		where: and(
 			eq(subscription.userId, userId),
 			not(eq(subscription.status, "canceled")),
 		),
 		with: {
-			plan: true,
-			price: true,
+			polarProduct: true,
 		},
 	});
 
-	let stripeSub: Stripe.Response<Stripe.Subscription> | null = null;
+	const products = await db.query.polarProduct.findMany();
 
-	if (sub) {
-		stripeSub = await stripe.subscriptions.retrieve(sub.stripeId, {
-			expand: ["default_payment_method"],
-		});
-	}
-
-	return { sub, stripeSub };
+	return {
+		sub,
+		products,
+		email: existingUser?.email,
+		name: existingUser?.name,
+	};
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -58,138 +62,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		return new Response(null);
 	}
 
-	const formData = await request.formData();
-	const intent = formData.get("intent");
-
-	let customerId = existingUser.customerId;
-
-	if (intent === "update") {
-		const session = await stripe.billingPortal.sessions.create({
-			customer: customerId as string,
-			return_url: "http://localhost:3000/settings/checkout",
-			flow_data: {
-				type: "payment_method_update",
-				after_completion: {
-					type: "redirect",
-					redirect: {
-						return_url: "http://localhost:3000/settings/checkout",
-					},
-				},
-			},
-		});
-		if (!session.url) return { success: false };
-		return redirect(session.url);
-	}
-
-	if (intent === "cancel") {
-		const subscriptionId = String(formData.get("subscriptionId"));
-
-		const session = await stripe.billingPortal.sessions.create({
-			customer: customerId as string,
-			return_url: "http://localhost:3000/settings/checkout",
-			flow_data: {
-				type: "subscription_cancel",
-				subscription_cancel: {
-					subscription: subscriptionId,
-				},
-				after_completion: {
-					type: "redirect",
-					redirect: {
-						return_url: "http://localhost:3000/settings/checkout",
-					},
-				},
-			},
-		});
-		if (!session.url) return { success: false };
-		return redirect(session.url);
-	}
-
-	if (intent === "switch") {
-		const subscriptionId = String(formData.get("subscriptionId"));
-
-		const session = await stripe.billingPortal.sessions.create({
-			customer: customerId as string,
-			return_url: "http://localhost:3000/settings/checkout",
-			flow_data: {
-				type: "subscription_update",
-				subscription_update: {
-					subscription: subscriptionId,
-				},
-				after_completion: {
-					type: "redirect",
-					redirect: {
-						return_url: "http://localhost:3000/settings/checkout",
-					},
-				},
-			},
-		});
-		if (!session.url) return { success: false };
-		return redirect(session.url);
-	}
-
-	if (intent === "reactivate") {
-		const session = await stripe.billingPortal.sessions.create({
-			customer: customerId as string,
-			return_url: "http://localhost:3000/settings/checkout",
-		});
-		if (!session.url) return { success: false };
-		return redirect(session.url);
-	}
-
-	if (!customerId) {
-		const customerData: Stripe.CustomerCreateParams = {
-			email: existingUser.email,
-			metadata: {
-				userId: existingUser.id,
-			},
-		};
-		if (existingUser.name) {
-			customerData.name = existingUser.name;
-		}
-		const newCustomer = await stripe.customers.create(customerData);
-
-		await db
-			.update(user)
-			.set({
-				customerId: newCustomer.id,
-			})
-			.where(eq(user.id, existingUser.id));
-
-		customerId = newCustomer.id;
-	}
-
-	const plusPlan = await db.query.plan.findFirst({
-		where: eq(plan.stripeId, "plus"),
-		with: {
-			prices: true,
-		},
-	});
-
-	const interval = String(formData.get("interval"));
-	const price = plusPlan?.prices.find(
-		(price) => price.interval === interval && price.currency === "usd",
-	);
-
-	if (!price) {
-		return new Response(null);
-	}
-
-	const checkout = await stripe.checkout.sessions.create({
-		customer: customerId,
-		line_items: [{ price: price.stripeId, quantity: 1 }],
-		success_url: "http://localhost:3000/settings/checkout",
-		mode: "subscription",
-		payment_method_types: ["card", "link"],
-	});
-
-	if (!checkout.url) {
-		return new Response(null);
-	}
-	return redirect(checkout.url);
+	return redirect("/settings/checkout");
 };
 
 const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
-	const { sub, stripeSub } = loaderData;
+	const { sub, products, email, name } = loaderData;
+	const theme = useTheme();
+
+	useEffect(() => {
+		PolarEmbedCheckout.init();
+	}, []);
+
 	return (
 		<Layout>
 			<Heading
@@ -213,12 +96,12 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 							</DataList.Item>
 							<DataList.Item align="center">
 								<DataList.Label>Plan</DataList.Label>
-								<DataList.Value>{sub.plan.name}</DataList.Value>
+								<DataList.Value>{sub.polarProduct.name}</DataList.Value>
 							</DataList.Item>
 							<DataList.Item align="center">
 								<DataList.Label>Price</DataList.Label>
 								<DataList.Value>
-									${sub.price.amount / 100}/{sub.price.interval}
+									${sub.polarProduct.amount}/{sub.polarProduct.interval}
 								</DataList.Value>
 							</DataList.Item>
 							<DataList.Item align="center">
@@ -237,20 +120,10 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 									{sub.periodEnd?.toLocaleDateString()}
 								</DataList.Value>
 							</DataList.Item>
-							{stripeSub?.default_payment_method &&
-								typeof stripeSub?.default_payment_method === "object" && (
-									<DataList.Item align="center">
-										<DataList.Label>Payment method</DataList.Label>
-										<DataList.Value>
-											{stripeSub?.default_payment_method?.card?.brand.toUpperCase()}{" "}
-											{stripeSub?.default_payment_method?.card?.last4}
-										</DataList.Value>
-									</DataList.Item>
-								)}
 						</DataList.Root>
 					</Card>
 					<Form method="POST">
-						<input type="hidden" name="subscriptionId" value={sub.stripeId} />
+						<input type="hidden" name="subscriptionId" value={sub.polarId} />
 						<Flex direction="column" gap="3">
 							{sub.cancelAtPeriodEnd || sub.status === "canceled" ? (
 								<SubmitButton
@@ -262,7 +135,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 							) : (
 								<>
 									<SubmitButton
-										label={`Switch to ${sub.price.interval === "year" ? "monthly" : "annual"} billing`}
+										label={`Switch to ${sub.polarProduct.interval === "year" ? "monthly" : "yearly"} billing`}
 										name="intent"
 										value="switch"
 										variant="soft"
@@ -291,55 +164,53 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 						Subscribe to Sill+ to get access to exclusive features and support
 						the development of Sill. With Sill+, you get access to:
 					</Text>
-					<Heading as="h4" size="3" mb="2">
-						Daily Digest
+					<Heading as="h4" size="4" mb="2">
+						Daily Digests
 					</Heading>
 					<Text as="p" mb="4">
 						Get a daily curated email or RSS feed of the most popular links from
 						your network, delivered at your preferred time.
 					</Text>
-					<Heading as="h4" size="3" mb="2">
+					<Heading as="h4" size="4" mb="2">
 						Custom Notifications
 					</Heading>
 					<Text as="p" mb="4">
 						Set up personalized email or RSS alerts for any criteria you define,
 						from popularity thresholds to specific keywords.
 					</Text>
-					<Heading as="h4" size="3" mb="2">
+					<Heading as="h4" size="4" mb="2">
 						Custom Lists & Feeds
 					</Heading>
 					<Text as="p" mb="4">
 						Track links from your favorite custom lists and feeds on Bluesky or
 						Mastodon.
 					</Text>
-
-					<Heading as="h3" size="4" mb="2">
+					<Heading as="h4" size="4" mb="2">
+						Bookmarks
+					</Heading>
+					<Text as="p" mb="4">
+						Save links to your bookmarks for easy access and organization. Sill
+						will continue scanning for posts linking to your bookmarks
+						indefinitely.
+					</Text>
+					<Separator my="6" size="4" />
+					<Heading as="h3" size="5" mb="4" align="center">
 						Subscribe now
 					</Heading>
-					<Form method="POST">
-						<RadioCards.Root
-							name="interval"
-							defaultValue="month"
-							size="1"
-							my="3"
-						>
-							<RadioCards.Item value="month">
-								<Flex direction="column" gap="1">
-									<Text weight="bold">Monthly</Text>
-									<Text>$5/month</Text>
-								</Flex>
-							</RadioCards.Item>
-							<RadioCards.Item value="year">
-								<Flex direction="column" gap="1">
-									<Text weight="bold">Annual</Text>
-									<Text>$50/year</Text>
-								</Flex>
-							</RadioCards.Item>
-						</RadioCards.Root>
-						<Flex direction="column" gap="3">
-							<SubmitButton label="Subscribe" name="intent" value="subscribe" />
-						</Flex>
-					</Form>
+					<Flex gap="3" flexBasis="1" align="center" justify="center">
+						{products.map((product) => (
+							<a
+								data-polar-checkout
+								data-polar-checkout-theme={theme}
+								href={`${product.checkoutLinkUrl}?customer_email=${email}&customer_name=${name}`}
+								key={product.id}
+							>
+								<Button size="4">
+									${product.amount / 100}/{product.interval}
+								</Button>
+							</a>
+						))}
+					</Flex>
 				</Box>
 			)}
 		</Layout>

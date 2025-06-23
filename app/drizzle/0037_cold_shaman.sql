@@ -1,0 +1,1 @@
+ALTER TABLE "polar_product" ADD COLUMN "polarId" text NOT NULL;

@@ -253,6 +253,27 @@
       "when": 1742253711731,
       "tag": "0035_whole_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1750623528711,
+      "tag": "0036_married_sharon_carter",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1750623571996,
+      "tag": "0037_cold_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1750628744774,
+      "tag": "0038_broad_wong",
+      "breakpoints": true
     }
   ]
 }

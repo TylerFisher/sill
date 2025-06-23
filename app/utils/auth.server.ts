@@ -322,14 +322,14 @@ export const isSubscribed = async (
 	});
 	if (!dbUser) return "free";
 
-	// const subscribed = dbUser?.subscriptions.length > 0;
-	// if (!subscribed && dbUser?.freeTrialEnd) {
-	// 	if (new Date() < dbUser.freeTrialEnd) {
-	// 		return "trial";
-	// 	}
-	// }
+	const subscribed = dbUser?.subscriptions.length > 0;
+	if (!subscribed && dbUser?.freeTrialEnd) {
+		if (new Date() < dbUser.freeTrialEnd) {
+			return "trial";
+		}
+	}
 
-	return "plus";
+	return "free";
 };
 
 export const hasAgreed = async (userId: string) => {

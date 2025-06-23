@@ -400,38 +400,26 @@ export const accountUpdateRelations = relations(
 	}),
 );
 
-export const plan = pgTable("plan", {
+export const polarProduct = pgTable("polar_product", {
 	id: uuid().primaryKey().notNull(),
-	stripeId: text().unique().notNull(),
+	polarId: text().notNull(),
 	name: text().notNull(),
-	description: text(),
-	createdAt: timestamp().defaultNow(),
-});
-
-export const price = pgTable("price", {
-	id: uuid().primaryKey().notNull(),
-	stripeId: text().unique().notNull(),
+	description: text().notNull(),
 	amount: integer().notNull(),
 	currency: text().notNull(),
 	interval: text().notNull(),
-	planId: uuid()
-		.notNull()
-		.references(() => plan.id),
-	createdAt: timestamp().defaultNow(),
+	checkoutLinkUrl: text().notNull(),
 });
 
 export const subscription = pgTable("subscription", {
 	id: uuid().primaryKey().notNull(),
-	stripeId: text().unique().notNull(),
+	polarId: text().unique().notNull(),
 	userId: uuid()
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
-	planId: uuid()
+	polarProductId: uuid()
 		.notNull()
-		.references(() => plan.id),
-	priceId: uuid()
-		.notNull()
-		.references(() => price.id),
+		.references(() => polarProduct.id),
 	status: text().notNull(),
 	createdAt: timestamp().defaultNow(),
 	periodStart: timestamp(),
@@ -627,16 +615,7 @@ export const notificationItemRelations = relations(
 	}),
 );
 
-export const planRelations = relations(plan, ({ one, many }) => ({
-	prices: many(price),
-	subscriptions: many(subscription),
-}));
-
-export const priceRelations = relations(price, ({ one, many }) => ({
-	plan: one(plan, {
-		fields: [price.planId],
-		references: [plan.id],
-	}),
+export const polarProductRelations = relations(polarProduct, ({ many }) => ({
 	subscriptions: many(subscription),
 }));
 
@@ -645,13 +624,9 @@ export const subscriptionRelations = relations(subscription, ({ one }) => ({
 		fields: [subscription.userId],
 		references: [user.id],
 	}),
-	plan: one(plan, {
-		fields: [subscription.planId],
-		references: [plan.id],
-	}),
-	price: one(price, {
-		fields: [subscription.priceId],
-		references: [price.id],
+	polarProduct: one(polarProduct, {
+		fields: [subscription.polarProductId],
+		references: [polarProduct.id],
 	}),
 }));
 
