@@ -77,6 +77,9 @@ export default [
 	]),
 	...prefix("settings", [
 		index("routes/settings/index.tsx"),
+		route("account", "routes/settings/account.tsx"),
+		route("connections", "routes/settings/connections.tsx"),
+		route("moderation", "routes/settings/moderation.tsx"),
 		route("checkout", "routes/settings/checkout.tsx"),
 		route("portal", "routes/settings/portal.tsx"),
 		route("subscription", "routes/settings/subscription.tsx"),
