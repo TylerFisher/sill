@@ -20,6 +20,7 @@ export const createCheckout = async (
 		customerEmail: email,
 		externalCustomerId: userId,
 		embedOrigin: process.env.VITE_PUBLIC_DOMAIN,
+		successUrl: `${process.env.VITE_PUBLIC_DOMAIN}/settings/checkout`,
 	});
 
 	return session;

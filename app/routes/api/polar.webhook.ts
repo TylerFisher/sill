@@ -8,8 +8,6 @@ import { conflictUpdateSetAllColumns } from "~/utils/links.server";
 export const action = Webhooks({
 	webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
 	onCustomerStateChanged: async (payload) => {
-		console.log("[POLAR WEBHOOK] Customer state changed", payload);
-
 		let foundUsers: { id: string }[] = [];
 
 		// Set Polar customer ID
@@ -69,15 +67,22 @@ export const action = Webhooks({
 			return;
 		}
 		// Update active subs
-		const sillProducts = (await db.query.polarProduct.findMany()).map(
-			(product) => product.polarId,
-		);
+		const sillProducts = await db.query.polarProduct.findMany();
 		const polarSubscription = payload.data.activeSubscriptions.find((sub) =>
-			sillProducts.includes(sub.productId),
+			sillProducts.some((product) => product.polarId === sub.productId),
 		);
 
 		if (!polarSubscription) {
 			console.error("[POLAR WEBHOOK] No valid subscription");
+			return;
+		}
+
+		const chosenProduct = sillProducts.find(
+			(product) => product.polarId === polarSubscription.productId,
+		);
+
+		if (!chosenProduct) {
+			console.error("[POLAR WEBHOOK] Product not found");
 			return;
 		}
 
@@ -87,7 +92,7 @@ export const action = Webhooks({
 				id: uuidv7(),
 				userId: dbUser.id,
 				polarId: polarSubscription.id,
-				polarProductId: polarSubscription.productId,
+				polarProductId: chosenProduct.id,
 				periodEnd: polarSubscription.currentPeriodEnd,
 				periodStart: polarSubscription.currentPeriodStart,
 				cancelAtPeriodEnd: polarSubscription.cancelAtPeriodEnd,
