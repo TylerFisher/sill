@@ -22,7 +22,6 @@
 	max-height: 80dvh;
 	border-radius: 1rem 1rem 0 0;
 	background-color: var(--accent-2);
-	border: 1px solid var(--gray-a6);
 	border-bottom: none;
 	padding: 1rem;
 	padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
