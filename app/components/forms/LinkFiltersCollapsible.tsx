@@ -1,6 +1,5 @@
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { Box, Button, Text } from "@radix-ui/themes";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Box, Button, Dialog, Flex, IconButton, Text } from "@radix-ui/themes";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useState, type PropsWithChildren } from "react";
 import styles from "./LinkFilters.module.css";
 
@@ -11,7 +10,7 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 		<Box
 			px="4"
 			pt="2"
-			pb={open ? "5" : "2"}
+			pb="2"
 			mb={{
 				initial: "0",
 				md: "2",
@@ -19,12 +18,8 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 			mx="-4"
 			className={styles["filter-wrapper"]}
 		>
-			<Collapsible.Root
-				className="CollapsibleRoot"
-				open={open}
-				onOpenChange={setOpen}
-			>
-				<Collapsible.Trigger asChild>
+			<Dialog.Root open={open} onOpenChange={setOpen}>
+				<Dialog.Trigger>
 					<Text align="center" as="p" mt="1">
 						<Button variant="ghost" size="2">
 							Filters
@@ -35,11 +30,19 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 							)}
 						</Button>
 					</Text>
-				</Collapsible.Trigger>
-				<Collapsible.Content className={styles.collapsible}>
+				</Dialog.Trigger>
+				<Dialog.Content className={styles["dialog-content"]} onOpenAutoFocus={(e) => e.preventDefault()}>
+					<Flex justify="between" align="center" mb="3">
+						<Text size="4" weight="medium">Filters</Text>
+						<Dialog.Close>
+							<IconButton variant="ghost" size="2">
+								<X size={18} />
+							</IconButton>
+						</Dialog.Close>
+					</Flex>
 					{children}
-				</Collapsible.Content>
-			</Collapsible.Root>
+				</Dialog.Content>
+			</Dialog.Root>
 		</Box>
 	);
 };
