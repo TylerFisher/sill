@@ -2,19 +2,18 @@ import { Webhooks } from "@polar-sh/remix";
 import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { polarProduct, subscription, user } from "~/drizzle/schema.server";
+import { subscription, user } from "~/drizzle/schema.server";
 import { conflictUpdateSetAllColumns } from "~/utils/links.server";
 
 export const action = Webhooks({
 	webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
 	onCustomerStateChanged: async (payload) => {
-		console.log("customer state changed", payload);
+		console.log("[POLAR WEBHOOK] Customer state changed", payload);
 
 		let foundUsers: { id: string }[] = [];
 
 		// Set Polar customer ID
 		if (payload.data.externalId) {
-			// Primary approach: match by external ID
 			foundUsers = await db
 				.update(user)
 				.set({
@@ -25,8 +24,9 @@ export const action = Webhooks({
 					id: user.id,
 				});
 		} else if (payload.data.email) {
-			// Fallback approach: match by email
-			console.log("No external ID found, falling back to email matching");
+			console.log(
+				"[POLAR WEBHOOK] No external ID found, falling back to email matching",
+			);
 			foundUsers = await db
 				.update(user)
 				.set({
@@ -37,12 +37,16 @@ export const action = Webhooks({
 					id: user.id,
 				});
 		} else {
-			console.error("Neither external ID nor email available in payload");
+			console.error(
+				"[POLAR WEBHOOK] Neither external ID nor email available in payload",
+			);
 			return;
 		}
 
 		if (foundUsers.length === 0) {
-			console.error("Could not find user");
+			console.error(
+				"[POLAR WEBHOOK] Could not find user via external ID or email",
+			);
 			return;
 		}
 
@@ -65,13 +69,15 @@ export const action = Webhooks({
 			return;
 		}
 		// Update active subs
-		const polarSubscription = payload.data.activeSubscriptions[0];
-		const product = await db.query.polarProduct.findFirst({
-			where: eq(polarProduct.polarId, polarSubscription.productId),
-		});
+		const sillProducts = (await db.query.polarProduct.findMany()).map(
+			(product) => product.polarId,
+		);
+		const polarSubscription = payload.data.activeSubscriptions.find((sub) =>
+			sillProducts.includes(sub.productId),
+		);
 
-		if (!product) {
-			console.error("Could not find product");
+		if (!polarSubscription) {
+			console.error("[POLAR WEBHOOK] No valid subscription");
 			return;
 		}
 
@@ -81,7 +87,7 @@ export const action = Webhooks({
 				id: uuidv7(),
 				userId: dbUser.id,
 				polarId: polarSubscription.id,
-				polarProductId: product.id,
+				polarProductId: polarSubscription.productId,
 				periodEnd: polarSubscription.currentPeriodEnd,
 				periodStart: polarSubscription.currentPeriodStart,
 				cancelAtPeriodEnd: polarSubscription.cancelAtPeriodEnd,
