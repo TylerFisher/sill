@@ -34,6 +34,7 @@ const TopLinks = ({
 		year: "numeric",
 		month: "long",
 		day: "numeric",
+		timeZone: "America/New_York",
 	}).format(new Date());
 
 	return (

@@ -13,42 +13,45 @@
   }
 }
 
-.collapsible {
-	overflow: hidden;
+.dialog-content {
+	position: fixed;
+	bottom: env(safe-area-inset-bottom, 0);
+	left: 0;
+	right: 0;
+	width: 100%;
+	max-height: 80dvh;
+	border-radius: 1rem 1rem 0 0;
+	background-color: var(--accent-2);
+	border: 1px solid var(--gray-a6);
+	border-bottom: none;
+	padding: 1rem;
+	padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+	overflow-y: auto;
 }
 
-@media (min-width: 768px) {
-	.collapsible[data-state="open"] {
-		animation: slideDown 200ms ease-out;
-	}
-	.collapsible[data-state="closed"] {
-		animation: slideUp 200ms ease-out;
-	}
+.dialog-content[data-state="open"] {
+	animation: slideUp 200ms ease-out;
 }
 
-@media (max-width: 767px) {
-	.collapsible {
-		display: block !important;
-		height: auto !important;
-		overflow: visible;
+.dialog-content[data-state="closed"] {
+	animation: slideDown 200ms ease-in;
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
 	}
 }
 
 @keyframes slideDown {
 	from {
-		height: 0;
+		transform: translateY(0);
 	}
 	to {
-		height: var(--radix-collapsible-content-height);
-	}
-}
-
-@keyframes slideUp {
-	from {
-		height: var(--radix-collapsible-content-height);
-	}
-	to {
-		height: 0;
+		transform: translateY(100%);
 	}
 }
 
