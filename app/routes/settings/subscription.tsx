@@ -6,12 +6,13 @@ import { and, eq, not } from "drizzle-orm";
 import { subscription, user } from "~/drizzle/schema.server";
 import { Box, Button, Flex, Grid, Heading } from "@radix-ui/themes";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
-import { useEffect } from "react";
 import { useTheme } from "../resources/theme-switch";
 import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
 import FeatureCard from "~/components/subscription/FeatureCard";
 import SubscriptionPricingCard from "~/components/subscription/SubscriptionPricingCard";
 import SubscriptionHeader from "~/components/subscription/SubscriptionHeader";
+import { createCheckout } from "~/utils/polar.server";
+import { invariantResponse } from "@epic-web/invariant";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Subscription" },
@@ -23,6 +24,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const existingUser = await db.query.user.findFirst({
 		where: eq(user.id, userId),
 	});
+	invariantResponse(existingUser, "user not found", { status: 404 });
 
 	const sub = await db.query.subscription.findFirst({
 		where: and(
@@ -35,17 +37,23 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	});
 
 	const products = await db.query.polarProduct.findMany();
+	const checkoutLinks = await Promise.all(
+		products.map(
+			async (product) =>
+				await createCheckout(product.polarId, existingUser?.email, userId),
+		),
+	);
 
 	return {
 		sub,
-		products,
+		checkoutLinks,
 		email: existingUser?.email,
 		name: existingUser?.name,
 	};
 };
 
 const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
-	const { sub, products, email, name } = loaderData;
+	const { sub, checkoutLinks, email, name } = loaderData;
 	const theme = useTheme();
 
 	return (
@@ -105,7 +113,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 					</Grid>
 
 					<SubscriptionPricingCard
-						products={products}
+						checkoutLinks={checkoutLinks}
 						email={email}
 						name={name}
 						theme={theme}

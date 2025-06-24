@@ -18,7 +18,9 @@ import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 
-export const meta: Route.MetaFunction = () => [{ title: "Sill | Account Settings" }];
+export const meta: Route.MetaFunction = () => [
+	{ title: "Sill | Account Settings" },
+];
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);
@@ -52,8 +54,16 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
 						<DataList.Value>{user.email}</DataList.Value>
 					</DataList.Item>
 					<DataList.Item align="center">
+						<DataList.Label>Name</DataList.Label>
+						<DataList.Value>{user.name}</DataList.Value>
+					</DataList.Item>
+					<DataList.Item align="center">
 						<DataList.Label>Signed up on</DataList.Label>
 						<DataList.Value>{signedUpOn}</DataList.Value>
+					</DataList.Item>
+					<DataList.Item align="center">
+						<DataList.Label>Subscription tier</DataList.Label>
+						<DataList.Value>{`${subscribed[0].toLocaleUpperCase()}${subscribed.slice(1)}`}</DataList.Value>
 					</DataList.Item>
 				</DataList.Root>
 				<Heading as="h5" size="4" mt="6" mb="2">
