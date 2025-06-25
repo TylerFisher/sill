@@ -36,6 +36,7 @@
     "@react-router/node": "^7.0.0",
     "@react-router/serve": "^7.0.0",
     "bcryptjs": "^2.4.3",
+    "cloudflare": "^4.4.1",
     "cookie": "^1.0.1",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.5",

@@ -10,12 +10,14 @@ import {
 import {
 	accountUpdateQueue,
 	bookmark,
+	link,
+	linkPostDenormalized,
 	networkTopTenView,
 	notificationGroup,
 	notificationItem,
 	user,
 } from "~/drizzle/schema.server";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, count, eq, gte, sql } from "drizzle-orm";
 import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
@@ -225,6 +227,31 @@ async function processQueue() {
 			}
 		} else {
 			await db.refreshMaterializedView(networkTopTenView);
+
+			// // Find links with 5+ posts in the last 24 hours
+			// const linkPostCounts = await db
+			// 	.select({
+			// 		linkUrl: linkPostDenormalized.linkUrl,
+			// 		postCount: count(linkPostDenormalized.id).as("postCount"),
+			// 	})
+			// 	.from(linkPostDenormalized)
+			// 	.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+			// 	.where(
+			// 		gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '24 hours'`),
+			// 	)
+			// 	.groupBy(linkPostDenormalized.linkUrl)
+			// 	.having(sql`COUNT(${linkPostDenormalized.id}) >= 5`);
+
+			// const highActivityUrls = [
+			// 	...new Set(linkPostCounts.map((lpc) => lpc.linkUrl)),
+			// ];
+
+			// if (highActivityUrls.length > 0) {
+			// 	// TODO: Add processing logic for high activity links
+			// 	console.log(
+			// 		`[Queue] Found ${highActivityUrls.length} links with high activity (5+ posts in 24h)`,
+			// 	);
+			// }
 			if (process.env.NODE_ENV === "production") {
 				const users = await db.query.user.findMany({
 					orderBy: asc(user.createdAt),
