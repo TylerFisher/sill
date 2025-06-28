@@ -17,13 +17,17 @@ import {
 	notificationItem,
 	user,
 } from "~/drizzle/schema.server";
-import { asc, count, eq, gte, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, is, sql } from "drizzle-orm";
 import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
 import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
 import { isSubscribed } from "~/utils/auth.server";
+import {
+	extractHtmlMetadata,
+	renderPageContent,
+} from "~/utils/cloudflare.server";
 
 const MAX_ERRORS_PER_BATCH = 10;
 
@@ -228,30 +232,57 @@ async function processQueue() {
 		} else {
 			await db.refreshMaterializedView(networkTopTenView);
 
-			// // Find links with 5+ posts in the last 24 hours
-			// const linkPostCounts = await db
-			// 	.select({
-			// 		linkUrl: linkPostDenormalized.linkUrl,
-			// 		postCount: count(linkPostDenormalized.id).as("postCount"),
-			// 	})
-			// 	.from(linkPostDenormalized)
-			// 	.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-			// 	.where(
-			// 		gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '24 hours'`),
-			// 	)
-			// 	.groupBy(linkPostDenormalized.linkUrl)
-			// 	.having(sql`COUNT(${linkPostDenormalized.id}) >= 5`);
+			// Find links with n+ posts in the last 24 hours that haven't been scraped
+			const threshold = process.env.SCRAPE_SHARE_THRESHOLD
+				? Number.parseInt(process.env.SCRAPE_SHARE_THRESHOLD)
+				: 5;
+			const linkPostCounts = await db
+				.select({
+					linkUrl: linkPostDenormalized.linkUrl,
+					postCount: count(linkPostDenormalized.id).as("postCount"),
+				})
+				.from(linkPostDenormalized)
+				.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+				.where(
+					and(
+						gte(
+							linkPostDenormalized.postDate,
+							sql`NOW() - INTERVAL '24 hours'`,
+						),
+						eq(link.scraped, false),
+					),
+				)
+				.groupBy(linkPostDenormalized.linkUrl)
+				.having(sql`COUNT(${linkPostDenormalized.id}) >= ${threshold}`);
 
-			// const highActivityUrls = [
-			// 	...new Set(linkPostCounts.map((lpc) => lpc.linkUrl)),
-			// ];
+			const highActivityUrls = [
+				...new Set(linkPostCounts.map((lpc) => lpc.linkUrl)),
+			];
 
-			// if (highActivityUrls.length > 0) {
-			// 	// TODO: Add processing logic for high activity links
-			// 	console.log(
-			// 		`[Queue] Found ${highActivityUrls.length} links with high activity (5+ posts in 24h)`,
-			// 	);
-			// }
+			if (highActivityUrls.length > 0) {
+				console.log(
+					`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`,
+				);
+				for (const url of highActivityUrls) {
+					const result = await renderPageContent({
+						url,
+					});
+					if (result.success) {
+						const metadata = await extractHtmlMetadata(result.html);
+						await db
+							.update(link)
+							.set({
+								scraped: true,
+								metadata,
+							})
+							.where(eq(link.url, url));
+						console.log(`[BROWSER RENDER] success ${url}`);
+					} else {
+						console.log("[BROWSER RENDER] error", url, result.error);
+					}
+					await new Promise((resolve) => setTimeout(resolve, 1000));
+				}
+			}
 			if (process.env.NODE_ENV === "production") {
 				const users = await db.query.user.findMany({
 					orderBy: asc(user.createdAt),

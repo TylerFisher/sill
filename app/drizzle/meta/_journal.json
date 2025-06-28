@@ -274,6 +274,13 @@
       "when": 1750628744774,
       "tag": "0038_broad_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1750843032735,
+      "tag": "0039_fat_christian_walker",
+      "breakpoints": true
     }
   ]
 }
