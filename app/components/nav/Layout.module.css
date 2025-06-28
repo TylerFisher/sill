@@ -18,7 +18,7 @@
 }
 
 .content {
-	background-color: var(--accent-1);
+	background-color: var(--gray-1);
 	padding: 1em;
 	box-shadow: var(--base-card-surface-box-shadow);
 	border-radius: 0;
