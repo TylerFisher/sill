@@ -40,7 +40,11 @@ const SharedByBug = ({
 					position: open ? "sticky" : "static",
 					zIndex: open ? 5 : 0,
 					backgroundColor:
-						layout === "dense" && !open ? "inherit" : "var(--accent-3)",
+						layout === "dense" && !open
+							? "inherit"
+							: theme === "dark"
+								? "var(--gray-3)"
+								: "var(--accent-3)",
 					width: open ? "100%" : layout === "dense" ? "inherit" : "270px",
 					borderRadius: open ? "0" : "1rem",
 					transition: "all 0.3s",
