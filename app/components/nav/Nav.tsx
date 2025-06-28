@@ -15,6 +15,7 @@ import type { ReactElement } from "react";
 import styles from "./Nav.module.css";
 import Footer from "./Footer";
 import type { loader } from "~/root";
+import { useTheme } from "~/routes/resources/theme-switch";
 
 const Nav = ({
 	layoutFormId,
@@ -108,17 +109,19 @@ const NavItem = ({
 }: { to: string; label: string; icon: ReactElement; location: string }) => {
 	const toEnding = to.split("/").pop() || "";
 	const locationEnding = location.split("/").pop() || "";
+	const theme = useTheme();
 
 	return (
 		<li className={styles["nav-list-item"]}>
 			<NavLink to={to} aria-label={label} viewTransition>
 				<Button
 					variant="ghost"
+					color={theme === "light" ? "yellow" : "gray"}
 					size="4"
 					className={styles["nav-list-item-btn"]}
 					style={{
 						color: locationEnding.includes(toEnding)
-							? "var(--accent-11)"
+							? "var(--yellow-11)"
 							: "var(--gray-a11)",
 						fontWeight: locationEnding.includes(toEnding) ? "bold" : "normal",
 					}}

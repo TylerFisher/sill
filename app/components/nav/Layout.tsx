@@ -27,7 +27,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 					sm: "5",
 				}}
 				style={{
-					backgroundColor: "var(--accent-2)",
+					backgroundColor: "var(--gray-2)",
 					minHeight: "100vh",
 				}}
 			>
