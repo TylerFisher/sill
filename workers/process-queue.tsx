@@ -270,14 +270,16 @@ async function processQueue() {
 					});
 					if (result.success) {
 						const metadata = await extractHtmlMetadata(result.html);
-						await db
-							.update(link)
-							.set({
-								scraped: true,
-								metadata,
-							})
-							.where(eq(link.url, url));
-						console.log(`[BROWSER RENDER] success ${url}`);
+						if (metadata) {
+							await db
+								.update(link)
+								.set({
+									scraped: true,
+									metadata: metadata.result,
+								})
+								.where(eq(link.url, url));
+							console.log(`[BROWSER RENDER] success ${url}`);
+						}
 					} else {
 						console.log("[BROWSER RENDER] error", url, result.error);
 					}

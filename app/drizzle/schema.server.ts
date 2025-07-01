@@ -15,9 +15,9 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
+import type { SuccessResult } from "open-graph-scraper-lite";
 import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import type { HtmlMetadata } from "~/utils/cloudflare.server";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
 
@@ -227,7 +227,7 @@ export const link = pgTable(
 		description: text(),
 		imageUrl: text(),
 		giftUrl: text(),
-		metadata: json().$type<HtmlMetadata>(),
+		metadata: json().$type<SuccessResult["result"]>(),
 		scraped: boolean().default(false),
 	},
 	(table) => {

@@ -28,6 +28,16 @@ const LinkImage = ({
 		url.hostname !== "www.youtube.com" &&
 		url.hostname !== "youtu.be" &&
 		url.hostname !== "twitter.com";
+	const validMetadata = link.metadata?.ogUrl ? link.metadata : null;
+	const displayImage = (() => {
+		if (!validMetadata?.ogImage) return link.imageUrl || null;
+		if (Array.isArray(validMetadata.ogImage)) {
+			return validMetadata.ogImage[0]?.url || link.imageUrl || null;
+		}
+		// Handle case where ogImage is an object with url property
+		const ogImageObj = validMetadata.ogImage as { url?: string };
+		return ogImageObj?.url || link.imageUrl || null;
+	})();
 
 	return (
 		<>
@@ -41,7 +51,7 @@ const LinkImage = ({
 							aria-label={displayTitle}
 						>
 							<img
-								src={link.imageUrl || ""}
+								src={displayImage || ""}
 								loading="lazy"
 								alt=""
 								decoding="async"
