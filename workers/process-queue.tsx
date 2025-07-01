@@ -264,27 +264,37 @@ async function processQueue() {
 				console.log(
 					`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`,
 				);
-				for (const url of highActivityUrls) {
-					const result = await renderPageContent({
-						url,
-					});
+
+				// Process URLs concurrently with rate limiting
+				const processUrl = async (url: string) => {
+					console.log("scraping", url);
+					const result = await renderPageContent({ url });
 					if (result.success) {
 						const metadata = await extractHtmlMetadata(result.html);
 						if (metadata) {
+							await db.update(link).set(metadata).where(eq(link.url, url));
+							console.log(`[BROWSER RENDER] updated metadata for ${url}`);
+						} else {
+							console.log(`[BROWSER RENDER] could not get metadata for ${url}`);
 							await db
 								.update(link)
-								.set({
-									scraped: true,
-									metadata: metadata.result,
-								})
+								.set({ scraped: true })
 								.where(eq(link.url, url));
-							console.log(`[BROWSER RENDER] success ${url}`);
 						}
 					} else {
 						console.log("[BROWSER RENDER] error", url, result.error);
 					}
-					await new Promise((resolve) => setTimeout(resolve, 1000));
-				}
+				};
+
+				// Create promises with 1-second intervals between starts
+				const promises = highActivityUrls.map(
+					(url, index) =>
+						new Promise((resolve) =>
+							setTimeout(() => resolve(processUrl(url)), index * 1000),
+						),
+				);
+
+				await Promise.all(promises);
 			}
 			if (process.env.NODE_ENV === "production") {
 				const users = await db.query.user.findMany({

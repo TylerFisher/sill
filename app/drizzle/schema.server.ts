@@ -229,6 +229,10 @@ export const link = pgTable(
 		giftUrl: text(),
 		metadata: json().$type<SuccessResult["result"]>(),
 		scraped: boolean().default(false),
+		publishedDate: timestamp({ precision: 3, mode: "date" }),
+		authors: json().$type<string[]>(),
+		siteName: text(),
+		topics: json().$type<string[]>(),
 	},
 	(table) => {
 		return {

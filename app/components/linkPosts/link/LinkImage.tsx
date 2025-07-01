@@ -6,21 +6,11 @@ interface LinkImageProps {
 	link: MostRecentLinkPosts["link"];
 	url: URL;
 	host: string;
-	displayHost: string;
-	displayTitle: string;
 	layout: "dense" | "default";
 	theme: string | undefined;
 }
 
-const LinkImage = ({
-	link,
-	url,
-	host,
-	displayHost,
-	displayTitle,
-	layout,
-	theme,
-}: LinkImageProps) => {
+const LinkImage = ({ link, url, host, layout, theme }: LinkImageProps) => {
 	if (!link) return null;
 	const shouldShowMainImage =
 		link.imageUrl &&
@@ -28,16 +18,6 @@ const LinkImage = ({
 		url.hostname !== "www.youtube.com" &&
 		url.hostname !== "youtu.be" &&
 		url.hostname !== "twitter.com";
-	const validMetadata = link.metadata?.ogUrl ? link.metadata : null;
-	const displayImage = (() => {
-		if (!validMetadata?.ogImage) return link.imageUrl || null;
-		if (Array.isArray(validMetadata.ogImage)) {
-			return validMetadata.ogImage[0]?.url || link.imageUrl || null;
-		}
-		// Handle case where ogImage is an object with url property
-		const ogImageObj = validMetadata.ogImage as { url?: string };
-		return ogImageObj?.url || link.imageUrl || null;
-	})();
 
 	return (
 		<>
@@ -48,10 +28,10 @@ const LinkImage = ({
 							target="_blank"
 							rel="noreferrer"
 							href={link.url}
-							aria-label={displayTitle}
+							aria-label={link.title}
 						>
 							<img
-								src={displayImage || ""}
+								src={link.imageUrl || ""}
 								loading="lazy"
 								alt=""
 								decoding="async"
@@ -78,7 +58,7 @@ const LinkImage = ({
 						}}
 					/>
 					<Text size="1" color="gray" as="span">
-						{displayHost}
+						<Link href={`/links/domain/${host}`}>{link.siteName || host}</Link>
 					</Text>
 				</Flex>
 			)}

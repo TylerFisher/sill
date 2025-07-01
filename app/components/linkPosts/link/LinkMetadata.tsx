@@ -6,24 +6,24 @@ TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
 interface LinkMetadataProps {
-	author: string | null;
+	authors: string[] | null;
 	publishDate: Date | null;
 	articleTags: string[];
 	url: URL;
 }
 
 const LinkMetadata = ({
-	author,
+	authors,
 	publishDate,
 	articleTags,
 	url,
 }: LinkMetadataProps) => {
 	return (
 		<>
-			{(author || publishDate) && (
+			{(authors || publishDate) && (
 				<Text as="p" size="1" color="gray" mt="2">
-					{author && <>by {author}</>}
-					{author && publishDate && (
+					{authors && <>by {authors?.join(", ")}</>}
+					{authors && publishDate && (
 						<Text as="span" mx="1">
 							•
 						</Text>
