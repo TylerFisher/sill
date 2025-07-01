@@ -2,23 +2,23 @@ import Cloudflare from "cloudflare";
 import { parse } from "node-html-parser";
 import { z } from "zod";
 import type {
+	WithContext,
 	Thing,
 	Graph,
-	Article,
 	NewsArticle,
-	BlogPosting,
+	Article,
 	WebPage,
-	WebSite,
-	BreadcrumbList,
-	Person,
 	Organization,
+	Person,
+	Product,
+	LocalBusiness,
+	Event,
 } from "schema-dts";
 
 const cloudflare = new Cloudflare({
 	apiToken: process.env.CLOUDFLARE_API_TOKEN,
 });
 
-// Base schema for all Schema.org types
 const BaseSchemaParser = z.object({
 	"@type": z.union([z.string(), z.array(z.string())]),
 	"@context": z.string().optional(),
@@ -41,189 +41,121 @@ export const ThingParser = BaseSchemaParser.extend({
 	disambiguatingDescription: z.string().optional(),
 });
 
-// Person parser
-export const PersonParser = ThingParser.extend({
-	"@type": z.union([z.literal("Person"), z.array(z.string().refine(arr => arr.includes("Person")))]),
-	email: z.string().optional(),
-	familyName: z.string().optional(),
-	givenName: z.string().optional(),
-	jobTitle: z.string().optional(),
-	telephone: z.string().optional(),
-	address: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	birthDate: z.string().optional(),
-	gender: z.string().optional(),
-	nationality: z.string().optional(),
-	worksFor: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	knowsAbout: z.union([z.string(), z.array(z.string())]).optional(),
-	alumniOf: z.union([z.string(), z.object({}).passthrough()]).optional(),
-});
-
-// Organization parser
-export const OrganizationParser = ThingParser.extend({
-	"@type": z.union([z.literal("Organization"), z.array(z.string().refine(arr => arr.includes("Organization")))]),
-	email: z.string().optional(),
-	telephone: z.string().optional(),
-	address: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	foundingDate: z.string().optional(),
-	founder: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	logo: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	contactPoint: z.union([z.object({}).passthrough(), z.array(z.object({}).passthrough())]).optional(),
-	location: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	member: z.union([z.string(), z.array(z.string()), z.object({}).passthrough()]).optional(),
-	numberOfEmployees: z.number().optional(),
-	parentOrganization: z.union([z.string(), z.object({}).passthrough()]).optional(),
-});
-
-// WebPage parser
-export const WebPageParser = ThingParser.extend({
-	"@type": z.union([z.literal("WebPage"), z.array(z.string().refine(arr => arr.includes("WebPage")))]),
-	breadcrumb: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	dateModified: z.string().optional(),
-	datePublished: z.string().optional(),
-	headline: z.string().optional(),
-	inLanguage: z.string().optional(),
-	isPartOf: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	lastReviewed: z.string().optional(),
-	mainContentOfPage: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	primaryImageOfPage: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	relatedLink: z.union([z.string(), z.array(z.string())]).optional(),
-	reviewedBy: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	significantLink: z.union([z.string(), z.array(z.string())]).optional(),
-	speakable: z.union([z.string(), z.object({}).passthrough()]).optional(),
-});
-
-// WebSite parser
-export const WebSiteParser = ThingParser.extend({
-	"@type": z.union([z.literal("WebSite"), z.array(z.string().refine(arr => arr.includes("WebSite")))]),
-	issn: z.string().optional(),
-	potentialAction: z.array(z.object({}).passthrough()).optional(),
-	publisher: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	copyrightHolder: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	copyrightYear: z.number().optional(),
-	license: z.string().optional(),
-	inLanguage: z.string().optional(),
-});
-
-// Article parser (base for news articles and blog posts)
+// Type-specific parsers
 export const ArticleParser = ThingParser.extend({
-	"@type": z.union([z.literal("Article"), z.array(z.string().refine(arr => arr.includes("Article")))]),
-	author: z.union([z.string(), z.object({}).passthrough(), z.array(z.union([z.string(), z.object({}).passthrough()]))]).optional(),
+	"@type": z.union([
+		z.literal("Article"),
+		z.literal("NewsArticle"),
+		z
+			.array(z.string())
+			.refine(
+				(types) => types.includes("Article") || types.includes("NewsArticle"),
+			),
+	]),
+	headline: z.string().optional(),
+	author: z
+		.union([
+			z.string(),
+			z
+				.object({
+					"@type": z.literal("Person").optional(),
+					name: z.string().optional(),
+				})
+				.passthrough(),
+		])
+		.optional(),
 	datePublished: z.string().optional(),
 	dateModified: z.string().optional(),
-	headline: z.string().optional(),
 	publisher: z.union([z.string(), z.object({}).passthrough()]).optional(),
 	articleBody: z.string().optional(),
 	articleSection: z.string().optional(),
 	wordCount: z.number().optional(),
-	inLanguage: z.string().optional(),
-	editor: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	copyrightHolder: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	copyrightYear: z.number().optional(),
-	keywords: z.union([z.string(), z.array(z.string())]).optional(),
-	thumbnailUrl: z.string().optional(),
-	commentCount: z.number().optional(),
-	speakable: z.union([z.string(), z.object({}).passthrough()]).optional(),
 });
 
-// NewsArticle parser
-export const NewsArticleParser = ArticleParser.extend({
-	"@type": z.union([z.literal("NewsArticle"), z.array(z.string().refine(arr => arr.includes("NewsArticle")))]),
-	dateline: z.string().optional(),
-	printColumn: z.string().optional(),
-	printEdition: z.string().optional(),
-	printPage: z.string().optional(),
-	printSection: z.string().optional(),
+export const WebPageParser = ThingParser.extend({
+	"@type": z.union([
+		z.literal("WebPage"),
+		z.array(z.string()).refine((types) => types.includes("WebPage")),
+	]),
+	breadcrumb: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	lastReviewed: z.string().optional(),
+	mainContentOfPage: z
+		.union([z.string(), z.object({}).passthrough()])
+		.optional(),
+	primaryImageOfPage: z
+		.union([z.string(), z.object({}).passthrough()])
+		.optional(),
+	relatedLink: z.union([z.string(), z.array(z.string())]).optional(),
+	significantLink: z.union([z.string(), z.array(z.string())]).optional(),
 });
 
-// BlogPosting parser
-export const BlogPostingParser = ArticleParser.extend({
-	"@type": z.union([z.literal("BlogPosting"), z.array(z.string().refine(arr => arr.includes("BlogPosting")))]),
-	blogPost: z.union([z.string(), z.object({}).passthrough()]).optional(),
-	sharedContent: z.union([z.string(), z.object({}).passthrough()]).optional(),
+export const OrganizationParser = ThingParser.extend({
+	"@type": z.union([
+		z.literal("Organization"),
+		z.literal("LocalBusiness"),
+		z
+			.array(z.string())
+			.refine(
+				(types) =>
+					types.includes("Organization") || types.includes("LocalBusiness"),
+			),
+	]),
+	address: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	contactPoint: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	email: z.string().optional(),
+	telephone: z.string().optional(),
+	founder: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	foundingDate: z.string().optional(),
+	legalName: z.string().optional(),
+	logo: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	numberOfEmployees: z.number().optional(),
 });
 
-// BreadcrumbList parser
-export const BreadcrumbListParser = ThingParser.extend({
-	"@type": z.union([z.literal("BreadcrumbList"), z.array(z.string().refine(arr => arr.includes("BreadcrumbList")))]),
-	itemListElement: z.array(z.object({
-		"@type": z.literal("ListItem").optional(),
-		position: z.number().optional(),
-		name: z.string().optional(),
-		item: z.string().optional(),
-	})).optional(),
-	numberOfItems: z.number().optional(),
+export const PersonParser = ThingParser.extend({
+	"@type": z.union([
+		z.literal("Person"),
+		z.array(z.string()).refine((types) => types.includes("Person")),
+	]),
+	additionalName: z.string().optional(),
+	address: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	birthDate: z.string().optional(),
+	email: z.string().optional(),
+	familyName: z.string().optional(),
+	givenName: z.string().optional(),
+	jobTitle: z.string().optional(),
+	nationality: z.string().optional(),
+	telephone: z.string().optional(),
+	worksFor: z.union([z.string(), z.object({}).passthrough()]).optional(),
 });
 
-// Schema type detection map
-const SCHEMA_PARSERS = {
-	Thing: ThingParser,
-	Person: PersonParser,
-	Organization: OrganizationParser,
-	WebPage: WebPageParser,
-	WebSite: WebSiteParser,
-	Article: ArticleParser,
-	NewsArticle: NewsArticleParser,
-	BlogPosting: BlogPostingParser,
-	BreadcrumbList: BreadcrumbListParser,
-} as const;
+export const ProductParser = ThingParser.extend({
+	"@type": z.union([
+		z.literal("Product"),
+		z.array(z.string()).refine((types) => types.includes("Product")),
+	]),
+	brand: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	category: z.string().optional(),
+	manufacturer: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	model: z.string().optional(),
+	offers: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	productID: z.string().optional(),
+	review: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	sku: z.string().optional(),
+});
 
-export type SchemaTypeName = keyof typeof SCHEMA_PARSERS;
-
-// Enhanced type detection function using Zod parsers
-export function detectSchemaType(data: unknown): SchemaTypeName | null {
-	if (!data || typeof data !== "object" || !("@type" in data)) {
-		return null;
-	}
-
-	const typeValue = (data as Record<string, unknown>)["@type"];
-	let types: string[] = [];
-	
-	if (typeof typeValue === "string") {
-		types = [typeValue];
-	} else if (Array.isArray(typeValue)) {
-		types = typeValue.filter(t => typeof t === "string");
-	} else {
-		return null;
-	}
-
-	// Check most specific types first
-	const typeCheckOrder: SchemaTypeName[] = [
-		"NewsArticle",
-		"BlogPosting", 
-		"Article",
-		"BreadcrumbList",
-		"Person",
-		"Organization",
-		"WebPage",
-		"WebSite",
-		"Thing"
-	];
-
-	for (const schemaType of typeCheckOrder) {
-		if (types.includes(schemaType)) {
-			try {
-				SCHEMA_PARSERS[schemaType].parse(data);
-				return schemaType;
-			} catch {
-				// If parsing fails, continue to next type
-			}
-		}
-	}
-
-	return null;
-}
-
-// Parse and validate schema data with Zod
-export function parseSchemaData<T extends SchemaTypeName>(
-	data: unknown,
-	schemaType: T
-): z.infer<typeof SCHEMA_PARSERS[T]> | null {
-	try {
-		return SCHEMA_PARSERS[schemaType].parse(data);
-	} catch {
-		return null;
-	}
-}
+export const EventParser = ThingParser.extend({
+	"@type": z.union([
+		z.literal("Event"),
+		z.array(z.string()).refine((types) => types.includes("Event")),
+	]),
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	location: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	organizer: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	performer: z.union([z.string(), z.object({}).passthrough()]).optional(),
+	eventStatus: z.string().optional(),
+	eventAttendanceMode: z.string().optional(),
+});
 
 function isValidGraph(data: unknown): data is Graph {
 	return (
@@ -232,6 +164,339 @@ function isValidGraph(data: unknown): data is Graph {
 		"@graph" in data &&
 		Array.isArray(data["@graph"])
 	);
+}
+
+function isValidThing(data: unknown): data is WithContext<Thing> {
+	return data !== null && typeof data === "object" && "@type" in data;
+}
+
+// Helper function to safely extract string values from schema-dts types
+function extractStringValue(value: unknown): string | undefined {
+	if (typeof value === "string") return value;
+	if (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		typeof value[0] === "string"
+	) {
+		return value[0];
+	}
+	if (
+		value &&
+		typeof value === "object" &&
+		"name" in value &&
+		typeof value.name === "string"
+	) {
+		return value.name;
+	}
+	return undefined;
+}
+
+// Helper function to extract author names from author/creator fields
+function extractAuthorNames(value: unknown): string[] {
+	const authors: string[] = [];
+
+	if (typeof value === "string") {
+		authors.push(value);
+	} else if (Array.isArray(value)) {
+		for (const item of value) {
+			if (typeof item === "string") {
+				authors.push(item);
+			} else if (item && typeof item === "object") {
+				// Try to handle as Person object
+				if (isPerson(item)) {
+					const personData = handlePerson(item as WithContext<Person>);
+					if (personData.title) {
+						authors.push(personData.title);
+					}
+				} else if ("name" in item && typeof item.name === "string") {
+					authors.push(item.name);
+				}
+			}
+		}
+	} else if (value && typeof value === "object") {
+		// Single Person object
+		if (isPerson(value)) {
+			const personData = handlePerson(value as WithContext<Person>);
+			if (personData.title) {
+				authors.push(personData.title);
+			}
+		} else if ("name" in value && typeof value.name === "string") {
+			authors.push(value.name);
+		}
+	}
+
+	return authors;
+}
+
+// Helper function to safely get @type from schema data
+function getSchemaTypes(data: unknown): string[] {
+	if (!data || typeof data !== "object" || !("@type" in data)) return [];
+	const obj = data as Record<string, unknown>;
+	const types = obj["@type"];
+	return Array.isArray(types) ? types : [types as string];
+}
+
+// Enhanced type guards for specific Schema.org types
+function hasSchemaType(data: WithContext<Thing>, typeName: string): boolean {
+	const types = getSchemaTypes(data);
+	return types.includes(typeName);
+}
+
+function isNewsArticle(data: unknown): data is WithContext<NewsArticle> {
+	return isValidThing(data) && hasSchemaType(data, "NewsArticle");
+}
+
+function isArticle(data: unknown): data is WithContext<Article> {
+	return (
+		isValidThing(data) &&
+		(hasSchemaType(data, "Article") || hasSchemaType(data, "NewsArticle"))
+	);
+}
+
+function isWebPage(data: unknown): data is WithContext<WebPage> {
+	return isValidThing(data) && hasSchemaType(data, "WebPage");
+}
+
+function isOrganization(data: unknown): data is WithContext<Organization> {
+	return (
+		isValidThing(data) &&
+		(hasSchemaType(data, "Organization") ||
+			hasSchemaType(data, "LocalBusiness"))
+	);
+}
+
+function isPerson(data: unknown): data is WithContext<Person> {
+	return isValidThing(data) && hasSchemaType(data, "Person");
+}
+
+function isProduct(data: unknown): data is WithContext<Product> {
+	return isValidThing(data) && hasSchemaType(data, "Product");
+}
+
+function isLocalBusiness(data: unknown): data is WithContext<LocalBusiness> {
+	return isValidThing(data) && hasSchemaType(data, "LocalBusiness");
+}
+
+function isEvent(data: unknown): data is WithContext<Event> {
+	return isValidThing(data) && hasSchemaType(data, "Event");
+}
+
+// Type detection and processing system
+export type SchemaTypeHandler<T = WithContext<Thing>> = (
+	data: T,
+) => ExtractedSchemaData;
+
+export interface ExtractedSchemaData {
+	type: string;
+	title?: string;
+	description?: string;
+	url?: string;
+	image?: string;
+	author?: string;
+	authors?: string[];
+	creator?: string;
+	creators?: string[];
+	datePublished?: string;
+	dateModified?: string;
+	// Type-specific properties
+	headline?: string;
+	articleBody?: string;
+	publisher?: string;
+	location?: string;
+	startDate?: string;
+	endDate?: string;
+	price?: string;
+	brand?: string;
+	email?: string;
+	telephone?: string;
+	address?: string;
+}
+
+// Handler functions for each type
+function handleArticle(data: WithContext<Article>): ExtractedSchemaData {
+	const result = ArticleParser.safeParse(data);
+	const article = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	// Extract authors and creators using the helper function
+	const authors = extractAuthorNames(article.author);
+	const creators = extractAuthorNames(
+		(article as Record<string, unknown>).creator,
+	);
+
+	return {
+		type: "Article",
+		title:
+			extractStringValue(article.headline) || extractStringValue(article.name),
+		description: extractStringValue(article.description),
+		url: extractStringValue(article.url),
+		image: extractStringValue(article.image),
+		author: authors.length > 0 ? authors[0] : undefined,
+		authors: authors.length > 0 ? authors : undefined,
+		creator: creators.length > 0 ? creators[0] : undefined,
+		creators: creators.length > 0 ? creators : undefined,
+		datePublished: extractStringValue(article.datePublished),
+		dateModified: extractStringValue(article.dateModified),
+		headline: extractStringValue(article.headline),
+		articleBody: extractStringValue(article.articleBody),
+		publisher: extractStringValue(article.publisher),
+	};
+}
+
+function handleWebPage(data: WithContext<WebPage>): ExtractedSchemaData {
+	const result = WebPageParser.safeParse(data);
+	const page = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	return {
+		type: "WebPage",
+		title: extractStringValue(page.name),
+		description: extractStringValue(page.description),
+		url: extractStringValue(page.url),
+		image: extractStringValue(page.image),
+	};
+}
+
+function handleOrganization(
+	data: WithContext<Organization>,
+): ExtractedSchemaData {
+	const result = OrganizationParser.safeParse(data);
+	const org = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	return {
+		type: "Organization",
+		title: extractStringValue(org.legalName) || extractStringValue(org.name),
+		description: extractStringValue(org.description),
+		url: extractStringValue(org.url),
+		image: extractStringValue(org.logo),
+		email: extractStringValue(org.email),
+		telephone: extractStringValue(org.telephone),
+		address: extractStringValue(org.address),
+	};
+}
+
+function handlePerson(data: WithContext<Person>): ExtractedSchemaData {
+	const result = PersonParser.safeParse(data);
+	const person = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	const givenName = extractStringValue(person.givenName);
+	const familyName = extractStringValue(person.familyName);
+	const fullName =
+		givenName && familyName
+			? `${givenName} ${familyName}`
+			: extractStringValue(person.name);
+
+	return {
+		type: "Person",
+		title: fullName,
+		description: extractStringValue(person.description),
+		url: extractStringValue(person.url),
+		image: extractStringValue(person.image),
+		email: extractStringValue(person.email),
+		telephone: extractStringValue(person.telephone),
+	};
+}
+
+function handleProduct(data: WithContext<Product>): ExtractedSchemaData {
+	const result = ProductParser.safeParse(data);
+	const product = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	return {
+		type: "Product",
+		title: extractStringValue(product.name),
+		description: extractStringValue(product.description),
+		url: extractStringValue(product.url),
+		image: extractStringValue(product.image),
+		brand: extractStringValue(product.brand),
+	};
+}
+
+function handleEvent(data: WithContext<Event>): ExtractedSchemaData {
+	const result = EventParser.safeParse(data);
+	const event = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	return {
+		type: "Event",
+		title: extractStringValue(event.name),
+		description: extractStringValue(event.description),
+		url: extractStringValue(event.url),
+		image: extractStringValue(event.image),
+		startDate: extractStringValue(event.startDate),
+		endDate: extractStringValue(event.endDate),
+		location: extractStringValue(event.location),
+	};
+}
+
+function handleGenericThing(data: WithContext<Thing>): ExtractedSchemaData {
+	const result = ThingParser.safeParse(data);
+	const thing = result.success
+		? result.data
+		: (data as unknown as Record<string, unknown>);
+
+	const types = getSchemaTypes(thing);
+	const creators = extractAuthorNames(
+		(thing as Record<string, unknown>).creator,
+	);
+
+	return {
+		type: types[0] || "Thing",
+		title: extractStringValue(thing.name),
+		description: extractStringValue(thing.description),
+		url: extractStringValue(thing.url),
+		image: extractStringValue(thing.image),
+		creator: creators.length > 0 ? creators[0] : undefined,
+		creators: creators.length > 0 ? creators : undefined,
+	};
+}
+
+// Type detection router
+export function detectAndProcessSchema(
+	data: WithContext<Thing>,
+): ExtractedSchemaData {
+	// Process in order of specificity (most specific first)
+	if (isNewsArticle(data) || isArticle(data)) {
+		return handleArticle(data as WithContext<Article>);
+	}
+
+	if (isEvent(data)) {
+		return handleEvent(data as WithContext<Event>);
+	}
+
+	if (isProduct(data)) {
+		return handleProduct(data as WithContext<Product>);
+	}
+
+	if (isPerson(data)) {
+		return handlePerson(data as WithContext<Person>);
+	}
+
+	if (isLocalBusiness(data) || isOrganization(data)) {
+		return handleOrganization(data as WithContext<Organization>);
+	}
+
+	if (isWebPage(data)) {
+		return handleWebPage(data as WithContext<WebPage>);
+	}
+
+	// Fallback to generic Thing handler
+	return handleGenericThing(data);
+}
+
+// Utility function to get all detected types from JSON-LD array
+export function processJsonLdArray(
+	jsonLdArray: WithContext<Thing>[],
+): ExtractedSchemaData[] {
+	return jsonLdArray.map(detectAndProcessSchema);
 }
 
 export interface BrowserRenderOptions {
@@ -245,20 +510,10 @@ export interface BrowserRenderResult {
 	error?: string;
 }
 
-export type SchemaType =
-	| Article
-	| NewsArticle
-	| BlogPosting
-	| WebPage
-	| WebSite
-	| BreadcrumbList
-	| Person
-	| Organization
-	| Thing;
-
 export interface HtmlMetadata {
 	openGraph: Record<string, string>;
-	jsonLd: SchemaType[];
+	jsonLd: WithContext<Thing>[];
+	processedSchemas: ExtractedSchemaData[];
 	title?: string;
 	description?: string;
 	articleTags: Record<string, string>;
@@ -301,22 +556,11 @@ export async function renderPageContent(
 	}
 }
 
-function parseSchemaType(data: unknown): SchemaType | null {
-	const detectedType = detectSchemaType(data);
-	if (detectedType) {
-		const parsed = parseSchemaData(data, detectedType);
-		if (parsed) {
-			return parsed as SchemaType;
-		}
-	}
-	return null;
-}
-
 export async function extractHtmlMetadata(html: string): Promise<HtmlMetadata> {
 	const root = parse(html);
 
 	const openGraph: Record<string, string> = {};
-	const jsonLd: SchemaType[] = [];
+	const jsonLd: WithContext<Thing>[] = [];
 	const articleTags: Record<string, string> = {};
 
 	const metaTags = root.querySelectorAll("meta");
@@ -347,15 +591,20 @@ export async function extractHtmlMetadata(html: string): Promise<HtmlMetadata> {
 
 			if (isValidGraph(rawData)) {
 				for (const item of rawData["@graph"]) {
-					const parsed = parseSchemaType(item);
-					if (parsed) {
-						jsonLd.push(parsed);
+					if (isValidThing(item)) {
+						jsonLd.push(item);
+					}
+				}
+			} else if (Array.isArray(rawData)) {
+				// Handle JSON-LD arrays that aren't graphs
+				for (const item of rawData) {
+					if (isValidThing(item)) {
+						jsonLd.push(item);
 					}
 				}
 			} else {
-				const parsed = parseSchemaType(rawData);
-				if (parsed) {
-					jsonLd.push(parsed);
+				if (isValidThing(rawData)) {
+					jsonLd.push(rawData);
 				} else {
 					console.warn("[BROWSER RENDER] Invalid JSON-LD structure:", rawData);
 				}
@@ -367,13 +616,20 @@ export async function extractHtmlMetadata(html: string): Promise<HtmlMetadata> {
 
 	const titleElement = root.querySelector("head title");
 	const title = titleElement?.innerHTML || undefined;
-
 	const descriptionMeta = root.querySelector('meta[name="description"]');
 	const description = descriptionMeta?.getAttribute("content") || undefined;
+
+	// Process all JSON-LD data through type detection system
+	const processedSchemas = processJsonLdArray(jsonLd);
+
+	if (Object.keys(openGraph).length === 0 && jsonLd.length === 0) {
+		console.log("no useful metadata found", html);
+	}
 
 	const metadata: HtmlMetadata = {
 		openGraph,
 		jsonLd,
+		processedSchemas,
 		title,
 		description,
 		articleTags,

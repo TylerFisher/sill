@@ -17,7 +17,7 @@ import {
 	notificationItem,
 	user,
 } from "~/drizzle/schema.server";
-import { and, asc, count, eq, gte, is, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, ilike, is, not, sql } from "drizzle-orm";
 import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import Notification from "~/emails/Notification";
 import { renderToString } from "react-dom/server";
@@ -250,6 +250,7 @@ async function processQueue() {
 							sql`NOW() - INTERVAL '24 hours'`,
 						),
 						eq(link.scraped, false),
+						not(ilike(link.url, "%.pdf")),
 					),
 				)
 				.groupBy(linkPostDenormalized.linkUrl)

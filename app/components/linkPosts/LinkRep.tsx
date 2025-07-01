@@ -1,16 +1,4 @@
-import {
-	AspectRatio,
-	Box,
-	Card,
-	Flex,
-	Inset,
-	Link,
-	Separator,
-	Text,
-} from "@radix-ui/themes";
-import * as ReactTweet from "react-tweet";
-import Youtube from "react-youtube";
-import { ClientOnly } from "remix-utils/client-only";
+import { Box, Card, Inset, Separator, Text } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "./LinkRep.module.css";
 import Toolbar from "./Toolbar";
@@ -18,7 +6,21 @@ import ToolDropdown from "./ToolDropdown";
 import { useTheme } from "~/routes/resources/theme-switch";
 import LinkTitle from "./link/LinkTitle";
 import type { SubscriptionStatus } from "~/utils/auth.server";
-const { Tweet } = ReactTweet;
+import YoutubeEmbed from "./link/YoutubeEmbed";
+import XEmbed from "./link/XEmbed";
+import LinkImage from "./link/LinkImage";
+import LinkMetadata from "./link/LinkMetadata";
+import {
+	getEnhancedMetadata,
+	getSchemaBasedTitle,
+	getSchemaBasedDescription,
+	truncateDescription,
+	getPublishDate,
+	getAuthor,
+	getOrganizationName,
+	getArticleTags,
+} from "./utils/metadata";
+import LinkDescription from "./link/LinkDescription";
 
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
@@ -29,27 +31,6 @@ interface LinkRepProps {
 	isBookmarked: boolean;
 	subscribed: SubscriptionStatus;
 }
-
-const YoutubeEmbed = ({ url }: { url: URL }) => {
-	const id = url.searchParams.get("v") || url.pathname.split("/").pop();
-	const opts = {
-		width: "100%",
-	};
-	return (
-		<Box mb="5" width="100%">
-			<ClientOnly>{() => <Youtube videoId={id} opts={opts} />}</ClientOnly>
-		</Box>
-	);
-};
-
-const XEmbed = ({ url }: { url: URL }) => {
-	const adjusted = url.href.split("/photo/")[0];
-	return (
-		<ClientOnly>
-			{() => <Tweet id={adjusted.split("/").pop() || ""} />}
-		</ClientOnly>
-	);
-};
 
 interface WrapperComponentProps extends React.PropsWithChildren {
 	layout: "default" | "dense";
@@ -76,34 +57,38 @@ const LinkRep = ({
 	const host = url.host.replace("www.", "");
 	const theme = useTheme();
 
+	// Get enhanced metadata from schema processing
+	const enhancedMetadata = getEnhancedMetadata(link);
+	const primarySchema = enhancedMetadata?.primarySchema;
+
+	// Use schema-based content if available, with Open Graph fallbacks
+	const displayTitle = primarySchema
+		? getSchemaBasedTitle(primarySchema, link)
+		: link?.metadata?.openGraph?.["og:title"] || link.title || link.url;
+
+	const displayDescription = primarySchema
+		? getSchemaBasedDescription(primarySchema, link)
+		: truncateDescription(
+				link?.metadata?.openGraph?.["og:description"] || link.description || "",
+			);
+
+	const publishDate = getPublishDate(primarySchema, link);
+	const author = getAuthor(primarySchema, link);
+	const organizationName = getOrganizationName(enhancedMetadata, link);
+	const displayHost = organizationName || host;
+	const articleTags = getArticleTags(link);
+
 	return (
 		<WrapperComponent layout={layout}>
-			{link.imageUrl &&
-				layout === "default" &&
-				url.hostname !== "www.youtube.com" &&
-				url.hostname !== "youtu.be" &&
-				url.hostname !== "twitter.com" && (
-					<Inset mb="4" className={styles.inset}>
-						<AspectRatio ratio={16 / 9}>
-							<Link
-								target="_blank"
-								rel="noreferrer"
-								href={link.url}
-								aria-label={link.title}
-							>
-								<img
-									src={link.imageUrl}
-									loading="lazy"
-									alt=""
-									decoding="async"
-									width="100%"
-									height="100%"
-									className={styles["link-image"]}
-								/>
-							</Link>
-						</AspectRatio>
-					</Inset>
-				)}
+			<LinkImage
+				link={link}
+				url={url}
+				host={host}
+				displayHost={displayHost}
+				displayTitle={displayTitle}
+				layout={layout}
+				theme={theme}
+			/>
 			{(url.hostname === "www.youtube.com" || url.hostname === "youtu.be") &&
 				layout === "default" && (
 					<Inset mb="-4" className={styles.inset}>
@@ -116,45 +101,20 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
-			<Box
-				position="relative"
-				mt={link.imageUrl && layout === "default" ? "3" : "0"}
-			>
-				{layout === "default" && (
-					<Flex align="center" mb="1">
-						<img
-							src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
-							loading="lazy"
-							alt=""
-							width="16px"
-							height="16px"
-							decoding="async"
-							style={{
-								marginRight: "0.25rem",
-								backgroundColor: theme === "dark" ? "white" : "transparent",
-							}}
-						/>
-						<Text size="1" color="gray" as="span">
-							{host}
-						</Text>
-					</Flex>
-				)}
+			<Box position="relative">
 				<LinkTitle
-					title={link.title || link.url}
+					title={displayTitle}
 					href={link.url}
 					layout={layout}
 					host={host}
 				/>
-				<Text
-					as="p"
-					size={{
-						initial: layout === "dense" ? "1" : "2",
-						sm: layout === "dense" ? "2" : "3",
-					}}
-					mt={layout === "dense" ? "2" : "1"}
-				>
-					{link.description}
-				</Text>
+				<LinkDescription description={displayDescription} layout={layout} />
+				<LinkMetadata
+					author={author}
+					publishDate={publishDate}
+					articleTags={articleTags}
+					url={url}
+				/>
 			</Box>
 			{toolbar && layout === "default" && (
 				<>
