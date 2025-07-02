@@ -9,7 +9,7 @@ import type { SubscriptionStatus } from "~/utils/auth.server";
 import YoutubeEmbed from "./link/YoutubeEmbed";
 import XEmbed from "./link/XEmbed";
 import LinkImage from "./link/LinkImage";
-import LinkMetadata from "./link/LinkMetadata";
+import LinkMetadata, { LinkTags } from "./link/LinkMetadata";
 import LinkDescription from "./link/LinkDescription";
 import DisplayHost from "./link/DisplayHost";
 import { useClientMetadata } from "~/hooks/useClientMetadata";
@@ -92,13 +92,17 @@ const LinkRep = ({
 					layout={layout}
 					host={host}
 				/>
+				<LinkMetadata
+					authors={effectiveLink.authors}
+					publishDate={effectiveLink.publishedDate}
+					articleTags={effectiveLink.topics || []}
+					url={url}
+				/>
 				<LinkDescription
 					description={effectiveLink.description || ""}
 					layout={layout}
 				/>
-				<LinkMetadata
-					authors={effectiveLink.authors}
-					publishDate={effectiveLink.publishedDate}
+				<LinkTags
 					articleTags={effectiveLink.topics || []}
 					url={url}
 				/>

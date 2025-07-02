@@ -14,11 +14,11 @@ const DisplayHost = ({ link, host, theme }: DisplayHostProps) => {
 		<Flex
 			align="center"
 			mb="2"
-			mt="-6"
+			mt="-5"
 			ml="-4"
 			style={{
 				backgroundColor: "var(--color-panel-solid)",
-				padding: "0.5rem 1rem",
+				padding: "0.33rem 1rem",
 				width: "fit-content",
 				borderTopRightRadius: "var(--radius-4)",
 			}}
@@ -33,11 +33,14 @@ const DisplayHost = ({ link, host, theme }: DisplayHostProps) => {
 				style={{
 					marginRight: "0.25rem",
 					backgroundColor: theme === "dark" ? "white" : "transparent",
+					display: "block",
 				}}
 			/>
-			<Text size="1" color="gray" as="span">
-				<Link href={`/links/domain/${host}`}>{link.siteName || host}</Link>
-			</Text>
+			<Link href={`/links/domain/${host}`} style={{ lineHeight: "16px" }}>
+				<Text size="1" color="gray" as="span" style={{ lineHeight: "16px" }}>
+					{link.siteName || host}
+				</Text>
+			</Link>
 		</Flex>
 	);
 };

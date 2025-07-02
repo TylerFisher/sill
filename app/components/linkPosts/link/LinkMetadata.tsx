@@ -12,12 +12,7 @@ interface LinkMetadataProps {
 	url: URL;
 }
 
-const LinkMetadata = ({
-	authors,
-	publishDate,
-	articleTags,
-	url,
-}: LinkMetadataProps) => {
+const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 	return (
 		<>
 			{(authors || publishDate) && (
@@ -42,48 +37,50 @@ const LinkMetadata = ({
 					)}
 				</Text>
 			)}
-			{articleTags.length > 0 && (
-				<Flex gap="1" wrap="wrap" mt="2">
-					{articleTags.slice(0, 3).map((tag) => (
-						<Badge
-							key={`${url}-${tag}`}
-							variant="soft"
-							color="gray"
-							size="1"
-						>
-							{tag}
+		</>
+	);
+};
+
+export const LinkTags = ({
+	articleTags,
+	url,
+}: {
+	articleTags: string[];
+	url: URL;
+}) => {
+	if (articleTags.length === 0) return null;
+
+	return (
+		<Flex gap="1" wrap="wrap" mt="3">
+			{articleTags.slice(0, 3).map((tag) => (
+				<Badge key={`${url}-${tag}`} variant="soft" color="gray" size="1">
+					{tag}
+				</Badge>
+			))}
+			{articleTags.length > 3 && (
+				<HoverCard.Root>
+					<HoverCard.Trigger>
+						<Badge variant="outline" color="gray" size="1">
+							+{articleTags.length - 3} more
 						</Badge>
-					))}
-					{articleTags.length > 3 && (
-						<HoverCard.Root>
-							<HoverCard.Trigger>
+					</HoverCard.Trigger>
+					<HoverCard.Content>
+						<Flex gap="1" wrap="wrap">
+							{articleTags.slice(3).map((tag) => (
 								<Badge
-									variant="outline"
+									key={`${url}-remaining-${tag}`}
+									variant="soft"
 									color="gray"
 									size="1"
 								>
-									+{articleTags.length - 3} more
+									{tag}
 								</Badge>
-							</HoverCard.Trigger>
-							<HoverCard.Content>
-								<Flex gap="1" wrap="wrap">
-									{articleTags.slice(3).map((tag) => (
-										<Badge
-											key={`${url}-remaining-${tag}`}
-											variant="soft"
-											color="gray"
-											size="1"
-										>
-											{tag}
-										</Badge>
-									))}
-								</Flex>
-							</HoverCard.Content>
-						</HoverCard.Root>
-					)}
-				</Flex>
+							))}
+						</Flex>
+					</HoverCard.Content>
+				</HoverCard.Root>
 			)}
-		</>
+		</Flex>
 	);
 };
 

@@ -2,7 +2,7 @@ import { Heading, Link, Text } from "@radix-ui/themes";
 
 interface LinkTitleProps {
 	title: string;
-	href: string,
+	href: string;
 	layout: "default" | "dense";
 	host: string;
 }
@@ -11,13 +11,16 @@ const LinkTitle = ({
 	title,
 	href,
 	layout = "default",
-	host
+	host,
 }: LinkTitleProps) => {
 	return (
-		<Heading as="h3" size={{
-			initial: layout === "dense" ? "2" : "2",
-			sm: layout === "dense" ? "2" : "3",
-		}}>
+		<Heading
+			as="h3"
+			size={{
+				initial: layout === "dense" ? "2" : "3",
+				sm: layout === "dense" ? "2" : "3",
+			}}
+		>
 			<Link target="_blank" rel="noreferrer" href={href} weight="bold">
 				{title}
 			</Link>
@@ -28,7 +31,7 @@ const LinkTitle = ({
 				</Text>
 			)}
 		</Heading>
-	)
+	);
 };
 
 export default LinkTitle;
