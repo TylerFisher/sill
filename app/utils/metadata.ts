@@ -1,4 +1,4 @@
-import ogs from "open-graph-scraper-lite";
+import ogs, { type SuccessResult } from "open-graph-scraper-lite";
 import type { link } from "~/drizzle/schema.server";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ export async function fetchHtmlViaProxy(url: string): Promise<string | null> {
 }
 
 const NewsArticleSchema = z.object({
-	"@type": z.literal("NewsArticle"),
+	"@type": z.union([z.literal("NewsArticle"), z.literal("Article")]),
 	author: z
 		.union([
 			z.object({ name: z.string() }),
@@ -50,6 +50,92 @@ const NewsArticleSchema = z.object({
 	publisher: z.object({ name: z.string() }).optional(),
 });
 
+const VideoObjectSchema = z.object({
+	"@type": z.literal("VideoObject"),
+	description: z.string().optional(),
+	duration: z.string().optional(),
+	embedUrl: z.string().url().optional(),
+	name: z.string().optional(),
+	uploadDate: z.string().optional(),
+	genre: z.string().optional(),
+	author: z.string().optional(),
+});
+
+type ParsedNewsArticle = z.SafeParseReturnType<unknown, z.infer<typeof NewsArticleSchema>>;
+type ParsedVideoObject = z.SafeParseReturnType<unknown, z.infer<typeof VideoObjectSchema>>;
+
+function parseNewsArticleAuthors(parsedNewsArticle: ParsedNewsArticle | null): string[] | null {
+	if (!parsedNewsArticle?.success) return null;
+
+	if (Array.isArray(parsedNewsArticle.data.author)) {
+		const authors = parsedNewsArticle.data.author?.map((author) =>
+			"name" in author ? author.name : author.mainEntity.name,
+		);
+		return authors;
+	}
+
+	return parsedNewsArticle.data.author?.name
+		? [parsedNewsArticle.data.author.name]
+		: null;
+}
+
+function parseVideoObjectAuthors(parsedVideoObject: ParsedVideoObject | null): string[] | null {
+	return parsedVideoObject?.success && parsedVideoObject.data.author
+		? [parsedVideoObject.data.author]
+		: null;
+}
+
+function getAuthors(
+	isYouTubeUrl: boolean,
+	parsedNewsArticle: ParsedNewsArticle | null,
+	parsedVideoObject: ParsedVideoObject | null,
+): string[] | null {
+	if (isYouTubeUrl) {
+		const videoAuthors = parseVideoObjectAuthors(parsedVideoObject);
+		if (videoAuthors) return videoAuthors;
+	}
+	return parseNewsArticleAuthors(parsedNewsArticle);
+}
+
+function getPublishedDate(
+	isYouTubeUrl: boolean,
+	parsedNewsArticle: ParsedNewsArticle | null,
+	parsedVideoObject: ParsedVideoObject | null,
+	result: SuccessResult["result"],
+): string | null {
+	if (isYouTubeUrl && parsedVideoObject?.success && parsedVideoObject.data.uploadDate) {
+		return parsedVideoObject.data.uploadDate;
+	}
+
+	return (
+		parsedNewsArticle?.data?.datePublished ||
+		result.articlePublishedTime ||
+		result.articlePublishedDate ||
+		null
+	);
+}
+
+function getTopics(
+	isYouTubeUrl: boolean,
+	parsedNewsArticle: ParsedNewsArticle | null,
+	parsedVideoObject: ParsedVideoObject | null,
+	result: SuccessResult["result"],
+): string[] {
+	// For YouTube videos, prioritize VideoObject genre
+	if (isYouTubeUrl && parsedVideoObject?.success && parsedVideoObject.data.genre) {
+		return [parsedVideoObject.data.genre];
+	}
+
+	const keywords = parsedNewsArticle?.data?.keywords;
+	if (Array.isArray(keywords)) {
+		return keywords;
+	}
+	if (typeof keywords === "string") {
+		return keywords.split(",").map((k) => k.trim());
+	}
+	return result.articleSection ? [result.articleSection] : [];
+}
+
 export async function extractHtmlMetadata(
 	html: string,
 ): Promise<null | Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">> {
@@ -74,13 +160,37 @@ export async function extractHtmlMetadata(
 			if (Array.isArray(item)) {
 				const found = findNewsArticle(item);
 				if (found) return found;
-			} else if (
-				typeof item === "object" &&
-				item !== null &&
-				"@type" in item &&
-				item["@type"] === "NewsArticle"
-			) {
-				return item;
+			} else if (typeof item === "object" && item !== null) {
+				// Check if this item has a @graph property
+				if ("@graph" in item && Array.isArray(item["@graph"])) {
+					const found = findNewsArticle(item["@graph"]);
+					if (found) return found;
+				}
+				// Check if this item is a NewsArticle or Article
+				if ("@type" in item && (item["@type"] === "NewsArticle" || item["@type"] === "Article")) {
+					return item;
+				}
+			}
+		}
+		return null;
+	};
+
+	// Recursively search for VideoObject in potentially nested JSON-LD structure
+	const findVideoObject = (items: unknown[]): unknown => {
+		for (const item of items) {
+			if (Array.isArray(item)) {
+				const found = findVideoObject(item);
+				if (found) return found;
+			} else if (typeof item === "object" && item !== null) {
+				// Check if this item has a @graph property
+				if ("@graph" in item && Array.isArray(item["@graph"])) {
+					const found = findVideoObject(item["@graph"]);
+					if (found) return found;
+				}
+				// Check if this item is a VideoObject
+				if ("@type" in item && item["@type"] === "VideoObject") {
+					return item;
+				}
 			}
 		}
 		return null;
@@ -94,34 +204,22 @@ export async function extractHtmlMetadata(
 		? NewsArticleSchema.safeParse(newsArticleJsonLd)
 		: null;
 
-	const newsArticleAuthors = parsedNewsArticle?.success
-		? Array.isArray(parsedNewsArticle.data.author)
-			? (() => {
-					const authors = parsedNewsArticle.data.author?.map((author) =>
-						"name" in author ? author.name : author.mainEntity.name,
-					);
-					return authors;
-				})()
-			: parsedNewsArticle.data.author?.name
-				? [parsedNewsArticle.data.author?.name]
-				: null
+	// Check if this is a YouTube URL and parse VideoObject JSON-LD
+	const isYouTubeUrl = Boolean(result.ogUrl?.includes("youtube.com"));
+	const videoObjectJsonLd =
+		isYouTubeUrl && result.jsonLD ? findVideoObject(result.jsonLD) : null;
+
+	const parsedVideoObject = videoObjectJsonLd
+		? VideoObjectSchema.safeParse(videoObjectJsonLd)
 		: null;
 
-	const foundDate =
-		parsedNewsArticle?.data?.datePublished ||
-		result.articlePublishedTime ||
-		result.articlePublishedDate;
+	if (isYouTubeUrl && parsedVideoObject?.error) {
+		console.log("video parsing failed", parsedVideoObject?.error);
+	}
 
-	const articleTags = (() => {
-		const keywords = parsedNewsArticle?.data?.keywords;
-		if (Array.isArray(keywords)) {
-			return keywords;
-		}
-		if (typeof keywords === "string") {
-			return keywords.split(",").map((k) => k.trim());
-		}
-		return result.articleSection ? [result.articleSection] : [];
-	})();
+	const finalAuthors = getAuthors(isYouTubeUrl, parsedNewsArticle, parsedVideoObject);
+	const foundDate = getPublishedDate(isYouTubeUrl, parsedNewsArticle, parsedVideoObject, result);
+	const articleTags = getTopics(isYouTubeUrl, parsedNewsArticle, parsedVideoObject, result);
 
 	const siteName =
 		parsedNewsArticle?.data?.publisher?.name || result.ogSiteName || null;
@@ -132,7 +230,7 @@ export async function extractHtmlMetadata(
 		imageUrl: (Array.isArray(result.ogImage) && result.ogImage[0].url) || null,
 		metadata: result,
 		scraped: true,
-		authors: newsArticleAuthors,
+		authors: finalAuthors,
 		publishedDate: foundDate ? new Date(foundDate) : null,
 		topics: articleTags,
 		siteName,
