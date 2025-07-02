@@ -11,7 +11,18 @@ const DisplayHost = ({ link, host, theme }: DisplayHostProps) => {
 	if (!link) return null;
 
 	return (
-		<Flex align="center" mb="1" mt="3">
+		<Flex
+			align="center"
+			mb="2"
+			mt="-6"
+			ml="-4"
+			style={{
+				backgroundColor: "var(--color-panel-solid)",
+				padding: "0.5rem 1rem",
+				width: "fit-content",
+				borderTopRightRadius: "var(--radius-4)",
+			}}
+		>
 			<img
 				src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
 				loading="lazy"
