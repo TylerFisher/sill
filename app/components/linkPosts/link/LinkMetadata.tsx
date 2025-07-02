@@ -1,7 +1,4 @@
-import { Badge, Button, Flex, Text } from "@radix-ui/themes";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { Badge, Flex, HoverCard, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 
@@ -21,11 +18,10 @@ const LinkMetadata = ({
 	articleTags,
 	url,
 }: LinkMetadataProps) => {
-	const [isOpen, setIsOpen] = useState(false);
 	return (
 		<>
 			{(authors || publishDate) && (
-				<Text as="p" size="1" color="gray" mt="2">
+				<Text as="p" size="1" color="gray" mt="1">
 					{authors && (
 						<>
 							by{" "}
@@ -47,30 +43,45 @@ const LinkMetadata = ({
 				</Text>
 			)}
 			{articleTags.length > 0 && (
-				<Collapsible.Root open={isOpen} onOpenChange={setIsOpen}>
-					<Collapsible.Trigger asChild>
-						<Button variant="ghost" size="1" mt="2" color="gray">
-							<Text>
-								{articleTags.length} {articleTags.length === 1 ? "tag" : "tags"}
-							</Text>
-							{isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-						</Button>
-					</Collapsible.Trigger>
-					<Collapsible.Content>
-						<Flex gap="1" wrap="wrap" mt="4">
-							{articleTags.map((tag) => (
+				<Flex gap="1" wrap="wrap" mt="2">
+					{articleTags.slice(0, 3).map((tag) => (
+						<Badge
+							key={`${url}-${tag}`}
+							variant="soft"
+							color="gray"
+							size="1"
+						>
+							{tag}
+						</Badge>
+					))}
+					{articleTags.length > 3 && (
+						<HoverCard.Root>
+							<HoverCard.Trigger>
 								<Badge
-									key={`${url}-${tag}`}
 									variant="outline"
-									color="yellow"
+									color="gray"
 									size="1"
 								>
-									{tag}
+									+{articleTags.length - 3} more
 								</Badge>
-							))}
-						</Flex>
-					</Collapsible.Content>
-				</Collapsible.Root>
+							</HoverCard.Trigger>
+							<HoverCard.Content>
+								<Flex gap="1" wrap="wrap">
+									{articleTags.slice(3).map((tag) => (
+										<Badge
+											key={`${url}-remaining-${tag}`}
+											variant="soft"
+											color="gray"
+											size="1"
+										>
+											{tag}
+										</Badge>
+									))}
+								</Flex>
+							</HoverCard.Content>
+						</HoverCard.Root>
+					)}
+				</Flex>
 			)}
 		</>
 	);

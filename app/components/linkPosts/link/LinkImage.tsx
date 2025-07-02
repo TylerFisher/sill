@@ -20,8 +20,8 @@ const LinkImage = ({ link, url, layout }: LinkImageProps) => {
 	return (
 		<>
 			{shouldShowMainImage && (
-				<Inset mb="4" className={styles.inset}>
-					<AspectRatio ratio={16 / 9}>
+				<Inset mb="2" className={styles.inset}>
+					<AspectRatio ratio={2 / 1}>
 						<Link
 							target="_blank"
 							rel="noreferrer"

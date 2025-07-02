@@ -82,10 +82,10 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
-			{layout === "default" && (
-				<DisplayHost link={effectiveLink} host={host} theme={theme} />
-			)}
 			<Box position="relative">
+				{layout === "default" && (
+					<DisplayHost link={effectiveLink} host={host} theme={theme} />
+				)}
 				<LinkTitle
 					title={effectiveLink.title}
 					href={effectiveLink.url}
