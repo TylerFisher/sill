@@ -24,6 +24,7 @@ export default [
 		route("agree-to-terms", "routes/api/agree-to-terms.ts"),
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
+		route("metadata/update", "routes/api/metadata.update.ts"),
 		route("migrate-data", "routes/api/migrate-data.ts"),
 		route("mute/add", "routes/api/mute.add.ts"),
 		route("mute/delete", "routes/api/mute.delete.ts"),

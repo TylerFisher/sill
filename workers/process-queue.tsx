@@ -25,7 +25,7 @@ import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
 import { isSubscribed } from "~/utils/auth.server";
 import { renderPageContent } from "~/utils/cloudflare.server";
-import { extractHtmlMetadata } from "~/utils/metadata";
+import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
 
 const MAX_ERRORS_PER_BATCH = 10;
 
@@ -265,22 +265,43 @@ async function processQueue() {
 
 				// Process URLs concurrently with rate limiting
 				const processUrl = async (url: string) => {
-					console.log("scraping", url);
 					const result = await renderPageContent({ url });
 					if (result.success) {
 						const metadata = await extractHtmlMetadata(result.html);
 						if (metadata) {
 							await db.update(link).set(metadata).where(eq(link.url, url));
-							console.log(`[BROWSER RENDER] updated metadata for ${url}`);
+							console.log(
+								`[BROWSER RENDER] updated metadata from cloudflare for ${url}`,
+							);
 						} else {
-							console.log(`[BROWSER RENDER] could not get metadata for ${url}`);
-							await db
-								.update(link)
-								.set({ scraped: true })
-								.where(eq(link.url, url));
+							const html = await fetchHtmlViaProxy(url);
+							if (html) {
+								const metadata = await extractHtmlMetadata(result.html);
+								if (metadata) {
+									await db.update(link).set(metadata).where(eq(link.url, url));
+									console.log(
+										`[BROWSER RENDER] updated metadata from proxy for ${url}`,
+									);
+								} else {
+									await db
+										.update(link)
+										.set({ scraped: true })
+										.where(eq(link.url, url));
+									console.log(`[BROWSER RENDER] no metadata found for ${url}`);
+								}
+							} else {
+								await db
+									.update(link)
+									.set({ scraped: true })
+									.where(eq(link.url, url));
+							}
 						}
 					} else {
 						console.log("[BROWSER RENDER] error", url, result.error);
+						await db
+							.update(link)
+							.set({ scraped: true })
+							.where(eq(link.url, url));
 					}
 				};
 

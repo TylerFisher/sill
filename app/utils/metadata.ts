@@ -2,6 +2,25 @@ import ogs from "open-graph-scraper-lite";
 import type { link } from "~/drizzle/schema.server";
 import { z } from "zod";
 
+export async function fetchHtmlViaProxy(url: string): Promise<string | null> {
+	try {
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			const text = await response.text();
+			console.warn(
+				`[BROWSER RENDER] Failed to fetch ${url}: ${response.status}`,
+			);
+			return null;
+		}
+
+		return response.text();
+	} catch (error) {
+		console.warn(`[BROWSER RENDER] Error fetching ${url}:`, error);
+		return null;
+	}
+}
+
 const NewsArticleSchema = z.object({
 	"@type": z.literal("NewsArticle"),
 	author: z

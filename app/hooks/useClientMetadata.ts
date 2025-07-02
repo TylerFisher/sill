@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { extractHtmlMetadata } from "~/utils/metadata";
+import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
 import type { link } from "~/drizzle/schema.server";
 import type { SuccessResult } from "open-graph-scraper-lite";
 
@@ -76,18 +76,37 @@ export function useClientMetadata({
 
 			try {
 				await globalFetchQueue.add(async () => {
-					const proxyUrl = `https://proxy.corsfix.com/?${encodeURIComponent(url)}`;
-					const response = await fetch(proxyUrl);
+					const proxyUrl = `https://proxy.corsfix.com/?${url}`;
+					let html = await fetchHtmlViaProxy(proxyUrl);
 
-					if (!response.ok) {
-						throw new Error(`Failed to fetch: ${response.status}`);
+					if (!html) {
+						html = await fetchHtmlViaProxy(url);
+
+						if (!html) {
+							return;
+						}
 					}
 
-					const html = await response.text();
 					const extractedMetadata = await extractHtmlMetadata(html);
 
 					if (extractedMetadata) {
 						setClientMetadata(extractedMetadata);
+						
+						// Send extracted metadata to API
+						try {
+							await fetch("/api/metadata/update", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									url,
+									metadata: extractedMetadata,
+								}),
+							});
+						} catch (apiError) {
+							console.error("Failed to update metadata in database:", apiError);
+						}
 					} else {
 						setError("Could not extract metadata from HTML");
 					}
