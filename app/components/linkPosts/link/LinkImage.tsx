@@ -1,16 +1,14 @@
-import { AspectRatio, Flex, Inset, Link, Text } from "@radix-ui/themes";
+import { AspectRatio, Inset, Link } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "../LinkRep.module.css";
 
 interface LinkImageProps {
 	link: MostRecentLinkPosts["link"];
 	url: URL;
-	host: string;
 	layout: "dense" | "default";
-	theme: string | undefined;
 }
 
-const LinkImage = ({ link, url, host, layout, theme }: LinkImageProps) => {
+const LinkImage = ({ link, url, layout }: LinkImageProps) => {
 	if (!link) return null;
 	const shouldShowMainImage =
 		link.imageUrl &&
@@ -42,25 +40,6 @@ const LinkImage = ({ link, url, host, layout, theme }: LinkImageProps) => {
 						</Link>
 					</AspectRatio>
 				</Inset>
-			)}
-			{layout === "default" && (
-				<Flex align="center" mb="1" mt={shouldShowMainImage ? "3" : "0"}>
-					<img
-						src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
-						loading="lazy"
-						alt=""
-						width="16px"
-						height="16px"
-						decoding="async"
-						style={{
-							marginRight: "0.25rem",
-							backgroundColor: theme === "dark" ? "white" : "transparent",
-						}}
-					/>
-					<Text size="1" color="gray" as="span">
-						<Link href={`/links/domain/${host}`}>{link.siteName || host}</Link>
-					</Text>
-				</Flex>
 			)}
 		</>
 	);

@@ -11,6 +11,8 @@ import XEmbed from "./link/XEmbed";
 import LinkImage from "./link/LinkImage";
 import LinkMetadata from "./link/LinkMetadata";
 import LinkDescription from "./link/LinkDescription";
+import DisplayHost from "./link/DisplayHost";
+import { useClientMetadata } from "~/hooks/useClientMetadata";
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
 	instance: string | undefined;
@@ -46,15 +48,28 @@ const LinkRep = ({
 	const host = url.host.replace("www.", "");
 	const theme = useTheme();
 
+	const { clientMetadata } = useClientMetadata({
+		url: link.url,
+		metadata: link.metadata,
+	});
+
+	const effectiveLink = clientMetadata
+		? {
+				...link,
+				title: clientMetadata.title || link.title,
+				description: clientMetadata.description || link.description,
+				imageUrl: clientMetadata.imageUrl || link.imageUrl,
+				authors: clientMetadata.authors || link.authors,
+				publishedDate: clientMetadata.publishedDate || link.publishedDate,
+				topics: clientMetadata.topics || link.topics,
+				siteName: clientMetadata.siteName || link.siteName,
+				metadata: clientMetadata.metadata || link.metadata,
+			}
+		: link;
+
 	return (
 		<WrapperComponent layout={layout}>
-			<LinkImage
-				link={link}
-				url={url}
-				host={host}
-				layout={layout}
-				theme={theme}
-			/>
+			<LinkImage link={effectiveLink} url={url} layout={layout} />
 			{(url.hostname === "www.youtube.com" || url.hostname === "youtu.be") &&
 				layout === "default" && (
 					<Inset mb="-4" className={styles.inset}>
@@ -67,18 +82,24 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
+			{layout === "default" && (
+				<DisplayHost link={effectiveLink} host={host} theme={theme} />
+			)}
 			<Box position="relative">
 				<LinkTitle
-					title={link.title}
-					href={link.url}
+					title={effectiveLink.title}
+					href={effectiveLink.url}
 					layout={layout}
 					host={host}
 				/>
-				<LinkDescription description={link.description || ""} layout={layout} />
+				<LinkDescription
+					description={effectiveLink.description || ""}
+					layout={layout}
+				/>
 				<LinkMetadata
-					authors={link.authors}
-					publishDate={link.publishedDate}
-					articleTags={link.topics || []}
+					authors={effectiveLink.authors}
+					publishDate={effectiveLink.publishedDate}
+					articleTags={effectiveLink.topics || []}
 					url={url}
 				/>
 			</Box>
@@ -88,9 +109,9 @@ const LinkRep = ({
 						<Separator orientation="horizontal" size="4" my="4" />
 					</Inset>
 					<Toolbar
-						url={link.url}
-						giftUrl={link.giftUrl}
-						narrowMutePhrase={link.url}
+						url={effectiveLink.url}
+						giftUrl={effectiveLink.giftUrl}
+						narrowMutePhrase={effectiveLink.url}
 						broadMutePhrase={host}
 						instance={instance}
 						bsky={bsky}
@@ -103,12 +124,12 @@ const LinkRep = ({
 			)}
 			{toolbar && layout === "dense" && (
 				<ToolDropdown
-					url={link.url}
-					giftUrl={link.giftUrl}
+					url={effectiveLink.url}
+					giftUrl={effectiveLink.giftUrl}
 					instance={instance}
 					bsky={bsky}
 					isBookmarked={isBookmarked}
-					narrowMutePhrase={link.url}
+					narrowMutePhrase={effectiveLink.url}
 					broadMutePhrase={host}
 				/>
 			)}

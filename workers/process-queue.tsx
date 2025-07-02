@@ -24,10 +24,8 @@ import { renderToString } from "react-dom/server";
 import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { uuidv7 } from "uuidv7-js";
 import { isSubscribed } from "~/utils/auth.server";
-import {
-	extractHtmlMetadata,
-	renderPageContent,
-} from "~/utils/cloudflare.server";
+import { renderPageContent } from "~/utils/cloudflare.server";
+import { extractHtmlMetadata } from "~/utils/metadata";
 
 const MAX_ERRORS_PER_BATCH = 10;
 
