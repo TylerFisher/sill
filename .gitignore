@@ -11,3 +11,4 @@ public/sw.js
 .env.production
 dozzle
 .react-router
+CLAUDE.md
