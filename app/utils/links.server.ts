@@ -667,7 +667,7 @@ export const findLinksByDomain = async (
 		.where(and(ilike(link.url, `%${domain}%`), isNotNull(link.publishedDate)))
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
-		.orderBy(link.publishedDate, desc(sql`"uniqueActorsCount"`))
+		.orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
 		.limit(pageSize)
 		.offset(offset)
 		.then(async (results) => {
@@ -719,7 +719,7 @@ export const findLinksByAuthor = async (
 		)
 		.groupBy(linkPostDenormalized.linkUrl, link.id)
 		.having(sql`count(*) > 0`)
-		.orderBy(link.publishedDate, desc(sql`"uniqueActorsCount"`))
+		.orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
 		.limit(pageSize)
 		.offset(offset)
 		.then(async (results) => {
