@@ -1,4 +1,4 @@
-import { Badge, Flex, HoverCard, Text } from "@radix-ui/themes";
+import { Badge, Flex, HoverCard, Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 
@@ -20,11 +20,39 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 					{authors && (
 						<>
 							by{" "}
-							{authors.length === 2
-								? authors.join(" and ")
-								: authors.length > 2
-									? `${authors.slice(0, -1).join(", ")} and ${authors[authors.length - 1]}`
-									: authors[0]}
+							{authors.length === 2 ? (
+								authors.map((author, index) => (
+									<span key={author}>
+										<Link
+											href={`/links/author/${encodeURIComponent(author)}`}
+											color="gray"
+										>
+											{author}
+										</Link>
+										{index === 0 && " and "}
+									</span>
+								))
+							) : authors.length > 2 ? (
+								authors.map((author, index) => (
+									<span key={author}>
+										<Link
+											href={`/links/author/${encodeURIComponent(author)}`}
+											color="gray"
+										>
+											{author}
+										</Link>
+										{index < authors.length - 1 &&
+											(index === authors.length - 2 ? " and " : ", ")}
+									</span>
+								))
+							) : (
+								<Link
+									href={`/links/author/${encodeURIComponent(authors[0])}`}
+									color="gray"
+								>
+									{authors[0]}
+								</Link>
+							)}
 						</>
 					)}
 					{authors && publishDate && (

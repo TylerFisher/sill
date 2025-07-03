@@ -11,8 +11,8 @@ import {
 	getTableColumns,
 	type SQL,
 	notInArray,
-	not,
 	ne,
+	isNotNull,
 } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
 import {
@@ -656,7 +656,36 @@ export const findLinksByDomain = async (
 	return await db
 		.select()
 		.from(link)
-		.where(ilike(link.url, `%${domain}%`))
+		.where(and(ilike(link.url, `%${domain}%`), isNotNull(link.publishedDate)))
+		.orderBy(desc(link.publishedDate))
+		.limit(pageSize)
+		.offset(offset);
+};
+
+/**
+ * Finds all link objects that have an author matching the specified name
+ * @param author Author name to match against
+ * @param page Page number (1-based, defaults to 1)
+ * @param pageSize Number of results per page (defaults to 10)
+ * @returns Array of link objects with the specified author
+ */
+export const findLinksByAuthor = async (
+	author: string,
+	page = 1,
+	pageSize = 10,
+) => {
+	const offset = (page - 1) * pageSize;
+
+	return await db
+		.select()
+		.from(link)
+		.where(
+			and(
+				sql`${link.authors}::jsonb ? ${author}`,
+				isNotNull(link.publishedDate),
+			),
+		)
+		.orderBy(desc(link.publishedDate))
 		.limit(pageSize)
 		.offset(offset);
 };
