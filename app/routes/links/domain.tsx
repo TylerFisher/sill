@@ -6,10 +6,8 @@ import { db } from "~/drizzle/db.server";
 import { eq } from "drizzle-orm";
 import { user } from "~/drizzle/schema.server";
 import { invariantResponse } from "@epic-web/invariant";
-import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import { useLayout } from "../resources/layout-switch";
+import LinksList from "~/components/linkPosts/LinksList";
 import PageHeading from "~/components/nav/PageHeading";
-import { Box, Separator } from "@radix-ui/themes";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
@@ -43,33 +41,19 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	};
 };
 
-const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
+const LinksByDomain = ({ loaderData }) => {
 	const { links, instance, bsky, bookmarks, subscribed, domain } = loaderData;
-	const layout = useLayout();
 
 	return (
 		<Layout>
 			<PageHeading title={`Links from ${domain}`} />
-			<div>
-				{links.map((linkPost, index) => (
-					<div key={linkPost.link?.id}>
-						<LinkPostRep
-							linkPost={linkPost}
-							instance={instance}
-							bsky={bsky}
-							layout={layout}
-							bookmarks={bookmarks}
-							subscribed={subscribed}
-						/>
-						{index < links.length - 1 &&
-							(layout === "default" ? (
-								<Separator my="7" size="4" orientation="horizontal" />
-							) : (
-								<Box my="5" />
-							))}
-					</div>
-				))}
-			</div>
+			<LinksList 
+				links={links}
+				instance={instance}
+				bsky={bsky}
+				bookmarks={bookmarks}
+				subscribed={subscribed}
+			/>
 		</Layout>
 	);
 };
