@@ -56,7 +56,7 @@ const LinkRep = ({
 	const effectiveLink = clientMetadata
 		? {
 				...link,
-				title: clientMetadata.title || link.title,
+				title: clientMetadata.title || link.title || link.url,
 				description: clientMetadata.description || link.description,
 				imageUrl: clientMetadata.imageUrl || link.imageUrl,
 				authors: clientMetadata.authors || link.authors,
@@ -84,10 +84,15 @@ const LinkRep = ({
 				)}
 			<Box position="relative">
 				{layout === "default" && (
-					<DisplayHost link={effectiveLink} host={host} theme={theme} />
+					<DisplayHost
+						link={effectiveLink}
+						host={host}
+						theme={theme}
+						image={!!effectiveLink.imageUrl}
+					/>
 				)}
 				<LinkTitle
-					title={effectiveLink.title}
+					title={effectiveLink.title || link.url}
 					href={effectiveLink.url}
 					layout={layout}
 					host={host}
@@ -102,10 +107,7 @@ const LinkRep = ({
 					description={effectiveLink.description || ""}
 					layout={layout}
 				/>
-				<LinkTags
-					articleTags={effectiveLink.topics || []}
-					url={url}
-				/>
+				<LinkTags articleTags={effectiveLink.topics || []} url={url} />
 			</Box>
 			{toolbar && layout === "default" && (
 				<>

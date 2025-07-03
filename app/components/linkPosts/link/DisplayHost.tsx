@@ -5,16 +5,17 @@ interface DisplayHostProps {
 	link: MostRecentLinkPosts["link"];
 	host: string;
 	theme: string | undefined;
+	image: boolean;
 }
 
-const DisplayHost = ({ link, host, theme }: DisplayHostProps) => {
+const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 	if (!link) return null;
 
 	return (
 		<Flex
 			align="center"
 			mb="2"
-			mt="-5"
+			mt={image ? "-5" : "0"}
 			ml="-4"
 			style={{
 				backgroundColor: "var(--color-panel-solid)",

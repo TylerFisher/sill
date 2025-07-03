@@ -243,10 +243,7 @@ async function processQueue() {
 				.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 				.where(
 					and(
-						gte(
-							linkPostDenormalized.postDate,
-							sql`NOW() - INTERVAL '24 hours'`,
-						),
+						gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '1 day'`),
 						eq(link.scraped, false),
 						not(ilike(link.url, "%.pdf")),
 					),

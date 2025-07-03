@@ -66,7 +66,7 @@ export function useClientMetadata({
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (metadata) {
+		if (metadata || url.endsWith(".pdf")) {
 			return;
 		}
 
@@ -91,7 +91,7 @@ export function useClientMetadata({
 
 					if (extractedMetadata) {
 						setClientMetadata(extractedMetadata);
-						
+
 						// Send extracted metadata to API
 						try {
 							await fetch("/api/metadata/update", {
