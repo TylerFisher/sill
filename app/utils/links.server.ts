@@ -644,7 +644,7 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
  * @param domain Domain to match against (e.g., "example.com")
  * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with URLs from the specified domain
+ * @returns Array of link objects with URLs from the specified domain, including linkPostDenormalized objects and total share count
  */
 export const findLinksByDomain = async (
 	domain: string,
@@ -654,12 +654,36 @@ export const findLinksByDomain = async (
 	const offset = (page - 1) * pageSize;
 
 	return await db
-		.select()
-		.from(link)
+		.select({
+			link,
+			uniqueActorsCount:
+				getUniqueActorsCountSql(sql`1`).as("uniqueActorsCount"),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(and(ilike(link.url, `%${domain}%`), isNotNull(link.publishedDate)))
-		.orderBy(desc(link.publishedDate))
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(link.publishedDate, desc(sql`"uniqueActorsCount"`))
 		.limit(pageSize)
-		.offset(offset);
+		.offset(offset)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 };
 
 /**
@@ -667,7 +691,7 @@ export const findLinksByDomain = async (
  * @param author Author name to match against
  * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with the specified author
+ * @returns Array of link objects with the specified author, including linkPostDenormalized objects and total share count
  */
 export const findLinksByAuthor = async (
 	author: string,
@@ -677,17 +701,41 @@ export const findLinksByAuthor = async (
 	const offset = (page - 1) * pageSize;
 
 	return await db
-		.select()
-		.from(link)
+		.select({
+			link,
+			uniqueActorsCount:
+				getUniqueActorsCountSql(sql`1`).as("uniqueActorsCount"),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(
 			and(
-				sql`${link.authors}::jsonb ? ${author}`,
+				sql`${link.authors}::text ILIKE ${`%${author}%`}`,
 				isNotNull(link.publishedDate),
 			),
 		)
-		.orderBy(desc(link.publishedDate))
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(link.publishedDate, desc(sql`"uniqueActorsCount"`))
 		.limit(pageSize)
-		.offset(offset);
+		.offset(offset)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 };
 
 /**
@@ -695,7 +743,7 @@ export const findLinksByAuthor = async (
  * @param topic Topic name to match against
  * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with the specified topic
+ * @returns Array of link objects with the specified topic, including linkPostDenormalized objects and total share count
  */
 export const findLinksByTopic = async (
 	topic: string,
@@ -705,15 +753,39 @@ export const findLinksByTopic = async (
 	const offset = (page - 1) * pageSize;
 
 	return await db
-		.select()
-		.from(link)
+		.select({
+			link,
+			uniqueActorsCount:
+				getUniqueActorsCountSql(sql`1`).as("uniqueActorsCount"),
+			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
+				"mostRecentPostDate",
+			),
+		})
+		.from(linkPostDenormalized)
+		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
 		.where(
 			and(
-				sql`${link.topics}::jsonb ? ${topic}`,
+				sql`${link.topics}::text ILIKE ${`%${topic}%`}`,
 				isNotNull(link.publishedDate),
 			),
 		)
-		.orderBy(desc(link.publishedDate))
+		.groupBy(linkPostDenormalized.linkUrl, link.id)
+		.having(sql`count(*) > 0`)
+		.orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
 		.limit(pageSize)
-		.offset(offset);
+		.offset(offset)
+		.then(async (results) => {
+			const postsPromise = results.map(async (result) => {
+				const posts = await db
+					.select()
+					.from(linkPostDenormalized)
+					.where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
+					.orderBy(desc(linkPostDenormalized.postDate));
+				return {
+					...result,
+					posts,
+				};
+			});
+			return Promise.all(postsPromise);
+		});
 };

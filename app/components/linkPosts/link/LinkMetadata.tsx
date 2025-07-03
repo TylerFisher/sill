@@ -5,6 +5,15 @@ import en from "javascript-time-ago/locale/en";
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
+const formatTag = (tag: string): string => {
+	// If the tag is all lowercase, capitalize the first letter
+	if (tag === tag.toLowerCase()) {
+		return tag.charAt(0).toUpperCase() + tag.slice(1);
+	}
+	// Otherwise, return the tag as-is
+	return tag;
+};
+
 interface LinkMetadataProps {
 	authors: string[] | null;
 	publishDate: Date | null;
@@ -79,43 +88,45 @@ export const LinkTags = ({
 	if (articleTags.length === 0) return null;
 
 	return (
-		<Flex gap="1" wrap="wrap" mt="3">
+		<Flex gap="1" wrap="wrap" mt="3" align="center">
 			{articleTags.slice(0, 3).map((tag) => (
 				<Link
 					key={`${url}-${tag}`}
 					href={`/links/topic/${encodeURIComponent(tag)}`}
 				>
 					<Badge variant="soft" color="gray" size="1">
-						{tag}
+						{formatTag(tag)}
 					</Badge>
 				</Link>
 			))}
 			{articleTags.length > 3 && (
-				<HoverCard.Root>
-					<HoverCard.Trigger>
-						<Badge variant="outline" color="gray" size="1">
-							+{articleTags.length - 3} more
-						</Badge>
-					</HoverCard.Trigger>
-					<HoverCard.Content>
-						<Flex gap="1" wrap="wrap">
-							{articleTags.slice(3).map((tag) => (
-								<Link
-									key={`${url}-remaining-${tag}`}
-									href={`/links/topic/${encodeURIComponent(tag)}`}
-								>
-									<Badge
-										variant="soft"
-										color="gray"
-										size="1"
+				<span>
+					<HoverCard.Root>
+						<HoverCard.Trigger>
+							<Badge variant="outline" color="gray" size="1">
+								+{articleTags.length - 3} more
+							</Badge>
+						</HoverCard.Trigger>
+						<HoverCard.Content>
+							<Flex gap="1" wrap="wrap">
+								{articleTags.slice(3).map((tag) => (
+									<Link
+										key={`${url}-remaining-${tag}`}
+										href={`/links/topic/${encodeURIComponent(tag)}`}
 									>
-										{tag}
-									</Badge>
-								</Link>
-							))}
-						</Flex>
-					</HoverCard.Content>
-				</HoverCard.Root>
+										<Badge
+											variant="soft"
+											color="gray"
+											size="1"
+										>
+											{formatTag(tag)}
+										</Badge>
+									</Link>
+								))}
+							</Flex>
+						</HoverCard.Content>
+					</HoverCard.Root>
+				</span>
 			)}
 		</Flex>
 	);
