@@ -689,3 +689,31 @@ export const findLinksByAuthor = async (
 		.limit(pageSize)
 		.offset(offset);
 };
+
+/**
+ * Finds all link objects that have a topic matching the specified name
+ * @param topic Topic name to match against
+ * @param page Page number (1-based, defaults to 1)
+ * @param pageSize Number of results per page (defaults to 10)
+ * @returns Array of link objects with the specified topic
+ */
+export const findLinksByTopic = async (
+	topic: string,
+	page = 1,
+	pageSize = 10,
+) => {
+	const offset = (page - 1) * pageSize;
+
+	return await db
+		.select()
+		.from(link)
+		.where(
+			and(
+				sql`${link.topics}::jsonb ? ${topic}`,
+				isNotNull(link.publishedDate),
+			),
+		)
+		.orderBy(desc(link.publishedDate))
+		.limit(pageSize)
+		.offset(offset);
+};

@@ -81,9 +81,14 @@ export const LinkTags = ({
 	return (
 		<Flex gap="1" wrap="wrap" mt="3">
 			{articleTags.slice(0, 3).map((tag) => (
-				<Badge key={`${url}-${tag}`} variant="soft" color="gray" size="1">
-					{tag}
-				</Badge>
+				<Link
+					key={`${url}-${tag}`}
+					href={`/links/topic/${encodeURIComponent(tag)}`}
+				>
+					<Badge variant="soft" color="gray" size="1">
+						{tag}
+					</Badge>
+				</Link>
 			))}
 			{articleTags.length > 3 && (
 				<HoverCard.Root>
@@ -95,14 +100,18 @@ export const LinkTags = ({
 					<HoverCard.Content>
 						<Flex gap="1" wrap="wrap">
 							{articleTags.slice(3).map((tag) => (
-								<Badge
+								<Link
 									key={`${url}-remaining-${tag}`}
-									variant="soft"
-									color="gray"
-									size="1"
+									href={`/links/topic/${encodeURIComponent(tag)}`}
 								>
-									{tag}
-								</Badge>
+									<Badge
+										variant="soft"
+										color="gray"
+										size="1"
+									>
+										{tag}
+									</Badge>
+								</Link>
 							))}
 						</Flex>
 					</HoverCard.Content>

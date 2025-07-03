@@ -62,6 +62,7 @@ export default [
 		route("trending", "routes/links/trending.tsx"),
 		route("domain/:domain", "routes/links/domain.tsx"),
 		route("author/:author", "routes/links/author.tsx"),
+		route("topic/:topic", "routes/links/topic.tsx"),
 	]),
 	...prefix("mastodon", [
 		route("auth", "routes/mastodon/auth.ts"),
