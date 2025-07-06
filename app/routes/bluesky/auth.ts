@@ -11,10 +11,14 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
 	const referrer =
 		request.headers.get("referer") || "/accounts/onboarding/social";
+	const oauthClient = await createOAuthClient();
 
 	let handle = requestUrl.searchParams.get("handle");
-	if (typeof handle !== "string") {
-		throw new Error("Invalid handle");
+	if (!handle) {
+		const url = await oauthClient.authorize("https://bsky.social", {
+			scope: "atproto transition:generic",
+		});
+		return redirect(url.toString());
 	}
 
 	handle = handle.trim();
@@ -40,7 +44,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	const resolver = new HandleResolver();
 
-	const oauthClient = await createOAuthClient();
 	try {
 		const url = await oauthClient.authorize(handle, {
 			scope: "atproto transition:generic",

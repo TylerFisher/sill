@@ -6,9 +6,12 @@ import {
 	TextField,
 	Callout,
 	Link,
+	Box,
+	Button,
 } from "@radix-ui/themes";
+import * as Collapsible from "@radix-ui/react-collapsible";
 import { Form } from "react-router";
-import { CircleAlert } from "lucide-react";
+import { ChevronDown, CircleAlert } from "lucide-react";
 import type { blueskyAccount } from "~/drizzle/schema.server";
 import SubmitButton from "./SubmitButton";
 import type { ListOption } from "./ListSwitch";
@@ -49,18 +52,38 @@ const BlueskyConnectForm = ({
 				</>
 			) : (
 				<Form action="/bluesky/auth" method="GET">
-					<Text htmlFor="handle" size="2" as="label">
-						Enter your Bluesky handle (e.g. username.bsky.social)
-					</Text>
-					<TextField.Root
-						name="handle"
-						placeholder="username.bsky.social"
-						required
-						mb="3"
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					<SubmitButton size="2" label="Connect" />
+					<SubmitButton mt="1" size="2" label="Sign in with Bluesky" />
+					<Box my="3">
+						<Text color="gray">— or —</Text>
+					</Box>
+					<Collapsible.Root>
+						<Collapsible.Trigger asChild>
+							<Button variant="ghost" size="2">
+								Using a custom PDS? <ChevronDown size={14} />
+							</Button>
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							<Box mt="3">
+								<Text
+									htmlFor="handle"
+									size="2"
+									as="label"
+									aria-required={false}
+								>
+									Enter your Bluesky handle (e.g. username.bsky.social)
+								</Text>
+								<TextField.Root
+									name="handle"
+									placeholder="username.bsky.social"
+									mb="3"
+								>
+									<TextField.Slot />
+								</TextField.Root>
+								<SubmitButton size="2" label="Connect" />
+							</Box>
+						</Collapsible.Content>
+					</Collapsible.Root>
+
 					{searchParams.get("error") === "resolver" && (
 						<Callout.Root mt="4" color="red">
 							<Callout.Icon>
