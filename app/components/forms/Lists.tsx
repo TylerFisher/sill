@@ -5,7 +5,7 @@ import type { blueskyAccount } from "~/drizzle/schema.server";
 import { CircleAlert } from "lucide-react";
 import type { SubscriptionStatus } from "~/utils/auth.server";
 import { useFetcher } from "react-router";
-import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
+import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 
 const Lists = ({
 	listOptions,
