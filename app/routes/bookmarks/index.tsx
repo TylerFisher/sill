@@ -27,7 +27,7 @@ import { useLayout } from "../resources/layout-switch";
 import { useEffect, useRef, useState } from "react";
 import { uuidv7 } from "uuidv7-js";
 import { debounce } from "ts-debounce";
-import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
+import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {

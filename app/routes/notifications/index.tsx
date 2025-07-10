@@ -16,7 +16,7 @@ import { uuidv7 } from "uuidv7-js";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
 import { CircleAlert } from "lucide-react";
-import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
+import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),

@@ -10,7 +10,7 @@ import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import { db } from "~/drizzle/db.server";
 import { digestSettings, user, digestItem } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
-import SubscriptionCallout from "~/components/ui/SubscriptionCallout";
+import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
