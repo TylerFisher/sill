@@ -1,10 +1,10 @@
-import type { Route } from "./+types/forgot-password";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Callout, Heading, Link as RLink, Text } from "@radix-ui/themes";
+import { eq } from "drizzle-orm";
+import { CircleAlert } from "lucide-react";
 import { data, redirect } from "react-router";
 import { Form, Link, useFetcher } from "react-router";
-import { eq } from "drizzle-orm";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
@@ -18,7 +18,7 @@ import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
-import { CircleAlert } from "lucide-react";
+import type { Route } from "./+types/forgot-password";
 
 const ForgotPasswordSchema = z.object({
 	email: EmailSchema,

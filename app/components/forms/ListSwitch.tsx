@@ -1,7 +1,7 @@
-import type { useFetcher } from "react-router";
 import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
-import type { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 import { useState } from "react";
+import type { useFetcher } from "react-router";
+import type { blueskyAccount, mastodonAccount } from "~/drizzle/schema.server";
 
 export interface ListOption {
 	name: string;

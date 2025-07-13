@@ -1,9 +1,9 @@
+import { and, desc, eq } from "drizzle-orm";
+import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { termsAgreement, termsUpdate, user } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/agree-to-terms";
-import { db } from "~/drizzle/db.server";
-import { and, desc, eq } from "drizzle-orm";
-import { termsAgreement, termsUpdate, user } from "~/drizzle/schema.server";
-import { uuidv7 } from "uuidv7-js";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);

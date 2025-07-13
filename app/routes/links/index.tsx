@@ -1,10 +1,11 @@
-import type { Route } from "./+types/index";
 import {
 	OAuthResolverError,
 	OAuthResponseError,
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
+import { eq } from "drizzle-orm";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
 	Await,
 	redirect,
@@ -12,31 +13,30 @@ import {
 	useLocation,
 	useSearchParams,
 } from "react-router";
-import { eq } from "drizzle-orm";
-import { Suspense, useEffect, useRef, useState } from "react";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
+import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import {
 	blueskyAccount,
-	mastodonAccount,
 	bookmark,
+	mastodonAccount,
 } from "~/drizzle/schema.server";
+import { useLayout } from "~/routes/resources/layout-switch";
 import { createOAuthClient } from "~/server/oauth/client";
 import {
+	type SubscriptionStatus,
 	isSubscribed,
 	requireUserId,
-	type SubscriptionStatus,
 } from "~/utils/auth.server";
 import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
 } from "~/utils/links.server";
-import { useLayout } from "~/routes/resources/layout-switch";
-import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
+import type { Route } from "./+types/index";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 

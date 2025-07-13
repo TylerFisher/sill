@@ -1,18 +1,17 @@
 .banner {
-  background-color: var(--accent-a3);
-  color: var(--accent-a11);
-  top: 57px;
-  position: relative;
+	background-color: var(--accent-a3);
+	color: var(--accent-a11);
+	top: 57px;
+	position: relative;
 }
 
 .text {
-  font-size: 14px;
-  text-align: center;
+	font-size: 14px;
+	text-align: center;
 }
 
-
 @media (min-width: 1024px) {
-  .banner {
-    top: 0;
-  }
+	.banner {
+		top: 0;
+	}
 }

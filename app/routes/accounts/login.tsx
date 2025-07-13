@@ -1,27 +1,27 @@
-import type { Route } from "./+types/login";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
 	Box,
 	Callout,
 	Flex,
-	Link as RLink,
 	Heading,
+	Link as RLink,
 	Text,
 } from "@radix-ui/themes";
-import { data, Form, Link, useSearchParams } from "react-router";
+import { CircleAlert } from "lucide-react";
+import { Form, Link, data, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
 import CheckboxField from "~/components/forms/CheckboxField";
+import ErrorList from "~/components/forms/ErrorList";
+import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
+import Layout from "~/components/nav/Layout";
 import { login, requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { handleNewSession } from "~/utils/login.server";
 import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
-import ErrorList from "~/components/forms/ErrorList";
-import Layout from "~/components/nav/Layout";
-import SubmitButton from "~/components/forms/SubmitButton";
-import { CircleAlert } from "lucide-react";
+import type { Route } from "./+types/login";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Login" }];
 

@@ -1,4 +1,4 @@
-import { Blockquote, Box, Heading, Text, Link } from "@radix-ui/themes";
+import { Blockquote, Box, Heading, Link, Text } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSRepost from "./RSSRepost";
 

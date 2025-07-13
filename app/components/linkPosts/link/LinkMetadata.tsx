@@ -114,11 +114,7 @@ export const LinkTags = ({
 										key={`${url}-remaining-${tag}`}
 										href={`/links/topic/${encodeURIComponent(tag)}`}
 									>
-										<Badge
-											variant="soft"
-											color="gray"
-											size="1"
-										>
+										<Badge variant="soft" color="gray" size="1">
 											{formatTag(tag)}
 										</Badge>
 									</Link>

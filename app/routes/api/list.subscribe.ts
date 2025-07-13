@@ -1,13 +1,13 @@
-import type { Route } from "./+types/list.subscribe";
+import { and, eq, or } from "drizzle-orm";
 import { data } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { list } from "~/drizzle/schema.server";
-import { eq, and, or } from "drizzle-orm";
-import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { requireUserId } from "~/utils/auth.server";
-import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { insertNewLinks } from "~/utils/links.server";
+import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import type { Route } from "./+types/list.subscribe";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);

@@ -1,10 +1,10 @@
 import { Box, Button, Dialog, IconButton, Text } from "@radix-ui/themes";
-import styles from "./Header.module.css";
-import Nav from "./Nav";
 import { Menu } from "lucide-react";
-import Logo from "./Logo";
 import { NavLink } from "react-router";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import styles from "./Header.module.css";
+import Logo from "./Logo";
+import Nav from "./Nav";
 
 const Header = ({
 	headerClass,

@@ -1,8 +1,8 @@
 import { Box, Flex, Link, Text } from "@radix-ui/themes";
-import { ThemeSwitch, useTheme } from "~/routes/resources/theme-switch";
-import styles from "./Footer.module.css";
 import { useLocation } from "react-router";
 import { LayoutSwitch, useLayout } from "~/routes/resources/layout-switch";
+import { ThemeSwitch, useTheme } from "~/routes/resources/theme-switch";
+import styles from "./Footer.module.css";
 
 const Footer = ({
 	layoutFormId,

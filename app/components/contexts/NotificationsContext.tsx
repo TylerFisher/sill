@@ -1,8 +1,8 @@
 import {
+	type PropsWithChildren,
 	createContext,
 	useContext,
 	useReducer,
-	type PropsWithChildren,
 } from "react";
 import type { NotificationGroupInit } from "../forms/NotificationGroup";
 

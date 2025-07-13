@@ -1,6 +1,6 @@
 import { Badge, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { NavLink } from "react-router";
 import type { ReactNode } from "react";
+import { NavLink } from "react-router";
 
 interface ActionCardProps {
 	title: string;
@@ -28,7 +28,9 @@ export default function ActionCard({
 					</Heading>
 					{isPremium && (
 						<Badge color="yellow" variant="soft">
-							<Text style={{ fontWeight: 900, fontStyle: "italic" }}>sill+</Text>
+							<Text style={{ fontWeight: 900, fontStyle: "italic" }}>
+								sill+
+							</Text>
 						</Badge>
 					)}
 				</Flex>
@@ -36,9 +38,7 @@ export default function ActionCard({
 					{description}
 				</Text>
 				<Button asChild size="3" variant={buttonVariant}>
-					<NavLink to={buttonTo}>
-						{buttonText}
-					</NavLink>
+					<NavLink to={buttonTo}>{buttonText}</NavLink>
 				</Button>
 			</Flex>
 		</Card>

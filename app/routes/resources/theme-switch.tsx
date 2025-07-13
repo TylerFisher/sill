@@ -1,15 +1,15 @@
-import type { Route } from "./+types/theme-switch";
 import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
 import { Button, Flex, Spinner, Text } from "@radix-ui/themes";
-import { ServerOnly } from "remix-utils/server-only";
-import { data, useFetcher, useFetchers } from "react-router";
 import { Moon, Sun } from "lucide-react";
+import { data, useFetcher, useFetchers } from "react-router";
+import { ServerOnly } from "remix-utils/server-only";
 import { z } from "zod";
 import { useHints } from "~/utils/client-hints";
 import { useRequestInfo } from "~/utils/request-info";
 import { type Theme, setTheme } from "~/utils/theme";
+import type { Route } from "./+types/theme-switch";
 
 const ThemeFormSchema = z.object({
 	theme: z.enum(["light", "dark"]),

@@ -1,14 +1,14 @@
-import { Box, Button, Text, Flex } from "@radix-ui/themes";
-import NotificationGroup, {
-	type NotificationGroupInit,
-} from "./NotificationGroup";
 import type { SubmissionResult } from "@conform-to/react";
+import { Box, Button, Flex, Text } from "@radix-ui/themes";
+import { uuidv7 } from "uuidv7-js";
+import type { list } from "~/drizzle/schema.server";
 import {
 	useNotifications,
 	useNotificationsDispatch,
 } from "../contexts/NotificationsContext";
-import { uuidv7 } from "uuidv7-js";
-import type { list } from "~/drizzle/schema.server";
+import NotificationGroup, {
+	type NotificationGroupInit,
+} from "./NotificationGroup";
 
 interface NotificationFormProps {
 	lastResult?: SubmissionResult<string[]> | undefined;

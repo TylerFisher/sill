@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
-import type { link } from "~/drizzle/schema.server";
 import type { SuccessResult } from "open-graph-scraper-lite";
+import { useEffect, useState } from "react";
+import type { link } from "~/drizzle/schema.server";
+import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
 
 type LinkMetadata = Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">;
 

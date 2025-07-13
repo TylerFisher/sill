@@ -1,13 +1,12 @@
 .heroWrapper {
-  background-color: var(--accent-2);
-
+	background-color: var(--accent-2);
 }
 
 .heroContainer {
-  max-width: 1280px;
-  margin: 0 auto;
+	max-width: 1280px;
+	margin: 0 auto;
 }
 
 .heroContent {
-  flex: 1;
+	flex: 1;
 }

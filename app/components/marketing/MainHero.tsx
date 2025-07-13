@@ -5,14 +5,14 @@ import {
 	Callout,
 	Flex,
 	Heading,
-	Text,
 	Link as RLink,
+	Text,
 } from "@radix-ui/themes";
-import { Link } from "react-router";
-import styles from "./MainHero.module.css";
-import Logo from "../nav/Logo";
-import { useTheme } from "~/routes/resources/theme-switch";
 import { CircleAlert } from "lucide-react";
+import { Link } from "react-router";
+import { useTheme } from "~/routes/resources/theme-switch";
+import Logo from "../nav/Logo";
+import styles from "./MainHero.module.css";
 
 const MainHero = () => {
 	const theme = useTheme();

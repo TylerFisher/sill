@@ -1,9 +1,8 @@
-import type { Route } from "./+types/reset-password";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Text } from "@radix-ui/themes";
-import { Form, data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
+import { Form, data, redirect } from "react-router";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
@@ -13,6 +12,7 @@ import { user } from "~/drizzle/schema.server";
 import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
+import type { Route } from "./+types/reset-password";
 
 export const resetPasswordEmailSessionKey = "resetPasswordEmail";
 

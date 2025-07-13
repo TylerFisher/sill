@@ -1,16 +1,16 @@
 import {
 	Box,
-	DropdownMenu,
-	Text,
-	Link,
-	IconButton,
 	Button,
+	DropdownMenu,
+	IconButton,
+	Link,
+	Text,
 } from "@radix-ui/themes";
-import CopyToClipboard from "react-copy-to-clipboard";
 import { Ellipsis } from "lucide-react";
+import CopyToClipboard from "react-copy-to-clipboard";
 import { useFetcher } from "react-router";
-import styles from "./ToolDropdown.module.css";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import styles from "./ToolDropdown.module.css";
 
 interface ToolDropdownProps {
 	url: string;

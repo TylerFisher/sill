@@ -1,7 +1,7 @@
 import { Select, Spinner } from "@radix-ui/themes";
 import { Box, Heading } from "@radix-ui/themes";
-import styles from "./FilterButtonGroup.module.css";
 import { useLocation, useNavigation, useSearchParams } from "react-router";
+import styles from "./FilterButtonGroup.module.css";
 
 export interface ButtonGroup {
 	heading: string;

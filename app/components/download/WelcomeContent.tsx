@@ -1,7 +1,7 @@
 import { Box, Grid } from "@radix-ui/themes";
-import ActionCard from "./ActionCard";
 import PageHeading from "~/components/nav/PageHeading";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import ActionCard from "./ActionCard";
 
 export default function WelcomeContent({
 	subscribed,

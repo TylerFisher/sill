@@ -1,8 +1,8 @@
-import type { Route } from "./+types/feed";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { Feed } from "feed";
 import { db } from "~/drizzle/db.server";
 import { notificationGroup, notificationItem } from "~/drizzle/schema.server";
-import { Feed } from "feed";
+import type { Route } from "./+types/feed";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);

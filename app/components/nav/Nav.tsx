@@ -1,5 +1,4 @@
 import { Button, Text } from "@radix-ui/themes";
-import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import {
 	Bell,
 	Bookmark,
@@ -10,10 +9,11 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import type { ReactElement } from "react";
-import styles from "./Nav.module.css";
-import Footer from "./Footer";
+import { NavLink, useLocation, useRouteLoaderData } from "react-router";
 import type { loader } from "~/root";
 import { useTheme } from "~/routes/resources/theme-switch";
+import Footer from "./Footer";
+import styles from "./Nav.module.css";
 
 const Nav = ({
 	layoutFormId,

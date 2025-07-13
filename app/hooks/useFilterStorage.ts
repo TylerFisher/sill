@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
 
 export interface FilterState {
@@ -15,6 +15,7 @@ const STORAGE_KEY = "sill-filter-preferences";
 
 export const useFilterStorage = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
+	const hasLoadedOnMount = useRef(false);
 
 	const saveFiltersToStorage = useCallback((filters: FilterState) => {
 		try {
@@ -71,13 +72,14 @@ export const useFilterStorage = () => {
 
 	// Load saved filters only on mount
 	useEffect(() => {
-		if (searchParams.size === 0) {
+		if (!hasLoadedOnMount.current && searchParams.size === 0) {
 			const savedFilters = loadFiltersFromStorage();
 			if (savedFilters) {
 				applyFiltersToUrl(savedFilters);
 			}
+			hasLoadedOnMount.current = true;
 		}
-	}, []);
+	}, [searchParams.size, loadFiltersFromStorage, applyFiltersToUrl]);
 
 	useEffect(() => {
 		const currentFilters = getCurrentFilters();

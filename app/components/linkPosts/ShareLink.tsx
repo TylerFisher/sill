@@ -1,4 +1,4 @@
-import { Link, IconButton, Popover, Flex, Button } from "@radix-ui/themes";
+import { Button, Flex, IconButton, Link, Popover } from "@radix-ui/themes";
 import { Share } from "lucide-react";
 
 const SingleAccountShare = ({

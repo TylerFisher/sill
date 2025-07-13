@@ -1,8 +1,8 @@
-import type { Route } from "./+types/update-accounts";
-import { db } from "~/drizzle/db.server";
 import { asc } from "drizzle-orm";
+import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { enqueueJob } from "~/utils/queue.server";
+import type { Route } from "./+types/update-accounts";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");

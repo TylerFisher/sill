@@ -4,10 +4,10 @@ import groupBy from "object.groupby";
 import { useState } from "react";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
-import SharedByBug from "./SharedByBug";
 import type { bookmark } from "~/drizzle/schema.server";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
+import SharedByBug from "./SharedByBug";
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;

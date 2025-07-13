@@ -1,4 +1,11 @@
 import {
+	type SubmissionResult,
+	getFormProps,
+	getInputProps,
+	useForm,
+} from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod";
+import {
 	Box,
 	Button,
 	Card,
@@ -8,24 +15,17 @@ import {
 	Text,
 	TextField,
 } from "@radix-ui/themes";
-import TextInput from "./TextInput";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Form, useFetcher } from "react-router";
-import {
-	getFormProps,
-	getInputProps,
-	useForm,
-	type SubmissionResult,
-} from "@conform-to/react";
+import type { list } from "~/drizzle/schema.server";
+import { NotificationSchema } from "~/routes/notifications";
+import { useNotificationsDispatch } from "../contexts/NotificationsContext";
+import CopyLink from "../linkPosts/CopyLink";
 import NotificationQueryItem, {
 	type NotificationQuery,
 } from "./NotificationQueryItem";
-import { Plus } from "lucide-react";
-import CopyLink from "../linkPosts/CopyLink";
-import { useNotificationsDispatch } from "../contexts/NotificationsContext";
-import { parseWithZod } from "@conform-to/zod";
-import { NotificationSchema } from "~/routes/notifications";
-import type { list } from "~/drizzle/schema.server";
+import TextInput from "./TextInput";
 
 export interface NotificationGroupInit {
 	id?: string;
@@ -142,6 +142,7 @@ const NotificationGroup = ({
 										top: "-34px",
 										left: "-1em",
 									}}
+									layout="default" // not used on this page
 								/>
 							</TextField.Slot>
 						</TextField.Root>

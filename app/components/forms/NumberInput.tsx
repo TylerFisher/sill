@@ -1,6 +1,6 @@
 import { Box, Heading, TextField } from "@radix-ui/themes";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { useState, useEffect } from "react";
 import styles from "./FilterButtonGroup.module.css";
 
 interface NumberInputProps {

@@ -1,18 +1,18 @@
-import type { Route } from "./+types/item";
-import { db } from "~/drizzle/db.server";
-import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import { and, desc, eq, gte, ilike, notIlike, or, sql } from "drizzle-orm";
+import LinkPostRep from "~/components/linkPosts/LinkPostRep";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
 import {
+	blueskyAccount,
+	bookmark,
 	link,
 	linkPostDenormalized,
-	blueskyAccount,
 	mastodonAccount,
-	bookmark,
 } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
-import { getMutePhrases } from "~/utils/links.server";
-import Layout from "~/components/nav/Layout";
 import { useLayout } from "~/routes/resources/layout-switch";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import { getMutePhrases } from "~/utils/links.server";
+import type { Route } from "./+types/item";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
 	const linkId = params.linkId;
@@ -21,6 +21,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 	if (!linkId || !userId) {
 		throw new Error("Missing required parameters");
 	}
+
+	const subscribed = await isSubscribed(userId);
 
 	const dbLink = await db.query.link.findFirst({
 		where: eq(link.id, linkId),
@@ -122,6 +124,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 		bsky: bsky?.handle,
 		mastodon: mastodon?.mastodonInstance.instance,
 		bookmarks,
+		subscribed,
 	};
 }
 
@@ -137,6 +140,7 @@ export default function LinkRoute({ loaderData }: Route.ComponentProps) {
 				autoExpand={true}
 				layout={layout}
 				bookmarks={loaderData.bookmarks}
+				subscribed={loaderData.subscribed}
 			/>
 		</Layout>
 	);

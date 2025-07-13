@@ -4,10 +4,10 @@ import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
 import type { list } from "~/drizzle/schema.server";
-import SearchField from "./SearchField";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
-import NumberInput from "./NumberInput";
 import styles from "./LinkFilters.module.css";
+import NumberInput from "./NumberInput";
+import SearchField from "./SearchField";
 
 const LinkFilters = ({
 	showService,

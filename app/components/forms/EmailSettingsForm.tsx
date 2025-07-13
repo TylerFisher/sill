@@ -1,24 +1,24 @@
-import { useForm, getFormProps, getInputProps } from "@conform-to/react";
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
-	Text,
-	Select,
 	Box,
-	Slider,
-	Flex,
-	RadioGroup,
-	TextField,
-	Link as RLink,
 	Card,
+	Flex,
+	Link as RLink,
+	RadioGroup,
+	Select,
+	Slider,
+	Text,
+	TextField,
 } from "@radix-ui/themes";
-import { useFetcher, Form, Link } from "react-router";
 import { useState } from "react";
+import { Form, Link, useFetcher } from "react-router";
 import type { digestSettings } from "~/drizzle/schema.server";
-import { type action, EmailSettingsSchema } from "~/routes/email/add";
-import SubmitButton from "./SubmitButton";
-import CheckboxField from "./CheckboxField";
+import { EmailSettingsSchema, type action } from "~/routes/email/add";
 import CopyLink from "../linkPosts/CopyLink";
+import CheckboxField from "./CheckboxField";
 import ErrorCallout from "./ErrorCallout";
+import SubmitButton from "./SubmitButton";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
@@ -114,6 +114,7 @@ const EmailSettingForm = ({
 									top: "-28px",
 									left: "-.9em",
 								}}
+								layout="default" // not used on this page
 							/>
 						</TextField.Slot>
 					</TextField.Root>

@@ -1,5 +1,5 @@
-import type { Route } from "./+types/polar.seed";
 import { bootstrapProducts } from "~/utils/polar.server";
+import type { Route } from "./+types/polar.seed";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");

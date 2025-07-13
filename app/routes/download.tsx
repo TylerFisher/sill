@@ -1,15 +1,15 @@
-import type { Route } from "./+types/download";
-import { Await, redirect } from "react-router";
+import { eq } from "drizzle-orm";
 import { Suspense } from "react";
-import Layout from "~/components/nav/Layout";
-import LoadingState from "~/components/download/LoadingState";
+import { Await, redirect } from "react-router";
 import ErrorState from "~/components/download/ErrorState";
+import LoadingState from "~/components/download/LoadingState";
 import WelcomeContent from "~/components/download/WelcomeContent";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { filterLinkOccurrences } from "~/utils/links.server";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
-import { db } from "~/drizzle/db.server";
+import type { Route } from "./+types/download";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Downloading" }];
 

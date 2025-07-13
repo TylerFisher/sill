@@ -1,7 +1,7 @@
 import { render } from "@react-email/components";
-import type { ReactElement } from "react";
-import Mailgun from "mailgun.js";
 import formData from "form-data";
+import Mailgun from "mailgun.js";
+import type { ReactElement } from "react";
 
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({

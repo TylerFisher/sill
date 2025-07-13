@@ -1,11 +1,11 @@
-import type { Route } from "./+types/mute.delete";
 import { parseWithZod } from "@conform-to/zod";
-import { data } from "react-router";
 import { and, eq } from "drizzle-orm";
+import { data } from "react-router";
 import { z } from "zod";
 import { db } from "~/drizzle/db.server";
 import { mutePhrase } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/mute.delete";
 
 const MuteDeleteSchema = z.object({
 	phrase: z.string(),

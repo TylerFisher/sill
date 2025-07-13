@@ -1,4 +1,3 @@
-import type { Route } from "./+types/verify";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
@@ -10,6 +9,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { validateRequest } from "~/utils/verify.server";
+import type { Route } from "./+types/verify";
 
 export const codeQueryParam = "code";
 export const targetQueryParam = "target";

@@ -1,11 +1,11 @@
-import type { Route } from "./+types/auth";
+import { HandleResolver } from "@atproto/identity";
 import {
 	OAuthResolverError,
 	OAuthResponseError,
 } from "@atproto/oauth-client-node";
 import { redirect } from "react-router";
 import { createOAuthClient } from "~/server/oauth/client";
-import { HandleResolver } from "@atproto/identity";
+import type { Route } from "./+types/auth";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);

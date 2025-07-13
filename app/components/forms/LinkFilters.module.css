@@ -1,17 +1,17 @@
 .filter-wrapper {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background-color: var(--gray-2);
-  z-index: 1;
-  border-top: 1px solid var(--gray-a6);
-  padding: 0.75rem 0;
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	background-color: var(--gray-2);
+	z-index: 1;
+	border-top: 1px solid var(--gray-a6);
+	padding: 0.75rem 0;
 }
 
 @media (min-width: 768px) {
-  .filter-wrapper {
-    display: none;
-  }
+	.filter-wrapper {
+		display: none;
+	}
 }
 
 .dialog-content {
@@ -91,7 +91,7 @@
 	.filter-grid {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.primary-filters {
 		grid-column: 1;
 	}

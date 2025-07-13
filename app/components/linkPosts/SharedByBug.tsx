@@ -1,9 +1,9 @@
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { Avatar, Button } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import styles from "./SharedByBug.module.css";
 import { useRef } from "react";
 import { useTheme } from "~/routes/resources/theme-switch";
+import styles from "./SharedByBug.module.css";
 
 const SharedByBug = ({
 	uniqueActors,

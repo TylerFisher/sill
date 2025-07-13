@@ -1,6 +1,12 @@
-import type { Route } from "./+types/maintain-partitions";
 import { sql } from "drizzle-orm";
 import { db } from "~/drizzle/db.server";
+import {
+	type ArchiveResult,
+	archivePartitionToR2,
+	dropPartition,
+	getPartitionNameForDate,
+} from "~/utils/partition-archive.server";
+import type { Route } from "./+types/maintain-partitions";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");
@@ -13,7 +19,44 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		throw new Response("Forbidden", { status: 403 });
 	}
 
-	await db.execute(sql`SELECT maintain_partitions()`);
+	const archiveDate = new Date();
+	archiveDate.setDate(archiveDate.getDate() - 2);
+	const partitionName = await getPartitionNameForDate(archiveDate);
 
-	return Response.json({});
+	let archiveResult: ArchiveResult | null = null;
+	let maintenanceSuccess = true;
+
+	try {
+		archiveResult = await archivePartitionToR2(partitionName, archiveDate);
+
+		await db.execute(sql`
+			SELECT create_partition_for_date(CURRENT_DATE);
+			SELECT create_partition_for_date(CURRENT_DATE + INTERVAL '1 day');
+		`);
+
+		if (archiveResult.success) {
+			await dropPartition(partitionName);
+		} else {
+			console.warn(
+				`Archive failed for ${partitionName}, keeping partition:`,
+				archiveResult.error,
+			);
+		}
+	} catch (error) {
+		maintenanceSuccess = false;
+		console.error("Partition maintenance failed:", error);
+
+		try {
+			await db.execute(sql`SELECT maintain_partitions()`);
+		} catch (fallbackError) {
+			console.error("Fallback maintenance also failed:", fallbackError);
+		}
+	}
+
+	return Response.json({
+		success: maintenanceSuccess,
+		partition: partitionName,
+		archiveDate: archiveDate.toISOString(),
+		archive: archiveResult,
+	});
 };

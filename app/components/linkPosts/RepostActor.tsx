@@ -45,6 +45,7 @@ const MultipleActors = ({ posts }: RepostActorProps) => (
 					}}
 					postUrl={post.postUrl}
 					key={post.actorHandle}
+					layout="dense" // force smaller type
 				/>
 			))}
 		</Popover.Content>

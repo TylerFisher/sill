@@ -1,18 +1,18 @@
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
+import { and, eq } from "drizzle-orm";
 import {
 	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	redirect,
 } from "react-router";
 import { Link, useFetcher, useLoaderData } from "react-router";
-import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { verification } from "~/drizzle/schema.server";
 import type { VerificationTypes } from "~/routes/accounts/verify";
-import { twoFAVerifyVerificationType } from "./two-factor.verify";
 import { requireUserId } from "~/utils/auth.server";
 import { generateTOTP } from "~/utils/totp.server";
+import { twoFAVerifyVerificationType } from "~/utils/verify.server";
 
 export const twoFAVerificationType = "2fa" satisfies VerificationTypes;
 

@@ -1,5 +1,5 @@
-import type { ActionFunctionArgs } from "react-router";
 import { eq } from "drizzle-orm";
+import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { link } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
@@ -16,16 +16,21 @@ export async function action({ request }: ActionFunctionArgs) {
 		const { url, metadata } = body;
 
 		if (!url || !metadata) {
-			return new Response(JSON.stringify({ error: "URL and metadata are required" }), {
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			});
+			return new Response(
+				JSON.stringify({ error: "URL and metadata are required" }),
+				{
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
 		}
 
 		// Convert publishedDate string back to Date object if it exists
 		const processedMetadata = {
 			...metadata,
-			publishedDate: metadata.publishedDate ? new Date(metadata.publishedDate) : null,
+			publishedDate: metadata.publishedDate
+				? new Date(metadata.publishedDate)
+				: null,
 		};
 
 		const result = await db

@@ -8,8 +8,8 @@ import {
 	Section,
 	Text,
 } from "@react-email/components";
-import type { linkPostDenormalized } from "~/drizzle/schema.server";
 import { NodeHtmlMarkdown } from "node-html-markdown";
+import type { linkPostDenormalized } from "~/drizzle/schema.server";
 
 const Post = ({
 	group,

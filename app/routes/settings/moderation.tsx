@@ -1,10 +1,9 @@
-import type { Route } from "./+types/moderation";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { Box, Flex, Heading, IconButton, Separator } from "@radix-ui/themes";
-import { useFetcher } from "react-router";
 import { eq } from "drizzle-orm";
 import { X } from "lucide-react";
+import { useFetcher } from "react-router";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
@@ -15,12 +14,15 @@ import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import { db } from "~/drizzle/db.server";
 import { mutePhrase } from "~/drizzle/schema.server";
 import { requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/moderation";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Sill | Moderation Settings" }];
+export const meta: Route.MetaFunction = () => [
+	{ title: "Sill | Moderation Settings" },
+];
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);
@@ -35,7 +37,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return { phrases };
 }
 
-export default function ModerationSettings({ loaderData }: Route.ComponentProps) {
+export default function ModerationSettings({
+	loaderData,
+}: Route.ComponentProps) {
 	const { phrases } = loaderData;
 	const fetcher = useFetcher({ key: "delete-mute" });
 
@@ -86,11 +90,7 @@ export default function ModerationSettings({ loaderData }: Route.ComponentProps)
 										width: "100%",
 									}}
 								/>
-								<IconButton
-									size="1"
-									variant="soft"
-									aria-label="Delete phrase"
-								>
+								<IconButton size="1" variant="soft" aria-label="Delete phrase">
 									<X width="12" height="12" />
 								</IconButton>
 							</Flex>

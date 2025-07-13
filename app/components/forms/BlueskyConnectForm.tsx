@@ -1,22 +1,22 @@
+import * as Collapsible from "@radix-ui/react-collapsible";
 import {
-	Card,
-	Heading,
-	Text,
 	Badge,
-	TextField,
-	Callout,
-	Link,
 	Box,
 	Button,
+	Callout,
+	Card,
+	Heading,
+	Link,
+	Text,
+	TextField,
 } from "@radix-ui/themes";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { Form } from "react-router";
 import { ChevronDown, CircleAlert } from "lucide-react";
+import { Form } from "react-router";
 import type { blueskyAccount } from "~/drizzle/schema.server";
-import SubmitButton from "./SubmitButton";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import SubmitButton from "./SubmitButton";
 
 interface BlueskyConnectFormProps {
 	account: typeof blueskyAccount.$inferSelect | null;

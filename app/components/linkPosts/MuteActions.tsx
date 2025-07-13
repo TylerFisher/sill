@@ -1,6 +1,6 @@
-import { Popover, IconButton, Flex, Button } from "@radix-ui/themes";
-import { useFetcher } from "react-router";
+import { Button, Flex, IconButton, Popover } from "@radix-ui/themes";
 import { MessageSquareOff } from "lucide-react";
+import { useFetcher } from "react-router";
 
 const MuteActions = ({
 	narrowMutePhrase,

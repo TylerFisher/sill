@@ -1,23 +1,23 @@
 import {
-	Card,
-	Heading,
-	Text,
 	Badge,
 	Callout,
-	TextField,
+	Card,
+	Heading,
 	Link,
+	Text,
+	TextField,
 } from "@radix-ui/themes";
-import { Form } from "react-router";
 import { CircleAlert } from "lucide-react";
+import { Form } from "react-router";
 import type {
 	list,
 	mastodonAccount,
 	mastodonInstance,
 } from "~/drizzle/schema.server";
-import SubmitButton from "./SubmitButton";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import SubmitButton from "./SubmitButton";
 
 type Account = typeof mastodonAccount.$inferSelect;
 export interface AccountWithInstance extends Account {

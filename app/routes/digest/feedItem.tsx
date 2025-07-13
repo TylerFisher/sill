@@ -1,6 +1,7 @@
-import type { Route } from "./+types/feedItem";
-import { redirect } from "react-router";
+import { Heading } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
+import { redirect } from "react-router";
+import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import {
 	blueskyAccount,
@@ -8,11 +9,10 @@ import {
 	digestItem,
 	mastodonAccount,
 } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
 import { LinkPost } from "~/routes/links/index";
-import Layout from "~/components/nav/Layout";
-import { Heading } from "@radix-ui/themes";
 import { useLayout } from "~/routes/resources/layout-switch";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/feedItem";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
@@ -24,6 +24,8 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	if (!userId) {
 		return redirect("/accounts/login") as never;
 	}
+
+	const subscribed = await isSubscribed(userId);
 
 	const feedItemId = params.feedItemId;
 
@@ -75,6 +77,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
 		bookmarks,
+		subscribed,
 	};
 };
 
@@ -104,6 +107,7 @@ const DigestFeedItem = ({ loaderData }: Route.ComponentProps) => {
 						bsky={bsky}
 						layout={layout}
 						bookmarks={bookmarks}
+						subscribed={loaderData.subscribed}
 					/>
 				</div>
 			))}

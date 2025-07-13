@@ -1,37 +1,37 @@
 import {
+	type SQL,
 	and,
 	desc,
 	eq,
+	getTableColumns,
 	gte,
 	ilike,
+	isNotNull,
 	isNull,
+	ne,
 	notIlike,
+	notInArray,
 	or,
 	sql,
-	getTableColumns,
-	type SQL,
-	notInArray,
-	ne,
-	isNotNull,
 } from "drizzle-orm";
+import {
+	type PgTable,
+	type PgUpdateSetSource,
+	getTableConfig,
+} from "drizzle-orm/pg-core";
+import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 import { db } from "~/drizzle/db.server";
 import {
+	getUniqueActorsCountSql,
 	link,
 	linkPostDenormalized,
 	list,
 	mutePhrase,
 	networkTopTenView,
-	getUniqueActorsCountSql,
 	postType,
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
-import {
-	getTableConfig,
-	type PgTable,
-	type PgUpdateSetSource,
-} from "drizzle-orm/pg-core";
-import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
 
 const PAGE_SIZE = 10;
 

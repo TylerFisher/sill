@@ -1,5 +1,5 @@
-import type { Route } from "./+types/jwks";
 import { createOAuthClient } from "~/server/oauth/client";
+import type { Route } from "./+types/jwks";
 
 export const headers: Route.HeadersFunction = () => ({
 	"Content-Type": "application/json",

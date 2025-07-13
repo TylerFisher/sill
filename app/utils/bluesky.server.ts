@@ -12,26 +12,26 @@ import {
 import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import {
 	OAuthResponseError,
-	TokenRefreshError,
 	type OAuthSession,
+	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
+import type { ListOption } from "~/components/forms/ListSwitch";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount, link, list, postType } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
+import { isSubscribed } from "./auth.server";
 import {
-	conflictUpdateSetAllColumns,
 	type ProcessedResult,
+	conflictUpdateSetAllColumns,
 } from "./links.server";
-import type { ListOption } from "~/components/forms/ListSwitch";
 import {
 	getFullUrl,
 	isGiftLink,
 	isShortenedLink,
 	normalizeLink,
 } from "./normalizeLink";
-import { isSubscribed } from "./auth.server";
 interface BskyDetectedLink {
 	uri: string;
 	title: string | null;

@@ -1,9 +1,9 @@
 import { Box, Link, Text } from "@radix-ui/themes";
 import groupBy from "object.groupby";
+import type { SubscriptionStatus } from "~/utils/auth.server";
+import { notificationOutro } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSPost from "./RSSPost";
-import { notificationOutro } from "~/utils/digestText";
-import type { SubscriptionStatus } from "~/utils/auth.server";
 
 const RSSNotificationItem = ({
 	linkPost,

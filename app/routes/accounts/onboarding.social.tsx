@@ -1,8 +1,7 @@
-import type { Route } from "./+types/onboarding.social";
 import { invariantResponse } from "@epic-web/invariant";
 import { Box } from "@radix-ui/themes";
-import { useSearchParams } from "react-router";
 import { eq } from "drizzle-orm";
+import { useSearchParams } from "react-router";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
@@ -13,6 +12,7 @@ import { user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
+import type { Route } from "./+types/onboarding.social";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connect Accounts" },

@@ -1,12 +1,3 @@
-import type { Route } from "./+types/trending";
-import { eq } from "drizzle-orm";
-import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import { getUserId } from "~/utils/auth.server";
-import { networkTopTen } from "~/utils/links.server";
-import LinkRep from "~/components/linkPosts/LinkRep";
-import { useLayout } from "../resources/layout-switch";
 import {
 	Box,
 	Button,
@@ -18,21 +9,36 @@ import {
 	Spinner,
 	Text,
 } from "@radix-ui/themes";
-import { Await, NavLink } from "react-router";
-import { Suspense } from "react";
-import PostRep from "~/components/linkPosts/PostRep";
-import NumberRanking from "~/components/linkPosts/NumberRanking";
+import { eq } from "drizzle-orm";
 import { TrendingUp } from "lucide-react";
+import { Suspense } from "react";
+import { Await, NavLink } from "react-router";
+import LinkRep from "~/components/linkPosts/LinkRep";
+import NumberRanking from "~/components/linkPosts/NumberRanking";
+import PostRep from "~/components/linkPosts/PostRep";
+import Layout from "~/components/nav/Layout";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
+import {
+	type SubscriptionStatus,
+	getUserId,
+	isSubscribed,
+} from "~/utils/auth.server";
+import { networkTopTen } from "~/utils/links.server";
+import { useLayout } from "../resources/layout-switch";
+import type { Route } from "./+types/trending";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Trending" }];
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const userId = await getUserId(request);
 	let existingUser: typeof user.$inferSelect | undefined = undefined;
+	let subscribed: SubscriptionStatus = "free";
 	if (userId) {
 		existingUser = await db.query.user.findFirst({
 			where: eq(user.id, userId),
 		});
+		subscribed = await isSubscribed(userId);
 	}
 
 	const topTen = networkTopTen();
@@ -40,6 +46,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	return {
 		existingUser,
 		topTen,
+		subscribed,
 	};
 };
 
@@ -126,6 +133,7 @@ const TopTen = ({ loaderData }: Route.ComponentProps) => {
 													layout={layout}
 													toolbar={false}
 													isBookmarked={false}
+													subscribed={loaderData.subscribed}
 												/>
 											)}
 

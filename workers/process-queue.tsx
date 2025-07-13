@@ -1,12 +1,8 @@
+import { and, asc, count, eq, gte, ilike, is, not, sql } from "drizzle-orm";
+import { renderToString } from "react-dom/server";
+import { uuidv7 } from "uuidv7-js";
+import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
 import { db } from "~/drizzle/db.server";
-import { dequeueJobs, enqueueJob } from "~/utils/queue.server";
-import {
-	fetchLinks,
-	insertNewLinks,
-	evaluateNotifications,
-	type ProcessedResult,
-	filterLinkOccurrences,
-} from "~/utils/links.server";
 import {
 	accountUpdateQueue,
 	bookmark,
@@ -17,15 +13,19 @@ import {
 	notificationItem,
 	user,
 } from "~/drizzle/schema.server";
-import { and, asc, count, eq, gte, ilike, is, not, sql } from "drizzle-orm";
-import { renderReactEmail, sendEmail } from "~/utils/email.server";
 import Notification from "~/emails/Notification";
-import { renderToString } from "react-dom/server";
-import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
-import { uuidv7 } from "uuidv7-js";
 import { isSubscribed } from "~/utils/auth.server";
 import { renderPageContent } from "~/utils/cloudflare.server";
+import { renderReactEmail, sendEmail } from "~/utils/email.server";
+import {
+	type ProcessedResult,
+	evaluateNotifications,
+	fetchLinks,
+	filterLinkOccurrences,
+	insertNewLinks,
+} from "~/utils/links.server";
 import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
+import { dequeueJobs, enqueueJob } from "~/utils/queue.server";
 
 const MAX_ERRORS_PER_BATCH = 10;
 

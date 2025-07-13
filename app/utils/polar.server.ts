@@ -1,9 +1,9 @@
-import { db } from "~/drizzle/db.server";
-import { polarProduct } from "~/drizzle/schema.server";
 import { Polar } from "@polar-sh/sdk";
-import { uuidv7 } from "uuidv7-js";
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import type { ProductPriceFixed } from "@polar-sh/sdk/models/components/productpricefixed.js";
+import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { polarProduct } from "~/drizzle/schema.server";
 
 const polar = new Polar({
 	accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",

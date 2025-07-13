@@ -9,10 +9,16 @@ export default function SettingsTabNav() {
 			<TabNav.Link asChild active={location.pathname === "/settings/account"}>
 				<Link to="/settings/account">Account</Link>
 			</TabNav.Link>
-			<TabNav.Link asChild active={location.pathname === "/settings/connections"}>
+			<TabNav.Link
+				asChild
+				active={location.pathname === "/settings/connections"}
+			>
 				<Link to="/settings/connections">Connections</Link>
 			</TabNav.Link>
-			<TabNav.Link asChild active={location.pathname === "/settings/moderation"}>
+			<TabNav.Link
+				asChild
+				active={location.pathname === "/settings/moderation"}
+			>
 				<Link to="/settings/moderation">Moderation</Link>
 			</TabNav.Link>
 		</TabNav.Root>

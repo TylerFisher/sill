@@ -1,6 +1,6 @@
 import ogs, { type SuccessResult } from "open-graph-scraper-lite";
-import type { link } from "~/drizzle/schema.server";
 import { z } from "zod";
+import type { link } from "~/drizzle/schema.server";
 
 export async function fetchHtmlViaProxy(url: string): Promise<string | null> {
 	try {
@@ -61,10 +61,18 @@ const VideoObjectSchema = z.object({
 	author: z.string().optional(),
 });
 
-type ParsedNewsArticle = z.SafeParseReturnType<unknown, z.infer<typeof NewsArticleSchema>>;
-type ParsedVideoObject = z.SafeParseReturnType<unknown, z.infer<typeof VideoObjectSchema>>;
+type ParsedNewsArticle = z.SafeParseReturnType<
+	unknown,
+	z.infer<typeof NewsArticleSchema>
+>;
+type ParsedVideoObject = z.SafeParseReturnType<
+	unknown,
+	z.infer<typeof VideoObjectSchema>
+>;
 
-function parseNewsArticleAuthors(parsedNewsArticle: ParsedNewsArticle | null): string[] | null {
+function parseNewsArticleAuthors(
+	parsedNewsArticle: ParsedNewsArticle | null,
+): string[] | null {
 	if (!parsedNewsArticle?.success) return null;
 
 	if (Array.isArray(parsedNewsArticle.data.author)) {
@@ -79,7 +87,9 @@ function parseNewsArticleAuthors(parsedNewsArticle: ParsedNewsArticle | null): s
 		: null;
 }
 
-function parseVideoObjectAuthors(parsedVideoObject: ParsedVideoObject | null): string[] | null {
+function parseVideoObjectAuthors(
+	parsedVideoObject: ParsedVideoObject | null,
+): string[] | null {
 	return parsedVideoObject?.success && parsedVideoObject.data.author
 		? [parsedVideoObject.data.author]
 		: null;
@@ -103,7 +113,11 @@ function getPublishedDate(
 	parsedVideoObject: ParsedVideoObject | null,
 	result: SuccessResult["result"],
 ): string | null {
-	if (isYouTubeUrl && parsedVideoObject?.success && parsedVideoObject.data.uploadDate) {
+	if (
+		isYouTubeUrl &&
+		parsedVideoObject?.success &&
+		parsedVideoObject.data.uploadDate
+	) {
 		return parsedVideoObject.data.uploadDate;
 	}
 
@@ -122,7 +136,11 @@ function getTopics(
 	result: SuccessResult["result"],
 ): string[] {
 	// For YouTube videos, prioritize VideoObject genre
-	if (isYouTubeUrl && parsedVideoObject?.success && parsedVideoObject.data.genre) {
+	if (
+		isYouTubeUrl &&
+		parsedVideoObject?.success &&
+		parsedVideoObject.data.genre
+	) {
 		return [parsedVideoObject.data.genre];
 	}
 
@@ -167,7 +185,10 @@ export async function extractHtmlMetadata(
 					if (found) return found;
 				}
 				// Check if this item is a NewsArticle or Article
-				if ("@type" in item && (item["@type"] === "NewsArticle" || item["@type"] === "Article")) {
+				if (
+					"@type" in item &&
+					(item["@type"] === "NewsArticle" || item["@type"] === "Article")
+				) {
 					return item;
 				}
 			}
@@ -217,9 +238,23 @@ export async function extractHtmlMetadata(
 		console.log("video parsing failed", parsedVideoObject?.error);
 	}
 
-	const finalAuthors = getAuthors(isYouTubeUrl, parsedNewsArticle, parsedVideoObject);
-	const foundDate = getPublishedDate(isYouTubeUrl, parsedNewsArticle, parsedVideoObject, result);
-	const articleTags = getTopics(isYouTubeUrl, parsedNewsArticle, parsedVideoObject, result);
+	const finalAuthors = getAuthors(
+		isYouTubeUrl,
+		parsedNewsArticle,
+		parsedVideoObject,
+	);
+	const foundDate = getPublishedDate(
+		isYouTubeUrl,
+		parsedNewsArticle,
+		parsedVideoObject,
+		result,
+	);
+	const articleTags = getTopics(
+		isYouTubeUrl,
+		parsedNewsArticle,
+		parsedVideoObject,
+		result,
+	);
 
 	const siteName =
 		parsedNewsArticle?.data?.publisher?.name || result.ogSiteName || null;

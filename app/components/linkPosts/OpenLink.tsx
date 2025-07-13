@@ -1,4 +1,4 @@
-import { Link, IconButton } from "@radix-ui/themes";
+import { IconButton, Link } from "@radix-ui/themes";
 import { ExternalLink, Gift } from "lucide-react";
 
 const OpenLink = ({

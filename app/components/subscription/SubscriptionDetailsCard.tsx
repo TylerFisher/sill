@@ -46,13 +46,9 @@ export default function SubscriptionDetailsCard({
 				</DataList.Item>
 				<DataList.Item align="center">
 					<DataList.Label>
-						{sub.cancelAtPeriodEnd
-							? "Subscription ends"
-							: "Next billing date"}
+						{sub.cancelAtPeriodEnd ? "Subscription ends" : "Next billing date"}
 					</DataList.Label>
-					<DataList.Value>
-						{sub.periodEnd?.toLocaleDateString()}
-					</DataList.Value>
+					<DataList.Value>{sub.periodEnd?.toLocaleDateString()}</DataList.Value>
 				</DataList.Item>
 			</DataList.Root>
 		</Card>

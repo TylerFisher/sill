@@ -1,9 +1,9 @@
-import type { Route } from "./+types/feed";
 import { desc, eq } from "drizzle-orm";
-import { db } from "~/drizzle/db.server";
-import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
 import { Feed } from "feed";
+import { db } from "~/drizzle/db.server";
+import { digestItem, digestRssFeed, user } from "~/drizzle/schema.server";
 import { firstFeedItem } from "~/utils/digestText";
+import type { Route } from "./+types/feed";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);

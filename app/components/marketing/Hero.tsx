@@ -8,8 +8,8 @@ import {
 	Text,
 } from "@radix-ui/themes";
 import { Link } from "react-router";
-import styles from "./Hero.module.css";
 import Logo from "../nav/Logo";
+import styles from "./Hero.module.css";
 
 const Hero = () => {
 	return (

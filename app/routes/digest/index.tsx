@@ -1,16 +1,16 @@
-import type { Route } from "./+types/index";
-import { eq, desc } from "drizzle-orm";
-import { useSearchParams } from "react-router";
 import { Box, Callout, Link, Tabs } from "@radix-ui/themes";
+import { desc, eq } from "drizzle-orm";
 import { CircleAlert } from "lucide-react";
+import { useSearchParams } from "react-router";
+import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import MonthCollapsible from "~/components/archive/MonthCollapsible";
-import { db } from "~/drizzle/db.server";
-import { digestSettings, user, digestItem } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
+import { db } from "~/drizzle/db.server";
+import { digestItem, digestSettings, user } from "~/drizzle/schema.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/index";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },

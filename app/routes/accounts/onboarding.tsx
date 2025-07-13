@@ -1,8 +1,7 @@
-import type { Route } from "./+types/onboarding";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Link, Text } from "@radix-ui/themes";
-import { data, redirect, Form, useSearchParams } from "react-router";
+import { Form, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
@@ -22,6 +21,7 @@ import {
 	PasswordAndConfirmPasswordSchema,
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
+import type { Route } from "./+types/onboarding";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 

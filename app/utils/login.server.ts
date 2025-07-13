@@ -1,6 +1,6 @@
 import { invariant } from "@epic-web/invariant";
-import { redirect } from "react-router";
 import { and, eq } from "drizzle-orm";
+import { redirect } from "react-router";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { db } from "~/drizzle/db.server";
 import { session, verification } from "~/drizzle/schema.server";

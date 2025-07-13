@@ -1,9 +1,9 @@
-import type { Route } from "./+types/delete";
+import { eq } from "drizzle-orm";
 import { data } from "react-router";
-import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { notificationGroup } from "~/drizzle/schema.server";
-import { eq } from "drizzle-orm";
+import { requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/delete";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);

@@ -13,36 +13,35 @@
 .nav-list-item-icon {
 	width: 24px;
 	height: 24px;
-  vertical-align: middle;
-  line-height: 1;
-  position: relative;
-
+	vertical-align: middle;
+	line-height: 1;
+	position: relative;
 }
 
 .nav-list {
-  width: 100%;
+	width: 100%;
 }
 
 .nav-list-item-label {
-  display: inline;
+	display: inline;
 }
 
-@-moz-document url-prefix() {
-  .nav-list-item-icon {
-      transform: translateY(-1px);
-  }
+@-moz-document url-prefix("") {
+	.nav-list-item-icon {
+		transform: translateY(-1px);
+	}
 }
 
 .nav-list-item-btn {
-  width: 100%;
-  justify-content: flex-start;
+	width: 100%;
+	justify-content: flex-start;
 }
 
 .nav-list-item {
-  margin-bottom: 0.75rem;
-  width: 100%;
+	margin-bottom: 0.75rem;
+	width: 100%;
 }
 .nav-list-item-icon {
-  width: 20px;
-  height: 20px;
+	width: 20px;
+	height: 20px;
 }

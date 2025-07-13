@@ -1,18 +1,18 @@
-import type { Route } from "./+types/send-newsletter";
 import { eq } from "drizzle-orm";
-import { db } from "~/drizzle/db.server";
-import { digestRssFeed, digestItem, user } from "~/drizzle/schema.server";
-import TopLinks from "~/emails/topLinks";
-import RSSLinks from "~/components/rss/RSSLinks";
-import { renderReactEmail, sendEmail } from "~/utils/email.server";
-import {
-	filterLinkOccurrences,
-	type MostRecentLinkPosts,
-} from "~/utils/links.server";
 import { renderToString } from "react-dom/server";
 import { uuidv7 } from "uuidv7-js";
-import { preview, subject } from "~/utils/digestText";
+import RSSLinks from "~/components/rss/RSSLinks";
+import { db } from "~/drizzle/db.server";
+import { digestItem, digestRssFeed, user } from "~/drizzle/schema.server";
+import TopLinks from "~/emails/topLinks";
 import { isSubscribed } from "~/utils/auth.server";
+import { preview, subject } from "~/utils/digestText";
+import { renderReactEmail, sendEmail } from "~/utils/email.server";
+import {
+	type MostRecentLinkPosts,
+	filterLinkOccurrences,
+} from "~/utils/links.server";
+import type { Route } from "./+types/send-newsletter";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const authHeader = request.headers.get("Authorization");

@@ -1,9 +1,9 @@
-import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import { useLayout } from "~/routes/resources/layout-switch";
 import { Box, Separator } from "@radix-ui/themes";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import type { bookmark } from "~/drizzle/schema.server";
+import { useLayout } from "~/routes/resources/layout-switch";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface LinksListProps {
 	links: MostRecentLinkPosts[];
@@ -13,7 +13,13 @@ interface LinksListProps {
 	subscribed: SubscriptionStatus;
 }
 
-const LinksList = ({ links, instance, bsky, bookmarks, subscribed }: LinksListProps) => {
+const LinksList = ({
+	links,
+	instance,
+	bsky,
+	bookmarks,
+	subscribed,
+}: LinksListProps) => {
 	const layout = useLayout();
 
 	return (

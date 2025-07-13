@@ -1,4 +1,3 @@
-import type { Route } from "./+types/account";
 import { invariantResponse } from "@epic-web/invariant";
 import {
 	AlertDialog,
@@ -9,14 +8,15 @@ import {
 	Heading,
 	Text,
 } from "@radix-ui/themes";
-import { Form, Link } from "react-router";
 import { eq } from "drizzle-orm";
+import { Form, Link } from "react-router";
 import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/account";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Account Settings" },

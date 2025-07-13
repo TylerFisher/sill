@@ -1,14 +1,14 @@
+import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
-import type { Route } from "./+types/add";
-import { requireUserId } from "~/utils/auth.server";
-import { db } from "~/drizzle/db.server";
-import { bookmark, link, digestItem } from "~/drizzle/schema.server";
 import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { bookmark, digestItem, link } from "~/drizzle/schema.server";
+import { requireUserId } from "~/utils/auth.server";
 import {
-	filterLinkOccurrences,
 	type MostRecentLinkPosts,
+	filterLinkOccurrences,
 } from "~/utils/links.server";
-import { eq, and, sql } from "drizzle-orm";
+import type { Route } from "./+types/add";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);

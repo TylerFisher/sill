@@ -1,12 +1,12 @@
-import type { Route } from "./+types/auth.callback";
-import { redirect } from "react-router";
 import { eq } from "drizzle-orm";
+import { redirect } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { mastodonAccount, mastodonInstance } from "~/drizzle/schema.server";
 import { getUserId } from "~/utils/auth.server";
 import { getAccessToken } from "~/utils/mastodon.server";
 import { getInstanceCookie } from "~/utils/session.server";
+import type { Route } from "./+types/auth.callback";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const url = new URL(request.url);

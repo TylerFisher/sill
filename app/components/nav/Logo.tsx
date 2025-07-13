@@ -1,7 +1,7 @@
 import { Heading } from "@radix-ui/themes";
 import { Link } from "react-router";
-import styles from "./logo.module.css";
 import type { SubscriptionStatus } from "~/utils/auth.server";
+import styles from "./logo.module.css";
 
 const Logo = ({
 	extraBig,

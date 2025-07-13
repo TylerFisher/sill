@@ -1,13 +1,13 @@
-import type { Route } from "./+types/auth.callback";
 import { redirect } from "react-router";
+import type { Route } from "./+types/auth.callback";
 
 import { Agent } from "@atproto/api";
+import { OAuthCallbackError } from "@atproto/oauth-client-node";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { blueskyAccount } from "~/drizzle/schema.server";
 import { createOAuthClient } from "~/server/oauth/client";
 import { requireUserId } from "~/utils/auth.server";
-import { OAuthCallbackError } from "@atproto/oauth-client-node";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);

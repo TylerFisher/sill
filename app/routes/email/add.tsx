@@ -1,8 +1,9 @@
-import type { Route } from "./+types/add";
 import { parseWithZod } from "@conform-to/zod";
+import { eq } from "drizzle-orm";
 import { data } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
+import { db } from "~/drizzle/db.server";
 import {
 	digestLayout,
 	digestRssFeed,
@@ -10,9 +11,8 @@ import {
 	digestType,
 	user,
 } from "~/drizzle/schema.server";
-import { db } from "~/drizzle/db.server";
 import { requireUserId } from "~/utils/auth.server";
-import { eq } from "drizzle-orm";
+import type { Route } from "./+types/add";
 
 export const EmailSettingsSchema = z.object({
 	time: z.string(),

@@ -1,8 +1,8 @@
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
+import type { Checkout } from "@polar-sh/sdk/models/components/checkout.js";
 import { Box, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { Sparkles } from "lucide-react";
-import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { useEffect } from "react";
-import type { Checkout } from "@polar-sh/sdk/models/components/checkout.js";
 
 interface SubscriptionPricingCardProps {
 	checkoutLinks: Checkout[];

@@ -1,7 +1,7 @@
 // app/components/marketing/Pricing.tsx
 import { Box, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { Link } from "react-router";
 import { CheckCircle2 } from "lucide-react";
+import { Link } from "react-router";
 import styles from "./Pricing.module.css";
 
 interface PricingCardProps {

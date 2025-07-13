@@ -1,17 +1,16 @@
 .footer {
-  position: absolute;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+	position: absolute;
+	bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
-
 @media (min-width: 768px) {
-  .footer {
-    justify-content: flex-end;
-  }
+	.footer {
+		justify-content: flex-end;
+	}
 }
 
 @media (min-width: 1025px) {
-  .footer {
-    bottom: 0;
-  }
+	.footer {
+		bottom: 0;
+	}
 }

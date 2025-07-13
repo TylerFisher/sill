@@ -1,9 +1,8 @@
-import type { Route } from "./+types/change-email";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Badge, Box, Heading, Text } from "@radix-ui/themes";
-import { data, redirect, Form } from "react-router";
 import { eq } from "drizzle-orm";
+import { Form, data, redirect } from "react-router";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
@@ -20,6 +19,7 @@ import {
 	prepareVerification,
 	requireRecentVerification,
 } from "~/utils/verify.server";
+import type { Route } from "./+types/change-email";
 
 export const newEmailAddressSessionKey = "new-email-address";
 

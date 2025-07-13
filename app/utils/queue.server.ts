@@ -1,7 +1,7 @@
-import { db } from "~/drizzle/db.server";
-import { eq, and, sql, inArray } from "drizzle-orm";
-import { accountUpdateQueue } from "~/drizzle/schema.server";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
+import { db } from "~/drizzle/db.server";
+import { accountUpdateQueue } from "~/drizzle/schema.server";
 
 export async function enqueueJob(userId: string) {
 	return await db

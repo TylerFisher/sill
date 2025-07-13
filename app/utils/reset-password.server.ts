@@ -1,6 +1,6 @@
 import { invariant } from "@epic-web/invariant";
-import { data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
+import { data, redirect } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { resetPasswordEmailSessionKey } from "~/routes/accounts/reset-password";

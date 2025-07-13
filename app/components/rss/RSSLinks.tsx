@@ -1,8 +1,8 @@
-import { Heading, Text, Link } from "@radix-ui/themes";
+import { Heading, Link, Text } from "@radix-ui/themes";
+import type { SubscriptionStatus } from "~/utils/auth.server";
+import { digestOutro, intro, linkPlug } from "~/utils/digestText";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSLinkPost from "./RSSLinkPost";
-import { digestOutro, intro, linkPlug } from "~/utils/digestText";
-import type { SubscriptionStatus } from "~/utils/auth.server";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];

@@ -1,6 +1,6 @@
 import { Box, Button, Dialog, Flex, IconButton, Text } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
-import { useState, type PropsWithChildren } from "react";
+import { type PropsWithChildren, useState } from "react";
 import styles from "./LinkFilters.module.css";
 
 const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
@@ -31,9 +31,14 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 						</Button>
 					</Text>
 				</Dialog.Trigger>
-				<Dialog.Content className={styles["dialog-content"]} onOpenAutoFocus={(e) => e.preventDefault()}>
+				<Dialog.Content
+					className={styles["dialog-content"]}
+					onOpenAutoFocus={(e) => e.preventDefault()}
+				>
 					<Flex justify="between" align="center" mb="3">
-						<Text size="4" weight="medium">Filters</Text>
+						<Text size="4" weight="medium">
+							Filters
+						</Text>
 						<Dialog.Close>
 							<IconButton variant="ghost" size="2">
 								<X size={18} />

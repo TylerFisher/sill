@@ -1,9 +1,8 @@
-import type { Route } from "./+types/password";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Button, Flex, Heading } from "@radix-ui/themes";
-import { data, redirect, Form, Link } from "react-router";
 import { eq } from "drizzle-orm";
+import { Form, Link, data, redirect } from "react-router";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
@@ -17,6 +16,7 @@ import {
 	verifyUserPassword,
 } from "~/utils/auth.server";
 import { PasswordSchema } from "~/utils/userValidation";
+import type { Route } from "./+types/password";
 
 const ChangePasswordForm = z
 	.object({

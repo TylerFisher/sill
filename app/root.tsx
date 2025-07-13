@@ -1,35 +1,35 @@
-import type { Route } from "./+types/root";
+import type React from "react";
 import {
-	data,
 	Links,
 	Meta,
 	Outlet,
 	Scripts,
 	ScrollRestoration,
+	data,
 	useLoaderData,
 } from "react-router";
-import type React from "react";
+import type { Route } from "./+types/root";
 import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme as RadixTheme } from "@radix-ui/themes";
+import { eq } from "drizzle-orm";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
+import { db } from "./drizzle/db.server";
+import { user } from "./drizzle/schema.server";
 import { useTheme } from "./routes/resources/theme-switch";
-import { ClientHintCheck, getHints } from "./utils/client-hints";
-import { getDomainUrl } from "./utils/misc";
-import { useNonce } from "./utils/nonce-provider";
-import { type Theme, getTheme } from "./utils/theme";
-import { getLayout } from "./utils/layout.server";
 import {
+	type SubscriptionStatus,
 	getUserId,
 	hasAgreed,
 	isSubscribed,
-	type SubscriptionStatus,
 } from "./utils/auth.server";
-import { db } from "./drizzle/db.server";
-import { eq } from "drizzle-orm";
-import { user } from "./drizzle/schema.server";
+import { ClientHintCheck, getHints } from "./utils/client-hints";
+import { getLayout } from "./utils/layout.server";
+import { getDomainUrl } from "./utils/misc";
+import { useNonce } from "./utils/nonce-provider";
+import { type Theme, getTheme } from "./utils/theme";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const honeyProps = honeypot.getInputProps();

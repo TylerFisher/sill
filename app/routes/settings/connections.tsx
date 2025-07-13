@@ -1,8 +1,7 @@
-import type { Route } from "./+types/connections";
 import { invariantResponse } from "@epic-web/invariant";
 import { Box } from "@radix-ui/themes";
-import { useSearchParams } from "react-router";
 import { eq } from "drizzle-orm";
+import { useSearchParams } from "react-router";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
@@ -14,8 +13,11 @@ import { user } from "~/drizzle/schema.server";
 import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
+import type { Route } from "./+types/connections";
 
-export const meta: Route.MetaFunction = () => [{ title: "Sill | Connection Settings" }];
+export const meta: Route.MetaFunction = () => [
+	{ title: "Sill | Connection Settings" },
+];
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);
@@ -63,7 +65,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	return { user: existingUser, subscribed, listOptions };
 }
 
-export default function ConnectionSettings({ loaderData }: Route.ComponentProps) {
+export default function ConnectionSettings({
+	loaderData,
+}: Route.ComponentProps) {
 	const { user, listOptions, subscribed } = loaderData;
 	const [searchParams] = useSearchParams();
 

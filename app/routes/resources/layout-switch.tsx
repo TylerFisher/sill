@@ -1,13 +1,13 @@
-import type { Route } from "./+types/layout-switch";
 import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { invariantResponse } from "@epic-web/invariant";
 import { Button, Flex, Spinner, Text } from "@radix-ui/themes";
-import { data, useFetcher, useFetchers } from "react-router";
 import { Rows2, Rows4 } from "lucide-react";
+import { data, useFetcher, useFetchers } from "react-router";
 import { z } from "zod";
 import { type Layout, setLayout } from "~/utils/layout.server";
 import { useRequestInfo } from "~/utils/request-info";
+import type { Route } from "./+types/layout-switch";
 
 const LayoutFormSchema = z.object({
 	layout: z.enum(["default", "dense"]),

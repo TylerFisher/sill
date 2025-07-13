@@ -1,12 +1,12 @@
 import { Container } from "@radix-ui/themes";
 import type { PropsWithChildren } from "react";
+import { useRouteLoaderData } from "react-router";
+import type { loader } from "~/root";
+import AgreeToTerms from "./AgreeToTerms";
 import Header from "./Header";
 import styles from "./Layout.module.css";
 import Nav from "./Nav";
-import { useRouteLoaderData } from "react-router";
-import type { loader } from "~/root";
 import TrialBanner from "./TrialBanner";
-import AgreeToTerms from "./AgreeToTerms";
 
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;

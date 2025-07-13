@@ -1,7 +1,7 @@
 import type { Submission } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { data, redirect } from "react-router";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { data, redirect } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import { db } from "~/drizzle/db.server";
@@ -15,7 +15,6 @@ import {
 	typeQueryParam,
 } from "~/routes/accounts/verify";
 import { twoFAVerificationType } from "~/routes/settings/two-factor";
-import type { twoFAVerifyVerificationType } from "~/routes/settings/two-factor.verify";
 import { requireUserId } from "~/utils/auth.server";
 import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
 import {
@@ -26,6 +25,8 @@ import { getDomainUrl } from "~/utils/misc";
 import { handleVerification as handleOnboardingVerification } from "~/utils/onboarding.server";
 import { handleVerification as handleResetPasswordVerification } from "~/utils/reset-password.server";
 import { generateTOTP, verifyTOTP } from "~/utils/totp.server";
+
+export const twoFAVerifyVerificationType = "2fa-verify";
 
 export type VerifyFunctionArgs = {
 	request: Request;

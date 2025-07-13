@@ -1,33 +1,25 @@
+import { Box, Card, Heading, IconButton, Link, Text } from "@radix-ui/themes";
+import { and, desc, eq, or, sql } from "drizzle-orm";
+import { Bookmark } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Form, redirect, useFetcher, useSearchParams } from "react-router";
+import { debounce } from "ts-debounce";
+import { uuidv7 } from "uuidv7-js";
+import SearchField from "~/components/forms/SearchField";
+import Layout from "~/components/nav/Layout";
+import PageHeading from "~/components/nav/PageHeading";
+import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { db } from "~/drizzle/db.server";
 import {
 	blueskyAccount,
 	bookmark,
 	mastodonAccount,
 } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
-import type { Route } from "./+types";
-import { and, desc, eq, or, sql } from "drizzle-orm";
-import Layout from "~/components/nav/Layout";
 import { LinkPost } from "~/routes/links";
-import { Form, redirect, useFetcher, useSearchParams } from "react-router";
-import PageHeading from "~/components/nav/PageHeading";
-import {
-	Box,
-	Callout,
-	Card,
-	Heading,
-	IconButton,
-	Link,
-	Text,
-} from "@radix-ui/themes";
-import { CircleAlert, Bookmark } from "lucide-react";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
-import SearchField from "~/components/forms/SearchField";
 import { useLayout } from "../resources/layout-switch";
-import { useEffect, useRef, useState } from "react";
-import { uuidv7 } from "uuidv7-js";
-import { debounce } from "ts-debounce";
-import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
+import type { Route } from "./+types";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
@@ -218,6 +210,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 									bsky={bsky}
 									layout={layout}
 									bookmarks={bookmarks}
+									subscribed={subscribed}
 								/>
 							))}
 						</Box>

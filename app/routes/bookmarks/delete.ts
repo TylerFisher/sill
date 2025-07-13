@@ -1,9 +1,9 @@
+import { and, eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import type { Route } from "./+types/add";
-import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/drizzle/db.server";
 import { bookmark } from "~/drizzle/schema.server";
-import { eq, and } from "drizzle-orm";
+import { requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/add";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);

@@ -1,4 +1,4 @@
-import { Spinner, Button, type ButtonProps } from "@radix-ui/themes";
+import { Button, type ButtonProps, Spinner } from "@radix-ui/themes";
 import { useNavigation } from "react-router";
 
 interface SubmitButtonProps extends ButtonProps {

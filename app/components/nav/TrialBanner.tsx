@@ -1,6 +1,6 @@
 import { Callout, Flex, Link, Text } from "@radix-ui/themes";
-import styles from "./TrialBanner.module.css";
 import { daysRemaining } from "~/utils/misc";
+import styles from "./TrialBanner.module.css";
 
 const TrialBanner = ({ endDate }: { endDate: Date }) => {
 	const remaining = daysRemaining(endDate);

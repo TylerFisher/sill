@@ -1,11 +1,11 @@
-import type { Route } from "./+types/auth";
-import { redirect } from "react-router";
 import { eq } from "drizzle-orm";
+import { redirect } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { mastodonInstance } from "~/drizzle/schema.server";
 import { getAuthorizationUrl } from "~/utils/mastodon.server";
 import { createInstanceCookie } from "~/utils/session.server";
+import type { Route } from "./+types/auth";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);

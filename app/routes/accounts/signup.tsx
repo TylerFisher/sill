@@ -1,9 +1,8 @@
-import type { Route } from "./+types/signup";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Link as RLink, Text } from "@radix-ui/themes";
-import { Form, Link, data, redirect } from "react-router";
 import { eq } from "drizzle-orm";
+import { Form, Link, data, redirect } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
@@ -17,6 +16,7 @@ import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { prepareVerification } from "~/utils/verify.server";
+import type { Route } from "./+types/signup";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Sign up" }];
 

@@ -1,13 +1,13 @@
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
-import type { Route } from "./+types/domain";
-import { findLinksByDomain } from "~/utils/links.server";
-import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { eq } from "drizzle-orm";
-import { user } from "~/drizzle/schema.server";
 import { invariantResponse } from "@epic-web/invariant";
+import { eq } from "drizzle-orm";
 import LinksList from "~/components/linkPosts/LinksList";
+import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
+import { db } from "~/drizzle/db.server";
+import { user } from "~/drizzle/schema.server";
+import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import { findLinksByDomain } from "~/utils/links.server";
+import type { Route } from "./+types/domain";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
@@ -41,13 +41,13 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	};
 };
 
-const LinksByDomain = ({ loaderData }) => {
+const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
 	const { links, instance, bsky, bookmarks, subscribed, domain } = loaderData;
 
 	return (
 		<Layout>
 			<PageHeading title={`Links from ${domain}`} />
-			<LinksList 
+			<LinksList
 				links={links}
 				instance={instance}
 				bsky={bsky}

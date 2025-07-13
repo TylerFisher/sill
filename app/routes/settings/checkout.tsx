@@ -1,15 +1,15 @@
-import { requireUserId } from "~/utils/auth.server";
-import type { Route } from "./+types/checkout";
+import { Box, DataList, Grid, Heading } from "@radix-ui/themes";
+import { and, eq } from "drizzle-orm";
+import { Bell, Bookmark, List, Mail } from "lucide-react";
+import { Suspense } from "react";
+import { Await } from "react-router";
+import Layout from "~/components/nav/Layout";
+import PageHeading from "~/components/nav/PageHeading";
+import FeatureCard from "~/components/subscription/FeatureCard";
 import { db } from "~/drizzle/db.server";
 import { subscription } from "~/drizzle/schema.server";
-import Layout from "~/components/nav/Layout";
-import { Box, DataList, Grid, Heading } from "@radix-ui/themes";
-import PageHeading from "~/components/nav/PageHeading";
-import { and, eq } from "drizzle-orm";
-import FeatureCard from "~/components/subscription/FeatureCard";
-import { Bell, Bookmark, List, Mail } from "lucide-react";
-import { Await } from "react-router";
-import { Suspense } from "react";
+import { requireUserId } from "~/utils/auth.server";
+import type { Route } from "./+types/checkout";
 
 const pollForSubscription = async (
 	userId: string,

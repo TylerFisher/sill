@@ -1,5 +1,5 @@
 import { Box, Grid, Heading, Text } from "@radix-ui/themes";
-import { Clock, Newspaper, Brain } from "lucide-react";
+import { Brain, Clock, Newspaper } from "lucide-react";
 import styles from "./WhySill.module.css";
 
 const benefits = [
