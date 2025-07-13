@@ -18,7 +18,7 @@ class R2Client {
 	constructor(config: R2Config) {
 		this.s3Client = new S3Client({
 			region: "auto",
-			endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+			endpoint: `https://${config.accountId}.eu.r2.cloudflarestorage.com`,
 			credentials: {
 				accessKeyId: config.accessKeyId,
 				secretAccessKey: config.secretAccessKey,
@@ -71,7 +71,7 @@ let r2Client: R2Client | null = null;
 export function getR2Client(): R2Client {
 	if (!r2Client) {
 		const config: R2Config = {
-			accountId: process.env.R2_ACCOUNT_ID!,
+			accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
 			accessKeyId: process.env.R2_ACCESS_KEY_ID!,
 			secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
 			bucketName: process.env.R2_BUCKET_NAME!,

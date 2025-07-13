@@ -45,6 +45,7 @@ export async function archivePartitionToR2(
 
 		// Export partition to Parquet buffer
 		const parquetBuffer = await exportPartitionToParquet(partitionName);
+		console.log(parquetBuffer);
 		result.fileSizeBytes = parquetBuffer.length;
 
 		// Upload to R2
@@ -91,4 +92,77 @@ export async function getPartitionNameForDate(date: Date): Promise<string> {
 
 export async function dropPartition(partitionName: string): Promise<void> {
 	await db.execute(sql.raw(`DROP TABLE IF EXISTS ${partitionName}`));
+}
+
+export async function getAllLinkPostPartitions(): Promise<string[]> {
+	try {
+		const result = await db.execute(
+			sql.raw(`
+			SELECT table_name 
+			FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+			AND table_name LIKE 'link_post_denormalized_%'
+			AND table_name ~ '^link_post_denormalized_[0-9]{4}_[0-9]{2}_[0-9]{2}$'
+			ORDER BY table_name
+		`),
+		);
+
+		return result.rows.map((row) => row.table_name as string);
+	} catch (error) {
+		console.error("Failed to get partition list:", error);
+		return [];
+	}
+}
+
+export async function archiveAllPartitionsToR2(): Promise<ArchiveResult[]> {
+	const partitions = await getAllLinkPostPartitions();
+	const results: ArchiveResult[] = [];
+
+	console.log(`Found ${partitions.length} partitions to archive:`, partitions);
+
+	for (const partitionName of partitions) {
+		console.log(`Processing partition: ${partitionName}`);
+
+		const dateMatch = partitionName.match(/(\d{4})_(\d{2})_(\d{2})$/);
+		if (!dateMatch) {
+			results.push({
+				success: false,
+				partitionName,
+				rowCount: 0,
+				error: "Could not parse date from partition name",
+			});
+			continue;
+		}
+
+		const [, year, month, day] = dateMatch;
+		const partitionDate = new Date(`${year}-${month}-${day}`);
+
+		const result = await archivePartitionToR2(partitionName, partitionDate);
+		results.push(result);
+
+		if (result.success) {
+			console.log(
+				`✓ Successfully archived ${partitionName} (${result.rowCount} rows, ${result.fileSizeBytes} bytes)`,
+			);
+		} else {
+			console.error(`✗ Failed to archive ${partitionName}: ${result.error}`);
+		}
+	}
+
+	const successCount = results.filter((r) => r.success).length;
+	const totalRows = results.reduce((sum, r) => sum + r.rowCount, 0);
+	const totalBytes = results.reduce(
+		(sum, r) => sum + (r.fileSizeBytes || 0),
+		0,
+	);
+
+	console.log(
+		`Archive summary: ${successCount}/${results.length} partitions archived successfully`,
+	);
+	console.log(`Total rows archived: ${totalRows}`);
+	console.log(
+		`Total data archived: ${(totalBytes / 1024 / 1024).toFixed(2)} MB`,
+	);
+
+	return results;
 }

@@ -22,6 +22,7 @@ export default [
 	]),
 	...prefix("api", [
 		route("agree-to-terms", "routes/api/agree-to-terms.ts"),
+		route("archive-all-partitions", "routes/api/archive-all-partitions.ts"),
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
 		route("metadata/update", "routes/api/metadata.update.ts"),
