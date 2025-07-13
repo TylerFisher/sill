@@ -59,52 +59,56 @@ export async function exportPartitionToParquet(
 ): Promise<Buffer> {
 	const chunks: Buffer[] = [];
 	const outputStream = new PassThrough();
-	
+
 	// Collect output chunks
-	outputStream.on('data', (chunk: Buffer) => {
+	outputStream.on("data", (chunk: Buffer) => {
 		chunks.push(chunk);
 	});
 
 	try {
 		// Create readable stream from database query
 		const dataStream = Readable.from(createDatabaseStream(partitionName));
-		
+
 		// Create parquet transformer
 		const parquetTransformer = new ParquetTransformer(parquetSchema);
-		
+
 		// Use pipeline for proper error handling and cleanup
-		await pipeline(
-			dataStream,
-			parquetTransformer,
-			outputStream
-		);
+		await pipeline(dataStream, parquetTransformer, outputStream);
 
 		return Buffer.concat(chunks);
 	} catch (error) {
-		throw new Error(`Failed to stream export partition ${partitionName}: ${error}`);
+		throw new Error(
+			`Failed to stream export partition ${partitionName}: ${error}`,
+		);
 	}
 }
 
 /**
  * Creates an async generator for streaming database records
  */
-async function* createDatabaseStream(partitionName: string): AsyncGenerator<LinkPostRecord> {
+async function* createDatabaseStream(
+	partitionName: string,
+): AsyncGenerator<LinkPostRecord> {
 	const batchSize = 1000; // Process records in batches
 	let offset = 0;
-	
+
 	while (true) {
 		const batch = await db
-			.execute(sql.raw(`SELECT * FROM ${partitionName} ORDER BY id LIMIT ${batchSize} OFFSET ${offset}`))
+			.execute(
+				sql.raw(
+					`SELECT * FROM ${partitionName} ORDER BY id LIMIT ${batchSize} OFFSET ${offset}`,
+				),
+			)
 			.then((res) => res.rows as LinkPostRecord[]);
-		
+
 		if (batch.length === 0) {
 			break;
 		}
-		
+
 		for (const record of batch) {
 			yield record;
 		}
-		
+
 		offset += batchSize;
 	}
 }

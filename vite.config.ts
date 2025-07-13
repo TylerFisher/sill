@@ -15,6 +15,11 @@ export default defineConfig({
 	ssr: {
 		target: "node",
 		noExternal: [/react-tweet.*/],
+		external: ["@duckdb/node-bindings", "@duckdb/node-api"],
+	},
+	assetsInclude: ["**/*.node"],
+	optimizeDeps: {
+		exclude: ["@duckdb/node-bindings", "@duckdb/node-api"],
 	},
 	test: {
 		environment: "happy-dom",

@@ -1,5 +1,6 @@
 import {
 	HeadObjectCommand,
+	ListObjectsV2Command,
 	PutObjectCommand,
 	S3Client,
 } from "@aws-sdk/client-s3";
@@ -62,6 +63,26 @@ class R2Client {
 		const day = String(date.getDate()).padStart(2, "0");
 
 		return `partitions/year=${year}/month=${month}/day=${day}/${partitionName}.parquet`;
+	}
+
+	async listPartitionFiles(): Promise<string[]> {
+		try {
+			const command = new ListObjectsV2Command({
+				Bucket: this.bucketName,
+				Prefix: "partitions/",
+			});
+
+			const response = await this.s3Client.send(command);
+			const keys =
+				response.Contents?.map((obj) => obj.Key).filter(Boolean) || [];
+
+			return keys
+				.filter((key): key is string => typeof key === "string")
+				.filter((key) => key.endsWith(".parquet"));
+		} catch (error) {
+			console.error("Failed to list R2 objects:", error);
+			return [];
+		}
 	}
 }
 
