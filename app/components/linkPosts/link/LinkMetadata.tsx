@@ -1,6 +1,7 @@
 import { Badge, Flex, HoverCard, Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
+import styles from "./LinkMetadata.module.css";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
@@ -93,6 +94,7 @@ export const LinkTags = ({
 				<Link
 					key={`${url}-${tag}`}
 					href={`/links/topic/${encodeURIComponent(tag)}`}
+					className={styles.linkTag}
 				>
 					<Badge variant="soft" color="gray" size="1">
 						{formatTag(tag)}
@@ -113,6 +115,7 @@ export const LinkTags = ({
 									<Link
 										key={`${url}-remaining-${tag}`}
 										href={`/links/topic/${encodeURIComponent(tag)}`}
+										className={styles.linkTag}
 									>
 										<Badge variant="soft" color="gray" size="1">
 											{formatTag(tag)}
