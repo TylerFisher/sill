@@ -131,6 +131,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		time = 21600000;
 	} else if (timeParam === "12h") {
 		time = 43200000;
+	} else if (timeParam === "2d") {
+		time = 172800000; // 2 days
+	} else if (timeParam === "3d") {
+		time = 259200000; // 3 days
+	} else if (timeParam === "7d") {
+		time = 604800000; // 7 days
 	}
 
 	const links = filterLinkOccurrences({
