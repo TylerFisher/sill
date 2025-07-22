@@ -35,11 +35,14 @@ class DuckDBService {
 			// Configure S3 settings for R2
 			const endpoint = `${process.env.CLOUDFLARE_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`;
 			await this.connection.run(`
-				SET s3_region='auto';
-				SET s3_endpoint='${endpoint}';
-				SET s3_access_key_id='${process.env.R2_ACCESS_KEY_ID}';
-				SET s3_secret_access_key='${process.env.R2_SECRET_ACCESS_KEY}';
-				SET s3_use_ssl=true;
+        CREATE OR REPLACE SECRET secret (
+            TYPE r2,
+            PROVIDER config,
+            KEY_ID '${process.env.R2_ACCESS_KEY_ID}',
+            SECRET '${process.env.R2_SECRET_ACCESS_KEY}',
+            REGION 'auto'
+            ENDPOINT '${endpoint}'
+        );
 			`);
 		}
 		return this.connection;

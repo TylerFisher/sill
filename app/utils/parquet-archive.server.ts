@@ -135,19 +135,19 @@ async function* createDatabaseStream(
 				sql.raw(
 					`SELECT 
 						lpd.*,
-						l.id as linkId,
-						l.title as linkTitle,
-						l.description as linkDescription,
-						l."imageUrl" as linkImageUrl,
-						l."giftUrl" as linkGiftUrl,
-						l.metadata as linkMetadata,
-						l.scraped as linkScraped,
-						l."publishedDate" as linkPublishedDate,
-						l.authors as linkAuthors,
-						l."siteName" as linkSiteName,
-						l.topics as linkTopics
+						l.id as "linkId",
+						l.title as "linkTitle",
+						l.description as "linkDescription",
+						l."imageUrl" as "linkImageUrl",
+						l."giftUrl" as "linkGiftUrl",
+						l.metadata as "linkMetadata",
+						l.scraped as "linkScraped",
+						l."publishedDate" as "linkPublishedDate",
+						l.authors as "linkAuthors",
+						l."siteName" as "linkSiteName",
+						l.topics as "linkTopics"
 					FROM ${partitionName} lpd
-					INNER JOIN link l ON lpd."linkUrl" = l.url
+					LEFT JOIN link l ON lpd."linkUrl" = l.url
 					ORDER BY lpd.id 
 					LIMIT ${batchSize} 
 					OFFSET ${offset}`,
