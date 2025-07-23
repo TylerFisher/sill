@@ -2,9 +2,9 @@ import { PassThrough, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { ParquetSchema, ParquetTransformer } from "@dsnp/parquetjs";
 import { sql } from "drizzle-orm";
-import { db } from "~/drizzle/db.server";
-import type { linkPostDenormalized, link } from "~/drizzle/schema.server";
 import type { SuccessResult } from "open-graph-scraper-lite";
+import { db } from "~/drizzle/db.server";
+import type { link, linkPostDenormalized } from "~/drizzle/schema.server";
 
 type LinkPostRecord = typeof linkPostDenormalized.$inferSelect;
 

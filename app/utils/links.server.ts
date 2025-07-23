@@ -32,6 +32,13 @@ import {
 } from "~/drizzle/schema.server";
 import { getLinksFromBluesky } from "~/utils/bluesky.server";
 import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import {
+	type OrderField,
+	type QueryContext,
+	type WhereCondition,
+	createQueryBuilder,
+	createQueryEngine,
+} from "~/utils/query-federation.server";
 
 const PAGE_SIZE = 10;
 
@@ -200,6 +207,7 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 /**
  * Retrieves most recent link posts for a user in a given time frame
+ * Uses the query federation layer to automatically route queries between PostgreSQL and DuckDB
  * @param userId ID for logged in user
  * @param time Time in milliseconds to get most recent link posts
  * @returns Most recent link posts for a user in a given time frame
@@ -236,99 +244,151 @@ export const filterLinkOccurrences = async ({
 
 	const offset = (page - 1) * PAGE_SIZE;
 	const start = new Date(Date.now() - time);
+	const end = new Date();
 	const mutePhrases = await getMutePhrases(userId);
-	const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-		notIlike(link.url, `%${phrase.phrase}%`),
-		notIlike(link.title, `%${phrase.phrase}%`),
-		notIlike(link.description, `%${phrase.phrase}%`),
-	]);
-	const postMuteCondition =
-		mutePhrases.length > 0
-			? sql`CASE WHEN ${or(
-					...mutePhrases.flatMap((phrase) => [
-						ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-						ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-					]),
-				)} THEN NULL ELSE 1 END`
-			: sql`1`;
 
-	return await db
+	// Set up query context for data source routing (PostgreSQL for < 48hrs, DuckDB for older data)
+	const queryContext: QueryContext = {
+		dateRange: { start, end },
+		tableName: "linkPostDenormalized",
+		userId,
+	};
+
+	// Build where conditions using federation layer (snake_case tables, quoted camelCase columns)
+	const whereConditions: WhereCondition[] = [
+		{ field: 'link_post_denormalized."userId"', operator: "eq", value: userId },
+		{
+			field: 'link_post_denormalized."postDate"',
+			operator: "gte",
+			value: start,
+		},
+	];
+
+	// Add URL filter if specified
+	if (url) {
+		whereConditions.push({ field: "link.url", operator: "eq", value: url });
+	}
+
+	// Add list filter if specified
+	if (listRecord) {
+		whereConditions.push({
+			field: 'link_post_denormalized."listId"',
+			operator: "eq",
+			value: listRecord.id,
+		});
+	}
+
+	// Add service filter
+	if (service !== "all") {
+		whereConditions.push({
+			field: 'link_post_denormalized."postType"',
+			operator: "eq",
+			value: service,
+		});
+	}
+
+	// Add repost filter
+	if (hideReposts) {
+		whereConditions.push({
+			field: 'link_post_denormalized."repostActorHandle"',
+			operator: "isNull",
+		});
+	}
+
+	// Add search query filters (simplified - for complex OR logic, extend QueryBuilder)
+	if (query) {
+		whereConditions.push({
+			field: "link.title",
+			operator: "ilike",
+			value: `%${query}%`,
+		});
+	}
+
+	// Add mute phrase filters
+	for (const phrase of mutePhrases) {
+		whereConditions.push({
+			field: "link.url",
+			operator: "notIlike",
+			value: `%${phrase.phrase}%`,
+		});
+		whereConditions.push({
+			field: "link.title",
+			operator: "notIlike",
+			value: `%${phrase.phrase}%`,
+		});
+		whereConditions.push({
+			field: "link.description",
+			operator: "notIlike",
+			value: `%${phrase.phrase}%`,
+		});
+	}
+
+	// Build order by
+	const orderByFields: OrderField[] = [];
+	if (sort === "popularity") {
+		orderByFields.push({ field: "uniqueActorsCount", direction: "desc" });
+	} else {
+		orderByFields.push({ field: "mostRecentPostDate", direction: "desc" });
+	}
+	orderByFields.push({ field: "mostRecentPostDate", direction: "desc" });
+
+	// Create the federated query (snake_case tables, quoted camelCase columns)
+	const builder = createQueryBuilder()
 		.select({
-			link,
-			// Count unique actors based on similar handles or names, excluding duplicates from different networks
+			link: "link.*",
 			uniqueActorsCount:
-				getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
-			mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-				"mostRecentPostDate",
-			),
+				'COUNT(DISTINCT COALESCE(link_post_denormalized."repostActorHandle", link_post_denormalized."actorHandle"))',
+			mostRecentPostDate: 'MAX(link_post_denormalized."postDate")',
 		})
-		.from(linkPostDenormalized)
-		.leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-		.where(
-			and(
-				eq(linkPostDenormalized.userId, userId),
-				gte(linkPostDenormalized.postDate, start),
-				url ? eq(link.url, url) : undefined,
-				listRecord ? eq(linkPostDenormalized.listId, listRecord.id) : undefined,
-				...urlMuteClauses,
-				service !== "all"
-					? eq(linkPostDenormalized.postType, service)
-					: undefined,
-				hideReposts
-					? isNull(linkPostDenormalized.repostActorHandle)
-					: undefined,
-				query
-					? or(
-							ilike(link.title, `%${query}%`),
-							ilike(link.description, `%${query}%`),
-							ilike(link.url, `%${query}%`),
-							ilike(linkPostDenormalized.postText, `%${query}%`),
-							ilike(linkPostDenormalized.actorName, `%${query}%`),
-							ilike(linkPostDenormalized.actorHandle, `%${query}%`),
-							ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
-							ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
-							ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
-							ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-							ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
-						)
-					: undefined,
-			),
-		)
-		.groupBy(linkPostDenormalized.linkUrl, link.id)
-		.having(
-			and(
-				sql`count(*) > 0`,
-				minShares
-					? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}`
-					: undefined,
-			),
-		)
-		.orderBy(
-			sort === "popularity"
-				? desc(sql`"uniqueActorsCount"`)
-				: desc(sql`"mostRecentPostDate"`),
-			desc(sql`"mostRecentPostDate"`),
-		)
+		.from("link_post_denormalized")
+		.join({
+			type: "left",
+			table: "link",
+			on: 'link_post_denormalized."linkUrl" = link.url',
+		})
+		.where(whereConditions)
+		.groupBy(['link_post_denormalized."linkUrl"', "link.id"])
+		.having("COUNT(*) > 0")
+		.orderBy(orderByFields)
 		.limit(limit)
-		.offset(offset)
-		.then(async (results) => {
-			const postsPromise = results.map(async (result) => {
+		.offset(offset);
+
+	// Add min shares having condition if specified
+	if (minShares) {
+		builder.having(
+			`COUNT(DISTINCT COALESCE(link_post_denormalized."repostActorHandle", link_post_denormalized."actorHandle")) >= ${minShares}`,
+		);
+	}
+
+	// Execute the federated query
+	const engine = createQueryEngine();
+	try {
+		console.log("Query context:", JSON.stringify(queryContext, null, 2));
+		const result = await engine.executeQuery<FederatedQueryRow>(
+			builder,
+			queryContext,
+		);
+		console.log("Query result source:", result.source, "count:", result.count);
+
+		// Post-process to get individual posts for each link (matching original behavior)
+		const resultsWithPosts = await Promise.all(
+			result.rows.map(async (row) => {
+				console.log("Processing row:", {
+					linkUrl: row.url,
+					userId,
+					start,
+					listRecord: listRecord?.id,
+					service,
+					hideReposts,
+				});
 				const posts = await db
 					.select()
 					.from(linkPostDenormalized)
 					.where(
 						and(
-							eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
+							eq(linkPostDenormalized.linkUrl, row.url || ""),
 							eq(linkPostDenormalized.userId, userId),
 							gte(linkPostDenormalized.postDate, start),
-							sql`${postMuteCondition} = 1`,
 							listRecord
 								? eq(linkPostDenormalized.listId, listRecord.id)
 								: undefined,
@@ -338,28 +398,48 @@ export const filterLinkOccurrences = async ({
 							hideReposts
 								? isNull(linkPostDenormalized.repostActorHandle)
 								: undefined,
-							query
-								? or(
-										ilike(linkPostDenormalized.postText, `%${query}%`),
-										ilike(linkPostDenormalized.actorName, `%${query}%`),
-										ilike(linkPostDenormalized.actorHandle, `%${query}%`),
-										ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
-										ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
-										ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
-										ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-										ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
-									)
-								: undefined,
 						),
 					)
 					.orderBy(desc(linkPostDenormalized.postDate));
+				console.log("Posts found for", row.url, ":", posts.length);
+
+				// Convert string dates back to Date objects for frontend
+				const convertedPosts = posts.map((post) => ({
+					...post,
+					postDate:
+						typeof post.postDate === "string"
+							? new Date(post.postDate)
+							: post.postDate,
+				}));
+
 				return {
-					...result,
-					posts,
+					uniqueActorsCount: Number(row.uniqueactorscount) || 0,
+					link: {
+						id: row.id,
+						url: row.url,
+						title: row.title,
+						description: row.description,
+						imageUrl: row.imageUrl,
+						giftUrl: row.giftUrl,
+						metadata: row.metadata,
+						scraped: row.scraped,
+						publishedDate:
+							typeof row.publishedDate === "string"
+								? new Date(row.publishedDate)
+								: row.publishedDate,
+						authors: row.authors,
+						siteName: row.siteName,
+						topics: row.topics,
+					},
+					posts: convertedPosts,
 				};
-			});
-			return Promise.all(postsPromise);
-		});
+			}),
+		);
+
+		return resultsWithPosts;
+	} finally {
+		await engine.close();
+	}
 };
 
 export const evaluateNotifications = async (
@@ -589,12 +669,6 @@ export const evaluateNotifications = async (
 			return Promise.all(postsPromise);
 		});
 };
-interface TopTenLinks {
-	link: typeof link.$inferSelect;
-	mostRecentPostDate: Date;
-	uniqueActorsCount: number;
-	post: typeof linkPostDenormalized.$inferSelect | undefined;
-}
 
 export interface TopTenResults {
 	uniqueActorsCount: number;

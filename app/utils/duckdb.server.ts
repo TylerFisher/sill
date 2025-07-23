@@ -40,7 +40,7 @@ class DuckDBService {
             PROVIDER config,
             KEY_ID '${process.env.R2_ACCESS_KEY_ID}',
             SECRET '${process.env.R2_SECRET_ACCESS_KEY}',
-            REGION 'auto'
+            REGION 'auto',
             ENDPOINT '${endpoint}'
         );
 			`);
