@@ -56,6 +56,10 @@ export interface ProcessedResult {
 	denormalized: typeof linkPostDenormalized.$inferInsert;
 }
 
+export type FederatedQueryRow = typeof link.$inferSelect & {
+	uniqueactorscount: string;
+};
+
 /**
  * Fetches links from Mastodon and Bluesky
  * @param userId ID for logged in user
