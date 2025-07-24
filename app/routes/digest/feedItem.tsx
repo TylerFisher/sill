@@ -22,7 +22,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const userId = await requireUserId(request);
 
 	if (!userId) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const subscribed = await isSubscribed(userId);

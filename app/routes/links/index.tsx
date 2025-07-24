@@ -70,16 +70,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 					const url = await client.authorize(bsky.handle, {
 						scope: "atproto transition:generic",
 					});
-					return redirect(url.toString()) as never;
+					return redirect(url.toString());
 				} catch (error) {
 					const url = await client.authorize(bsky.did, {
 						scope: "atproto transition:generic",
 					});
-					return redirect(url.toString()) as never;
+					return redirect(url.toString());
 				}
 			}
 			if (error instanceof OAuthResolverError) {
-				return redirect("/settings?tab=connect&error=resolver") as never;
+				return redirect("/settings?tab=connect&error=resolver");
 			}
 		}
 	}

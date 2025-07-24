@@ -30,13 +30,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 	const userId = await requireUserId(request);
 
 	if (!userId) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const subscribed = await isSubscribed(userId);
 
 	if (subscribed === "free") {
-		return redirect("/settings/subscription") as never;
+		return redirect("/settings/subscription");
 	}
 
 	const bsky = await db.query.blueskyAccount.findFirst({

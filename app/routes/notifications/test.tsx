@@ -10,7 +10,7 @@ import type { Route } from "./+types/test";
 export const action = async ({ request }: Route.ActionArgs) => {
 	const userId = await requireUserId(request);
 	if (!userId) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const existingUser = await db.query.user.findFirst({
@@ -18,7 +18,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	});
 
 	if (!existingUser) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const formData = await request.formData();

@@ -69,7 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
 		headers: {
 			"set-cookie": await verifySessionStorage.destroySession(verifySession),
 		},
-	}) as never;
+	});
 }
 
 export const meta: Route.MetaFunction = () => {

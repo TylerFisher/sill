@@ -68,7 +68,7 @@ export async function handleNewSession(
 				},
 				responseInit,
 			),
-		) as never;
+		);
 	}
 	const authSession = await authSessionStorage.getSession(
 		request.headers.get("cookie"),

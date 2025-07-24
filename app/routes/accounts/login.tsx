@@ -74,7 +74,7 @@ export async function action({ request }: Route.ActionArgs) {
 		session,
 		remember: remember ?? false,
 		redirectTo,
-	}) as never;
+	});
 }
 
 const Login = ({ actionData }: Route.ComponentProps) => {

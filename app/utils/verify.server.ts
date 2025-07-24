@@ -228,7 +228,7 @@ export async function validateRequest(
 				request,
 				body,
 				submission,
-			}) as never;
+			});
 		}
 		case "onboarding": {
 			await deleteVerification();
@@ -236,7 +236,7 @@ export async function validateRequest(
 				request,
 				body,
 				submission,
-			}) as never;
+			});
 		}
 		case "change-email": {
 			await deleteVerification();
@@ -244,14 +244,14 @@ export async function validateRequest(
 				request,
 				body,
 				submission,
-			}) as never;
+			});
 		}
 		case "2fa": {
 			return handleLoginTwoFactorVerification({
 				request,
 				body,
 				submission,
-			}) as never;
+			});
 		}
 	}
 }

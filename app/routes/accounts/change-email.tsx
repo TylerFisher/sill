@@ -98,7 +98,7 @@ export async function action({ request }: Route.ActionArgs) {
 			headers: {
 				"set-cookie": await verifySessionStorage.commitSession(verifySession),
 			},
-		}) as never;
+		});
 	}
 	return data(
 		{

@@ -25,7 +25,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	});
 
 	if (!existingUser) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const subscribed = await isSubscribed(userId);

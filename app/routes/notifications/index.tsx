@@ -143,7 +143,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const subscribed = await isSubscribed(userId);
 
 	if (!userId) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	const existingUser = await db.query.user.findFirst({
@@ -164,11 +164,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	});
 
 	if (!existingUser) {
-		return redirect("/accounts/login") as never;
+		return redirect("/accounts/login");
 	}
 
 	if (subscribed === "free") {
-		return redirect("/settings/subscription") as never;
+		return redirect("/settings/subscription");
 	}
 
 	return { user: existingUser, subscribed };

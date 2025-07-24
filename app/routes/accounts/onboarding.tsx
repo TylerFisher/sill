@@ -109,7 +109,7 @@ export async function action({ request }: Route.ActionArgs) {
 		react: <WelcomeEmail name={String(formData.get("name"))} />,
 	});
 
-	return redirect(safeRedirect(redirectTo), { headers }) as never;
+	return redirect(safeRedirect(redirectTo), { headers });
 }
 
 export const meta: Route.MetaFunction = () => {

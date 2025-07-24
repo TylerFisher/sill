@@ -82,7 +82,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 			},
 		);
 	}
-	return redirect(redirectTo.toString()) as never;
+	return redirect(redirectTo.toString());
 };
 
 const UserSetup = ({ actionData }: Route.ComponentProps) => {
