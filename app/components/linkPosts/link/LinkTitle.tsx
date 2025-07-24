@@ -18,7 +18,7 @@ const LinkTitle = ({
 			as="h3"
 			size={{
 				initial: layout === "dense" ? "2" : "3",
-				sm: layout === "dense" ? "2" : "3",
+				sm: layout === "dense" ? "2" : "4",
 			}}
 		>
 			<Link target="_blank" rel="noreferrer" href={href} weight="bold">

@@ -10,7 +10,6 @@ const LinkDescription = ({
 			size="2"
 			mt={layout === "dense" ? "2" : "3"}
 			mb={layout === "dense" ? "2" : "3"}
-			color="gray"
 		>
 			{description}
 		</Text>
