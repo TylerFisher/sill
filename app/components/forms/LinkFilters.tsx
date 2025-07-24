@@ -78,18 +78,18 @@ const LinkFilters = ({
 					value: "24h",
 					label: "24 hours",
 				},
-				{
-					value: "2d",
-					label: "2 days",
-				},
-				{
-					value: "3d",
-					label: "3 days",
-				},
-				{
-					value: "7d",
-					label: "7 days",
-				},
+				// {
+				// 	value: "2d",
+				// 	label: "2 days",
+				// },
+				// {
+				// 	value: "3d",
+				// 	label: "3 days",
+				// },
+				// {
+				// 	value: "7d",
+				// 	label: "7 days",
+				// },
 			],
 		},
 		{
