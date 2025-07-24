@@ -5,6 +5,7 @@ import type { SubscriptionStatus } from "~/utils/auth.server";
 import styles from "./Header.module.css";
 import Logo from "./Logo";
 import Nav from "./Nav";
+import { useTheme } from "~/routes/resources/theme-switch";
 
 const Header = ({
 	headerClass,
@@ -15,6 +16,8 @@ const Header = ({
 	hideNav: boolean;
 	subscribed?: SubscriptionStatus;
 }) => {
+	const theme = useTheme();
+
 	return (
 		<header className={styles[headerClass]}>
 			<Box
@@ -28,6 +31,10 @@ const Header = ({
 					initial: "0",
 					sm: "-6",
 					md: "0",
+				}}
+				style={{
+					backgroundColor:
+						theme === "dark" ? "rgba(25,25,25,0.8)" : "rgba(249,249,251,0.8)",
 				}}
 				className={styles["header-wrapper"]}
 			>

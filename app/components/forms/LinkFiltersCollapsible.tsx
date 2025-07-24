@@ -2,9 +2,11 @@ import { Box, Button, Dialog, Flex, IconButton, Text } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { type PropsWithChildren, useState } from "react";
 import styles from "./LinkFilters.module.css";
+import { useTheme } from "~/routes/resources/theme-switch";
 
 const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 	const [open, setOpen] = useState(false);
+	const theme = useTheme();
 
 	return (
 		<Box
@@ -16,6 +18,10 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 				md: "2",
 			}}
 			mx="-4"
+			style={{
+				backgroundColor:
+					theme === "dark" ? "rgba(25,25,25,0.8)" : "rgba(249,249,251,0.8)",
+			}}
 			className={styles["filter-wrapper"]}
 		>
 			<Dialog.Root open={open} onOpenChange={setOpen}>

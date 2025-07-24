@@ -8,7 +8,7 @@
 .header-wrapper {
 	border-bottom: 1px solid var(--gray-a6);
 	z-index: 10;
-	background-color: var(--gray-2);
+  backdrop-filter: saturate(1.8) blur(20px);
 }
 
 .desktop-logo {
@@ -37,6 +37,7 @@
 
 	.header-wrapper {
 		border-bottom: none;
+    background: var(--gray-2);
 	}
 	.onboarding-logo {
 		margin-bottom: -2rem;

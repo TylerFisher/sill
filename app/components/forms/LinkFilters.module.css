@@ -2,10 +2,10 @@
 	position: fixed;
 	bottom: 0;
 	width: 100%;
-	background-color: var(--gray-2);
 	z-index: 1;
 	border-top: 1px solid var(--gray-a6);
 	padding: 0.75rem 0;
+  backdrop-filter: saturate(1.8) blur(20px);
 }
 
 @media (min-width: 768px) {

@@ -158,9 +158,9 @@ export function Document({
 					href="/favicon-16x16.png"
 				/>
 				<link rel="manifest" href="/pwa-manifest.json" />
-				<meta name="msapplication-TileColor" content="#14120B" />
+				<meta name="msapplication-TileColor" content="#191919" />
 				<meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
-				<meta name="theme-color" content="#14120B" />
+				<meta name="theme-color" content="#191919" />
 				<link rel="canonical" href="https://sill.social" />
 				<script
 					defer
