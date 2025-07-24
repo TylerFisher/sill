@@ -367,24 +367,14 @@ export const filterLinkOccurrences = async ({
 	// Execute the federated query
 	const engine = createQueryEngine();
 	try {
-		console.log("Query context:", JSON.stringify(queryContext, null, 2));
 		const result = await engine.executeQuery<FederatedQueryRow>(
 			builder,
 			queryContext,
 		);
-		console.log("Query result source:", result.source, "count:", result.count);
 
 		// Post-process to get individual posts for each link (matching original behavior)
 		const resultsWithPosts = await Promise.all(
 			result.rows.map(async (row) => {
-				console.log("Processing row:", {
-					linkUrl: row.url,
-					userId,
-					start,
-					listRecord: listRecord?.id,
-					service,
-					hideReposts,
-				});
 				const posts = await db
 					.select()
 					.from(linkPostDenormalized)
@@ -405,7 +395,6 @@ export const filterLinkOccurrences = async ({
 						),
 					)
 					.orderBy(desc(linkPostDenormalized.postDate));
-				console.log("Posts found for", row.url, ":", posts.length);
 
 				// Convert string dates back to Date objects for frontend
 				const convertedPosts = posts.map((post) => ({
