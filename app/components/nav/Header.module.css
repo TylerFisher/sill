@@ -69,7 +69,6 @@
 	position: fixed;
 	top: 0;
 	border-radius: 0;
-	background-color: var(--gray-2);
 }
 
 .dialog-content[data-state="open"] {

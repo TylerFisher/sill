@@ -54,7 +54,15 @@ const Header = ({
 									<Menu />
 								</IconButton>
 							</Dialog.Trigger>
-							<Dialog.Content className={styles["dialog-content"]}>
+							<Dialog.Content
+								className={styles["dialog-content"]}
+								style={{
+									backgroundColor:
+										theme === "dark"
+											? "rgba(25,25,25,0.8)"
+											: "rgba(249,249,251,0.8)",
+								}}
+							>
 								<Nav layoutFormId="mobile-layout" themeFormId="mobile-theme" />
 							</Dialog.Content>
 						</Dialog.Root>
