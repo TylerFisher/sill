@@ -56,12 +56,13 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 									</span>
 								))
 							) : (
-								<Link
-									href={`/links/author/${encodeURIComponent(authors[0])}`}
-									color="gray"
-								>
-									{authors[0]}
-								</Link>
+								// <Link
+								// 	href={`/links/author/${encodeURIComponent(authors[0])}`}
+								// 	color="gray"
+								// >
+								// 	{authors[0]}
+								// </Link>
+								<Text>{authors[0]}</Text>
 							)}
 						</>
 					)}
