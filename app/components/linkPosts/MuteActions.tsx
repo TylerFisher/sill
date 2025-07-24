@@ -23,6 +23,7 @@ const MuteActions = ({
 					variant="ghost"
 					size="1"
 					title="Mute options"
+					color="gray"
 				>
 					<MessageSquareOff
 						width={layout === "default" ? "18" : "14"}

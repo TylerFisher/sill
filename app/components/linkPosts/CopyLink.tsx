@@ -28,6 +28,7 @@ const CopyLink = ({
 					size="1"
 					title="Copy URL"
 					type="button"
+					color="gray"
 				>
 					{copied ? (
 						<Check

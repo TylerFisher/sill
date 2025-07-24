@@ -40,7 +40,12 @@ const ShareLink = ({
 		return (
 			<Popover.Root>
 				<Popover.Trigger aria-label="Share" title="Share">
-					<IconButton aria-label="Share" variant="ghost" title="Share">
+					<IconButton
+						aria-label="Share"
+						variant="ghost"
+						title="Share"
+						color="gray"
+					>
 						<Share
 							width={layout === "default" ? "18" : "14"}
 							height={layout === "default" ? "18" : "14"}

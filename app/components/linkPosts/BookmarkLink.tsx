@@ -14,7 +14,7 @@ const BookmarkLink = ({
 			action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
 		>
 			<input type="hidden" name="url" value={url} />
-			<IconButton variant="ghost" size="1" aria-label="Bookmark">
+			<IconButton variant="ghost" size="1" aria-label="Bookmark" color="gray">
 				{fetcher.state === "submitting" || fetcher.state === "loading" ? (
 					<Spinner />
 				) : (

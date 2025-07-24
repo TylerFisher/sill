@@ -24,6 +24,7 @@ const OpenLink = ({
 					position: "relative",
 					top: isGift ? "-1px" : "0",
 				}}
+				color="gray"
 			>
 				{isGift ? (
 					<Gift
