@@ -38,13 +38,13 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 				}}
 			/>
 			<Text size="1" color="gray" as="span" style={{ lineHeight: "16px" }}>
-				<Link
+				{/* <Link
 					href={`/links/domain/${host}`}
 					style={{ lineHeight: "16px" }}
 					color="gray"
-				>
-					{link.siteName || host}
-				</Link>
+				> */}
+				{link.siteName || host}
+				{/* </Link> */}
 			</Text>
 		</Flex>
 	);

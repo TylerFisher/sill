@@ -33,24 +33,24 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 							{authors.length === 2 ? (
 								authors.map((author, index) => (
 									<span key={author}>
-										<Link
+										{/* <Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
-										>
-											{author}
-										</Link>
+										> */}
+										{author}
+										{/* </Link> */}
 										{index === 0 && " and "}
 									</span>
 								))
 							) : authors.length > 2 ? (
 								authors.map((author, index) => (
 									<span key={author}>
-										<Link
+										{/* <Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
-										>
-											{author}
-										</Link>
+										> */}
+										{author}
+										{/* </Link> */}
 										{index < authors.length - 1 &&
 											(index === authors.length - 2 ? " and " : ", ")}
 									</span>

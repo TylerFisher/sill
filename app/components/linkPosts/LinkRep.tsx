@@ -107,7 +107,7 @@ const LinkRep = ({
 					description={effectiveLink.description || ""}
 					layout={layout}
 				/>
-				<LinkTags articleTags={effectiveLink.topics || []} url={url} />
+				{/* <LinkTags articleTags={effectiveLink.topics || []} url={url} /> */}
 			</Box>
 			{toolbar && layout === "default" && (
 				<>
