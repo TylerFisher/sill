@@ -39,7 +39,7 @@ const ToolDropdown = ({
 		<Box position="absolute" bottom="2" right="3">
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
-					<IconButton variant="ghost">
+					<IconButton variant="ghost" color="gray">
 						<Ellipsis width={16} height={16} />
 					</IconButton>
 				</DropdownMenu.Trigger>

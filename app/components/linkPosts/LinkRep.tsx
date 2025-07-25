@@ -82,7 +82,7 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
-			<Box position="relative">
+			<Box position="relative" mb="5">
 				{layout === "default" && (
 					<DisplayHost
 						link={effectiveLink}
@@ -110,23 +110,35 @@ const LinkRep = ({
 				{/* <LinkTags articleTags={effectiveLink.topics || []} url={url} /> */}
 			</Box>
 			{toolbar && layout === "default" && (
-				<>
-					<Inset mt="4">
-						<Separator orientation="horizontal" size="4" my="4" />
-					</Inset>
-					<Toolbar
-						url={effectiveLink.url}
-						giftUrl={effectiveLink.giftUrl}
-						narrowMutePhrase={effectiveLink.url}
-						broadMutePhrase={host}
-						instance={instance}
-						bsky={bsky}
-						type="link"
-						isBookmarked={isBookmarked}
-						layout={layout}
-						subscribed={subscribed}
-					/>
-				</>
+				<Inset
+					mt="4"
+					style={{
+						borderRadius: 0,
+					}}
+				>
+					<Box
+						py="2"
+						style={{
+							backgroundColor:
+								theme === "dark" ? "var(--gray-3)" : "var(--gray-2)",
+							borderRadius: "0",
+						}}
+						px="4"
+					>
+						<Toolbar
+							url={effectiveLink.url}
+							giftUrl={effectiveLink.giftUrl}
+							narrowMutePhrase={effectiveLink.url}
+							broadMutePhrase={host}
+							instance={instance}
+							bsky={bsky}
+							type="link"
+							isBookmarked={isBookmarked}
+							layout={layout}
+							subscribed={subscribed}
+						/>
+					</Box>
+				</Inset>
 			)}
 			{toolbar && layout === "dense" && (
 				<ToolDropdown

@@ -31,7 +31,7 @@ const Toolbar = ({
 	subscribed,
 }: ToolbarProps) => {
 	return (
-		<Flex justify="between" mx="1" mt="4">
+		<Flex justify="between" mx="1" mt="2">
 			<ShareLink url={url} instance={instance} bsky={bsky} layout={layout} />
 			<CopyLink
 				url={url}

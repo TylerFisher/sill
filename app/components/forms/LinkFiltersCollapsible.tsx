@@ -40,10 +40,6 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 				<Dialog.Content
 					className={styles["dialog-content"]}
 					onOpenAutoFocus={(e) => e.preventDefault()}
-					style={{
-						backgroundColor:
-							theme === "dark" ? "rgba(25,25,25,0.8)" : "rgba(249,249,251,0.8)",
-					}}
 				>
 					<Flex justify="between" align="center" mb="3">
 						<Text size="4" weight="medium">

@@ -1,4 +1,5 @@
 import { Flex, Link, Text } from "@radix-ui/themes";
+import { useTheme } from "~/routes/resources/theme-switch";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface DisplayHostProps {
@@ -22,6 +23,8 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 				padding: "0.33rem 1rem",
 				width: "fit-content",
 				borderTopRightRadius: "var(--radius-4)",
+				position: "relative",
+				top: "-2.2px",
 			}}
 		>
 			<img

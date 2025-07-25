@@ -72,7 +72,10 @@ export function Document({
 			<head>
 				<meta charSet="utf-8" />
 				<ClientHintCheck nonce={nonce} />
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				<meta
+					name="viewport"
+					content="width=device-width, initial-scale=1, viewport-fit=cover"
+				/>
 				<meta
 					name="description"
 					content="Sill streamlines your Bluesky and Mastodon feeds to give you a clear picture of what's happening."
