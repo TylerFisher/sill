@@ -34,7 +34,7 @@ const Header = ({
 				}}
 				style={{
 					backgroundColor:
-						theme === "dark" ? "rgba(25,25,25,0.8)" : "rgba(249,249,251,0.8)",
+						theme === "dark" ? "rgba(25,25,24,0.8)" : "rgba(249,249,248,0.8)",
 				}}
 				className={styles["header-wrapper"]}
 			>

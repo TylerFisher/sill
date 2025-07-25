@@ -178,7 +178,7 @@ export function Document({
 				<RadixTheme
 					accentColor="yellow"
 					appearance={theme}
-					grayColor="slate"
+					grayColor="sand"
 					radius="full"
 				>
 					{children}
