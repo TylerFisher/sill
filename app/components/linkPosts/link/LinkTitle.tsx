@@ -20,6 +20,9 @@ const LinkTitle = ({
 				initial: layout === "dense" ? "2" : "3",
 				sm: layout === "dense" ? "2" : "4",
 			}}
+			style={{
+				textWrap: "pretty",
+			}}
 		>
 			<Link target="_blank" rel="noreferrer" href={href} weight="bold">
 				{title}

@@ -58,7 +58,7 @@ const LinkFilters = ({
 			],
 		},
 		{
-			heading: "Time Range",
+			heading: "Post Date Range",
 			defaultValue: searchParams.get("time") || "24h",
 			param: "time",
 			buttons: [
