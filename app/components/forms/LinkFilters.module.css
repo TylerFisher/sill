@@ -4,8 +4,7 @@
 	width: 100%;
 	z-index: 1;
 	border-top: 1px solid var(--gray-a6);
-	padding: 0.75rem 0;
-  backdrop-filter: saturate(1.8) blur(20px);
+	padding: 1rem 0;
 }
 
 @media (min-width: 768px) {

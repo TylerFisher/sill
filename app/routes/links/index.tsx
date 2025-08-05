@@ -32,6 +32,7 @@ import {
 	isSubscribed,
 	requireUserId,
 } from "~/utils/auth.server";
+import { getCustomizedFilters } from "~/utils/filterUtils";
 import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
@@ -164,6 +165,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [searchParams] = useSearchParams();
+	const customFilterCount = getCustomizedFilters(searchParams).length;
 	const page = Number.parseInt(searchParams.get("page") || "1");
 	const [nextPage, setNextPage] = useState(page + 1);
 	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
@@ -240,7 +242,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 				/>
 			}
 		>
-			<LinkFiltersCollapsible>
+			<LinkFiltersCollapsible customFilterCount={customFilterCount}>
 				<LinkFilters
 					showService={!!(loaderData.bsky && loaderData.instance)}
 					lists={loaderData.lists}

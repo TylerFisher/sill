@@ -3,9 +3,9 @@ import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
 import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import { useTheme } from "~/routes/resources/theme-switch";
 import ToolDropdown from "./ToolDropdown";
 import Toolbar from "./Toolbar";
-import { useTheme } from "~/routes/resources/theme-switch";
 interface PostRepProps {
 	group: (typeof linkPostDenormalized.$inferSelect)[];
 	instance: string | undefined;

@@ -5,6 +5,7 @@ import FilterButtonGroup, {
 } from "~/components/forms/FilterButtonGroup";
 import type { list } from "~/drizzle/schema.server";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
+import { getCustomizedFilters } from "~/utils/filterUtils";
 import styles from "./LinkFilters.module.css";
 import NumberInput from "./NumberInput";
 import SearchField from "./SearchField";
@@ -40,6 +41,8 @@ const LinkFilters = ({
 			);
 		}
 	}
+
+	const customizedFilters = getCustomizedFilters(searchParams);
 
 	const buttonGroups: ButtonGroup[] = [
 		{
@@ -166,6 +169,7 @@ const LinkFilters = ({
 							heading="Min. Shares"
 							min={1}
 							placeholder="1"
+							isCustomized={customizedFilters.includes("minShares")}
 						/>
 						{buttonGroups.map((group) => (
 							<FilterButtonGroup
@@ -175,15 +179,20 @@ const LinkFilters = ({
 								buttonData={group.buttons}
 								setter={setSearchParam}
 								defaultValue={group.defaultValue}
+								isCustomized={customizedFilters.includes(group.param)}
 							/>
 						))}
 					</div>
 				</Box>
 			</Flex>
 
-			{searchParams.size > 0 && (
+			{customizedFilters.length > 0 && (
 				<div className={styles["filter-actions"]}>
-					<Button onClick={clearSearchParams}>Reset to defaults</Button>
+					<Button onClick={clearSearchParams}>
+						Reset {customizedFilters.length} filter
+						{customizedFilters.length > 1 ? "s" : ""} to default
+						{customizedFilters.length > 1 ? "s" : ""}
+					</Button>
 				</div>
 			)}
 		</div>

@@ -1,18 +1,22 @@
 import { Box, Button, Dialog, Flex, IconButton, Text } from "@radix-ui/themes";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { type PropsWithChildren, useState } from "react";
-import styles from "./LinkFilters.module.css";
 import { useTheme } from "~/routes/resources/theme-switch";
+import styles from "./LinkFilters.module.css";
 
-const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
+interface LinkFiltersCollapsibleProps extends PropsWithChildren {
+	customFilterCount?: number;
+}
+
+const LinkFiltersCollapsible = ({
+	children,
+	customFilterCount = 0,
+}: LinkFiltersCollapsibleProps) => {
 	const [open, setOpen] = useState(false);
 	const theme = useTheme();
 
 	return (
 		<Box
-			px="4"
-			pt="2"
-			pb="2"
 			mb={{
 				initial: "0",
 				md: "2",
@@ -20,15 +24,27 @@ const LinkFiltersCollapsible = ({ children }: PropsWithChildren) => {
 			mx="-4"
 			style={{
 				backgroundColor:
-					theme === "dark" ? "rgba(25,25,24,0.8)" : "rgba(249,249,248,0.8)",
+					customFilterCount > 0
+						? "var(--yellow-9)"
+						: theme === "dark"
+							? "rgba(25,25,24,0.8)"
+							: "rgba(249,249,248,0.8)",
+				backdropFilter:
+					customFilterCount > 0 ? "none" : "saturate(1.8) blur(20px)",
 			}}
 			className={styles["filter-wrapper"]}
 		>
 			<Dialog.Root open={open} onOpenChange={setOpen}>
 				<Dialog.Trigger>
 					<Text align="center" as="p" mt="1">
-						<Button variant="ghost" size="2">
-							Filters
+						<Button
+							variant="ghost"
+							size="2"
+							style={{
+								color: customFilterCount > 0 ? "black" : "var(--yellow-11)",
+							}}
+						>
+							Filters{customFilterCount > 0 && ` (${customFilterCount})`}
 							{open ? (
 								<ChevronDown width="18" height="18" />
 							) : (
