@@ -22,7 +22,7 @@ export const getCustomizedFilters = (searchParams: URLSearchParams) => {
 	}
 
 	// Check search query
-	if (searchParams.get("q")) {
+	if (searchParams.get("query")) {
 		customized.push("search");
 	}
 
