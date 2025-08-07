@@ -1,0 +1,14 @@
+{
+	"extends": "../../packages/web/tsconfig.json",
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"~/*": ["../../packages/web/app/*"]
+		},
+		"rootDirs": [".", "../../packages/web"]
+	},
+	"include": [
+		"src/**/*",
+		"../../packages/web/app/**/*"
+	]
+}

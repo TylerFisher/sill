@@ -1,0 +1,44 @@
+# Dockerfile for API package in monorepo
+ARG NODE_VERSION=22.17.1
+FROM node:${NODE_VERSION}-slim AS base
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/api/package.json ./packages/api/
+RUN pnpm install --frozen-lockfile --filter @sill/api
+
+# Build stage
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
+COPY packages/api ./packages/api
+
+# Build API
+WORKDIR /app/packages/api
+RUN pnpm build
+
+# Production stage
+FROM base AS production
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy workspace configuration
+COPY --from=build /app/pnpm-workspace.yaml /app/package.json ./
+
+# Copy built application and production dependencies
+COPY --from=build /app/packages/api/dist ./packages/api/dist
+COPY --from=build /app/packages/api/package.json ./packages/api/package.json
+
+# Copy workspace and package node_modules
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/api/node_modules ./packages/api/node_modules
+
+WORKDIR /app/packages/api
+
+EXPOSE 3001
+CMD ["pnpm", "start"]

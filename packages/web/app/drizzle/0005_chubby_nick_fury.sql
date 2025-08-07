@@ -1,0 +1,1 @@
+ALTER TABLE "mastodon_instance" ADD CONSTRAINT "mastodon_instance_instance_unique" UNIQUE("instance");

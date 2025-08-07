@@ -1,0 +1,37 @@
+# Dockerfile for web package in monorepo
+ARG NODE_VERSION=22.17.1
+FROM node:${NODE_VERSION}-slim AS base
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/web/package.json ./packages/web/
+COPY apps/worker/package.json ./apps/worker/
+RUN pnpm install --frozen-lockfile
+
+# Build stage
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/web/node_modules ./packages/web/node_modules
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
+COPY packages/web ./packages/web
+
+# Build the web app
+WORKDIR /app/packages/web
+RUN pnpm build
+
+# Production stage
+FROM base AS production
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy built application
+COPY --from=build /app/packages/web/build ./build
+COPY --from=build /app/packages/web/package.json ./package.json
+COPY --from=build /app/packages/web/node_modules ./node_modules
+
+EXPOSE 3000
+CMD ["pnpm", "start"]

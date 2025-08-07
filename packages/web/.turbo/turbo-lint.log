@@ -1,0 +1,23 @@
+
+> @sill/web@ lint /Users/tylerfisher/src/sill/packages/web
+> biome check
+
+/Users/tylerfisher/src/sill/packages/web/package.json format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    113 113 │   		"~": "build/app"
+    114 114 │   	}
+    115     │ - }
+        115 │ + }
+        116 │ + 
+  
+
+Checked 276 files in 86ms. No fixes applied.
+Found 1 error.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+ ELIFECYCLE  Command failed with exit code 1.

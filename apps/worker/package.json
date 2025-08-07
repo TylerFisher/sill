@@ -1,0 +1,19 @@
+{
+	"name": "@sill/worker",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsx src/build.ts",
+		"dev": "tsx watch ./src/process-queue.tsx",
+		"dev:local": "tsx watch --env-file ../../.env ./src/process-queue.tsx",
+		"start": "node ./build/worker.js"
+	},
+	"dependencies": {
+		"@sill/web": "workspace:*"
+	},
+	"devDependencies": {
+		"esbuild": "^0.25.8",
+		"tsx": "^4.19.2",
+		"typescript": "^5.1.6"
+	}
+}
