@@ -156,7 +156,7 @@ async function processQueue() {
 						seenLinks: [
 							...group.seenLinks,
 							...newItems.map((n) => n.link?.url || ""),
-						],
+						].slice(-10000),
 					})
 					.where(eq(notificationGroup.id, group.id));
 			}
