@@ -170,7 +170,10 @@ export async function apiVerifyCode(
 /**
  * Start Bluesky OAuth authorization via API
  */
-export async function apiBlueskyAuthStart(request: Request, handle: string) {
+export async function apiBlueskyAuthStart(
+	request: Request,
+	handle: string | undefined,
+) {
 	const client = createApiClient(request);
 	const response = await client.api.bluesky.auth.authorize.$get({
 		query: {

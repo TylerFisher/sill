@@ -24,16 +24,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 		const data = await result.json();
 
 		if ("error" in data) {
+			// Handle login_required case
+			if (data.error === "login_required") {
+				//@ts-expect-error: idk about this yet
+				return redirect(data.redirectUrl);
+			}
 			throw new Error(data.error);
 		}
 
 		if (data.success) {
 			return redirect("/download?service=Bluesky");
-		}
-
-		// Handle login_required case
-		if (data.account.handle === "login_required" && data) {
-			return redirect(data.redirectUrl);
 		}
 
 		// Handle other errors
