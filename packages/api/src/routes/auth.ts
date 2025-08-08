@@ -15,8 +15,6 @@ import {
 	deleteVerification,
 } from "../auth/verification.server.js";
 
-const auth = new Hono();
-
 const LoginSchema = z.object({
 	email: z.string().email("Invalid email address"),
 	password: z.string().min(6, "Password must be at least 6 characters"),
@@ -41,8 +39,9 @@ const VerifySchema = z.object({
 	redirectTo: z.string().optional(),
 });
 
-// POST /api/auth/login
-auth.post("/login", zValidator("json", LoginSchema), async (c) => {
+const auth = new Hono()
+	// POST /api/auth/login
+	.post("/login", zValidator("json", LoginSchema), async (c) => {
 	const { email, password, remember, redirectTo } = c.req.valid("json");
 
 	try {
@@ -87,10 +86,9 @@ auth.post("/login", zValidator("json", LoginSchema), async (c) => {
 		console.error("Login error:", error);
 		return c.json({ error: "Internal server error" }, 500);
 	}
-});
-
-// POST /api/auth/signup
-auth.post("/signup", zValidator("json", SignupSchema), async (c) => {
+})
+	// POST /api/auth/signup
+	.post("/signup", zValidator("json", SignupSchema), async (c) => {
 	const { email, password, name } = c.req.valid("json");
 
 	try {
@@ -153,10 +151,9 @@ auth.post("/signup", zValidator("json", SignupSchema), async (c) => {
 		}
 		return c.json({ error: "Internal server error" }, 500);
 	}
-});
-
-// POST /api/auth/logout
-auth.post("/logout", async (c) => {
+})
+	// POST /api/auth/logout
+	.post("/logout", async (c) => {
 	const userId = await getUserIdFromSession(c.req.raw);
 
 	if (!userId) {
@@ -184,13 +181,12 @@ auth.post("/logout", async (c) => {
 		console.error("Logout error:", error);
 		return c.json({ error: "Internal server error" }, 500);
 	}
-});
-
-// POST /api/auth/signup/initiate - Initiate signup with verification
-auth.post(
-	"/signup/initiate",
-	zValidator("json", SignupInitiateSchema),
-	async (c) => {
+})
+	// POST /api/auth/signup/initiate - Initiate signup with verification
+	.post(
+		"/signup/initiate",
+		zValidator("json", SignupInitiateSchema),
+		async (c) => {
 		const { email } = c.req.valid("json");
 
 		try {
@@ -224,11 +220,9 @@ auth.post(
 			console.error("Signup initiate error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
-	},
-);
-
-// POST /api/auth/verify - Verify email code
-auth.post("/verify", zValidator("json", VerifySchema), async (c) => {
+	})
+	// POST /api/auth/verify - Verify email code
+	.post("/verify", zValidator("json", VerifySchema), async (c) => {
 	const { code, type, target, redirectTo } = c.req.valid("json");
 
 	try {
@@ -270,10 +264,9 @@ auth.post("/verify", zValidator("json", VerifySchema), async (c) => {
 		console.error("Verification error:", error);
 		return c.json({ error: "Internal server error" }, 500);
 	}
-});
-
-// GET /api/auth/me - Get current user info
-auth.get("/me", async (c) => {
+})
+	// GET /api/auth/me - Get current user info
+	.get("/me", async (c) => {
 	const userId = await getUserIdFromSession(c.req.raw);
 
 	if (!userId) {
@@ -284,10 +277,9 @@ auth.get("/me", async (c) => {
 		userId,
 		authenticated: true,
 	});
-});
-
-// GET /api/auth/profile - Get user profile with social accounts
-auth.get("/profile", async (c) => {
+})
+	// GET /api/auth/profile - Get user profile with social accounts
+	.get("/profile", async (c) => {
 	const userId = await getUserIdFromSession(c.req.raw);
 
 	if (!userId) {
@@ -326,4 +318,4 @@ function getSessionIdFromCookie(
 	return null;
 }
 
-export { auth };
+export default auth;

@@ -18,7 +18,7 @@ import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
 import { useTheme } from "./routes/resources/theme-switch";
 import { type SubscriptionStatus, hasAgreed } from "./utils/auth.server";
-import { apiGetUserProfileOptional } from "./utils/api.server";
+import { apiGetUserProfileOptional } from "./utils/api-client.server";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";

@@ -242,3 +242,46 @@ export const hasAgreed = async (userId) => {
     // console.log(userId, latestTerms.id, agreed, !!agreed);
     return !!agreed;
 };
+/**
+ * Gets user profile with social accounts, lists, and subscription status
+ * @param userId User ID
+ * @returns User profile with social accounts and subscription status
+ */
+export const getUserProfile = async (userId) => {
+    const userWithAccounts = await db.query.user.findFirst({
+        where: eq(user.id, userId),
+        with: {
+            mastodonAccounts: {
+                with: {
+                    lists: true,
+                    mastodonInstance: true,
+                },
+            },
+            blueskyAccounts: {
+                with: {
+                    lists: true,
+                },
+            },
+            subscriptions: {
+                where: and(eq(subscription.status, "active"), eq(subscription.userId, userId)),
+            },
+        },
+    });
+    if (!userWithAccounts) {
+        return null;
+    }
+    // Calculate subscription status
+    const subscribed = userWithAccounts.subscriptions.length > 0;
+    let subscriptionStatus = "free";
+    if (subscribed) {
+        subscriptionStatus = "plus";
+    }
+    else if (userWithAccounts.freeTrialEnd && new Date() < userWithAccounts.freeTrialEnd) {
+        subscriptionStatus = "trial";
+    }
+    // Return user with subscription status
+    return {
+        ...userWithAccounts,
+        subscriptionStatus,
+    };
+};

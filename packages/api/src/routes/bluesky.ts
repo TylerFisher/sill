@@ -5,141 +5,155 @@ import {
 	OAuthResolverError,
 	OAuthResponseError,
 } from "@atproto/oauth-client-node";
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
-import { getUserIdFromSession } from '../auth/auth.server';
+import { getUserIdFromSession } from "../auth/auth.server";
 import { db } from "../database/db.server";
 import { blueskyAccount } from "../database/schema.server";
-import { createOAuthClient } from '../oauth/client';
-
-const bluesky = new Hono();
+import { createOAuthClient } from "../oauth/client";
 
 const AuthorizeSchema = z.object({
 	handle: z.string().optional(),
 });
 
-// GET /api/bluesky/auth/authorize - Start Bluesky OAuth flow
-bluesky.get('/auth/authorize', zValidator('query', AuthorizeSchema), async (c) => {
-	try {
-		const oauthClient = await createOAuthClient(c.req.raw);
-		let { handle } = c.req.valid('query');
-
-		// If no handle provided, use default Bluesky social
-		if (!handle) {
-			const url = await oauthClient.authorize("https://bsky.social", {
-				scope: "atproto transition:generic",
-			});
-			return c.json({
-				success: true,
-				redirectUrl: url.toString()
-			});
-		}
-
-		// Clean up handle
-		handle = handle.trim();
-		// Strip invisible Unicode control and format characters
-		handle = handle.replace(/[\p{Cc}\p{Cf}]/gu, "");
-		handle = handle.toLocaleLowerCase();
-
-		if (handle.startsWith("@")) {
-			handle = handle.slice(1);
-		}
-
-		if (handle.includes("@bsky.social")) {
-			handle = handle.replace("@bsky.social", ".bsky.social");
-		}
-
-		if (handle.startsWith("https://bsky.app/profile/")) {
-			handle = handle.slice("https://bsky.app/profile/".length);
-		}
-
-		if (!handle.includes(".") && !handle.startsWith("did:")) {
-			handle = `${handle}.bsky.social`;
-		}
-
-		const resolver = new HandleResolver();
-
+const bluesky = new Hono()
+	// GET /api/bluesky/auth/authorize - Start Bluesky OAuth flow
+	.get(
+		"/auth/authorize",
+		zValidator("query", AuthorizeSchema),
+		async (c) => {
 		try {
-			const url = await oauthClient.authorize(handle, {
-				scope: "atproto transition:generic",
-			});
-			return c.json({
-				success: true,
-				redirectUrl: url.toString()
-			});
-		} catch (error) {
-			if (error instanceof OAuthResponseError) {
+			const oauthClient = await createOAuthClient(c.req.raw);
+			let { handle } = c.req.valid("query");
+
+			// If no handle provided, use default Bluesky social
+			if (!handle) {
+				const url = await oauthClient.authorize("https://bsky.social", {
+					scope: "atproto transition:generic",
+				});
+				return c.json({
+					success: true,
+					redirectUrl: url.toString(),
+				});
+			}
+
+			// Clean up handle
+			handle = handle.trim();
+			// Strip invisible Unicode control and format characters
+			handle = handle.replace(/[\p{Cc}\p{Cf}]/gu, "");
+			handle = handle.toLocaleLowerCase();
+
+			if (handle.startsWith("@")) {
+				handle = handle.slice(1);
+			}
+
+			if (handle.includes("@bsky.social")) {
+				handle = handle.replace("@bsky.social", ".bsky.social");
+			}
+
+			if (handle.startsWith("https://bsky.app/profile/")) {
+				handle = handle.slice("https://bsky.app/profile/".length);
+			}
+
+			if (!handle.includes(".") && !handle.startsWith("did:")) {
+				handle = `${handle}.bsky.social`;
+			}
+
+			const resolver = new HandleResolver();
+
+			try {
 				const url = await oauthClient.authorize(handle, {
 					scope: "atproto transition:generic",
 				});
 				return c.json({
 					success: true,
-					redirectUrl: url.toString()
+					redirectUrl: url.toString(),
 				});
-			}
-
-			if (error instanceof OAuthResolverError) {
-				const did = await resolver.resolve(handle);
-				if (did) {
-					try {
-						const url = await oauthClient.authorize(did, {
-							scope: "atproto transition:generic",
-						});
-						return c.json({
-							success: true,
-							redirectUrl: url.toString()
-						});
-					} catch {
-						return c.json({ 
-							error: 'Failed to resolve handle',
-							code: 'resolver'
-						}, 400);
-					}
+			} catch (error) {
+				if (error instanceof OAuthResponseError) {
+					const url = await oauthClient.authorize(handle, {
+						scope: "atproto transition:generic",
+					});
+					return c.json({
+						success: true,
+						redirectUrl: url.toString(),
+					});
 				}
-				return c.json({ 
-					error: 'Failed to resolve handle',
-					code: 'resolver'
-				}, 400);
-			}
-			throw error;
-		}
-	} catch (error) {
-		console.error('Bluesky authorize error:', error);
-		return c.json({ error: 'Internal server error' }, 500);
-	}
-});
 
-// POST /api/bluesky/auth/callback - Handle Bluesky OAuth callback
-bluesky.post('/auth/callback', async (c) => {
+				if (error instanceof OAuthResolverError) {
+					const did = await resolver.resolve(handle);
+					if (did) {
+						try {
+							const url = await oauthClient.authorize(did, {
+								scope: "atproto transition:generic",
+							});
+							return c.json({
+								success: true,
+								redirectUrl: url.toString(),
+							});
+						} catch {
+							return c.json(
+								{
+									error: "Failed to resolve handle",
+									code: "resolver",
+								},
+								400,
+							);
+						}
+					}
+					return c.json(
+						{
+							error: "Failed to resolve handle",
+							code: "resolver",
+						},
+						400,
+					);
+				}
+				throw error;
+			}
+		} catch (error) {
+			console.error("Bluesky authorize error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// POST /api/bluesky/auth/callback - Handle Bluesky OAuth callback
+	.post("/auth/callback", async (c) => {
 	try {
 		const userId = await getUserIdFromSession(c.req.raw);
 		if (!userId) {
-			return c.json({ error: 'Not authenticated' }, 401);
+			return c.json({ error: "Not authenticated" }, 401);
 		}
 
 		const body = await c.req.json();
 		const searchParams = new URLSearchParams(body.searchParams);
 
 		if (searchParams.get("error_description") === "Access denied") {
-			return c.json({ 
-				error: 'Access denied by user',
-				code: 'denied'
-			}, 400);
+			return c.json(
+				{
+					error: "Access denied by user",
+					code: "denied",
+				},
+				400,
+			);
 		}
 
 		if (searchParams.get("error")) {
-			return c.json({ 
-				error: 'OAuth error',
-				code: 'oauth'
-			}, 400);
+			return c.json(
+				{
+					error: "OAuth error",
+					code: "oauth",
+				},
+				400,
+			);
 		}
 
 		const oauthClient = await createOAuthClient(c.req.raw);
 
 		try {
-			const { session: oauthSession } = await oauthClient.callback(searchParams);
+			const { session: oauthSession } =
+				await oauthClient.callback(searchParams);
 			const agent = new Agent(oauthSession);
 			const profile = await agent.getProfile({
 				actor: oauthSession.did,
@@ -168,7 +182,7 @@ bluesky.post('/auth/callback', async (c) => {
 					did: oauthSession.did,
 					handle: profile.data.handle,
 					service: oauthSession.serverMetadata.issuer,
-				}
+				},
 			});
 		} catch (error) {
 			if (
@@ -186,16 +200,20 @@ bluesky.post('/auth/callback', async (c) => {
 						}),
 					});
 
-					return c.json({
-						error: 'Login required',
-						code: 'login_required',
-						redirectUrl: url.toString()
-					}, 400);
+					return c.json(
+						{
+							error: "Login required",
+							code: "login_required",
+							redirectUrl: url.toString(),
+						},
+						400,
+					);
 				}
 			}
 
 			// Fallback - try callback again
-			const { session: oauthSession } = await oauthClient.callback(searchParams);
+			const { session: oauthSession } =
+				await oauthClient.callback(searchParams);
 			const agent = new Agent(oauthSession);
 			const profile = await agent.getProfile({
 				actor: oauthSession.did,
@@ -225,13 +243,13 @@ bluesky.post('/auth/callback', async (c) => {
 					did: oauthSession.did,
 					handle: profile.data.handle,
 					service: oauthSession.serverMetadata.issuer,
-				}
+				},
 			});
 		}
 	} catch (error) {
-		console.error('Bluesky callback error:', error);
-		return c.json({ error: 'Internal server error' }, 500);
+		console.error("Bluesky callback error:", error);
+		return c.json({ error: "Internal server error" }, 500);
 	}
 });
 
-export { bluesky };
+export default bluesky;

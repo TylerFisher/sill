@@ -1,0 +1,243 @@
+import { redirect } from "react-router";
+import { hc } from "hono/client";
+import type { AppType } from "@sill/api";
+
+// API URL for server-to-server communication within Docker
+const API_BASE_URL = process.env.API_BASE_URL || "http://api:3001";
+
+/**
+ * Create a Hono RPC client with proper cookie forwarding
+ */
+function createApiClient(request: Request) {
+	const cookieHeader = request.headers.get("cookie");
+	const hostHeader = request.headers.get("host");
+	const protoHeader = request.headers.get("x-forwarded-proto") || "http";
+
+	return hc<AppType>(API_BASE_URL, {
+		headers: {
+			...(cookieHeader && { Cookie: cookieHeader }),
+			...(hostHeader && { "X-Forwarded-Host": hostHeader }),
+			"X-Forwarded-Proto": protoHeader,
+		},
+	});
+}
+
+/**
+ * Get user profile with social accounts via API (returns null if not authenticated, no redirect)
+ */
+export async function apiGetUserProfileOptional(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.profile.$get();
+
+	if (response.status === 401) {
+		return null;
+	}
+
+	if (!response.ok) {
+		throw new Error("Failed to get user profile");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Get user profile with social accounts via API
+ * This handles authentication internally and throws redirect if not authenticated
+ */
+export async function apiGetUserProfile(request: Request, redirectTo?: string) {
+	const userProfile = await apiGetUserProfileOptional(request);
+
+	if (!userProfile) {
+		// User not authenticated - redirect to login
+		const requestUrl = new URL(request.url);
+		const finalRedirectTo =
+			redirectTo || `${requestUrl.pathname}${requestUrl.search}`;
+		const loginParams = new URLSearchParams({ redirectTo: finalRedirectTo });
+		throw redirect(`/accounts/login?${loginParams.toString()}`);
+	}
+
+	return userProfile;
+}
+
+/**
+ * API-based version of requireUserId - throws redirect if not authenticated
+ */
+export async function requireUserId(
+	request: Request,
+	redirectTo?: string,
+): Promise<string> {
+	const userProfile = await apiGetUserProfile(request, redirectTo);
+	return userProfile.id;
+}
+
+/**
+ * API-based version of getUserId - returns null if not authenticated
+ */
+export async function getUserId(request: Request): Promise<string | null> {
+	const userProfile = await apiGetUserProfileOptional(request);
+	return userProfile?.id || null;
+}
+
+/**
+ * API-based version of requireAnonymous - throws redirect if authenticated
+ */
+export async function requireAnonymous(request: Request): Promise<void> {
+	const userProfile = await apiGetUserProfileOptional(request);
+
+	if (userProfile) {
+		throw redirect("/links");
+	}
+}
+
+/**
+ * Initiate signup with verification via API
+ */
+export async function apiSignupInitiate(
+	request: Request,
+	data: { email: string; name: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.signup.initiate.$post({
+		json: data,
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Signup initiation failed");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Complete signup with verification code via API
+ */
+export async function apiSignupComplete(
+	request: Request,
+	data: { email: string; name: string; code: string; password: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.signup.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Login via API
+ */
+export async function apiLogin(
+	request: Request,
+	data: { email: string; password: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.login.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Logout via API
+ */
+export async function apiLogout(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.logout.$post();
+	return response;
+}
+
+/**
+ * Verify signup code via API
+ */
+export async function apiVerifyCode(
+	request: Request,
+	data: { email: string; code: string; type: "onboarding"; target: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.verify.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Start Bluesky OAuth authorization via API
+ */
+export async function apiBlueskyAuthStart(request: Request, handle: string) {
+	const client = createApiClient(request);
+	const response = await client.api.bluesky.auth.authorize.$get({
+		query: {
+			handle,
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error("Failed to start Bluesky authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Complete Bluesky OAuth callback via API
+ */
+export async function apiBlueskyAuthCallback(
+	request: Request,
+	data: { code: string; state: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.bluesky.auth.callback.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Start Mastodon OAuth authorization via API
+ */
+export async function apiMastodonAuthStart(
+	request: Request,
+	data: { instance: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.mastodon.auth.authorize.$get({
+		query: data,
+	});
+
+	if (!response.ok) {
+		throw new Error("Failed to start Mastodon authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Complete Mastodon OAuth callback via API
+ */
+export async function apiMastodonAuthCallback(
+	request: Request,
+	data: { code: string; state: string; instance: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.mastodon.auth.callback.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Revoke Mastodon token via API
+ */
+export async function apiMastodonRevoke(request: Request, accountId: string) {
+	const client = createApiClient(request);
+	const response = await client.api.mastodon.auth.revoke.$post({
+		json: { accountId },
+	});
+
+	return response;
+}

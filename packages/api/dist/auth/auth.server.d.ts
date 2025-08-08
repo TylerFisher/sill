@@ -75,3 +75,73 @@ export declare function resetUserPassword({ userId, newPassword, }: {
 export type SubscriptionStatus = "free" | "plus" | "trial";
 export declare const isSubscribed: (userId: string) => Promise<SubscriptionStatus>;
 export declare const hasAgreed: (userId: string) => Promise<boolean>;
+/**
+ * Gets user profile with social accounts, lists, and subscription status
+ * @param userId User ID
+ * @returns User profile with social accounts and subscription status
+ */
+export declare const getUserProfile: (userId: string) => Promise<{
+    subscriptionStatus: SubscriptionStatus;
+    id: string;
+    name: string | null;
+    email: string;
+    customerId: string | null;
+    freeTrialEnd: Date | null;
+    createdAt: Date;
+    emailConfirmed: boolean;
+    mastodonAccounts: {
+        id: string;
+        createdAt: Date;
+        userId: string;
+        mostRecentPostId: string | null;
+        instanceId: string;
+        accessToken: string;
+        tokenType: string;
+        expiresIn: number | null;
+        refreshToken: string | null;
+        mastodonInstance: {
+            id: string;
+            createdAt: Date;
+            instance: string;
+            clientId: string;
+            clientSecret: string;
+        };
+        lists: {
+            id: string;
+            name: string;
+            uri: string;
+            mostRecentPostDate: Date | null;
+            mostRecentPostId: string | null;
+            blueskyAccountId: string | null;
+            mastodonAccountId: string | null;
+        }[];
+    }[];
+    blueskyAccounts: {
+        id: string;
+        userId: string;
+        mostRecentPostDate: Date | null;
+        service: string;
+        handle: string;
+        did: string;
+        lists: {
+            id: string;
+            name: string;
+            uri: string;
+            mostRecentPostDate: Date | null;
+            mostRecentPostId: string | null;
+            blueskyAccountId: string | null;
+            mastodonAccountId: string | null;
+        }[];
+    }[];
+    subscriptions: {
+        id: string;
+        createdAt: Date | null;
+        userId: string;
+        status: string;
+        polarId: string;
+        polarProductId: string;
+        periodStart: Date | null;
+        periodEnd: Date | null;
+        cancelAtPeriodEnd: boolean;
+    }[];
+} | null>;
