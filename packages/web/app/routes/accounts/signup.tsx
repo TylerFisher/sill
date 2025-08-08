@@ -9,7 +9,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import Verify from "~/emails/verify";
-import { apiSignupInitiate } from "~/utils/api.server";
+import { apiSignupInitiate } from "~/utils/api-client.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";

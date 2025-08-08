@@ -19,7 +19,7 @@ import Layout from "~/components/nav/Layout";
 import WelcomeEmail from "~/emails/Welcome";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { apiSignup } from "~/utils/api.server";
+import { apiSignupComplete } from "~/utils/api-client.server";
 import {
 	EmailSchema,
 	NameSchema,
@@ -76,7 +76,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 				if (intent !== null) return { ...data, apiResponse: null };
 
 				try {
-					const apiResponse = await apiSignup(request, {
+					const apiResponse = await apiSignupComplete(request, {
 						...data,
 						email,
 						password: data.password,
@@ -104,11 +104,11 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	const { apiResponse, redirectTo } = submission.value;
-	const { response, data: responseData } = apiResponse;
+	const responseData = await apiResponse.json();
 
 	// Forward the Set-Cookie headers from the API response and clean up verify session
 	const headers = new Headers();
-	const apiSetCookie = response.headers.get("set-cookie");
+	const apiSetCookie = apiResponse.headers.get("set-cookie");
 	if (apiSetCookie) {
 		headers.append("set-cookie", apiSetCookie);
 	}
@@ -130,7 +130,11 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	// Use the redirect URL from the API response or form data
 	const finalRedirectTo =
-		responseData.redirectTo || redirectTo || "/accounts/onboarding/social";
+		(responseData && "redirectTo" in responseData
+			? responseData.redirectTo
+			: undefined) ||
+		redirectTo ||
+		"/accounts/onboarding/social";
 
 	return redirect(safeRedirect(finalRedirectTo), { headers });
 }

@@ -94,7 +94,7 @@ export async function requireAnonymous(request: Request): Promise<void> {
  */
 export async function apiSignupInitiate(
 	request: Request,
-	data: { email: string; name: string },
+	data: { email: string },
 ) {
 	const client = createApiClient(request);
 	const response = await client.api.auth.signup.initiate.$post({
@@ -114,7 +114,7 @@ export async function apiSignupInitiate(
  */
 export async function apiSignupComplete(
 	request: Request,
-	data: { email: string; name: string; code: string; password: string },
+	data: { email: string; name: string; password: string },
 ) {
 	const client = createApiClient(request);
 	const response = await client.api.auth.signup.$post({
@@ -153,7 +153,11 @@ export async function apiLogout(request: Request) {
  */
 export async function apiVerifyCode(
 	request: Request,
-	data: { email: string; code: string; type: "onboarding"; target: string },
+	data: {
+		code: string;
+		type: "onboarding" | "reset-password" | "change-email" | "2fa";
+		target: string;
+	},
 ) {
 	const client = createApiClient(request);
 	const response = await client.api.auth.verify.$post({
@@ -220,7 +224,7 @@ export async function apiMastodonAuthStart(
  */
 export async function apiMastodonAuthCallback(
 	request: Request,
-	data: { code: string; state: string; instance: string },
+	data: { code: string; instance: string },
 ) {
 	const client = createApiClient(request);
 	const response = await client.api.mastodon.auth.callback.$post({
@@ -233,11 +237,59 @@ export async function apiMastodonAuthCallback(
 /**
  * Revoke Mastodon token via API
  */
-export async function apiMastodonRevoke(request: Request, accountId: string) {
+export async function apiMastodonRevoke(request: Request) {
 	const client = createApiClient(request);
-	const response = await client.api.mastodon.auth.revoke.$post({
-		json: { accountId },
-	});
+	const response = await client.api.mastodon.auth.revoke.$post({});
 
 	return response;
+}
+
+/**
+ * Filter link occurrences via API
+ */
+export async function apiFilterLinkOccurrences(
+	request: Request,
+	params: {
+		time?: number;
+		hideReposts?: boolean;
+		sort?: string;
+		query?: string;
+		service?: "mastodon" | "bluesky" | "all";
+		page?: number;
+		fetch?: boolean;
+		selectedList?: string;
+		limit?: number;
+		url?: string;
+		minShares?: number;
+	},
+) {
+	// For now, use fetch directly since RPC client types aren't working
+	const cookieHeader = request.headers.get("cookie");
+	const hostHeader = request.headers.get("host");
+	const protoHeader = request.headers.get("x-forwarded-proto") || "http";
+
+	// Convert params to query string
+	const queryParams = new URLSearchParams();
+	Object.entries(params).forEach(([key, value]) => {
+		if (value !== undefined && value !== null) {
+			queryParams.append(key, String(value));
+		}
+	});
+
+	const response = await fetch(
+		`${API_BASE_URL}/api/links/filter?${queryParams}`,
+		{
+			headers: {
+				...(cookieHeader && { Cookie: cookieHeader }),
+				...(hostHeader && { "X-Forwarded-Host": hostHeader }),
+				"X-Forwarded-Proto": protoHeader,
+			},
+		},
+	);
+
+	if (!response.ok) {
+		throw new Error("Failed to filter links");
+	}
+
+	return await response.json();
 }

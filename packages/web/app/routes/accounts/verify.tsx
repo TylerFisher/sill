@@ -7,7 +7,7 @@ import { z } from "zod";
 import { OTPField } from "~/components/forms/OTPField";
 import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
-import { apiVerify } from "~/utils/api.server";
+import { apiVerifyCode } from "~/utils/api-client.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { onboardingEmailSessionKey } from "./onboarding";
@@ -35,17 +35,21 @@ export const VerifySchema = z.object({
 export const action = async ({ request }: Route.ActionArgs) => {
 	const formData = await request.formData();
 	checkHoneypot(formData);
-	
+
 	const submission = await parseWithZod(formData, {
 		schema: VerifySchema.transform(async (data, ctx) => {
 			try {
-				const apiResponse = await apiVerify(request, data);
+				const apiResponse = await apiVerifyCode(request, data);
 				return { ...data, apiResponse };
 			} catch (error) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
-					message: error instanceof Error ? error.message : "Verification failed",
-					path: error instanceof Error && error.message.includes('code') ? ['code'] : [],
+					message:
+						error instanceof Error ? error.message : "Verification failed",
+					path:
+						error instanceof Error && error.message.includes("code")
+							? ["code"]
+							: [],
 				});
 				return z.NEVER;
 			}
@@ -61,21 +65,25 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	}
 
 	const { apiResponse, type, target } = submission.value;
-	const { redirectTo } = apiResponse;
+	const responseData = await apiResponse.json();
+	if ("error" in responseData) {
+		throw new Error(responseData.error);
+	}
+	const { redirectTo } = responseData;
 
 	// For onboarding verification, set the email in verification session
-	if (type === 'onboarding') {
+	if (type === "onboarding") {
 		const verifySession = await verifySessionStorage.getSession(
-			request.headers.get("cookie")
+			request.headers.get("cookie"),
 		);
 		verifySession.set(onboardingEmailSessionKey, target);
-		
+
 		const headers = new Headers();
 		headers.append(
 			"set-cookie",
-			await verifySessionStorage.commitSession(verifySession)
+			await verifySessionStorage.commitSession(verifySession),
 		);
-		
+
 		return redirect(redirectTo, { headers });
 	}
 

@@ -4,7 +4,6 @@ import {
 	TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { Suspense, useEffect, useRef, useState } from "react";
 import {
 	Await,
@@ -19,8 +18,7 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { bookmark } from "~/drizzle/schema.server";
+import type { bookmark } from "~/drizzle/schema.server";
 import { useLayout } from "~/routes/resources/layout-switch";
 import { createOAuthClient } from "~/server/oauth/client";
 import type { SubscriptionStatus } from "~/utils/auth.server";
@@ -78,10 +76,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 	// Use the Mastodon account from the API response
 	const mastodon = userProfile.mastodonAccounts[0] || null;
-
-	const bookmarks = await db.query.bookmark.findMany({
-		where: eq(bookmark.userId, userId),
-	});
+	const bookmarks = userProfile.bookmarks;
 
 	const url = new URL(request.url);
 

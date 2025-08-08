@@ -1,22 +1,22 @@
 import { redirect } from "react-router";
-import { apiLogout } from "~/utils/api.server";
+import { apiLogout } from "~/utils/api-client.server";
 import type { Route } from "./+types/logout";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	try {
-		const { response } = await apiLogout(request);
-		
+		const response = await apiLogout(request);
+
 		// Forward the Set-Cookie headers from the API response to clear the session
 		const headers = new Headers();
-		const apiSetCookie = response.headers.get('set-cookie');
+		const apiSetCookie = response.headers.get("set-cookie");
 		if (apiSetCookie) {
-			headers.append('set-cookie', apiSetCookie);
+			headers.append("set-cookie", apiSetCookie);
 		}
-		
-		return redirect('/', { headers });
+
+		return redirect("/", { headers });
 	} catch (error) {
 		// If logout fails, still redirect to home
-		console.error('Logout error:', error);
-		return redirect('/');
+		console.error("Logout error:", error);
+		return redirect("/");
 	}
 }

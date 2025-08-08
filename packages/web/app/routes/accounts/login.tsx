@@ -18,7 +18,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { apiLogin } from "~/utils/api.server";
+import { apiLogin } from "~/utils/api-client.server";
 import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/login";
 import { requireAnonymousFromContext } from "~/utils/context.server";
@@ -41,13 +41,19 @@ export async function action({ request, context }: Route.ActionArgs) {
 	await requireAnonymousFromContext(context);
 	const formData = await request.formData();
 	checkHoneypot(formData);
+	
+	// Store API response outside of form validation
+	let apiResponseHeaders: Headers | undefined;
+
 	const submission = await parseWithZod(formData, {
 		schema: (intent) =>
 			LoginFormSchema.transform(async (data, ctx) => {
 				if (intent !== null) return { ...data, apiResponse: null };
 
 				try {
-					const apiResponse = await apiLogin(request, data);
+					const response = await apiLogin(request, data);
+					apiResponseHeaders = response.headers;
+					const apiResponse = await response.json();
 					return { ...data, apiResponse };
 				} catch (error) {
 					ctx.addIssue({
@@ -63,7 +69,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 		async: true,
 	});
 
-	if (submission.status !== "success" || !submission.value.apiResponse) {
+	if (submission.status !== "success" || !submission.value) {
 		return data(
 			{ result: submission.reply({ hideFields: ["password"] }) },
 			{ status: submission.status === "error" ? 400 : 200 },
@@ -71,19 +77,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	const { apiResponse, redirectTo } = submission.value;
-	const { response, data: responseData } = apiResponse;
-
-	// Debug: Log the API response
-	console.log("API Response status:", response.status);
-	console.log(
-		"API Response headers:",
-		Object.fromEntries(response.headers.entries()),
-	);
-	console.log("API Response data:", responseData);
 
 	// Forward the Set-Cookie headers from the API response
 	const headers = new Headers();
-	const apiSetCookie = response.headers.get("set-cookie");
+	const apiSetCookie = apiResponseHeaders?.get("set-cookie");
 	console.log("API Set-Cookie header:", apiSetCookie);
 
 	if (apiSetCookie) {
@@ -91,7 +88,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	// Use the redirect URL from the API response or the form data
-	const finalRedirectTo = responseData.redirectTo || redirectTo || "/links";
+	const finalRedirectTo = (apiResponse && 'redirectTo' in apiResponse ? apiResponse.redirectTo : undefined) || redirectTo || "/links";
 	console.log("Redirecting to:", finalRedirectTo);
 
 	return redirect(finalRedirectTo, { headers });

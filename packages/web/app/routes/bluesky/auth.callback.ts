@@ -1,10 +1,10 @@
 import { redirect } from "react-router";
-import { apiBlueskyCallback } from "~/utils/api.server";
+import { apiBlueskyAuthCallback } from "~/utils/api-client.server";
 import type { Route } from "./+types/auth.callback";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const url = new URL(request.url);
-	
+
 	// Check for obvious errors first
 	if (url.searchParams.get("error_description") === "Access denied") {
 		return redirect("/accounts/onboarding/social?error=denied");
@@ -14,33 +14,43 @@ export async function loader({ request }: Route.LoaderArgs) {
 		return redirect("/accounts/onboarding/social?error=oauth");
 	}
 
+	const callbackData = {
+		code: url.searchParams.get("code") as string,
+		state: url.searchParams.get("state") as string,
+	};
+
 	try {
-		const result = await apiBlueskyCallback(request, url.searchParams);
-		
-		if (result.success) {
+		const result = await apiBlueskyAuthCallback(request, callbackData);
+		const data = await result.json();
+
+		if ("error" in data) {
+			throw new Error(data.error);
+		}
+
+		if (data.success) {
 			return redirect("/download?service=Bluesky");
 		}
-		
+
 		// Handle login_required case
-		if (result.code === 'login_required' && result.redirectUrl) {
-			return redirect(result.redirectUrl);
+		if (data.account.handle === "login_required" && data) {
+			return redirect(data.redirectUrl);
 		}
-		
+
 		// Handle other errors
 		return redirect("/accounts/onboarding/social?error=oauth");
 	} catch (error) {
 		console.error("Bluesky callback error:", error);
-		
+
 		// Handle specific error codes from API
 		if (error instanceof Error) {
-			if (error.message.includes('denied')) {
+			if (error.message.includes("denied")) {
 				return redirect("/accounts/onboarding/social?error=denied");
 			}
-			if (error.message.includes('login_required')) {
+			if (error.message.includes("login_required")) {
 				return redirect("/accounts/onboarding/social?error=oauth");
 			}
 		}
-		
+
 		// Fallback - still redirect to success as the account might have been created
 		return redirect("/download?service=Bluesky");
 	}

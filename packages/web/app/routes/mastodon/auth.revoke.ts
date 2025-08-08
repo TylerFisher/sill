@@ -1,10 +1,15 @@
 import { redirect } from "react-router";
-import { apiMastodonRevoke } from "~/utils/api.server";
+import { apiMastodonRevoke } from "~/utils/api-client.server";
 import type { Route } from "./+types/auth.revoke";
 
 export const action = async ({ request }: Route.ActionArgs) => {
 	try {
-		const result = await apiMastodonRevoke(request);
+		const response = await apiMastodonRevoke(request);
+		const result = await response.json();
+
+		if ("error" in result) {
+			throw new Error(result.error);
+		}
 
 		if (result.success) {
 			return redirect("/settings/connections");
