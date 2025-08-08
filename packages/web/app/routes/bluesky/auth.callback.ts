@@ -15,8 +15,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	const callbackData = {
-		code: url.searchParams.get("code") as string,
-		state: url.searchParams.get("state") as string,
+		searchParams: url.searchParams.toString(),
 	};
 
 	try {

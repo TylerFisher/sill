@@ -149,8 +149,7 @@ const bluesky = new Hono()
 			const oauthClient = await createOAuthClient(c.req.raw);
 
 			try {
-				const { session: oauthSession } =
-					await oauthClient.callback(searchParams);
+				const { session: oauthSession } = await oauthClient.callback(searchParams);
 				const agent = new Agent(oauthSession);
 				const profile = await agent.getProfile({
 					actor: oauthSession.did,

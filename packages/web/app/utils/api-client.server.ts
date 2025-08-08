@@ -193,7 +193,7 @@ export async function apiBlueskyAuthStart(
  */
 export async function apiBlueskyAuthCallback(
 	request: Request,
-	data: { code: string; state: string },
+	data: { searchParams: string },
 ) {
 	const client = createApiClient(request);
 	const response = await client.api.bluesky.auth.callback.$post({
