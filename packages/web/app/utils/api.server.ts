@@ -3,6 +3,7 @@ import { redirect } from "react-router";
 // API URL for server-to-server communication within Docker
 const API_BASE_URL = process.env.API_BASE_URL || "http://api:3001";
 
+
 /**
  * Helper to make API calls with proper cookie forwarding
  */
@@ -155,33 +156,25 @@ export async function apiGetUserProfileOptional(request: Request) {
  * API-based version of requireUserId - throws redirect if not authenticated
  */
 export async function requireUserId(request: Request, redirectTo?: string): Promise<string> {
-	const user = await apiGetCurrentUser(request);
-	
-	if (!user) {
-		const requestUrl = new URL(request.url);
-		const finalRedirectTo = redirectTo || `${requestUrl.pathname}${requestUrl.search}`;
-		const loginParams = new URLSearchParams({ redirectTo: finalRedirectTo });
-		throw redirect(`/accounts/login?${loginParams.toString()}`);
-	}
-	
-	return user.userId;
+	const userProfile = await apiGetUserProfile(request, redirectTo);
+	return userProfile.id;
 }
 
 /**
  * API-based version of getUserId - returns null if not authenticated
  */
 export async function getUserId(request: Request): Promise<string | null> {
-	const user = await apiGetCurrentUser(request);
-	return user?.userId || null;
+	const userProfile = await apiGetUserProfileOptional(request);
+	return userProfile?.id || null;
 }
 
 /**
  * API-based version of requireAnonymous - throws redirect if authenticated
  */
 export async function requireAnonymous(request: Request): Promise<void> {
-	const user = await apiGetCurrentUser(request);
+	const userProfile = await apiGetUserProfileOptional(request);
 	
-	if (user) {
+	if (userProfile) {
 		throw redirect("/links");
 	}
 }
@@ -238,11 +231,9 @@ export async function apiVerify(
  * This handles authentication internally and throws redirect if not authenticated
  */
 export async function apiGetUserProfile(request: Request, redirectTo?: string) {
-	const response = await apiRequest(request, "/api/auth/profile", {
-		method: "GET",
-	});
-
-	if (response.status === 401) {
+	const userProfile = await apiGetUserProfileOptional(request);
+	
+	if (!userProfile) {
 		// User not authenticated - redirect to login
 		const requestUrl = new URL(request.url);
 		const finalRedirectTo = redirectTo || `${requestUrl.pathname}${requestUrl.search}`;
@@ -250,12 +241,7 @@ export async function apiGetUserProfile(request: Request, redirectTo?: string) {
 		throw redirect(`/accounts/login?${loginParams.toString()}`);
 	}
 
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || "Failed to get user profile");
-	}
-
-	return await response.json();
+	return userProfile;
 }
 
 /**

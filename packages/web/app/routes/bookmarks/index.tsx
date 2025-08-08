@@ -10,16 +10,13 @@ import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { db } from "~/drizzle/db.server";
-import {
-	blueskyAccount,
-	bookmark,
-	mastodonAccount,
-} from "~/drizzle/schema.server";
+import { bookmark } from "~/drizzle/schema.server";
 import { LinkPost } from "~/routes/links";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
+import { apiGetUserProfile } from "~/utils/api.server";
+import { invariantResponse } from "@epic-web/invariant";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
@@ -27,33 +24,16 @@ type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
 };
 
 export async function loader({ request }: Route.LoaderArgs) {
-	const userId = await requireUserId(request);
-
-	if (!userId) {
-		return redirect("/accounts/login");
-	}
-
-	const subscribed = await isSubscribed(userId);
+	const existingUser = await apiGetUserProfile(request);
+	invariantResponse(existingUser, "User not found", { status: 404 });
+	const subscribed = existingUser.subscribed;
 
 	if (subscribed === "free") {
 		return redirect("/settings/subscription");
 	}
 
-	const bsky = await db.query.blueskyAccount.findFirst({
-		where: eq(blueskyAccount.userId, userId),
-	});
-
-	const mastodon = await db.query.mastodonAccount.findFirst({
-		where: eq(mastodonAccount.userId, userId),
-		with: {
-			mastodonInstance: {
-				columns: {
-					instance: true,
-				},
-			},
-			lists: true,
-		},
-	});
+	const bsky = existingUser.blueskyAccounts[0] || null;
+	const mastodon = existingUser.mastodonAccounts[0] || null;
 
 	const url = new URL(request.url);
 	const query = url.searchParams.get("query");
@@ -61,7 +41,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 	const bookmarks: BookmarkWithLinkPosts[] = await db.query.bookmark.findMany({
 		where: and(
-			eq(bookmark.userId, userId),
+			eq(bookmark.userId, existingUser.id),
 			query
 				? or(
 						sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,

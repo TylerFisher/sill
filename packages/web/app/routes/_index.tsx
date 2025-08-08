@@ -4,7 +4,7 @@ import HeroAnimation from "~/components/marketing/HeroAnimation";
 import MainHero from "~/components/marketing/MainHero";
 import MarketingFooter from "~/components/marketing/MarketingFooter";
 import Pricing from "~/components/marketing/Pricing";
-import { requireAnonymous } from "~/utils/auth.server";
+import { requireAnonymousFromContext } from "~/utils/context.server";
 import { TestimonialSection } from "../components/marketing/Testimonial";
 // app/routes/_index.tsx
 import type { Route } from "./+types/_index";
@@ -18,8 +18,8 @@ export const meta: Route.MetaFunction = () => [
 	},
 ];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	await requireAnonymous(request);
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	requireAnonymousFromContext(context);
 	return {};
 };
 

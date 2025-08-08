@@ -11,15 +11,13 @@ import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import EmailChange from "~/emails/emailChange";
-import { requireUserId } from "~/utils/auth.server";
+import { apiGetUserProfile } from "~/utils/api.server";
 import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
-import {
-	prepareVerification,
-	requireRecentVerification,
-} from "~/utils/verify.server";
+import { prepareVerification } from "~/utils/verify.server";
 import type { Route } from "./+types/change-email";
+import { invariantResponse } from "@epic-web/invariant";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -32,24 +30,13 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-	await requireRecentVerification(request);
-	const userId = await requireUserId(request);
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-		columns: { email: true },
-	});
-	if (!existingUser) {
-		const params = new URLSearchParams({ redirectTo: request.url });
-		throw redirect(`/login?${params}`);
-	}
+	const existingUser = await apiGetUserProfile(request);
+	invariantResponse(existingUser, "User not found", { status: 404 });
 	return { user: existingUser };
 }
 
 export async function action({ request }: Route.ActionArgs) {
-	const userId = await requireUserId(request);
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
+	const existingUser = await apiGetUserProfile(request);
 
 	if (!existingUser) {
 		throw new Error("User not found");

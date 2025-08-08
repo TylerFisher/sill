@@ -1,6 +1,5 @@
-import { eq } from "drizzle-orm";
 import { Suspense } from "react";
-import { Await, redirect } from "react-router";
+import { Await } from "react-router";
 import ErrorState from "~/components/download/ErrorState";
 import LoadingState from "~/components/download/LoadingState";
 import WelcomeContent from "~/components/download/WelcomeContent";

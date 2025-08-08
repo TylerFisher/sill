@@ -7,6 +7,7 @@ import {
 	ScrollRestoration,
 	data,
 	useLoaderData,
+	type unstable_MiddlewareFunction,
 } from "react-router";
 import type { Route } from "./+types/root";
 import "~/styles/reset.css";
@@ -23,16 +24,30 @@ import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme";
+import { userContext } from "./context/user-context";
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const honeyProps = honeypot.getInputProps();
+// Middleware to fetch user profile and set in context
+const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
+	request,
+	context,
+}) => {
 	const userProfile = await apiGetUserProfileOptional(request);
+	context.set(userContext, userProfile);
+};
+
+export const unstable_middleware: Route.unstable_MiddlewareFunction[] = [
+	authMiddleware,
+];
+
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const honeyProps = honeypot.getInputProps();
+	const userProfile = context.get(userContext);
 	let subscribed: SubscriptionStatus = "free";
 	let dbUser = null;
 	let agreed = true;
 
 	if (userProfile) {
-		dbUser = userProfile; // Use the user data from API
+		dbUser = userProfile; // Use the user data from context
 		subscribed = userProfile.subscriptionStatus;
 		agreed = await hasAgreed(userProfile.id);
 	}

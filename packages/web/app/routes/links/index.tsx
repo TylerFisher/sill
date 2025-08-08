@@ -24,7 +24,7 @@ import { bookmark } from "~/drizzle/schema.server";
 import { useLayout } from "~/routes/resources/layout-switch";
 import { createOAuthClient } from "~/server/oauth/client";
 import type { SubscriptionStatus } from "~/utils/auth.server";
-import { apiGetUserProfile } from "~/utils/api.server";
+import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
 import {
 	type MostRecentLinkPosts,
@@ -38,8 +38,8 @@ export const config = {
 	maxDuration: 300,
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userProfile = await apiGetUserProfile(request);
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
+	const userProfile = requireUserFromContext(context);
 	const userId = userProfile.id;
 	const subscribed = userProfile.subscriptionStatus;
 
