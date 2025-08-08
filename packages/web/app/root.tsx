@@ -13,18 +13,11 @@ import "~/styles/reset.css";
 import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme as RadixTheme } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
-import { db } from "./drizzle/db.server";
-import { user } from "./drizzle/schema.server";
 import { useTheme } from "./routes/resources/theme-switch";
-import {
-	type SubscriptionStatus,
-	getUserId,
-	hasAgreed,
-	isSubscribed,
-} from "./utils/auth.server";
+import { type SubscriptionStatus, hasAgreed } from "./utils/auth.server";
+import { apiGetUserProfileOptional } from "./utils/api.server";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
@@ -33,16 +26,15 @@ import { type Theme, getTheme } from "./utils/theme";
 
 export async function loader({ request }: Route.LoaderArgs) {
 	const honeyProps = honeypot.getInputProps();
-	const userId = await getUserId(request);
+	const userProfile = await apiGetUserProfileOptional(request);
 	let subscribed: SubscriptionStatus = "free";
 	let dbUser = null;
 	let agreed = true;
-	if (userId) {
-		dbUser = await db.query.user.findFirst({
-			where: eq(user.id, userId),
-		});
-		subscribed = await isSubscribed(userId);
-		agreed = await hasAgreed(userId);
+
+	if (userProfile) {
+		dbUser = userProfile; // Use the user data from API
+		subscribed = userProfile.subscriptionStatus;
+		agreed = await hasAgreed(userProfile.id);
 	}
 
 	return data({

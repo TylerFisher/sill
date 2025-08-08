@@ -29,7 +29,11 @@
 		"drizzle-orm": "^0.35.3",
 		"pg": "^8.13.1",
 		"uuidv7-js": "^1.1.4",
-		"@epic-web/totp": "^1.1.2"
+		"@epic-web/totp": "^1.1.2",
+		"@atproto/api": "^0.13.5",
+		"@atproto/identity": "^0.4.1",
+		"@atproto/jwk-jose": "^0.1.2",
+		"@atproto/oauth-client-node": "^0.1.4"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.0",

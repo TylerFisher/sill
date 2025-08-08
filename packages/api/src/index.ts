@@ -24,7 +24,9 @@ app.get('/health', (c) => {
 
 // Import route modules
 import { auth } from './routes/auth.js';
+import { bluesky } from './routes/bluesky.js';
 import { links } from './routes/links.js';
+import { mastodon } from './routes/mastodon.js';
 
 // API routes
 app.get('/api/hello', (c) => {
@@ -33,7 +35,9 @@ app.get('/api/hello', (c) => {
 
 // Mount route modules
 app.route('/api/auth', auth);
+app.route('/api/bluesky', bluesky);
 app.route('/api/links', links);
+app.route('/api/mastodon', mastodon);
 
 // 404 handler
 app.notFound((c) => {

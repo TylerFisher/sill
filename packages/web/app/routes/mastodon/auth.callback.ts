@@ -1,10 +1,5 @@
-import { eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import { uuidv7 } from "uuidv7-js";
-import { db } from "~/drizzle/db.server";
-import { mastodonAccount, mastodonInstance } from "~/drizzle/schema.server";
-import { getUserId } from "~/utils/auth.server";
-import { getAccessToken } from "~/utils/mastodon.server";
+import { apiMastodonCallback } from "~/utils/api.server";
 import { getInstanceCookie } from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
@@ -12,30 +7,34 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const url = new URL(request.url);
 	const instance = await getInstanceCookie(request);
 	const code = url.searchParams.get("code");
-	const userId = await getUserId(request);
 
-	const dbInstance = await db.query.mastodonInstance.findFirst({
-		where: eq(mastodonInstance.instance, instance),
-	});
-
-	if (!userId || !dbInstance || !code) {
+	if (!instance || !code) {
 		return redirect("/settings?tabs=connect&error=instance");
 	}
 
-	const tokenData = await getAccessToken(
-		dbInstance.instance,
-		code,
-		dbInstance.clientId,
-		dbInstance.clientSecret,
-	);
-
-	await db.insert(mastodonAccount).values({
-		id: uuidv7(),
-		accessToken: tokenData.access_token,
-		tokenType: tokenData.token_type,
-		instanceId: dbInstance.id,
-		userId: userId,
-	});
-
-	return redirect("/download?service=Mastodon");
+	try {
+		const result = await apiMastodonCallback(request, code, instance);
+		
+		if (result.success) {
+			return redirect("/download?service=Mastodon");
+		}
+		
+		// Handle errors from API
+		return redirect("/settings?tabs=connect&error=oauth");
+	} catch (error) {
+		console.error("Mastodon callback error:", error);
+		
+		// Handle specific error codes from API
+		if (error instanceof Error) {
+			if (error.message.includes('Not authenticated')) {
+				return redirect("/accounts/login?redirectTo=/settings");
+			}
+			if (error.message.includes('instance')) {
+				return redirect("/settings?tabs=connect&error=instance");
+			}
+		}
+		
+		// Fallback error
+		return redirect("/settings?tabs=connect&error=oauth");
+	}
 };

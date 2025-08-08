@@ -20,18 +20,11 @@ import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
-import {
-	blueskyAccount,
-	bookmark,
-	mastodonAccount,
-} from "~/drizzle/schema.server";
+import { bookmark } from "~/drizzle/schema.server";
 import { useLayout } from "~/routes/resources/layout-switch";
 import { createOAuthClient } from "~/server/oauth/client";
-import {
-	type SubscriptionStatus,
-	isSubscribed,
-} from "~/utils/auth.server";
-import { requireUserId } from "~/utils/api.server";
+import type { SubscriptionStatus } from "~/utils/auth.server";
+import { apiGetUserProfile } from "~/utils/api.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
 import {
 	type MostRecentLinkPosts,
@@ -46,16 +39,14 @@ export const config = {
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-	const subscribed = await isSubscribed(userId);
+	const userProfile = await apiGetUserProfile(request);
+	const userId = userProfile.id;
+	const subscribed = userProfile.subscriptionStatus;
+
+	// Use the social accounts from the API response
+	const bsky = userProfile.blueskyAccounts[0] || null;
 
 	// Check if we need to reauthenticate with Bluesky
-	const bsky = await db.query.blueskyAccount.findFirst({
-		where: eq(blueskyAccount.userId, userId),
-		with: {
-			lists: true,
-		},
-	});
 	if (bsky) {
 		try {
 			const client = await createOAuthClient();
@@ -85,17 +76,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 	}
 
-	const mastodon = await db.query.mastodonAccount.findFirst({
-		where: eq(mastodonAccount.userId, userId),
-		with: {
-			mastodonInstance: {
-				columns: {
-					instance: true,
-				},
-			},
-			lists: true,
-		},
-	});
+	// Use the Mastodon account from the API response
+	const mastodon = userProfile.mastodonAccounts[0] || null;
 
 	const bookmarks = await db.query.bookmark.findMany({
 		where: eq(bookmark.userId, userId),
@@ -155,7 +137,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	return {
 		links,
 		key: uuidv7(),
-		instance: mastodon?.mastodonInstance.instance,
+		instance: mastodon?.mastodonInstance?.instance,
 		bsky: bsky?.handle,
 		lists,
 		bookmarks,

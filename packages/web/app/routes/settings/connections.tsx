@@ -1,6 +1,5 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { useSearchParams } from "react-router";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -8,36 +7,19 @@ import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
 import type { Route } from "./+types/connections";
+import { apiGetUserProfile } from "~/utils/api.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connection Settings" },
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-	const userId = await requireUserId(request);
-	const subscribed = await isSubscribed(userId);
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-		with: {
-			mastodonAccounts: {
-				with: {
-					lists: true,
-					mastodonInstance: true,
-				},
-			},
-			blueskyAccounts: {
-				with: {
-					lists: true,
-				},
-			},
-		},
-	});
+	const existingUser = await apiGetUserProfile(request);
+	const subscribed = existingUser.subscribed;
+
 	invariantResponse(existingUser, "User not found", { status: 404 });
 
 	const listOptions: ListOption[] = [];

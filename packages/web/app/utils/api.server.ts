@@ -133,6 +133,25 @@ export async function apiGetCurrentUser(request: Request) {
 }
 
 /**
+ * Get user profile with social accounts via API (returns null if not authenticated, no redirect)
+ */
+export async function apiGetUserProfileOptional(request: Request) {
+	const response = await apiRequest(request, "/api/auth/profile", {
+		method: "GET",
+	});
+
+	if (response.status === 401) {
+		return null;
+	}
+
+	if (!response.ok) {
+		throw new Error("Failed to get user profile");
+	}
+
+	return await response.json();
+}
+
+/**
  * API-based version of requireUserId - throws redirect if not authenticated
  */
 export async function requireUserId(request: Request, redirectTo?: string): Promise<string> {
@@ -234,6 +253,95 @@ export async function apiGetUserProfile(request: Request, redirectTo?: string) {
 	if (!response.ok) {
 		const errorData = await response.json();
 		throw new Error(errorData.error || "Failed to get user profile");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Start Bluesky OAuth authorization via API
+ */
+export async function apiBlueskyAuthorize(request: Request, handle?: string) {
+	const params = new URLSearchParams();
+	if (handle) {
+		params.set('handle', handle);
+	}
+	
+	const response = await apiRequest(request, `/api/bluesky/auth/authorize?${params}`, {
+		method: "GET",
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to start Bluesky authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Complete Bluesky OAuth callback via API
+ */
+export async function apiBlueskyCallback(request: Request, searchParams: URLSearchParams) {
+	const response = await apiRequest(request, "/api/bluesky/auth/callback", {
+		method: "POST",
+		body: JSON.stringify({ searchParams: searchParams.toString() }),
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to complete Bluesky authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Start Mastodon OAuth authorization via API
+ */
+export async function apiMastodonAuthorize(request: Request, instance: string) {
+	const params = new URLSearchParams({ instance });
+	
+	const response = await apiRequest(request, `/api/mastodon/auth/authorize?${params}`, {
+		method: "GET",
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to start Mastodon authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Complete Mastodon OAuth callback via API
+ */
+export async function apiMastodonCallback(request: Request, code: string, instance: string) {
+	const response = await apiRequest(request, "/api/mastodon/auth/callback", {
+		method: "POST",
+		body: JSON.stringify({ code, instance }),
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to complete Mastodon authorization");
+	}
+
+	return await response.json();
+}
+
+/**
+ * Revoke Mastodon access token via API
+ */
+export async function apiMastodonRevoke(request: Request) {
+	const response = await apiRequest(request, "/api/mastodon/auth/revoke", {
+		method: "POST",
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to revoke Mastodon authorization");
 	}
 
 	return await response.json();

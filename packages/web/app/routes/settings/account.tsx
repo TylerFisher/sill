@@ -8,14 +8,11 @@ import {
 	Heading,
 	Text,
 } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { Form, Link } from "react-router";
 import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import { apiGetUserProfile } from "~/utils/api.server";
 import type { Route } from "./+types/account";
 
 export const meta: Route.MetaFunction = () => [
@@ -23,14 +20,10 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-	const userId = await requireUserId(request);
-	const subscribed = await isSubscribed(userId);
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
+	const existingUser = await apiGetUserProfile(request);
 	invariantResponse(existingUser, "User not found", { status: 404 });
 
-	return { user: existingUser, subscribed };
+	return { user: existingUser, subscribed: existingUser.subscriptionStatus };
 }
 
 export default function AccountSettings({ loaderData }: Route.ComponentProps) {
