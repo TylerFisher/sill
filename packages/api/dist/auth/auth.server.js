@@ -37,9 +37,9 @@ export async function getUserIdFromSession(request) {
 function getSessionIdFromCookie(cookieHeader) {
     if (!cookieHeader)
         return null;
-    const cookies = cookieHeader.split(';').map(c => c.trim());
+    const cookies = cookieHeader.split(";").map((c) => c.trim());
     for (const cookie of cookies) {
-        const [name, value] = cookie.split('=');
+        const [name, value] = cookie.split("=");
         if (name === sessionKey) {
             return value;
         }
@@ -265,6 +265,7 @@ export const getUserProfile = async (userId) => {
             subscriptions: {
                 where: and(eq(subscription.status, "active"), eq(subscription.userId, userId)),
             },
+            bookmarks: true,
         },
     });
     if (!userWithAccounts) {
@@ -276,7 +277,8 @@ export const getUserProfile = async (userId) => {
     if (subscribed) {
         subscriptionStatus = "plus";
     }
-    else if (userWithAccounts.freeTrialEnd && new Date() < userWithAccounts.freeTrialEnd) {
+    else if (userWithAccounts.freeTrialEnd &&
+        new Date() < userWithAccounts.freeTrialEnd) {
         subscriptionStatus = "trial";
     }
     // Return user with subscription status

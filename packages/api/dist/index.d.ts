@@ -354,6 +354,65 @@ declare const routes: import("hono/hono-base").HonoBase<{}, {
                     periodEnd: string | null;
                     cancelAtPeriodEnd: boolean;
                 }[];
+                bookmarks: {
+                    id: string;
+                    linkUrl: string;
+                    createdAt: string;
+                    userId: string;
+                    posts: {
+                        uniqueActorsCount: number;
+                        link: {
+                            id: string;
+                            url: string;
+                            title: string;
+                            description: string | null;
+                            imageUrl: string | null;
+                            giftUrl: string | null;
+                            metadata: {
+                                [x: string]: never;
+                            } | null;
+                            scraped: boolean | null;
+                            publishedDate: string | null;
+                            authors: string[] | null;
+                            siteName: string | null;
+                            topics: string[] | null;
+                        } | null;
+                        posts?: {
+                            id: string;
+                            linkUrl: string;
+                            postUrl: string;
+                            postText: string;
+                            postDate: string;
+                            postType: "bluesky" | "mastodon";
+                            postImages: {
+                                url: string;
+                                alt: string;
+                            }[] | null;
+                            actorUrl: string;
+                            actorHandle: string;
+                            actorName: string | null;
+                            actorAvatarUrl: string | null;
+                            quotedActorUrl: string | null;
+                            quotedActorHandle: string | null;
+                            quotedActorName: string | null;
+                            quotedActorAvatarUrl: string | null;
+                            quotedPostUrl: string | null;
+                            quotedPostText: string | null;
+                            quotedPostDate: string | null;
+                            quotedPostType: "bluesky" | "mastodon" | null;
+                            quotedPostImages: {
+                                url: string;
+                                alt: string;
+                            }[] | null;
+                            repostActorUrl: string | null;
+                            repostActorHandle: string | null;
+                            repostActorName: string | null;
+                            repostActorAvatarUrl: string | null;
+                            userId: string;
+                            listId: string | null;
+                        }[] | undefined;
+                    };
+                }[];
             };
             outputFormat: "json";
             status: import("hono/utils/http-status").ContentfulStatusCode;

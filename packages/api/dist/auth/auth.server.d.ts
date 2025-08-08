@@ -144,4 +144,11 @@ export declare const getUserProfile: (userId: string) => Promise<{
         periodEnd: Date | null;
         cancelAtPeriodEnd: boolean;
     }[];
+    bookmarks: {
+        id: string;
+        linkUrl: string;
+        createdAt: Date;
+        userId: string;
+        posts: import("../types.server.js").MostRecentLinkPosts;
+    }[];
 } | null>;

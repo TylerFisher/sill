@@ -22,7 +22,9 @@ export const sessionKey = "sessionId";
  * @param request Request object
  * @returns User ID from session or null
  */
-export async function getUserIdFromSession(request: Request): Promise<string | null> {
+export async function getUserIdFromSession(
+	request: Request,
+): Promise<string | null> {
 	const sessionId = getSessionIdFromCookie(request.headers.get("cookie"));
 	if (!sessionId) return null;
 
@@ -52,10 +54,10 @@ export async function getUserIdFromSession(request: Request): Promise<string | n
  */
 function getSessionIdFromCookie(cookieHeader: string | null): string | null {
 	if (!cookieHeader) return null;
-	
-	const cookies = cookieHeader.split(';').map(c => c.trim());
+
+	const cookies = cookieHeader.split(";").map((c) => c.trim());
 	for (const cookie of cookies) {
-		const [name, value] = cookie.split('=');
+		const [name, value] = cookie.split("=");
 		if (name === sessionKey) {
 			return value;
 		}
@@ -68,7 +70,9 @@ function getSessionIdFromCookie(cookieHeader: string | null): string | null {
  * @param sessionId Session ID to validate
  * @returns User ID or null
  */
-export async function validateSession(sessionId: string): Promise<string | null> {
+export async function validateSession(
+	sessionId: string,
+): Promise<string | null> {
 	const existingSession = await db.query.session.findFirst({
 		columns: {},
 		with: {
@@ -347,23 +351,27 @@ export const getUserProfile = async (userId: string) => {
 					eq(subscription.userId, userId),
 				),
 			},
+			bookmarks: true,
 		},
 	});
-	
+
 	if (!userWithAccounts) {
 		return null;
 	}
-	
+
 	// Calculate subscription status
 	const subscribed = userWithAccounts.subscriptions.length > 0;
 	let subscriptionStatus: SubscriptionStatus = "free";
-	
+
 	if (subscribed) {
 		subscriptionStatus = "plus";
-	} else if (userWithAccounts.freeTrialEnd && new Date() < userWithAccounts.freeTrialEnd) {
+	} else if (
+		userWithAccounts.freeTrialEnd &&
+		new Date() < userWithAccounts.freeTrialEnd
+	) {
 		subscriptionStatus = "trial";
 	}
-	
+
 	// Return user with subscription status
 	return {
 		...userWithAccounts,
