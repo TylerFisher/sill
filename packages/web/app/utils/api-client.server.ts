@@ -103,7 +103,9 @@ export async function apiSignupInitiate(
 
 	if (!response.ok) {
 		const errorData = await response.json();
-		throw new Error(errorData.error || "Signup initiation failed");
+		if ("error" in errorData) {
+			throw new Error(errorData.error || "Signup initiation failed");
+		}
 	}
 
 	return await response.json();
@@ -273,11 +275,11 @@ export async function apiFilterLinkOccurrences(
 
 	// Convert params to query string
 	const queryParams = new URLSearchParams();
-	Object.entries(params).forEach(([key, value]) => {
+	for (const [key, value] of Object.entries(params)) {
 		if (value !== undefined && value !== null) {
 			queryParams.append(key, String(value));
 		}
-	});
+	}
 
 	const response = await fetch(
 		`${API_BASE_URL}/api/links/filter?${queryParams}`,
