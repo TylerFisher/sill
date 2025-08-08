@@ -2,11 +2,11 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "react-router";
 import { db } from "~/drizzle/db.server";
 import { bookmark } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/add";
+import { requireUserFromContext } from "~/utils/context.server";
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	const { id: userId } = await requireUserFromContext(context);
 
 	if (!userId) {
 		return redirect("/login");

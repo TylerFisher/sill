@@ -2,17 +2,23 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Text } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
-import { Form, data, redirect } from "react-router";
+import {
+	Form,
+	data,
+	redirect,
+	type unstable_RouterContextProvider,
+} from "react-router";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { requireAnonymous, resetUserPassword } from "~/utils/auth.server";
+import { resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import type { Route } from "./+types/reset-password";
+import { requireAnonymousFromContext } from "~/utils/context.server";
 
 export const resetPasswordEmailSessionKey = "resetPasswordEmail";
 
@@ -23,8 +29,11 @@ const ResetPasswordSchema = PasswordAndConfirmPasswordSchema;
  * @param request Request object
  * @returns Email from reset password session
  */
-async function requireResetPasswordEmail(request: Request) {
-	await requireAnonymous(request);
+async function requireResetPasswordEmail(
+	request: Request,
+	context: unstable_RouterContextProvider,
+) {
+	await requireAnonymousFromContext(context);
 	const verifySession = await verifySessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
@@ -35,13 +44,13 @@ async function requireResetPasswordEmail(request: Request) {
 	return resetPasswordEmail;
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const resetPasswordEmail = await requireResetPasswordEmail(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const resetPasswordEmail = await requireResetPasswordEmail(request, context);
 	return { resetPasswordEmail };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	const resetPasswordEmail = await requireResetPasswordEmail(request);
+export async function action({ request, context }: Route.ActionArgs) {
+	const resetPasswordEmail = await requireResetPasswordEmail(request, context);
 	const formData = await request.formData();
 	const submission = parseWithZod(formData, {
 		schema: ResetPasswordSchema,

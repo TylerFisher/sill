@@ -11,13 +11,13 @@ import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import EmailChange from "~/emails/emailChange";
-import { apiGetUserProfile } from "~/utils/api.server";
 import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import { prepareVerification } from "~/utils/verify.server";
 import type { Route } from "./+types/change-email";
 import { invariantResponse } from "@epic-web/invariant";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -29,14 +29,14 @@ export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Change your email" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const existingUser = await apiGetUserProfile(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
 	return { user: existingUser };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	const existingUser = await apiGetUserProfile(request);
+export async function action({ request, context }: Route.ActionArgs) {
+	const existingUser = await requireUserFromContext(context);
 
 	if (!existingUser) {
 		throw new Error("User not found");

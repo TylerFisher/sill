@@ -1,7 +1,13 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Link, Text } from "@radix-ui/themes";
-import { Form, data, redirect, useSearchParams } from "react-router";
+import {
+	Form,
+	data,
+	redirect,
+	type unstable_RouterContextProvider,
+	useSearchParams,
+} from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { safeRedirect } from "remix-utils/safe-redirect";
 import { z } from "zod";
@@ -11,7 +17,6 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import WelcomeEmail from "~/emails/Welcome";
-import { requireAnonymous } from "~/utils/auth.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { apiSignup } from "~/utils/api.server";
@@ -22,6 +27,7 @@ import {
 } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import type { Route } from "./+types/onboarding";
+import { requireAnonymousFromContext } from "~/utils/context.server";
 
 export const onboardingEmailSessionKey = "onboardingEmail";
 
@@ -40,8 +46,11 @@ const SignupFormSchema = z
  * @param request Request object
  * @returns Email address from onboarding session
  */
-async function requireOnboardingEmail(request: Request) {
-	await requireAnonymous(request);
+async function requireOnboardingEmail(
+	request: Request,
+	context: unstable_RouterContextProvider,
+) {
+	await requireAnonymousFromContext(context);
 	const verifySession = await verifySessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
@@ -52,13 +61,13 @@ async function requireOnboardingEmail(request: Request) {
 	return email;
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const email = await requireOnboardingEmail(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const email = await requireOnboardingEmail(request, context);
 	return { email };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	const email = await requireOnboardingEmail(request);
+export async function action({ request, context }: Route.ActionArgs) {
+	const email = await requireOnboardingEmail(request, context);
 	const formData = await request.formData();
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
@@ -76,7 +85,10 @@ export async function action({ request }: Route.ActionArgs) {
 				} catch (error) {
 					ctx.addIssue({
 						code: z.ZodIssueCode.custom,
-						message: error instanceof Error ? error.message : "Failed to create account",
+						message:
+							error instanceof Error
+								? error.message
+								: "Failed to create account",
 					});
 					return z.NEVER;
 				}
@@ -96,11 +108,11 @@ export async function action({ request }: Route.ActionArgs) {
 
 	// Forward the Set-Cookie headers from the API response and clean up verify session
 	const headers = new Headers();
-	const apiSetCookie = response.headers.get('set-cookie');
+	const apiSetCookie = response.headers.get("set-cookie");
 	if (apiSetCookie) {
-		headers.append('set-cookie', apiSetCookie);
+		headers.append("set-cookie", apiSetCookie);
 	}
-	
+
 	// Clear the verification session
 	const verifySession = await verifySessionStorage.getSession();
 	headers.append(
@@ -117,8 +129,9 @@ export async function action({ request }: Route.ActionArgs) {
 	});
 
 	// Use the redirect URL from the API response or form data
-	const finalRedirectTo = responseData.redirectTo || redirectTo || '/accounts/onboarding/social';
-	
+	const finalRedirectTo =
+		responseData.redirectTo || redirectTo || "/accounts/onboarding/social";
+
 	return redirect(safeRedirect(finalRedirectTo), { headers });
 }
 

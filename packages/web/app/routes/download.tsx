@@ -6,19 +6,19 @@ import WelcomeContent from "~/components/download/WelcomeContent";
 import Layout from "~/components/nav/Layout";
 import { filterLinkOccurrences } from "~/utils/links.server";
 import type { Route } from "./+types/download";
-import { apiGetUserProfile } from "~/utils/api.server";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Downloading" }];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const existingUser = await apiGetUserProfile(request);
-	const subscribed = existingUser.subscribed;
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const subscribed = existingUser.subscriptionStatus;
 
 	const params = new URL(request.url).searchParams;
 	const service = params.get("service");
 
 	const promise = filterLinkOccurrences({
-		userId: existingUser.userId,
+		userId: existingUser.id,
 		fetch: true,
 	})
 		.then(() => ({ promise: "success" }))

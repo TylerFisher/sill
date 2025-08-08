@@ -9,7 +9,6 @@ import {
 	Spinner,
 	Text,
 } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { TrendingUp } from "lucide-react";
 import { Suspense } from "react";
 import { Await, NavLink } from "react-router";
@@ -17,28 +16,19 @@ import LinkRep from "~/components/linkPosts/LinkRep";
 import NumberRanking from "~/components/linkPosts/NumberRanking";
 import PostRep from "~/components/linkPosts/PostRep";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import {
-	type SubscriptionStatus,
-	getUserId,
-	isSubscribed,
-} from "~/utils/auth.server";
+import type { SubscriptionStatus } from "~/utils/auth.server";
 import { networkTopTen } from "~/utils/links.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types/trending";
+import { getUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Trending" }];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await getUserId(request);
-	let existingUser: typeof user.$inferSelect | undefined = undefined;
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	const existingUser = await getUserFromContext(context);
 	let subscribed: SubscriptionStatus = "free";
-	if (userId) {
-		existingUser = await db.query.user.findFirst({
-			where: eq(user.id, userId),
-		});
-		subscribed = await isSubscribed(userId);
+	if (existingUser) {
+		subscribed = existingUser.subscriptionStatus;
 	}
 
 	const topTen = networkTopTen();

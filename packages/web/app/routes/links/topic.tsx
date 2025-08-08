@@ -1,29 +1,14 @@
 import { invariantResponse } from "@epic-web/invariant";
-import { eq } from "drizzle-orm";
 import LinksList from "~/components/linkPosts/LinksList";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import { findLinksByTopic } from "~/utils/links.server";
 import type { Route } from "./+types/topic";
+import { requireUserFromContext } from "~/utils/context.server";
 
-export const loader = async ({ request, params }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-		with: {
-			blueskyAccounts: true,
-			mastodonAccounts: {
-				with: {
-					mastodonInstance: true,
-				},
-			},
-			bookmarks: true,
-		},
-	});
-	const subscribed = await isSubscribed(userId);
+export const loader = async ({ params, context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const subscribed = existingUser.subscriptionStatus;
 
 	invariantResponse(existingUser, "Not found", { status: 404 });
 

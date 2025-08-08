@@ -6,19 +6,19 @@ import type { ListOption } from "~/components/forms/ListSwitch";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import { apiGetUserProfile } from "~/utils/api.server";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
 import type { Route } from "./+types/onboarding.social";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connect Accounts" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const existingUser = await apiGetUserProfile(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
-	
+
 	const subscribed = existingUser.subscriptionStatus;
 
 	const listOptions: ListOption[] = [];

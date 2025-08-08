@@ -6,8 +6,10 @@ export interface UserProfile {
 	email: string;
 	name: string;
 	subscriptionStatus: SubscriptionStatus;
+	createdAt: string;
 	blueskyAccounts: any[];
 	mastodonAccounts: any[];
+	bookmarks: any[];
 }
 
 export const userContext = unstable_createContext<UserProfile | null>(null);

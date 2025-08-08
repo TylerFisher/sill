@@ -1,9 +1,7 @@
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Callout, Link } from "@radix-ui/themes";
+import { Box } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
-import { CircleAlert } from "lucide-react";
-import { redirect } from "react-router";
-import { data } from "react-router";
+import { redirect, data } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
@@ -15,8 +13,8 @@ import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
 import { notificationGroup } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/index";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -38,8 +36,8 @@ export const NotificationSchema = z.object({
 	name: z.string().max(100),
 });
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	const { id: userId } = await requireUserFromContext(context);
 
 	if (!userId) {
 		throw new Error("Unauthorized");
@@ -138,16 +136,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	return data({ result: submission.reply() }, { status: 200 });
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-	const subscribed = await isSubscribed(userId);
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const subscribed = existingUser.subscriptionStatus;
 
-	if (!userId) {
-		return redirect("/accounts/login");
+	if (subscribed === "free") {
+		return redirect("/settings/subscription");
 	}
 
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
+	const userWithNotificationGroups = await db.query.user.findFirst({
+		where: eq(user.id, existingUser.id),
 		with: {
 			notificationGroups: true,
 			blueskyAccounts: {
@@ -163,15 +161,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		},
 	});
 
-	if (!existingUser) {
+	if (!userWithNotificationGroups) {
 		return redirect("/accounts/login");
 	}
 
-	if (subscribed === "free") {
-		return redirect("/settings/subscription");
-	}
-
-	return { user: existingUser, subscribed };
+	return { user: userWithNotificationGroups, subscribed };
 };
 
 export const meta: Route.MetaFunction = () => [

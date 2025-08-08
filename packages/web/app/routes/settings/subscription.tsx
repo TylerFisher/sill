@@ -1,5 +1,5 @@
 import { invariantResponse } from "@epic-web/invariant";
-import { Box, Button, Flex, Grid, Heading } from "@radix-ui/themes";
+import { Box, Button, Flex, Grid } from "@radix-ui/themes";
 import { and, eq, not } from "drizzle-orm";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
 import Layout from "~/components/nav/Layout";
@@ -8,23 +8,21 @@ import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetai
 import SubscriptionHeader from "~/components/subscription/SubscriptionHeader";
 import SubscriptionPricingCard from "~/components/subscription/SubscriptionPricingCard";
 import { db } from "~/drizzle/db.server";
-import { subscription, user } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { subscription } from "~/drizzle/schema.server";
 import { createCheckout } from "~/utils/polar.server";
 import { useTheme } from "../resources/theme-switch";
 import type { Route } from "./+types/subscription";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Subscription" },
 ];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "user not found", { status: 404 });
+
+	const userId = existingUser.id;
 
 	const sub = await db.query.subscription.findFirst({
 		where: and(

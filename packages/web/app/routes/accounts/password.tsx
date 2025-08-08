@@ -10,13 +10,10 @@ import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import { password } from "~/drizzle/schema.server";
-import {
-	getPasswordHash,
-	requireUserId,
-	verifyUserPassword,
-} from "~/utils/auth.server";
+import { getPasswordHash, verifyUserPassword } from "~/utils/auth.server";
 import { PasswordSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/password";
+import { requireUserFromContext } from "~/utils/context.server";
 
 const ChangePasswordForm = z
 	.object({
@@ -38,13 +35,14 @@ export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Change your password" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	await requireUserId(request);
+export async function loader({ context }: Route.LoaderArgs) {
+	await requireUserFromContext(context);
 	return {};
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	const userId = await requireUserId(request);
+export async function action({ request, context }: Route.ActionArgs) {
+	const user = await requireUserFromContext(context);
+	const userId = user.id;
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		async: true,

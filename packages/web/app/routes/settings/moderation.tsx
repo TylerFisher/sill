@@ -13,8 +13,8 @@ import PageHeading from "~/components/nav/PageHeading";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import { db } from "~/drizzle/db.server";
 import { mutePhrase } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/moderation";
+import { requireUserFromContext } from "~/utils/context.server";
 
 const MutePhraseSchema = z.object({
 	newPhrase: z.string().trim(),
@@ -24,8 +24,9 @@ export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Moderation Settings" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const userId = await requireUserId(request);
+export async function loader({ context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 
 	const phrases = await db.query.mutePhrase.findMany({
 		where: eq(mutePhrase.userId, userId),

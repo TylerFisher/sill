@@ -17,11 +17,11 @@ import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import { requireAnonymous } from "~/utils/auth.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { apiLogin } from "~/utils/api.server";
 import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/login";
+import { requireAnonymousFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Login" }];
 
@@ -32,13 +32,13 @@ const LoginFormSchema = z.object({
 	remember: z.boolean().optional(),
 });
 
-export async function loader({ request }: Route.LoaderArgs) {
-	await requireAnonymous(request);
+export async function loader({ context }: Route.LoaderArgs) {
+	await requireAnonymousFromContext(context);
 	return {};
 }
 
-export async function action({ request }: Route.ActionArgs) {
-	await requireAnonymous(request);
+export async function action({ request, context }: Route.ActionArgs) {
+	await requireAnonymousFromContext(context);
 	const formData = await request.formData();
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
@@ -52,7 +52,10 @@ export async function action({ request }: Route.ActionArgs) {
 				} catch (error) {
 					ctx.addIssue({
 						code: z.ZodIssueCode.custom,
-						message: error instanceof Error ? error.message : "Invalid email or password",
+						message:
+							error instanceof Error
+								? error.message
+								: "Invalid email or password",
 					});
 					return z.NEVER;
 				}
@@ -71,23 +74,26 @@ export async function action({ request }: Route.ActionArgs) {
 	const { response, data: responseData } = apiResponse;
 
 	// Debug: Log the API response
-	console.log('API Response status:', response.status);
-	console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
-	console.log('API Response data:', responseData);
+	console.log("API Response status:", response.status);
+	console.log(
+		"API Response headers:",
+		Object.fromEntries(response.headers.entries()),
+	);
+	console.log("API Response data:", responseData);
 
 	// Forward the Set-Cookie headers from the API response
 	const headers = new Headers();
-	const apiSetCookie = response.headers.get('set-cookie');
-	console.log('API Set-Cookie header:', apiSetCookie);
-	
+	const apiSetCookie = response.headers.get("set-cookie");
+	console.log("API Set-Cookie header:", apiSetCookie);
+
 	if (apiSetCookie) {
-		headers.append('set-cookie', apiSetCookie);
+		headers.append("set-cookie", apiSetCookie);
 	}
 
 	// Use the redirect URL from the API response or the form data
-	const finalRedirectTo = responseData.redirectTo || redirectTo || '/links';
-	console.log('Redirecting to:', finalRedirectTo);
-	
+	const finalRedirectTo = responseData.redirectTo || redirectTo || "/links";
+	console.log("Redirecting to:", finalRedirectTo);
+
 	return redirect(finalRedirectTo, { headers });
 }
 

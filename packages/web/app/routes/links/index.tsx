@@ -39,7 +39,7 @@ export const config = {
 };
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
-	const userProfile = requireUserFromContext(context);
+	const userProfile = await requireUserFromContext(context);
 	const userId = userProfile.id;
 	const subscribed = userProfile.subscriptionStatus;
 

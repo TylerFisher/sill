@@ -1,6 +1,5 @@
-import { Box, Callout, Link, Tabs } from "@radix-ui/themes";
+import { Box, Tabs } from "@radix-ui/themes";
 import { desc, eq } from "drizzle-orm";
-import { CircleAlert } from "lucide-react";
 import { useSearchParams } from "react-router";
 import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
@@ -8,30 +7,18 @@ import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { db } from "~/drizzle/db.server";
-import { digestItem, digestSettings, user } from "~/drizzle/schema.server";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import { digestItem, digestSettings } from "~/drizzle/schema.server";
 import type { Route } from "./+types/index";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
 ];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-
-	if (!userId) {
-		throw new Response(null, {
-			status: 401,
-			statusText: "Unauthorized",
-		});
-	}
-
-	const subscribed = await isSubscribed(userId);
-
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-		with: { subscriptions: true },
-	});
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
+	const subscribed = existingUser.subscriptionStatus;
 
 	if (!existingUser) {
 		throw new Response(null, {

@@ -10,17 +10,16 @@ import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import { getBlueskyLists } from "~/utils/bluesky.server";
 import { getMastodonLists } from "~/utils/mastodon.server";
 import type { Route } from "./+types/connections";
-import { apiGetUserProfile } from "~/utils/api.server";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connection Settings" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const existingUser = await apiGetUserProfile(request);
-	const subscribed = existingUser.subscribed;
-
+export async function loader({ context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
+	const subscribed = existingUser.subscriptionStatus;
 
 	const listOptions: ListOption[] = [];
 

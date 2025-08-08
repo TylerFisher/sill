@@ -2,16 +2,16 @@ import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "react-router";
 import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
-import { bookmark, digestItem, link } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { bookmark, digestItem } from "~/drizzle/schema.server";
 import {
 	type MostRecentLinkPosts,
 	filterLinkOccurrences,
 } from "~/utils/links.server";
 import type { Route } from "./+types/add";
+import { requireUserFromContext } from "~/utils/context.server";
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	const { id: userId } = await requireUserFromContext(context);
 
 	if (!userId) {
 		return redirect("/login");
@@ -31,10 +31,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 	// Bookmarking from an old digest
 	if (posts.length === 0) {
-		const linkData = await db.query.link.findFirst({
-			where: eq(link.url, url),
-		});
-
 		const digestEdition = await db.query.digestItem.findFirst({
 			where: and(
 				eq(digestItem.userId, userId),

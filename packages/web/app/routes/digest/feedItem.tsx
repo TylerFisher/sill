@@ -1,6 +1,5 @@
 import { Heading } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
-import { redirect } from "react-router";
 import Layout from "~/components/nav/Layout";
 import { db } from "~/drizzle/db.server";
 import {
@@ -11,21 +10,17 @@ import {
 } from "~/drizzle/schema.server";
 import { LinkPost } from "~/routes/links/index";
 import { useLayout } from "~/routes/resources/layout-switch";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/feedItem";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
 ];
 
-export const loader = async ({ request, params }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
-
-	if (!userId) {
-		return redirect("/accounts/login");
-	}
-
-	const subscribed = await isSubscribed(userId);
+export const loader = async ({ params, context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
+	const subscribed = existingUser.subscriptionStatus;
 
 	const feedItemId = params.feedItemId;
 

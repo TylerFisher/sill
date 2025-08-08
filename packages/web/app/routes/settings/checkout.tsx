@@ -8,8 +8,8 @@ import PageHeading from "~/components/nav/PageHeading";
 import FeatureCard from "~/components/subscription/FeatureCard";
 import { db } from "~/drizzle/db.server";
 import { subscription } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
 import type { Route } from "./+types/checkout";
+import { requireUserFromContext } from "~/utils/context.server";
 
 const pollForSubscription = async (
 	userId: string,
@@ -37,8 +37,9 @@ const pollForSubscription = async (
 	});
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const userId = await requireUserId(request);
+export const loader = async ({ context }: Route.LoaderArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 
 	const subscriptionPromise = pollForSubscription(userId);
 

@@ -10,19 +10,21 @@ import {
 	mastodonAccount,
 } from "~/drizzle/schema.server";
 import { useLayout } from "~/routes/resources/layout-switch";
-import { isSubscribed, requireUserId } from "~/utils/auth.server";
+import { isSubscribed } from "~/utils/auth.server";
 import { getMutePhrases } from "~/utils/links.server";
 import type { Route } from "./+types/item";
+import { requireUserFromContext } from "~/utils/context.server";
 
-export async function loader({ request, params }: Route.LoaderArgs) {
+export async function loader({ request, params, context }: Route.LoaderArgs) {
 	const linkId = params.linkId;
-	const userId = await requireUserId(request);
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 
 	if (!linkId || !userId) {
 		throw new Error("Missing required parameters");
 	}
 
-	const subscribed = await isSubscribed(userId);
+	const subscribed = existingUser.subscriptionStatus;
 
 	const dbLink = await db.query.link.findFirst({
 		where: eq(link.id, linkId),

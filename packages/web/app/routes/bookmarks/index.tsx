@@ -15,18 +15,18 @@ import { LinkPost } from "~/routes/links";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
-import { apiGetUserProfile } from "~/utils/api.server";
 import { invariantResponse } from "@epic-web/invariant";
+import { requireUserFromContext } from "~/utils/context.server";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
 	linkPosts?: MostRecentLinkPosts;
 };
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const existingUser = await apiGetUserProfile(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
-	const subscribed = existingUser.subscribed;
+	const subscribed = existingUser.subscriptionStatus;
 
 	if (subscribed === "free") {
 		return redirect("/settings/subscription");

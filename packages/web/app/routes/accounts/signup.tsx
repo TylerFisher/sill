@@ -9,11 +9,12 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import Verify from "~/emails/verify";
-import { apiSignupInitiate, requireAnonymous } from "~/utils/api.server";
+import { apiSignupInitiate } from "~/utils/api.server";
 import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/signup";
+import { requireAnonymousFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Sign up" }];
 
@@ -21,13 +22,13 @@ export const SignupSchema = z.object({
 	email: EmailSchema,
 });
 
-export async function loader({ request }: Route.LoaderArgs) {
-	await requireAnonymous(request);
+export async function loader({ context }: Route.LoaderArgs) {
+	await requireAnonymousFromContext(context);
 	return {};
 }
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	await requireAnonymous(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	await requireAnonymousFromContext(context);
 	const formData = await request.formData();
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
@@ -38,8 +39,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
 			} catch (error) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
-					message: error instanceof Error ? error.message : "Failed to initiate signup",
-					path: error instanceof Error && error.message.includes('email') ? ['email'] : [],
+					message:
+						error instanceof Error
+							? error.message
+							: "Failed to initiate signup",
+					path:
+						error instanceof Error && error.message.includes("email")
+							? ["email"]
+							: [],
 				});
 				return z.NEVER;
 			}

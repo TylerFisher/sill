@@ -12,15 +12,15 @@ import { Form, Link } from "react-router";
 import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
-import { apiGetUserProfile } from "~/utils/api.server";
 import type { Route } from "./+types/account";
+import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Account Settings" },
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const existingUser = await apiGetUserProfile(request);
+export async function loader({ context }: Route.LoaderArgs) {
+	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
 
 	return { user: existingUser, subscribed: existingUser.subscriptionStatus };

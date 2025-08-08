@@ -10,14 +10,15 @@ import { uuidv7 } from "uuidv7-js";
 import { db } from "~/drizzle/db.server";
 import { verification } from "~/drizzle/schema.server";
 import type { VerificationTypes } from "~/routes/accounts/verify";
-import { requireUserId } from "~/utils/auth.server";
+import { requireUserFromContext } from "~/utils/context.server";
 import { generateTOTP } from "~/utils/totp.server";
 import { twoFAVerifyVerificationType } from "~/utils/verify.server";
 
 export const twoFAVerificationType = "2fa" satisfies VerificationTypes;
 
-export async function loader({ request }: LoaderFunctionArgs) {
-	const userId = await requireUserId(request);
+export async function loader({ context }: LoaderFunctionArgs) {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 	const existingVerification = await db.query.verification.findFirst({
 		where: and(
 			eq(verification.target, userId),
@@ -28,8 +29,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return { is2FAEnabled: Boolean(existingVerification) };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-	const userId = await requireUserId(request);
+export async function action({ context }: ActionFunctionArgs) {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 	const { otp: _otp, ...config } = await generateTOTP();
 	const verificationData = {
 		...config,
