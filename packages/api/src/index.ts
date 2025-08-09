@@ -7,6 +7,7 @@ import { runMigrations } from "./database/db.server.js";
 // Import route modules
 import auth from "./routes/auth.js";
 import bluesky from "./routes/bluesky.js";
+import bookmarks from "./routes/bookmarks.js";
 import links from "./routes/links.js";
 import mastodon from "./routes/mastodon.js";
 
@@ -25,6 +26,7 @@ const app = new Hono()
 const routes = app
 	.route("/api/auth", auth)
 	.route("/api/bluesky", bluesky)
+	.route("/api/bookmarks", bookmarks)
 	.route("/api/links", links)
 	.route("/api/mastodon", mastodon);
 

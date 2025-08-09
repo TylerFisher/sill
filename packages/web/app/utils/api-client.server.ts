@@ -290,3 +290,66 @@ export async function apiFilterLinkOccurrences(
 
 	return json;
 }
+
+/**
+ * List bookmarks via API
+ */
+export async function apiListBookmarks(
+	request: Request,
+	params?: {
+		query?: string;
+		page?: number;
+		limit?: number;
+	},
+) {
+	const client = createApiClient(request);
+	const queryParams = params
+		? Object.fromEntries(
+				Object.entries(params)
+					.filter(([_, value]) => value !== undefined)
+					.map(([key, value]) => [key, String(value)]),
+			)
+		: {};
+
+	const response = await client.api.bookmarks.$get({
+		query: queryParams,
+	});
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error);
+	}
+
+	return json;
+}
+
+/**
+ * Add a bookmark via API
+ */
+export async function apiAddBookmark(
+	request: Request,
+	data: { url: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.bookmarks.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Delete a bookmark via API
+ */
+export async function apiDeleteBookmark(
+	request: Request,
+	data: { url: string },
+) {
+	const client = createApiClient(request);
+	const response = await client.api.bookmarks.$delete({
+		json: data,
+	});
+
+	return response;
+}

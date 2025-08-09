@@ -1,8 +1,6 @@
-import { and, eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import { db } from "~/drizzle/db.server";
-import { bookmark } from "~/drizzle/schema.server";
-import type { Route } from "./+types/add";
+import { apiDeleteBookmark } from "~/utils/api-client.server";
+import type { Route } from "./+types/delete";
 import { requireUserFromContext } from "~/utils/context.server";
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
@@ -19,9 +17,19 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 		return redirect("/bookmarks");
 	}
 
-	await db
-		.delete(bookmark)
-		.where(and(eq(bookmark.userId, userId), eq(bookmark.linkUrl, url)));
+	try {
+		const response = await apiDeleteBookmark(request, { url });
+		
+		if (!response.ok) {
+			const errorData = await response.json();
+			if ("error" in errorData) {
+				throw new Error(errorData.error);
+			}
+		}
 
-	return { success: true };
+		return { success: true };
+	} catch (error) {
+		console.error("Delete bookmark error:", error);
+		return redirect("/bookmarks");
+	}
 };

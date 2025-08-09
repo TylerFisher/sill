@@ -1,5 +1,4 @@
 import { Box, Card, Heading, IconButton, Link, Text } from "@radix-ui/themes";
-import { and, desc, eq, or, sql } from "drizzle-orm";
 import { Bookmark } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Form, redirect, useFetcher, useSearchParams } from "react-router";
@@ -9,17 +8,21 @@ import SearchField from "~/components/forms/SearchField";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
-import { db } from "~/drizzle/db.server";
-import { bookmark } from "~/drizzle/schema.server";
 import { LinkPost } from "~/routes/links";
 import type { MostRecentLinkPosts } from "~/utils/links.server";
+import { apiListBookmarks } from "~/utils/api-client.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
-type BookmarkWithLinkPosts = typeof bookmark.$inferSelect & {
+type BookmarkWithLinkPosts = {
+	id: string;
+	posts: MostRecentLinkPosts;
+	userId: string;
+	linkUrl: string;
+	createdAt: string | Date;
 	linkPosts?: MostRecentLinkPosts;
 };
 
@@ -36,38 +39,17 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	const mastodon = existingUser.mastodonAccounts[0] || null;
 
 	const url = new URL(request.url);
-	const query = url.searchParams.get("query");
+	const query = url.searchParams.get("query") || undefined;
 	const page = url.searchParams.get("page") || "1";
 
-	const bookmarks: BookmarkWithLinkPosts[] = await db.query.bookmark.findMany({
-		where: and(
-			eq(bookmark.userId, existingUser.id),
-			query
-				? or(
-						sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
-						sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
-						sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`,
-					)
-				: undefined,
-		),
-		orderBy: desc(bookmark.createdAt),
+	const bookmarkData = await apiListBookmarks(request, {
+		query,
+		page: Number.parseInt(page),
 		limit: 10,
-		offset: (Number.parseInt(page) - 1) * 10,
 	});
 
-	for (const bookmark of bookmarks) {
-		if (!bookmark.posts.posts) {
-			continue;
-		}
-		for (const post of bookmark.posts.posts) {
-			post.postDate = new Date(post.postDate);
-			post.quotedPostDate =
-				post.quotedPostDate && new Date(post.quotedPostDate);
-		}
-	}
-
 	return {
-		bookmarks,
+		bookmarks: bookmarkData.bookmarks,
 		subscribed,
 		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
