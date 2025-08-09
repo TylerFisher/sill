@@ -8,9 +8,7 @@ import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import Verify from "~/emails/verify";
 import { apiSignupInitiate } from "~/utils/api-client.server";
-import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/signup";
@@ -61,31 +59,13 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 		);
 	}
 
-	const { email, apiResponse } = submission.value;
+	const { apiResponse } = submission.value;
 
 	if ("error" in apiResponse) {
 		throw new Error(apiResponse.error);
 	}
 
-	const { otp, verifyUrl } = apiResponse;
-
-	// Send verification email
-	const response = await sendEmail({
-		to: email,
-		subject: "Verify your email",
-		react: <Verify otp={otp} />,
-	});
-
-	if (response.status !== 200) {
-		return data(
-			{
-				result: submission.reply({
-					formErrors: [String(response.message)],
-				}),
-			},
-			{ status: 500 },
-		);
-	}
+	const { verifyUrl } = apiResponse;
 
 	// Redirect to verification page
 	return redirect(new URL(verifyUrl).pathname + new URL(verifyUrl).search);

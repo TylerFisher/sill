@@ -16,8 +16,6 @@ import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import WelcomeEmail from "~/emails/Welcome";
-import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { apiSignupComplete } from "~/utils/api-client.server";
 import {
@@ -119,14 +117,6 @@ export async function action({ request, context }: Route.ActionArgs) {
 		"set-cookie",
 		await verifySessionStorage.destroySession(verifySession),
 	);
-
-	// Send welcome email
-	await sendEmail({
-		to: email,
-		subject: "Welcome to Sill!",
-		"o:tag": "welcome",
-		react: <WelcomeEmail name={String(formData.get("name"))} />,
-	});
 
 	// Use the redirect URL from the API response or form data
 	const finalRedirectTo =

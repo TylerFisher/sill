@@ -14,7 +14,10 @@ import {
 	isCodeValid,
 	deleteVerification,
 } from "../auth/verification.server.js";
-import { sendVerificationEmail } from "../utils/email.server.js";
+import {
+	sendVerificationEmail,
+	sendWelcomeEmail,
+} from "../utils/email.server.js";
 
 const LoginSchema = z.object({
 	email: z.string().email("Invalid email address"),
@@ -123,6 +126,12 @@ const auth = new Hono()
 					.map(([k, v]) => `${k}=${v}`)
 					.join("; ")}`,
 			);
+
+			// Send verification email
+			await sendWelcomeEmail({
+				to: email,
+				name,
+			});
 
 			return c.json({
 				success: true,

@@ -1,3 +1,4 @@
+import React from "react";
 import { Section, Text } from "@react-email/components";
 import type { PropsWithChildren } from "react";
 

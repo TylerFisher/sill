@@ -3,7 +3,7 @@ import { daysRemaining } from "~/utils/misc";
 import styles from "./TrialBanner.module.css";
 
 const TrialBanner = ({ endDate }: { endDate: Date }) => {
-	const remaining = daysRemaining(endDate);
+	const remaining = daysRemaining(new Date(endDate));
 	const days = remaining === 1 ? "day" : "days";
 
 	const sillPlusText = (

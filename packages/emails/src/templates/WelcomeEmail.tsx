@@ -1,3 +1,4 @@
+import React from "react";
 import { Heading, Img, Link, Text } from "@react-email/components";
 import EmailHeading from "../components/Heading";
 import EmailLayout from "../components/Layout";

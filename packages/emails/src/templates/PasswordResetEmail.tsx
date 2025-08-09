@@ -1,3 +1,4 @@
+import React from "react";
 import EmailHeading from "../components/Heading";
 import EmailLayout from "../components/Layout";
 import Lede from "../components/Lede";
