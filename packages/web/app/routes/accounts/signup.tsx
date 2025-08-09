@@ -62,6 +62,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 	}
 
 	const { email, apiResponse } = submission.value;
+
+	if ("error" in apiResponse) {
+		throw new Error(apiResponse.error);
+	}
+
 	const { otp, verifyUrl } = apiResponse;
 
 	// Send verification email

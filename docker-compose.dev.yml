@@ -1,26 +1,4 @@
 services:
-  traefik:
-    image: traefik:v3.1.2
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true" 
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:3000"
-      - "--entrypoints.api.address=:3001"
-    ports:
-      - "3000:3000"  # Web app
-      - "3001:3001"  # API
-      - "8080:8080"  # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - sill-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-
   db:
     image: postgres:latest
     volumes:
@@ -31,7 +9,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST_AUTH_METHOD=trust
     networks:
-      - sill-net
+      - net
     env_file:
       - .env
     healthcheck:
@@ -61,7 +39,7 @@ services:
     depends_on:
       - db
     networks:
-      - sill-net
+      - net
     logging:
       driver: json-file
       options:
@@ -70,126 +48,9 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  web:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.web
-      target: deps
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - db
-    networks:
-      - sill-net
-    volumes:
-      - ./packages/web:/app/packages/web
-      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
-      - ./package.json:/app/package.json
-      - ./turbo.json:/app/turbo.json
-      - /app/packages/web/node_modules
-      - /app/node_modules
-    working_dir: /app/packages/web
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`) || Host(`127.0.0.1`)"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
-    command: ["pnpm", "dev"]
-
-  api:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.api
-      target: deps
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=development
-      - API_PORT=3001
-    depends_on:
-      - pgbouncer
-    networks:
-      - sill-net
-    volumes:
-      - ./packages/api:/app/packages/api
-      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
-      - ./package.json:/app/package.json
-      - ./turbo.json:/app/turbo.json
-      - /app/packages/api/node_modules
-      - /app/node_modules
-    working_dir: /app/packages/api
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.localhost`) || PathPrefix(`/api`)"
-      - "traefik.http.services.api.loadbalancer.server.port=3001"
-    command: ["pnpm", "dev"]
-
-  # worker:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/Dockerfile.web
-  #     target: deps
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - NODE_ENV=development
-  #   depends_on:
-  #     - db
-  #   networks:
-  #     - sill-net
-  #   volumes:
-  #     - ./apps/worker:/app/apps/worker
-  #     - ./packages/web:/app/packages/web
-  #     - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
-  #     - ./package.json:/app/package.json
-  #     - ./turbo.json:/app/turbo.json
-  #     - /app/apps/worker/node_modules
-  #     - /app/packages/web/node_modules
-  #     - /app/node_modules
-  #   working_dir: /app/apps/worker
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "50m"
-  #       max-file: "6"
-  #   command: ["pnpm", "dev"]
-  #   restart: unless-stopped
-
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./dozzle/data:/data
-    networks:
-      - sill-net
-    environment:
-      DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: simple
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
-
 volumes:
   postgres_db:
 
 networks:
-  sill-net:
+  net:
     driver: bridge

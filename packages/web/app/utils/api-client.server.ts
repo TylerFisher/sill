@@ -2,8 +2,9 @@ import { redirect } from "react-router";
 import { hc } from "hono/client";
 import type { AppType } from "@sill/api";
 
-// API URL for server-to-server communication within Docker
-const API_BASE_URL = process.env.API_BASE_URL || "http://api:3001";
+// API URL for server-to-server communication
+// Defaults to localhost for local development, Docker service name for containerized
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 
 /**
  * Create a Hono RPC client with proper cookie forwarding
@@ -34,7 +35,7 @@ export async function apiGetUserProfileOptional(request: Request) {
 	}
 
 	if (!response.ok) {
-		throw new Error("Failed to get user profile");
+		throw new Error(`Failed to get user profile: ${response.status}`);
 	}
 
 	return await response.json();

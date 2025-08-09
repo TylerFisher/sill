@@ -14,9 +14,11 @@
 		"verbatimModuleSyntax": true,
 		"declaration": true,
 		"outDir": "dist",
-		"rootDir": "src",
 		"baseUrl": ".",
-		"paths": {}
+		"jsx": "react-jsx",
+		"paths": {
+			"@sill/emails": ["../emails/src"]
+		}
 	},
 	"include": [
 		"src/**/*"

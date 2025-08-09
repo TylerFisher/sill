@@ -92,13 +92,14 @@ export function useClientMetadata({
 					if (extractedMetadata) {
 						setClientMetadata(extractedMetadata);
 
-						// Send extracted metadata to API
 						try {
-							await fetch("/api/metadata/update", {
+							// TODO: public env var
+							await fetch("http://localhost:3001/api/links/metadata", {
 								method: "POST",
 								headers: {
 									"Content-Type": "application/json",
 								},
+								credentials: "include",
 								body: JSON.stringify({
 									url,
 									metadata: extractedMetadata,

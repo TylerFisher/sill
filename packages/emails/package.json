@@ -1,0 +1,35 @@
+{
+  "name": "@sill/emails",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared email templates for Sill",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "dev:local": "tsc --watch",
+    "lint": "biome lint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.25",
+    "@react-email/render": "^1.0.1",
+    "react": "^18.0.0",
+    "mailgun.js": "^10.2.3",
+    "form-data": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^22.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  }
+}

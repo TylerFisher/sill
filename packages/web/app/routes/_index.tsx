@@ -19,7 +19,7 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 export const loader = async ({ context }: Route.LoaderArgs) => {
-	requireAnonymousFromContext(context);
+	await requireAnonymousFromContext(context);
 	return {};
 };
 

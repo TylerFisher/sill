@@ -6,6 +6,7 @@
 	"scripts": {
 		"build": "NODE_ENV=production react-router build",
 		"dev": "NODE_ENV=development react-router dev --host",
+		"dev:local": "NODE_ENV=development react-router dev",
 		"generate-secrets": "sh ../../scripts/generate-secrets.sh",
 		"lint": "biome check",
 		"start": "react-router-serve ./build/server/index.js",

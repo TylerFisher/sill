@@ -12,22 +12,6 @@ importers:
         specifier: ^2.3.0
         version: 2.5.5
 
-  apps/worker:
-    dependencies:
-      '@sill/web':
-        specifier: workspace:*
-        version: link:../../packages/web
-    devDependencies:
-      esbuild:
-        specifier: ^0.25.8
-        version: 0.25.8
-      tsx:
-        specifier: ^4.19.2
-        version: 4.20.3
-      typescript:
-        specifier: ^5.1.6
-        version: 5.9.2
-
   packages/api:
     dependencies:
       '@atproto/api':
@@ -51,6 +35,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.4.1
         version: 0.4.3(hono@4.8.12)(zod@3.25.76)
+      '@sill/emails':
+        specifier: workspace:*
+        version: link:../emails
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -99,6 +86,34 @@ importers:
         version: 4.20.3
       typescript:
         specifier: ^5.1.6
+        version: 5.9.2
+
+  packages/emails:
+    dependencies:
+      '@react-email/components':
+        specifier: ^0.0.25
+        version: 0.0.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@react-email/render':
+        specifier: ^1.0.1
+        version: 1.1.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      form-data:
+        specifier: ^4.0.1
+        version: 4.0.4
+      mailgun.js:
+        specifier: ^10.2.3
+        version: 10.4.0
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.17.0
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.3.23
+      typescript:
+        specifier: ^5.0.0
         version: 5.9.2
 
   packages/web:
@@ -8411,7 +8426,7 @@ snapshots:
 
   '@types/jsdom@21.1.7':
     dependencies:
-      '@types/node': 24.2.0
+      '@types/node': 22.17.0
       '@types/tough-cookie': 4.0.5
       parse5: 7.3.0
 
@@ -8426,12 +8441,12 @@ snapshots:
 
   '@types/node-fetch@2.6.13':
     dependencies:
-      '@types/node': 18.19.121
+      '@types/node': 22.17.0
       form-data: 4.0.4
 
   '@types/node-int64@0.4.32':
     dependencies:
-      '@types/node': 24.2.0
+      '@types/node': 22.17.0
 
   '@types/node@18.19.121':
     dependencies:
@@ -8459,7 +8474,7 @@ snapshots:
 
   '@types/qrcode@1.5.5':
     dependencies:
-      '@types/node': 24.2.0
+      '@types/node': 22.17.0
 
   '@types/react-copy-to-clipboard@5.0.7':
     dependencies:
@@ -8476,7 +8491,7 @@ snapshots:
 
   '@types/thrift@0.10.17':
     dependencies:
-      '@types/node': 24.2.0
+      '@types/node': 22.17.0
       '@types/node-int64': 0.4.32
       '@types/q': 1.5.8
 
@@ -10711,7 +10726,7 @@ snapshots:
 
   stripe@17.7.0:
     dependencies:
-      '@types/node': 24.2.0
+      '@types/node': 22.17.0
       qs: 6.14.0
 
   strnum@2.1.1: {}

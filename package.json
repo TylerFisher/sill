@@ -5,6 +5,8 @@
 	"scripts": {
 		"build": "turbo build",
 		"dev": "turbo dev",
+		"dev:local": "turbo dev:local",
+		"dev:docker": "docker-compose -f docker-compose.dev.yml up -d && turbo dev",
 		"lint": "turbo lint",
 		"typecheck": "turbo typecheck",
 		"test": "turbo test",

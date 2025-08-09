@@ -31,8 +31,14 @@ const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
 	request,
 	context,
 }) => {
-	const userProfile = await apiGetUserProfileOptional(request);
-	context.set(userContext, userProfile);
+	try {
+		const userProfile = await apiGetUserProfileOptional(request);
+		context.set(userContext, userProfile);
+	} catch (error) {
+		console.error("Auth middleware error:", error);
+		// Set null profile on error - user will be treated as not authenticated
+		context.set(userContext, null);
+	}
 };
 
 export const unstable_middleware: Route.unstable_MiddlewareFunction[] = [
@@ -49,7 +55,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	if (userProfile) {
 		dbUser = userProfile; // Use the user data from context
 		subscribed = userProfile.subscriptionStatus;
-		agreed = await hasAgreed(userProfile.id);
+		try {
+			agreed = await hasAgreed(userProfile.id);
+		} catch (error) {
+			console.error("Database error in hasAgreed:", error);
+			agreed = true; // Default to agreed on database error
+		}
 	}
 
 	return data({
