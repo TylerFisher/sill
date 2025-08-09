@@ -6,6 +6,7 @@ import type { AppType } from "@sill/api";
 // Defaults to localhost for local development, Docker service name for containerized
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 
+
 /**
  * Create a Hono RPC client with proper cookie forwarding
  */
@@ -22,6 +23,7 @@ function createApiClient(request: Request) {
 		},
 	});
 }
+
 
 /**
  * Get user profile with social accounts via API (returns null if not authenticated, no redirect)
@@ -256,8 +258,8 @@ export async function apiMastodonRevoke(request: Request) {
 export async function apiFilterLinkOccurrences(
 	request: Request,
 	params: {
-		time?: number;
-		hideReposts?: boolean;
+		time: number;
+		hideReposts: boolean;
 		sort?: string;
 		query?: string;
 		service?: "mastodon" | "bluesky" | "all";
@@ -269,33 +271,22 @@ export async function apiFilterLinkOccurrences(
 		minShares?: number;
 	},
 ) {
-	// For now, use fetch directly since RPC client types aren't working
-	const cookieHeader = request.headers.get("cookie");
-	const hostHeader = request.headers.get("host");
-	const protoHeader = request.headers.get("x-forwarded-proto") || "http";
-
-	// Convert params to query string
-	const queryParams = new URLSearchParams();
-	for (const [key, value] of Object.entries(params)) {
-		if (value !== undefined && value !== null) {
-			queryParams.append(key, String(value));
-		}
-	}
-
-	const response = await fetch(
-		`${API_BASE_URL}/api/links/filter?${queryParams}`,
-		{
-			headers: {
-				...(cookieHeader && { Cookie: cookieHeader }),
-				...(hostHeader && { "X-Forwarded-Host": hostHeader }),
-				"X-Forwarded-Proto": protoHeader,
-			},
-		},
+	const client = createApiClient(request);
+	const queryParams = Object.fromEntries(
+		Object.entries(params)
+			.filter(([_, value]) => value !== undefined)
+			.map(([key, value]) => [key, String(value)]),
 	);
 
-	if (!response.ok) {
-		throw new Error("Failed to filter links");
+	const response = await client.api.links.filter.$get({
+		query: queryParams,
+	});
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error);
 	}
 
-	return await response.json();
+	return json;
 }

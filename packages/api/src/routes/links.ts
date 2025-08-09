@@ -9,17 +9,23 @@ import { link } from "../database/schema.server.js";
 
 // Schema for filtering links
 const FilterLinksSchema = z.object({
-  time: z.number().optional().default(86400000), // 24 hours default
-  hideReposts: z.boolean().optional().default(false),
-  sort: z.string().optional().default("popularity"),
-  query: z.string().optional(),
-  service: z.enum(["mastodon", "bluesky", "all"]).optional().default("all"),
-  page: z.number().min(1).optional().default(1),
-  fetch: z.boolean().optional().default(false),
-  selectedList: z.string().optional().default("all"),
-  limit: z.number().min(1).max(100).optional().default(10),
-  url: z.string().optional(),
-  minShares: z.number().optional(),
+	time: z.coerce.number().default(86400000), // 24 hours default
+	hideReposts: z
+		.string()
+		.transform((val) => val === "true")
+		.default("false"),
+	sort: z.string().default("popularity"),
+	query: z.string().optional(),
+	service: z.enum(["mastodon", "bluesky", "all"]).default("all"),
+	page: z.coerce.number().min(1).default(1),
+	fetch: z
+		.string()
+		.transform((val) => val === "true")
+		.default("false"),
+	selectedList: z.string().default("all"),
+	limit: z.coerce.number().min(1).max(100).default(10),
+	url: z.string().optional(),
+	minShares: z.coerce.number().optional(),
 });
 
 // Schema for updating link metadata
@@ -30,7 +36,11 @@ const UpdateMetadataSchema = z.object({
 		description: z.string().nullable().optional(),
 		imageUrl: z.string().nullable().optional(),
 		siteName: z.string().nullable().optional(),
-		publishedDate: z.string().nullable().optional().transform((val) => val ? new Date(val) : null),
+		publishedDate: z
+			.string()
+			.nullable()
+			.optional()
+			.transform((val) => (val ? new Date(val) : null)),
 		authors: z.array(z.string()).nullable().optional(),
 		topics: z.array(z.string()).nullable().optional(),
 		metadata: z.record(z.unknown()).nullable().optional(),
@@ -41,19 +51,18 @@ const links = new Hono()
 	// GET /api/links/filter - Filter link occurrences
 	.get("/filter", zValidator("query", FilterLinksSchema), async (c) => {
 		const userId = await getUserIdFromSession(c.req.raw);
-		
+
 		if (!userId) {
 			return c.json({ error: "Not authenticated" }, 401);
 		}
-
 		const params = c.req.valid("query");
-		
+
 		try {
 			const result = await filterLinkOccurrences({
 				userId,
 				...params,
 			});
-			
+
 			return c.json(result);
 		} catch (error) {
 			console.error("Filter links error:", error);
@@ -63,13 +72,13 @@ const links = new Hono()
 	// POST /api/links/metadata - Update link metadata
 	.post("/metadata", zValidator("json", UpdateMetadataSchema), async (c) => {
 		const userId = await getUserIdFromSession(c.req.raw);
-		
+
 		if (!userId) {
 			return c.json({ error: "Not authenticated" }, 401);
 		}
 
 		const { url, metadata } = c.req.valid("json");
-		
+
 		try {
 			const result = await db
 				.update(link)

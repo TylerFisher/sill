@@ -59,7 +59,7 @@ const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => (
 				</Text>
 				<Link href={postUrl} target="_blank" rel="noreferrer" underline="hover">
 					<Text color="gray" weight="regular">
-						{timeAgo.format(postDate, "twitter-now")}
+						{timeAgo.format(new Date(postDate), "twitter-now")}
 					</Text>
 				</Link>
 			</>

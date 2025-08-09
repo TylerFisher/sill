@@ -28,7 +28,7 @@ export const verification = pgTable(
 	"verification",
 	{
 		id: uuid().primaryKey().notNull(),
-		createdAt: timestamp({ precision: 3, mode: "date" })
+		createdAt: timestamp({ precision: 3, mode: "string" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		type: text().notNull(),
@@ -38,7 +38,7 @@ export const verification = pgTable(
 		digits: integer().notNull(),
 		period: integer().notNull(),
 		charSet: text().notNull(),
-		expiresAt: timestamp({ precision: 3, mode: "date" }),
+		expiresAt: timestamp({ precision: 3, mode: "string" }),
 	},
 	(table) => {
 		return {
@@ -64,8 +64,8 @@ export const session = pgTable(
 	"session",
 	{
 		id: uuid().primaryKey().notNull(),
-		expirationDate: timestamp({ precision: 3, mode: "date" }).notNull(),
-		createdAt: timestamp({ precision: 3, mode: "date" })
+		expirationDate: timestamp({ precision: 3, mode: "string" }).notNull(),
+		createdAt: timestamp({ precision: 3, mode: "string" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()
@@ -116,7 +116,7 @@ export const digestItem = pgTable("digest_item", {
 	description: text(),
 	html: text(),
 	json: json().$type<MostRecentLinkPosts[]>(),
-	pubDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+	pubDate: timestamp({ precision: 3, mode: "string" }).notNull(),
 	feedId: uuid().references(() => digestRssFeed.id, { onDelete: "cascade" }),
 	userId: uuid()
 		.notNull()
@@ -133,7 +133,7 @@ export const notificationGroup = pgTable("notification_group", {
 	userId: uuid()
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
-	createdAt: timestamp({ precision: 3, mode: "date" })
+	createdAt: timestamp({ precision: 3, mode: "string" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 });
@@ -145,7 +145,7 @@ export const notificationItem = pgTable("notification_item", {
 		.references(() => notificationGroup.id, { onDelete: "cascade" }),
 	itemData: json().$type<MostRecentLinkPosts>().notNull(),
 	itemHtml: text(),
-	createdAt: timestamp({ precision: 3, mode: "date" })
+	createdAt: timestamp({ precision: 3, mode: "string" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 });
@@ -155,7 +155,7 @@ export const mastodonInstance = pgTable("mastodon_instance", {
 	instance: text().notNull().unique(),
 	clientId: text().notNull(),
 	clientSecret: text().notNull(),
-	createdAt: timestamp({ precision: 3, mode: "date" })
+	createdAt: timestamp({ precision: 3, mode: "string" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 });
@@ -169,7 +169,7 @@ export const mastodonAccount = pgTable("mastodon_account", {
 	tokenType: text().notNull(),
 	expiresIn: integer(),
 	refreshToken: text(),
-	createdAt: timestamp({ precision: 3, mode: "date" })
+	createdAt: timestamp({ precision: 3, mode: "string" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 	mostRecentPostId: text(),
@@ -185,7 +185,7 @@ export const blueskyAccount = pgTable(
 		service: text().notNull(),
 		handle: text().notNull().unique(),
 		did: text().notNull().unique(),
-		mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
+		mostRecentPostDate: timestamp({ precision: 3, mode: "string" }),
 		userId: uuid()
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
@@ -208,7 +208,7 @@ export const list = pgTable("list", {
 	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	uri: text().notNull(),
-	mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
+	mostRecentPostDate: timestamp({ precision: 3, mode: "string" }),
 	mostRecentPostId: text(),
 	blueskyAccountId: uuid().references(() => blueskyAccount.id, {
 		onDelete: "cascade",
@@ -229,7 +229,7 @@ export const link = pgTable(
 		giftUrl: text(),
 		metadata: json().$type<SuccessResult["result"]>(),
 		scraped: boolean().default(false),
-		publishedDate: timestamp({ precision: 3, mode: "date" }),
+		publishedDate: timestamp({ precision: 3, mode: "string" }),
 		authors: json().$type<string[]>(),
 		siteName: text(),
 		topics: json().$type<string[]>(),
@@ -252,7 +252,7 @@ export const emailToken = pgTable(
 	"email_token",
 	{
 		token: text().notNull(),
-		createdAt: timestamp({ precision: 3, mode: "date" })
+		createdAt: timestamp({ precision: 3, mode: "string" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()
@@ -277,8 +277,8 @@ export const user = pgTable(
 		email: text().notNull().unique(),
 		name: text(),
 		customerId: text().unique(),
-		freeTrialEnd: timestamp({ precision: 3, mode: "date" }),
-		createdAt: timestamp({ precision: 3, mode: "date" })
+		freeTrialEnd: timestamp({ precision: 3, mode: "string" }),
+		createdAt: timestamp({ precision: 3, mode: "string" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		emailConfirmed: boolean("email_confirmed").default(false).notNull(),
@@ -309,7 +309,7 @@ export const mutePhrase = pgTable(
 		id: uuid().primaryKey().notNull(),
 		phrase: text().notNull(),
 		active: boolean().default(true).notNull(),
-		createdAt: timestamp({ precision: 3, mode: "date" })
+		createdAt: timestamp({ precision: 3, mode: "string" })
 			.default(sql`CURRENT_TIMESTAMP`)
 			.notNull(),
 		userId: uuid()
@@ -337,7 +337,7 @@ export const linkPostDenormalized = pgTable(
 			.references(() => link.url),
 		postUrl: text().notNull(),
 		postText: text().notNull(),
-		postDate: timestamp({ precision: 3, mode: "date" }).notNull(),
+		postDate: timestamp({ precision: 3, mode: "string" }).notNull(),
 		postType: postType().notNull(),
 		postImages: json().$type<{ url: string; alt: string }[]>(),
 		actorUrl: text().notNull(),
@@ -350,7 +350,7 @@ export const linkPostDenormalized = pgTable(
 		quotedActorAvatarUrl: text(),
 		quotedPostUrl: text(),
 		quotedPostText: text(),
-		quotedPostDate: timestamp({ precision: 3, mode: "date" }),
+		quotedPostDate: timestamp({ precision: 3, mode: "string" }),
 		quotedPostType: postType(),
 		quotedPostImages: json().$type<{ url: string; alt: string }[]>(),
 		repostActorUrl: text(),
@@ -458,7 +458,7 @@ export const bookmark = pgTable("bookmark", {
 	linkUrl: text()
 		.notNull()
 		.references(() => link.url),
-	createdAt: timestamp({ precision: 3, mode: "date" })
+	createdAt: timestamp({ precision: 3, mode: "string" })
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 });

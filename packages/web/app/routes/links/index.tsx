@@ -24,11 +24,9 @@ import { createOAuthClient } from "~/server/oauth/client";
 import type { SubscriptionStatus } from "~/utils/auth.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
-import {
-	type MostRecentLinkPosts,
-	filterLinkOccurrences,
-} from "~/utils/links.server";
+import type { MostRecentLinkPosts } from "~/utils/links.server";
 import type { Route } from "./+types/index";
+import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
@@ -38,7 +36,6 @@ export const config = {
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const userProfile = await requireUserFromContext(context);
-	const userId = userProfile.id;
 	const subscribed = userProfile.subscriptionStatus;
 
 	// Use the social accounts from the API response
@@ -117,8 +114,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		time = 604800000; // 7 days
 	}
 
-	const links = filterLinkOccurrences({
-		userId,
+	const links = apiFilterLinkOccurrences(request, {
 		time,
 		fetch: process.env.NODE_ENV === "development",
 		...options,

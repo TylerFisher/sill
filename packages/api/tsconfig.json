@@ -16,6 +16,7 @@
 		"outDir": "dist",
 		"baseUrl": ".",
 		"jsx": "react-jsx",
+		"composite": true,
 		"paths": {
 			"@sill/emails": ["../emails/src"]
 		}

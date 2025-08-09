@@ -53,9 +53,15 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      masto:
+        specifier: ^6.8.0
+        version: 6.10.4
       pg:
         specifier: ^8.13.1
         version: 8.16.3
+      turbo-stream:
+        specifier: ^3.1.0
+        version: 3.1.0
       uuidv7-js:
         specifier: ^1.1.4
         version: 1.1.4
@@ -292,6 +298,9 @@ importers:
       ts-debounce:
         specifier: ^4.0.0
         version: 4.0.0
+      turbo-stream:
+        specifier: ^3.1.0
+        version: 3.1.0
       url-metadata:
         specifier: ^5.2.1
         version: 5.2.2
@@ -5093,6 +5102,9 @@ packages:
     resolution: {integrity: sha512-DW+8CjCjybu0d7TFm9dovTTVg1VRnlkZ1rceO4zqsaLrit3DgHnN4to4uwyuf9s2V/BwS3IYcRy+HG9BL596Iw==}
     cpu: [arm64]
     os: [linux]
+
+  turbo-stream@3.1.0:
+    resolution: {integrity: sha512-tVI25WEXl4fckNEmrq70xU1XumxUwEx/FZD5AgEcV8ri7Wvrg2o7GEq8U7htrNx3CajciGm+kDyhRf5JB6t7/A==}
 
   turbo-windows-64@2.5.5:
     resolution: {integrity: sha512-q5p1BOy8ChtSZfULuF1BhFMYIx6bevXu4fJ+TE/hyNfyHJIfjl90Z6jWdqAlyaFLmn99X/uw+7d6T/Y/dr5JwQ==}
@@ -10803,6 +10815,8 @@ snapshots:
 
   turbo-linux-arm64@2.5.5:
     optional: true
+
+  turbo-stream@3.1.0: {}
 
   turbo-windows-64@2.5.5:
     optional: true

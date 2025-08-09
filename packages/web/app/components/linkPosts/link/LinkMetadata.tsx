@@ -17,7 +17,7 @@ const formatTag = (tag: string): string => {
 
 interface LinkMetadataProps {
 	authors: string[] | null;
-	publishDate: Date | null;
+	publishDate: string | null;
 	articleTags: string[];
 	url: URL;
 }
@@ -72,7 +72,9 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 						</Text>
 					)}
 					{publishDate && (
-						<Text as="span">{timeAgo.format(publishDate, "round-minute")}</Text>
+						<Text as="span">
+							{timeAgo.format(new Date(publishDate), "round-minute")}
+						</Text>
 					)}
 				</Text>
 			)}
