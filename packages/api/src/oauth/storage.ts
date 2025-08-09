@@ -6,7 +6,10 @@ import type {
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
 import { db } from "../database/db.server";
-import { atprotoAuthSession, atprotoAuthState } from "../database/schema.server";
+import {
+	atprotoAuthSession,
+	atprotoAuthState,
+} from "../database/schema.server";
 
 /**
  * State store for Bluesky OAuth client

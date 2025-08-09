@@ -353,3 +353,43 @@ export async function apiDeleteBookmark(
 
 	return response;
 }
+
+/**
+ * Get digest items grouped by month via API
+ */
+export async function apiGetDigestItemsByMonth(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.digest["by-month"].$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get digest items: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get digest settings via API
+ */
+export async function apiGetDigestSettings(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.digest.settings.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get digest settings: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

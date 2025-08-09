@@ -1,13 +1,13 @@
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
 import { and, desc, eq, or, sql } from "drizzle-orm";
+import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
+import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server.js";
 import { db } from "../database/db.server.js";
 import { bookmark, digestItem } from "../database/schema.server.js";
-import { filterLinkOccurrences } from "../utils/links.server.js";
 import type { MostRecentLinkPosts } from "../types.server.js";
+import { filterLinkOccurrences } from "../utils/links.server.js";
 
 // Schema for listing bookmarks
 const ListBookmarksSchema = z.object({
@@ -42,21 +42,22 @@ const bookmarks = new Hono()
 		const { query, page, limit } = c.req.valid("query");
 
 		try {
-			const bookmarkResults: BookmarkWithLinkPosts[] = await db.query.bookmark.findMany({
-				where: and(
-					eq(bookmark.userId, userId),
-					query
-						? or(
-								sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
-								sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
-								sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`,
-							)
-						: undefined,
-				),
-				orderBy: desc(bookmark.createdAt),
-				limit,
-				offset: (page - 1) * limit,
-			});
+			const bookmarkResults: BookmarkWithLinkPosts[] =
+				await db.query.bookmark.findMany({
+					where: and(
+						eq(bookmark.userId, userId),
+						query
+							? or(
+									sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
+									sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
+									sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`,
+								)
+							: undefined,
+					),
+					orderBy: desc(bookmark.createdAt),
+					limit,
+					offset: (page - 1) * limit,
+				});
 
 			// Process post dates
 			for (const bookmark of bookmarkResults) {
@@ -122,7 +123,9 @@ const bookmarks = new Hono()
 
 				let matchingPost: MostRecentLinkPosts | null | undefined = null;
 				if (digestEdition?.json) {
-					matchingPost = digestEdition.json.find((item) => item.link?.url === url);
+					matchingPost = digestEdition.json.find(
+						(item) => item.link?.url === url,
+					);
 				}
 
 				if (matchingPost) {

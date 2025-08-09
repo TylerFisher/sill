@@ -14,7 +14,7 @@ export const createOAuthClient = async (request?: Request) => {
 	if (oauthClient) {
 		return oauthClient;
 	}
-	
+
 	// Determine base URL from request or environment
 	// Note: Bluesky OAuth doesn't allow "localhost" so we use 127.0.0.1 in development
 	let baseUrl: string;
@@ -29,9 +29,11 @@ export const createOAuthClient = async (request?: Request) => {
 			baseUrl = new URL(request.url).origin.replace("localhost", "127.0.0.1");
 		}
 	} else {
-		baseUrl = isProduction ? process.env.PUBLIC_URL as string : "http://127.0.0.1:3000";
+		baseUrl = isProduction
+			? (process.env.PUBLIC_URL as string)
+			: "http://127.0.0.1:3000";
 	}
-	
+
 	const privateKeyPKCS8 = Buffer.from(
 		process.env.PRIVATE_KEY_ES256_B64 as string,
 		"base64",

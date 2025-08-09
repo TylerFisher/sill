@@ -1,18 +1,18 @@
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import { z } from "zod";
 import {
-	login,
-	signup,
 	deleteSession,
 	getUserIdFromSession,
 	getUserProfile,
+	login,
+	signup,
 } from "../auth/auth.server.js";
 import {
-	prepareVerification,
 	checkUserExists,
-	isCodeValid,
 	deleteVerification,
+	isCodeValid,
+	prepareVerification,
 } from "../auth/verification.server.js";
 import {
 	sendVerificationEmail,

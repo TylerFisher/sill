@@ -1,8 +1,8 @@
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
+import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server";
 import { db } from "../database/db.server";
 import {
@@ -67,10 +67,7 @@ async function getAccessToken(
 
 const mastodon = new Hono()
 	// GET /api/mastodon/auth/authorize - Start Mastodon OAuth flow
-	.get(
-		"/auth/authorize",
-		zValidator("query", AuthorizeSchema),
-		async (c) => {
+	.get("/auth/authorize", zValidator("query", AuthorizeSchema), async (c) => {
 		try {
 			let { instance } = c.req.valid("query");
 
@@ -170,10 +167,7 @@ const mastodon = new Hono()
 		}
 	})
 	// POST /api/mastodon/auth/callback - Handle Mastodon OAuth callback
-	.post(
-		"/auth/callback",
-		zValidator("json", CallbackSchema),
-		async (c) => {
+	.post("/auth/callback", zValidator("json", CallbackSchema), async (c) => {
 		try {
 			const userId = await getUserIdFromSession(c.req.raw);
 			if (!userId) {
@@ -227,68 +221,70 @@ const mastodon = new Hono()
 	})
 	// POST /api/mastodon/auth/revoke - Revoke Mastodon access token and delete account
 	.post("/auth/revoke", async (c) => {
-	try {
-		const userId = await getUserIdFromSession(c.req.raw);
-		if (!userId) {
-			return c.json({ error: "Not authenticated" }, 401);
-		}
+		try {
+			const userId = await getUserIdFromSession(c.req.raw);
+			if (!userId) {
+				return c.json({ error: "Not authenticated" }, 401);
+			}
 
-		// Get user's Mastodon account
-		const userWithMastodon = await db.query.user.findFirst({
-			where: eq(user.id, userId),
-			with: {
-				mastodonAccounts: {
-					with: {
-						mastodonInstance: true,
+			// Get user's Mastodon account
+			const userWithMastodon = await db.query.user.findFirst({
+				where: eq(user.id, userId),
+				with: {
+					mastodonAccounts: {
+						with: {
+							mastodonInstance: true,
+						},
 					},
 				},
-			},
-		});
+			});
 
-		if (!userWithMastodon || userWithMastodon.mastodonAccounts.length === 0) {
-			return c.json(
-				{
-					error: "No Mastodon account found",
-					code: "not_found",
-				},
-				404,
-			);
-		}
+			if (!userWithMastodon || userWithMastodon.mastodonAccounts.length === 0) {
+				return c.json(
+					{
+						error: "No Mastodon account found",
+						code: "not_found",
+					},
+					404,
+				);
+			}
 
-		const mastodonAccountData = userWithMastodon.mastodonAccounts[0];
-		const accessToken = mastodonAccountData.accessToken;
-		const instance = mastodonAccountData.mastodonInstance.instance;
+			const mastodonAccountData = userWithMastodon.mastodonAccounts[0];
+			const accessToken = mastodonAccountData.accessToken;
+			const instance = mastodonAccountData.mastodonInstance.instance;
 
-		// Revoke the token with Mastodon instance
-		try {
-			await fetch(`https://${instance}/oauth/revoke`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${accessToken}`,
-				},
-				body: JSON.stringify({
-					client_id: mastodonAccountData.mastodonInstance.clientId,
-					client_secret: mastodonAccountData.mastodonInstance.clientSecret,
-					token: accessToken,
-				}),
+			// Revoke the token with Mastodon instance
+			try {
+				await fetch(`https://${instance}/oauth/revoke`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${accessToken}`,
+					},
+					body: JSON.stringify({
+						client_id: mastodonAccountData.mastodonInstance.clientId,
+						client_secret: mastodonAccountData.mastodonInstance.clientSecret,
+						token: accessToken,
+					}),
+				});
+			} catch (error) {
+				console.error("Failed to revoke token with Mastodon:", error);
+				// Continue to delete from database even if revoke fails
+			}
+
+			// Delete the Mastodon account from database
+			await db
+				.delete(mastodonAccount)
+				.where(eq(mastodonAccount.userId, userId));
+
+			return c.json({
+				success: true,
+				message: "Mastodon account revoked successfully",
 			});
 		} catch (error) {
-			console.error("Failed to revoke token with Mastodon:", error);
-			// Continue to delete from database even if revoke fails
+			console.error("Mastodon revoke error:", error);
+			return c.json({ error: "Internal server error" }, 500);
 		}
-
-		// Delete the Mastodon account from database
-		await db.delete(mastodonAccount).where(eq(mastodonAccount.userId, userId));
-
-		return c.json({
-			success: true,
-			message: "Mastodon account revoked successfully",
-		});
-	} catch (error) {
-		console.error("Mastodon revoke error:", error);
-		return c.json({ error: "Internal server error" }, 500);
-	}
-});
+	});
 
 export default mastodon;

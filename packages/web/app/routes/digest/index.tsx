@@ -1,21 +1,19 @@
 import { Box, Tabs } from "@radix-ui/themes";
-import { desc, eq } from "drizzle-orm";
 import { useSearchParams } from "react-router";
 import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
-import { db } from "~/drizzle/db.server";
-import { digestItem, digestSettings } from "~/drizzle/schema.server";
 import type { Route } from "./+types/index";
+import { apiGetDigestItemsByMonth, apiGetDigestSettings } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
 ];
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
+export const loader = async ({ context, request }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	const userId = existingUser.id;
 	const subscribed = existingUser.subscriptionStatus;
@@ -34,38 +32,25 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
 		});
 	}
 
-	const currentSettings = await db.query.digestSettings.findFirst({
-		where: eq(digestSettings.userId, userId),
-	});
+	// Get digest settings via API
+	const settingsResult = await apiGetDigestSettings(request);
+	const currentSettings = settingsResult.settings;
 
-	// Get archive items
-	const items = await db.query.digestItem.findMany({
-		columns: {
-			id: true,
-			pubDate: true,
-		},
-		where: eq(digestItem.userId, userId),
-		orderBy: desc(digestItem.pubDate),
-	});
-
-	// Group items by month
-	const itemsByMonth = items.reduce(
-		(acc, item) => {
-			const date = new Date(item.pubDate);
-			const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
-
-			if (!acc[monthYear]) {
-				acc[monthYear] = {
-					month: date.toLocaleString("default", { month: "long" }),
-					year: date.getFullYear(),
-					items: [],
-				};
-			}
-
-			acc[monthYear].items.push(item);
-			return acc;
-		},
-		{} as Record<string, { month: string; year: number; items: typeof items }>,
+	// Get digest items by month via API
+	const digestResult = await apiGetDigestItemsByMonth(request);
+	
+	// Convert pubDate strings back to Date objects
+	const itemsByMonth = Object.fromEntries(
+		Object.entries(digestResult.itemsByMonth).map(([key, monthData]) => [
+			key,
+			{
+				...monthData,
+				items: monthData.items.map((item: { id: string; pubDate: string }) => ({
+					...item,
+					pubDate: new Date(item.pubDate),
+				})),
+			},
+		]),
 	);
 
 	return {

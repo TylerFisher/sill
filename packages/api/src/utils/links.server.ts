@@ -19,7 +19,6 @@ import {
 	type PgUpdateSetSource,
 	getTableConfig,
 } from "drizzle-orm/pg-core";
-import type { NotificationQuery } from "src/types.server";
 import { db } from "src/database/db.server";
 import {
 	getUniqueActorsCountSql,
@@ -30,6 +29,7 @@ import {
 	networkTopTenView,
 	postType,
 } from "src/database/schema.server";
+import type { NotificationQuery } from "src/types.server";
 import { getLinksFromBluesky } from "./bluesky.server";
 import { getLinksFromMastodon } from "./mastodon.server";
 import {

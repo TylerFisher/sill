@@ -5,10 +5,10 @@ import {
 	OAuthResolverError,
 	OAuthResponseError,
 } from "@atproto/oauth-client-node";
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
+import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
+import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server";
 import { db } from "../database/db.server";
 import { blueskyAccount } from "../database/schema.server";
@@ -149,7 +149,8 @@ const bluesky = new Hono()
 			const oauthClient = await createOAuthClient(c.req.raw);
 
 			try {
-				const { session: oauthSession } = await oauthClient.callback(searchParams);
+				const { session: oauthSession } =
+					await oauthClient.callback(searchParams);
 				const agent = new Agent(oauthSession);
 				const profile = await agent.getProfile({
 					actor: oauthSession.did,

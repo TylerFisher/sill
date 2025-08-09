@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { giftLinkFormats } from "./normalizers/giftLinkFormat";
 
 const __filename = fileURLToPath(import.meta.url);

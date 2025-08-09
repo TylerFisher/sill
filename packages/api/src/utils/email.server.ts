@@ -1,6 +1,6 @@
 // Import email functions from shared package source files for hot-reloading
-export { 
+export {
 	sendVerificationEmail,
 	sendPasswordResetEmail,
-	sendWelcomeEmail 
+	sendWelcomeEmail,
 } from "@sill/emails";

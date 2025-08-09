@@ -1,5 +1,5 @@
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { runMigrations } from "./database/db.server.js";
@@ -8,6 +8,7 @@ import { runMigrations } from "./database/db.server.js";
 import auth from "./routes/auth.js";
 import bluesky from "./routes/bluesky.js";
 import bookmarks from "./routes/bookmarks.js";
+import digest from "./routes/digest.js";
 import links from "./routes/links.js";
 import mastodon from "./routes/mastodon.js";
 
@@ -27,6 +28,7 @@ const routes = app
 	.route("/api/auth", auth)
 	.route("/api/bluesky", bluesky)
 	.route("/api/bookmarks", bookmarks)
+	.route("/api/digest", digest)
 	.route("/api/links", links)
 	.route("/api/mastodon", mastodon);
 
