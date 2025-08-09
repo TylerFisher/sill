@@ -393,3 +393,35 @@ export async function apiGetDigestSettings(request: Request) {
 
 	return json;
 }
+
+/**
+ * Create or update digest settings via API
+ */
+export async function apiCreateUpdateDigestSettings(
+	request: Request,
+	data: {
+		time: string;
+		hideReposts: boolean;
+		splitServices: boolean;
+		topAmount: number;
+		layout: string;
+		digestType: string;
+	},
+) {
+	const client = createApiClient(request);
+	const response = await client.api.digest.settings.$post({
+		json: data,
+	});
+
+	return response;
+}
+
+/**
+ * Delete digest settings via API
+ */
+export async function apiDeleteDigestSettings(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.digest.settings.$delete();
+
+	return response;
+}

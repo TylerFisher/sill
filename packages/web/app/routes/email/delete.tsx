@@ -1,13 +1,26 @@
-import { and, eq } from "drizzle-orm";
 import { redirect } from "react-router";
-import { db } from "~/drizzle/db.server";
-import { digestSettings } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { apiDeleteDigestSettings } from "~/utils/api-client.server";
+import { requireUserFromContext } from "~/utils/context.server";
 import type { Route } from "./+types/delete";
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
-	await db.delete(digestSettings).where(and(eq(digestSettings.userId, userId)));
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	await requireUserFromContext(context);
 
-	return redirect("/email");
+	try {
+		const response = await apiDeleteDigestSettings(request);
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			if ("error" in errorData) {
+				throw new Error(errorData.error as string);
+			}
+			throw new Error("Failed to delete settings");
+		}
+
+		return redirect("/email");
+	} catch (error) {
+		// In case of error, still redirect but could handle this better
+		console.error("Failed to delete digest settings:", error);
+		return redirect("/email");
+	}
 };

@@ -1,17 +1,8 @@
 import { parseWithZod } from "@conform-to/zod";
-import { eq } from "drizzle-orm";
 import { data } from "react-router";
-import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { db } from "~/drizzle/db.server";
-import {
-	digestLayout,
-	digestRssFeed,
-	digestSettings,
-	digestType,
-	user,
-} from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { apiCreateUpdateDigestSettings } from "~/utils/api-client.server";
+import { requireUserFromContext } from "~/utils/context.server";
 import type { Route } from "./+types/add";
 
 export const EmailSettingsSchema = z.object({
@@ -23,14 +14,8 @@ export const EmailSettingsSchema = z.object({
 	digestType: z.string(),
 });
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
-	const requestUrl = new URL(request.url);
-	const baseUrl = `${requestUrl.origin}/digest`;
-
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	await requireUserFromContext(context);
 
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
@@ -49,66 +34,39 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		);
 	}
 
-	const submittedDigestType = digestType.enumValues.find(
-		(value) => value === submission.value.digestType,
-	);
-
-	const submittedLayout = digestLayout.enumValues.find(
-		(value) => value === submission.value.layout,
-	);
-
-	const settings = await db
-		.insert(digestSettings)
-		.values({
-			id: uuidv7(),
-			userId,
-			scheduledTime: submission.value.time,
+	try {
+		const response = await apiCreateUpdateDigestSettings(request, {
+			time: submission.value.time,
 			hideReposts: submission.value.hideReposts,
 			splitServices: submission.value.splitServices,
 			topAmount: submission.value.topAmount,
-			layout: submittedLayout,
-			digestType: submittedDigestType,
-		})
-		.onConflictDoUpdate({
-			target: [digestSettings.userId],
-			set: {
-				scheduledTime: submission.value.time,
-				hideReposts: submission.value.hideReposts,
-				splitServices: submission.value.splitServices,
-				topAmount: submission.value.topAmount,
-				layout: submittedLayout,
-				digestType: submittedDigestType,
-			},
-		})
-		.returning({
-			id: digestSettings.id,
+			layout: submission.value.layout,
+			digestType: submission.value.digestType,
 		});
 
-	if (
-		submittedDigestType ===
-		digestType.enumValues.find((value) => value === "rss")
-	) {
-		await db
-			.insert(digestRssFeed)
-			.values({
-				id: uuidv7(),
-				userId,
-				digestSettings: settings[0].id,
-				feedUrl: `${baseUrl}/${userId}.rss`,
-				title: `Sill Digest for ${existingUser?.name}`,
-				description: "Daily links from your personal social network",
-			})
-			.onConflictDoUpdate({
-				target: [digestRssFeed.digestSettings],
-				set: {
-					feedUrl: `${baseUrl}/${userId}.rss`,
-					title: `Sill Digest for ${existingUser?.name}`,
-					description: "Daily links from your personal social network",
-				},
-			});
-	}
+		if (!response.ok) {
+			const errorData = await response.json();
+			if ("error" in errorData) {
+				throw new Error(errorData.error as string);
+			}
+			throw new Error("Failed to save settings");
+		}
 
-	return {
-		result: submission.reply(),
-	};
+		return {
+			result: submission.reply(),
+		};
+	} catch (error) {
+		return data(
+			{
+				result: submission.reply({
+					formErrors: [
+						error instanceof Error ? error.message : "Failed to save settings",
+					],
+				}),
+			},
+			{
+				status: 500,
+			},
+		);
+	}
 };
