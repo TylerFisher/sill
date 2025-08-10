@@ -18,7 +18,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 	return (
 		<>
 			{data?.subscribed === "trial" && data.dbUser?.freeTrialEnd && (
-				<TrialBanner endDate={data.dbUser?.freeTrialEnd} />
+				<TrialBanner endDate={new Date(data.dbUser?.freeTrialEnd)} />
 			)}
 			<Container
 				size="4"

@@ -12,6 +12,7 @@ import digest from "./routes/digest.js";
 import links from "./routes/links.js";
 import mastodon from "./routes/mastodon.js";
 import notifications from "./routes/notifications.js";
+import terms from "./routes/terms.js";
 
 const app = new Hono()
 	// Middleware
@@ -32,7 +33,8 @@ const routes = app
 	.route("/api/digest", digest)
 	.route("/api/links", links)
 	.route("/api/mastodon", mastodon)
-	.route("/api/notifications", notifications);
+	.route("/api/notifications", notifications)
+	.route("/api/terms", terms);
 
 const port = Number.parseInt(process.env.API_PORT || "3001", 10);
 

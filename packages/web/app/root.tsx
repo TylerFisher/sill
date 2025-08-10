@@ -59,7 +59,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 			agreed = await hasAgreed(userProfile.id);
 		} catch (error) {
 			console.error("Database error in hasAgreed:", error);
-			agreed = true; // Default to agreed on database error
 		}
 	}
 

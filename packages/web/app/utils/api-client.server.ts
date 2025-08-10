@@ -675,3 +675,73 @@ export async function apiCreateNotificationGroup(
 
 	return json;
 }
+
+/**
+ * Get latest terms update via API
+ */
+export async function apiGetLatestTermsUpdate(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.terms.latest.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get latest terms update: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get terms agreement for user and terms update via API
+ */
+export async function apiGetTermsAgreement(
+	request: Request,
+	termsUpdateId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.terms.agreement.$get({
+		query: { termsUpdateId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to get terms agreement: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Insert terms agreement via API
+ */
+export async function apiInsertTermsAgreement(
+	request: Request,
+	termsUpdateId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.terms.agreement.$post({
+		json: { termsUpdateId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to insert terms agreement: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

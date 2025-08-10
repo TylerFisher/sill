@@ -1,34 +1,32 @@
-import { and, desc, eq } from "drizzle-orm";
-import { uuidv7 } from "uuidv7-js";
-import { db } from "~/drizzle/db.server";
-import { termsAgreement, termsUpdate, user } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { requireUserFromContext } from "~/utils/context.server";
+import { apiGetLatestTermsUpdate, apiGetTermsAgreement, apiInsertTermsAgreement } from "~/utils/api-client.server";
 import type { Route } from "./+types/agree-to-terms";
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	await requireUserFromContext(context);
 
-	const latestTerms = await db.query.termsUpdate.findFirst({
-		orderBy: desc(termsUpdate.termsDate),
-	});
+	try {
+		// Get latest terms update
+		const latestTerms = await apiGetLatestTermsUpdate(request);
 
-	if (!latestTerms) {
-		return new Response("No terms found", { status: 400 });
+		// Check if user has already agreed to these terms
+		const { agreement } = await apiGetTermsAgreement(request, latestTerms.id);
+
+		if (agreement) {
+			return new Response("Already agreed", { status: 200 });
+		}
+
+		// Insert new terms agreement
+		await apiInsertTermsAgreement(request, latestTerms.id);
+
+		return new Response("Agreed", { status: 200 });
+	} catch (error) {
+		console.error("Terms agreement error:", error);
+		
+		if (error instanceof Error && error.message.includes("No terms found")) {
+			return new Response("No terms found", { status: 400 });
+		}
+		
+		return new Response("Internal server error", { status: 500 });
 	}
-
-	const agreed = await db.query.termsAgreement.findFirst({
-		where: and(eq(termsUpdate.id, latestTerms.id), eq(user.id, userId)),
-	});
-
-	if (agreed) {
-		return new Response("Already agreed", { status: 200 });
-	}
-
-	await db.insert(termsAgreement).values({
-		id: uuidv7(),
-		userId,
-		termsUpdateId: latestTerms.id,
-	});
-
-	return new Response("Agreed", { status: 200 });
 };
