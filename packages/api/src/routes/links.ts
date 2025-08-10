@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server.js";
 import { db } from "../database/db.server.js";
 import { link } from "../database/schema.server.js";
-import { filterLinkOccurrences } from "../utils/links.server.js";
+import { filterLinkOccurrences, findLinksByAuthor } from "../utils/links.server.js";
 
 // Schema for filtering links
 const FilterLinksSchema = z.object({
@@ -45,6 +45,13 @@ const UpdateMetadataSchema = z.object({
 		topics: z.array(z.string()).nullable().optional(),
 		metadata: z.record(z.unknown()).nullable().optional(),
 	}),
+});
+
+// Schema for finding links by author
+const FindLinksByAuthorSchema = z.object({
+	author: z.string().min(1),
+	page: z.coerce.number().min(1).default(1),
+	pageSize: z.coerce.number().min(1).max(100).default(10),
 });
 
 const links = new Hono()
@@ -93,6 +100,18 @@ const links = new Hono()
 			return c.json({ success: true, link: result[0] });
 		} catch (error) {
 			console.error("Update metadata error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// GET /api/links/author - Find links by author
+	.get("/author", zValidator("query", FindLinksByAuthorSchema), async (c) => {
+		const { author, page, pageSize } = c.req.valid("query");
+
+		try {
+			const result = await findLinksByAuthor(author, page, pageSize);
+			return c.json(result);
+		} catch (error) {
+			console.error("Find links by author error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
 	})

@@ -425,3 +425,38 @@ export async function apiDeleteDigestSettings(request: Request) {
 
 	return response;
 }
+
+/**
+ * Find links by author via API
+ */
+export async function apiFindLinksByAuthor(
+	request: Request,
+	params: {
+		author: string;
+		page?: number;
+		pageSize?: number;
+	},
+) {
+	const client = createApiClient(request);
+	const queryParams = {
+		author: params.author,
+		...(params.page && { page: String(params.page) }),
+		...(params.pageSize && { pageSize: String(params.pageSize) }),
+	};
+
+	const response = await client.api.links.author.$get({
+		query: queryParams,
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to find links by author: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
