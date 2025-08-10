@@ -745,3 +745,73 @@ export async function apiInsertTermsAgreement(
 
 	return json;
 }
+
+/**
+ * Delete current user account via API
+ */
+export async function apiDeleteUser(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.user.$delete();
+
+	if (!response.ok) {
+		throw new Error(`Failed to delete user: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Verify current password via API
+ */
+export async function apiVerifyPassword(
+	request: Request,
+	password: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth["verify-password"].$post({
+		json: { password },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to verify password: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Change user password via API (without verification)
+ */
+export async function apiChangePassword(
+	request: Request,
+	newPassword: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.auth.password.$put({
+		json: { newPassword },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to change password: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

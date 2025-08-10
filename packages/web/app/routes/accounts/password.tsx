@@ -1,19 +1,16 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Button, Flex, Heading } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { Form, Link, data, redirect } from "react-router";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { password } from "~/drizzle/schema.server";
-import { getPasswordHash, verifyUserPassword } from "~/utils/auth.server";
 import { PasswordSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/password";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiChangePassword, apiVerifyPassword } from "~/utils/api-client.server";
 
 const ChangePasswordForm = z
 	.object({
@@ -41,26 +38,36 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
-	const user = await requireUserFromContext(context);
-	const userId = user.id;
+	await requireUserFromContext(context);
+	
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
 		async: true,
 		schema: ChangePasswordForm.superRefine(
 			async ({ currentPassword, newPassword }, ctx) => {
 				if (currentPassword && newPassword) {
-					const user = await verifyUserPassword({ userId }, currentPassword);
-					if (!user) {
+					try {
+						const { valid } = await apiVerifyPassword(request, currentPassword);
+						if (!valid) {
+							ctx.addIssue({
+								path: ["currentPassword"],
+								code: z.ZodIssueCode.custom,
+								message: "Incorrect password.",
+							});
+						}
+					} catch (error) {
+						console.error("Password verification error:", error);
 						ctx.addIssue({
 							path: ["currentPassword"],
 							code: z.ZodIssueCode.custom,
-							message: "Incorrect password.",
+							message: "Failed to verify password. Please try again.",
 						});
 					}
 				}
 			},
 		),
 	});
+
 	if (submission.status !== "success") {
 		return data(
 			{
@@ -74,14 +81,25 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	const { newPassword } = submission.value;
 
-	await db
-		.update(password)
-		.set({
-			hash: await getPasswordHash(newPassword),
-		})
-		.where(eq(password.userId, userId));
+	try {
+		// Change to the new password
+		await apiChangePassword(request, newPassword);
 
-	return redirect("/settings", { status: 302 });
+		return redirect("/settings", { status: 302 });
+	} catch (error) {
+		console.error("Password change error:", error);
+
+		// Handle other errors
+		return data(
+			{
+				result: submission.reply({
+					formErrors: ["Failed to change password. Please try again."],
+					hideFields: ["currentPassword", "newPassword", "confirmNewPassword"],
+				}),
+			},
+			{ status: 500 },
+		);
+	}
 }
 
 export default function ChangePasswordRoute({

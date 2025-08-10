@@ -1,12 +1,15 @@
 import { zValidator } from "@hono/zod-validator";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
 	deleteSession,
+	getPasswordHash,
 	getUserIdFromSession,
 	getUserProfile,
 	login,
 	signup,
+	verifyUserPassword,
 } from "../auth/auth.server.js";
 import {
 	checkUserExists,
@@ -14,6 +17,8 @@ import {
 	isCodeValid,
 	prepareVerification,
 } from "../auth/verification.server.js";
+import { db } from "../database/db.server.js";
+import { password, user } from "../database/schema.server.js";
 import {
 	sendVerificationEmail,
 	sendWelcomeEmail,
@@ -41,6 +46,14 @@ const VerifySchema = z.object({
 	type: z.enum(["onboarding", "reset-password", "change-email", "2fa"]),
 	target: z.string(),
 	redirectTo: z.string().optional(),
+});
+
+const VerifyPasswordSchema = z.object({
+	password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const ChangePasswordSchema = z.object({
+	newPassword: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const auth = new Hono()
@@ -312,6 +325,86 @@ const auth = new Hono()
 			return c.json(userProfile);
 		} catch (error) {
 			console.error("Get profile error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// DELETE /api/auth/user - Delete current user account
+	.delete("/user", async (c) => {
+		const userId = await getUserIdFromSession(c.req.raw);
+
+		if (!userId) {
+			return c.json({ error: "Not authenticated" }, 401);
+		}
+
+		try {
+			// Delete the user (cascade deletes will handle related data)
+			await db.delete(user).where(eq(user.id, userId));
+
+			// Get session ID from cookie to delete it
+			const sessionId = getSessionIdFromCookie(c.req.header("cookie"));
+			if (sessionId) {
+				await deleteSession(sessionId);
+			}
+
+			// Clear session cookie
+			c.header(
+				"Set-Cookie",
+				"sessionId=; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+			);
+
+			return c.json({ success: true });
+		} catch (error) {
+			console.error("Delete user error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// POST /api/auth/verify-password - Verify current password
+	.post("/verify-password", zValidator("json", VerifyPasswordSchema), async (c) => {
+		const userId = await getUserIdFromSession(c.req.raw);
+
+		if (!userId) {
+			return c.json({ error: "Not authenticated" }, 401);
+		}
+
+		const { password } = c.req.valid("json");
+
+		try {
+			const user = await verifyUserPassword({ userId }, password);
+
+			if (!user) {
+				return c.json({ valid: false });
+			}
+
+			return c.json({ valid: true });
+		} catch (error) {
+			console.error("Verify password error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// PUT /api/auth/password - Change user password
+	.put("/password", zValidator("json", ChangePasswordSchema), async (c) => {
+		const userId = await getUserIdFromSession(c.req.raw);
+
+		if (!userId) {
+			return c.json({ error: "Not authenticated" }, 401);
+		}
+
+		const { newPassword } = c.req.valid("json");
+
+		try {
+			// Hash new password and update
+			const hashedNewPassword = await getPasswordHash(newPassword);
+
+			await db
+				.update(password)
+				.set({
+					hash: hashedNewPassword,
+				})
+				.where(eq(password.userId, userId));
+
+			return c.json({ success: true });
+		} catch (error) {
+			console.error("Change password error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
 	});
