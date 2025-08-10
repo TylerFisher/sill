@@ -10,6 +10,7 @@ import bluesky from "./routes/bluesky.js";
 import bookmarks from "./routes/bookmarks.js";
 import digest from "./routes/digest.js";
 import links from "./routes/links.js";
+import lists from "./routes/lists.js";
 import mastodon from "./routes/mastodon.js";
 import mute from "./routes/mute.js";
 import notifications from "./routes/notifications.js";
@@ -33,6 +34,7 @@ const routes = app
 	.route("/api/bookmarks", bookmarks)
 	.route("/api/digest", digest)
 	.route("/api/links", links)
+	.route("/api/lists", lists)
 	.route("/api/mastodon", mastodon)
 	.route("/api/mute", mute)
 	.route("/api/notifications", notifications)

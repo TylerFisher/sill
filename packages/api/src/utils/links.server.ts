@@ -61,13 +61,23 @@ export type FederatedQueryRow = typeof link.$inferSelect & {
 };
 
 /**
- * Fetches links from Mastodon and Bluesky
+ * Fetches links from Mastodon and/or Bluesky
  * @param userId ID for logged in user
- * @returns All fetched links from Mastodon and Bluesky
+ * @param type Optional service type filter
+ * @returns All fetched links from specified service(s)
  */
 export const fetchLinks = async (
 	userId: string,
+	type?: "mastodon" | "bluesky",
 ): Promise<ProcessedResult[]> => {
+	if (type === "mastodon") {
+		return await getLinksFromMastodon(userId);
+	}
+	if (type === "bluesky") {
+		return await getLinksFromBluesky(userId);
+	}
+	
+	// Fetch from both services if no type specified
 	const results = await Promise.all([
 		getLinksFromMastodon(userId),
 		getLinksFromBluesky(userId),

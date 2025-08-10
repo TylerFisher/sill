@@ -935,3 +935,86 @@ export async function apiGetDigestItem(
 
 	return json;
 }
+
+/**
+ * Create a new list subscription via API
+ */
+export async function apiCreateList(
+	request: Request,
+	data: {
+		uri: string;
+		name: string;
+		accountId: string;
+		type: "bluesky" | "mastodon";
+	},
+) {
+	const client = createApiClient(request);
+	const response = await client.api.lists.$post({
+		json: data,
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to create list: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Delete a list subscription via API
+ */
+export async function apiDeleteList(
+	request: Request,
+	data: {
+		uri: string;
+		accountId: string;
+	},
+) {
+	const client = createApiClient(request);
+	const response = await client.api.lists.$delete({
+		json: data,
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to delete list: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Process social media links via API
+ */
+export async function apiProcessLinks(
+	request: Request,
+	type?: "bluesky" | "mastodon",
+) {
+	const client = createApiClient(request);
+	const response = await client.api.links.process.$post({
+		json: { type },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to process links: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

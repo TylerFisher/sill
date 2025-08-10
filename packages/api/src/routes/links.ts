@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server.js";
 import { db } from "../database/db.server.js";
 import { link } from "../database/schema.server.js";
-import { filterLinkOccurrences, findLinksByAuthor, findLinksByDomain, findLinksByTopic } from "../utils/links.server.js";
+import { filterLinkOccurrences, findLinksByAuthor, findLinksByDomain, findLinksByTopic, fetchLinks, insertNewLinks } from "../utils/links.server.js";
 
 // Schema for filtering links
 const FilterLinksSchema = z.object({
@@ -66,6 +66,11 @@ const FindLinksByTopicSchema = z.object({
 	topic: z.string().min(1),
 	page: z.coerce.number().min(1).default(1),
 	pageSize: z.coerce.number().min(1).max(100).default(10),
+});
+
+// Schema for processing links
+const ProcessLinksSchema = z.object({
+	type: z.enum(["bluesky", "mastodon"]).optional(),
 });
 
 const links = new Hono()
@@ -150,6 +155,30 @@ const links = new Hono()
 			return c.json(result);
 		} catch (error) {
 			console.error("Find links by topic error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// POST /api/links/process - Process social media links
+	.post("/process", zValidator("json", ProcessLinksSchema), async (c) => {
+		const userId = await getUserIdFromSession(c.req.raw);
+
+		if (!userId) {
+			return c.json({ error: "Not authenticated" }, 401);
+		}
+
+		const { type } = c.req.valid("json");
+
+		try {
+			const results = await fetchLinks(userId, type);
+			await insertNewLinks(results);
+
+			return c.json({ 
+				success: true, 
+				processed: results.length,
+				type: type || "all"
+			});
+		} catch (error) {
+			console.error("Process links error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
 	})

@@ -1,16 +1,11 @@
-import { and, eq, or } from "drizzle-orm";
 import { data } from "react-router";
-import { uuidv7 } from "uuidv7-js";
-import { db } from "~/drizzle/db.server";
-import { list } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
-import { getLinksFromBluesky } from "~/utils/bluesky.server";
-import { insertNewLinks } from "~/utils/links.server";
-import { getLinksFromMastodon } from "~/utils/mastodon.server";
+import { requireUserFromContext } from "~/utils/context.server";
+import { apiCreateList, apiDeleteList, apiProcessLinks } from "~/utils/api-client.server";
 import type { Route } from "./+types/list.subscribe";
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	const existingUser = await requireUserFromContext(context);
+	const userId = existingUser.id;
 
 	try {
 		const formData = await request.formData();
@@ -24,39 +19,52 @@ export const action = async ({ request }: Route.ActionArgs) => {
 			return data({ error: "Missing URI" }, { status: 400 });
 		}
 
-		if (checked) {
-			await db.insert(list).values({
-				uri: uri,
-				id: uuidv7(),
-				name: name,
-				blueskyAccountId: type === "bluesky" ? accountId : null,
-				mastodonAccountId: type === "mastodon" ? accountId : null,
-			});
+		if (!["bluesky", "mastodon"].includes(type)) {
+			return data({ error: "Invalid type" }, { status: 400 });
+		}
 
-			if (type === "bluesky") {
-				const links = await getLinksFromBluesky(userId);
-				await insertNewLinks(links);
-			} else if (type === "mastodon") {
-				const links = await getLinksFromMastodon(userId);
-				await insertNewLinks(links);
+		if (checked) {
+			// Create list subscription via API
+			try {
+				await apiCreateList(request, {
+					uri,
+					name,
+					accountId,
+					type: type as "bluesky" | "mastodon",
+				});
+			} catch (error) {
+				if (
+					error instanceof Error &&
+					error.message.includes("already subscribed")
+				) {
+					return data({ error: "List already subscribed" }, { status: 409 });
+				}
+				throw error;
 			}
+
+			// Process links from the specific service
+			await apiProcessLinks(request, type as "bluesky" | "mastodon");
 		} else {
-			await db
-				.delete(list)
-				.where(
-					and(
-						eq(list.uri, uri),
-						or(
-							eq(list.blueskyAccountId, accountId),
-							eq(list.mastodonAccountId, accountId),
-						),
-					),
-				);
+			// Delete list subscription via API
+			try {
+				await apiDeleteList(request, {
+					uri,
+					accountId,
+				});
+			} catch (error) {
+				if (error instanceof Error && error.message.includes("not found")) {
+					return data(
+						{ error: "List subscription not found" },
+						{ status: 404 },
+					);
+				}
+				throw error;
+			}
 		}
 
 		return data({ success: true });
 	} catch (error) {
-		console.error("Action error:", error);
+		console.error("List subscribe action error:", error);
 		return data({ error: "Something went wrong" }, { status: 500 });
 	}
 };
