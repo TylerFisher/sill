@@ -530,3 +530,148 @@ export async function apiFindLinksByTopic(
 
 	return json;
 }
+
+/**
+ * Delete notification group via API
+ */
+export async function apiDeleteNotificationGroup(
+	request: Request,
+	groupId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.groups[":groupId"].$delete({
+		param: { groupId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to delete notification group: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Test notifications via API
+ */
+export async function apiTestNotifications(
+	request: Request,
+	queries: Array<{
+		category: {
+			id: string;
+			name: string;
+			type: string;
+			values?: Array<{
+				id: string;
+				name: string;
+			}>;
+		};
+		operator: string;
+		value: string | number;
+	}>,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.test.$post({
+		json: { queries },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to test notifications: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get notification group feed data via API
+ */
+export async function apiGetNotificationGroupFeed(
+	request: Request,
+	notificationGroupId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.groups[":notificationGroupId"].feed.$get({
+		param: { notificationGroupId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to get notification group feed: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get all notification groups for logged in user via API
+ */
+export async function apiGetNotificationGroups(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.groups.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get notification groups: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Create or update notification group via API
+ */
+export async function apiCreateNotificationGroup(
+	request: Request,
+	data: {
+		id?: string;
+		format: "email" | "rss";
+		queries: Array<{
+			category: {
+				id: string;
+				name: string;
+				type: string;
+			};
+			operator: string;
+			value: string | number;
+		}>;
+		name: string;
+	},
+) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.groups.$post({
+		json: data,
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to create notification group: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

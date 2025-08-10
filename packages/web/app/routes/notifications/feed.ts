@@ -1,8 +1,8 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { Feed } from "feed";
-import { db } from "~/drizzle/db.server";
-import { notificationGroup, notificationItem } from "~/drizzle/schema.server";
 import type { Route } from "./+types/feed";
+import { apiGetNotificationGroupFeed } from "~/utils/api-client.server";
+
+type NotificationGroupWithItems = Awaited<ReturnType<typeof apiGetNotificationGroupFeed>>;
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
@@ -14,32 +14,22 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 		throw new Error("Notification Group ID is required");
 	}
 
-	const group = await db.query.notificationGroup.findFirst({
-		where: and(
-			eq(notificationGroup.id, notificationGroupId),
-			isNotNull(notificationGroup.feedUrl),
-		),
-		with: {
-			items: {
-				limit: 40,
-				orderBy: desc(notificationItem.createdAt),
-			},
-		},
-	});
-
-	if (!group || !group.feedUrl || group.notificationType !== "rss") {
+	let group: NotificationGroupWithItems;
+	try {
+		group = await apiGetNotificationGroupFeed(request, notificationGroupId);
+	} catch (error) {
 		throw new Error("Feed not found");
 	}
 
 	const feed = new Feed({
 		title: `${group.name} Notifications from Sill`,
 		description: "",
-		id: group.feedUrl,
-		link: group.feedUrl,
+		id: group.feedUrl || "",
+		link: group.feedUrl || "",
 		image: "https://sill.social/favicon-96x96.png",
 		favicon: "https://sill.social/favicon-96x96.png",
 		copyright: "",
-		updated: group.items[0]?.createdAt || new Date(),
+		updated: group.items[0]?.createdAt ? new Date(group.items[0].createdAt) : new Date(),
 		generator: "Sill",
 		feedLinks: {
 			rss: `${baseUrl}/notifications/${notificationGroupId}.rss`,
@@ -57,7 +47,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 			link: item.itemData.link.url,
 			description: item.itemData.link.description || undefined,
 			content: item.itemHtml || undefined,
-			date: item.createdAt,
+			date: new Date(item.createdAt),
 		});
 	}
 

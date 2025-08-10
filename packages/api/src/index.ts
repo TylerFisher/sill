@@ -11,6 +11,7 @@ import bookmarks from "./routes/bookmarks.js";
 import digest from "./routes/digest.js";
 import links from "./routes/links.js";
 import mastodon from "./routes/mastodon.js";
+import notifications from "./routes/notifications.js";
 
 const app = new Hono()
 	// Middleware
@@ -30,7 +31,8 @@ const routes = app
 	.route("/api/bookmarks", bookmarks)
 	.route("/api/digest", digest)
 	.route("/api/links", links)
-	.route("/api/mastodon", mastodon);
+	.route("/api/mastodon", mastodon)
+	.route("/api/notifications", notifications);
 
 const port = Number.parseInt(process.env.API_PORT || "3001", 10);
 

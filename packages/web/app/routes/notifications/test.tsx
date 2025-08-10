@@ -1,11 +1,10 @@
 import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
-import { evaluateNotifications } from "~/utils/links.server";
 import type { Route } from "./+types/test";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiTestNotifications } from "~/utils/api-client.server";
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-	const existingUser = await requireUserFromContext(context);
-	const userId = existingUser.id;
+	await requireUserFromContext(context);
 
 	const formData = await request.formData();
 	const queries: NotificationQuery[] = JSON.parse(
@@ -16,6 +15,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 		return 0;
 	}
 
-	const links = await evaluateNotifications(userId, queries);
-	return links.length;
+	try {
+		const result = await apiTestNotifications(request, queries);
+		return result.count;
+	} catch (error) {
+		console.error("Test notifications error:", error);
+		return 0;
+	}
 };

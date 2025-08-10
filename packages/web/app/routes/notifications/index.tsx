@@ -2,7 +2,6 @@ import { parseWithZod } from "@conform-to/zod";
 import { Box } from "@radix-ui/themes";
 import { eq } from "drizzle-orm";
 import { redirect, data } from "react-router";
-import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import NotificationForm from "~/components/forms/NotificationForm";
@@ -12,9 +11,11 @@ import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { db } from "~/drizzle/db.server";
 import { user } from "~/drizzle/schema.server";
-import { notificationGroup } from "~/drizzle/schema.server";
 import type { Route } from "./+types/index";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiGetNotificationGroups, apiCreateNotificationGroup } from "~/utils/api-client.server";
+
+type NotificationGroups = Awaited<ReturnType<typeof apiGetNotificationGroups>>;
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
@@ -63,9 +64,16 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 				return;
 			}
 
-			const existingGroups = await db.query.notificationGroup.findMany({
-				where: eq(notificationGroup.userId, userId),
-			});
+			let existingGroups: NotificationGroups;
+			try {
+				existingGroups = await apiGetNotificationGroups(request);
+			} catch (error) {
+				console.error(
+					"Failed to fetch notification groups for validation:",
+					error,
+				);
+				existingGroups = [];
+			}
 
 			for (const group of existingGroups) {
 				if (group.name === data.name && group.id !== data.id) {
@@ -102,41 +110,25 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
 	const { id, format, queries, name } = submission.value;
 
-	let feedUrl: string | undefined = undefined;
-	const groupId = id || uuidv7();
-
-	if (format === "rss") {
-		feedUrl = `https://sill.social/notifications/rss/${groupId}.rss`;
-	}
-
-	await db
-		.insert(notificationGroup)
-		.values({
-			id: groupId,
+	try {
+		await apiCreateNotificationGroup(request, {
+			id,
+			format,
+			queries,
 			name,
-			notificationType: format,
-			query: queries,
-			feedUrl,
-			userId,
-		})
-		.onConflictDoUpdate({
-			target: [notificationGroup.id],
-			set: {
-				name,
-				notificationType: format,
-				query: queries,
-				feedUrl,
-				userId,
-			},
-		})
-		.returning({
-			id: notificationGroup.id,
 		});
 
-	return data({ result: submission.reply() }, { status: 200 });
+		return data({ result: submission.reply() }, { status: 200 });
+	} catch (error) {
+		console.error("Failed to create notification group:", error);
+		return data(
+			{ result: submission.reply({ fieldErrors: { root: ["Failed to create notification group"] } }) },
+			{ status: 500 },
+		);
+	}
 };
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
+export const loader = async ({ context, request }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	const subscribed = existingUser.subscriptionStatus;
 
@@ -144,26 +136,20 @@ export const loader = async ({ context }: Route.LoaderArgs) => {
 		return redirect("/settings/subscription");
 	}
 
-	const userWithNotificationGroups = await db.query.user.findFirst({
-		where: eq(user.id, existingUser.id),
-		with: {
-			notificationGroups: true,
-			blueskyAccounts: {
-				with: {
-					lists: true,
-				},
-			},
-			mastodonAccounts: {
-				with: {
-					lists: true,
-				},
-			},
-		},
-	});
-
-	if (!userWithNotificationGroups) {
-		return redirect("/accounts/login");
+	// Get notification groups via API
+	let notificationGroups: NotificationGroups;
+	try {
+		notificationGroups = await apiGetNotificationGroups(request);
+	} catch (error) {
+		console.error("Failed to fetch notification groups:", error);
+		notificationGroups = [];
 	}
+
+	// Combine existing user data with notification groups to match expected loader signature
+	const userWithNotificationGroups = {
+		...existingUser,
+		notificationGroups,
+	};
 
 	return { user: userWithNotificationGroups, subscribed };
 };
