@@ -14,6 +14,7 @@ import lists from "./routes/lists.js";
 import mastodon from "./routes/mastodon.js";
 import mute from "./routes/mute.js";
 import notifications from "./routes/notifications.js";
+import subscription from "./routes/subscription.js";
 import terms from "./routes/terms.js";
 
 const app = new Hono()
@@ -38,6 +39,7 @@ const routes = app
 	.route("/api/mastodon", mastodon)
 	.route("/api/mute", mute)
 	.route("/api/notifications", notifications)
+	.route("/api/subscription", subscription)
 	.route("/api/terms", terms);
 
 const port = Number.parseInt(process.env.API_PORT || "3001", 10);

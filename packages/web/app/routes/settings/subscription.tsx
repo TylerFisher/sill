@@ -1,40 +1,41 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box, Button, Flex, Grid } from "@radix-ui/themes";
-import { and, eq, not } from "drizzle-orm";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
 import Layout from "~/components/nav/Layout";
 import FeatureCard from "~/components/subscription/FeatureCard";
 import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
 import SubscriptionHeader from "~/components/subscription/SubscriptionHeader";
 import SubscriptionPricingCard from "~/components/subscription/SubscriptionPricingCard";
-import { db } from "~/drizzle/db.server";
-import { subscription } from "~/drizzle/schema.server";
 import { createCheckout } from "~/utils/polar.server";
 import { useTheme } from "../resources/theme-switch";
 import type { Route } from "./+types/subscription";
 import { requireUserFromContext } from "~/utils/context.server";
+import {
+	apiGetActiveSubscription,
+	apiGetPolarProducts,
+} from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Subscription" },
 ];
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "user not found", { status: 404 });
 
 	const userId = existingUser.id;
 
-	const sub = await db.query.subscription.findFirst({
-		where: and(
-			eq(subscription.userId, userId),
-			not(eq(subscription.status, "canceled")),
-		),
-		with: {
-			polarProduct: true,
-		},
-	});
+	const { subscription: rawSub } = await apiGetActiveSubscription(request);
+	
+	// Convert date strings to Date objects if subscription exists
+	const sub = rawSub ? {
+		...rawSub,
+		periodStart: rawSub.periodStart ? new Date(rawSub.periodStart) : null,
+		periodEnd: rawSub.periodEnd ? new Date(rawSub.periodEnd) : null,
+	} : null;
+	
+	const { products } = await apiGetPolarProducts(request);
 
-	const products = await db.query.polarProduct.findMany();
 	const checkoutLinks = await Promise.all(
 		products.map(
 			async (product) =>

@@ -1018,3 +1018,43 @@ export async function apiProcessLinks(
 
 	return json;
 }
+
+/**
+ * Get active subscription for user via API
+ */
+export async function apiGetActiveSubscription(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.subscription.active.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get active subscription: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get all polar products via API
+ */
+export async function apiGetPolarProducts(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.subscription.products.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get polar products: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

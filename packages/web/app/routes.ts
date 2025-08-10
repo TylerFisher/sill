@@ -25,7 +25,6 @@ export default [
 		route("archive-all-partitions", "routes/api/archive-all-partitions.ts"),
 		route("list/subscribe", "routes/api/list.subscribe.ts"),
 		route("maintain-partitions", "routes/api/maintain-partitions.ts"),
-		route("migrate-data", "routes/api/migrate-data.ts"),
 		route("mute/add", "routes/api/mute.add.ts"),
 		route("mute/delete", "routes/api/mute.delete.ts"),
 		route("polar/webhook", "routes/api/polar.webhook.ts"),

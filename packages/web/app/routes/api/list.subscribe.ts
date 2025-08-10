@@ -4,8 +4,7 @@ import { apiCreateList, apiDeleteList, apiProcessLinks } from "~/utils/api-clien
 import type { Route } from "./+types/list.subscribe";
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-	const existingUser = await requireUserFromContext(context);
-	const userId = existingUser.id;
+	await requireUserFromContext(context);
 
 	try {
 		const formData = await request.formData();
