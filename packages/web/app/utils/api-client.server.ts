@@ -815,3 +815,73 @@ export async function apiChangePassword(
 
 	return json;
 }
+
+/**
+ * Get all mute phrases for user via API
+ */
+export async function apiGetMutePhrases(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.mute.phrases.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get mute phrases: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Add new mute phrase via API
+ */
+export async function apiAddMutePhrase(
+	request: Request,
+	phrase: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.mute.phrases.$post({
+		json: { phrase },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to add mute phrase: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Delete mute phrase via API
+ */
+export async function apiDeleteMutePhrase(
+	request: Request,
+	phrase: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.mute.phrases.$delete({
+		json: { phrase },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to delete mute phrase: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}

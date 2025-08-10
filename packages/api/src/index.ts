@@ -11,6 +11,7 @@ import bookmarks from "./routes/bookmarks.js";
 import digest from "./routes/digest.js";
 import links from "./routes/links.js";
 import mastodon from "./routes/mastodon.js";
+import mute from "./routes/mute.js";
 import notifications from "./routes/notifications.js";
 import terms from "./routes/terms.js";
 
@@ -33,6 +34,7 @@ const routes = app
 	.route("/api/digest", digest)
 	.route("/api/links", links)
 	.route("/api/mastodon", mastodon)
+	.route("/api/mute", mute)
 	.route("/api/notifications", notifications)
 	.route("/api/terms", terms);
 

@@ -1,22 +1,20 @@
 import { parseWithZod } from "@conform-to/zod";
-import { and, eq } from "drizzle-orm";
 import { data } from "react-router";
 import { z } from "zod";
-import { db } from "~/drizzle/db.server";
-import { mutePhrase } from "~/drizzle/schema.server";
-import { requireUserId } from "~/utils/auth.server";
+import { requireUserFromContext } from "~/utils/context.server";
+import { apiDeleteMutePhrase } from "~/utils/api-client.server";
 import type { Route } from "./+types/mute.delete";
 
 const MuteDeleteSchema = z.object({
 	phrase: z.string(),
 });
 
-export const action = async ({ request }: Route.ActionArgs) => {
-	const userId = await requireUserId(request);
+export const action = async ({ request, context }: Route.ActionArgs) => {
+	await requireUserFromContext(context);
+	
 	const formData = await request.formData();
-	const submission = await parseWithZod(formData, {
+	const submission = parseWithZod(formData, {
 		schema: MuteDeleteSchema,
-		async: true,
 	});
 
 	if (submission.status !== "success") {
@@ -30,14 +28,34 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		);
 	}
 
-	await db
-		.delete(mutePhrase)
-		.where(
-			and(
-				eq(mutePhrase.userId, userId),
-				eq(mutePhrase.phrase, submission.value.phrase),
-			),
-		);
+	try {
+		await apiDeleteMutePhrase(request, submission.value.phrase);
+		return {};
+	} catch (error) {
+		console.error("Delete mute phrase error:", error);
 
-	return {};
+		// Handle phrase not found error
+		if (error instanceof Error && error.message.includes("Mute phrase not found")) {
+			return data(
+				{
+					result: submission.reply({
+						fieldErrors: {
+							phrase: ["Mute phrase not found"],
+						},
+					}),
+				},
+				{ status: 404 },
+			);
+		}
+
+		// Handle other errors
+		return data(
+			{
+				result: submission.reply({
+					formErrors: ["Failed to delete mute phrase. Please try again."],
+				}),
+			},
+			{ status: 500 },
+		);
+	}
 };
