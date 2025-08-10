@@ -4,7 +4,7 @@ import ErrorState from "~/components/download/ErrorState";
 import LoadingState from "~/components/download/LoadingState";
 import WelcomeContent from "~/components/download/WelcomeContent";
 import Layout from "~/components/nav/Layout";
-import { filterLinkOccurrences } from "~/utils/links.server";
+import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
 import type { Route } from "./+types/download";
 import { requireUserFromContext } from "~/utils/context.server";
 
@@ -17,8 +17,9 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const params = new URL(request.url).searchParams;
 	const service = params.get("service");
 
-	const promise = filterLinkOccurrences({
-		userId: existingUser.id,
+	const promise = apiFilterLinkOccurrences(request, {
+		time: 86400000, // 24 hours
+		hideReposts: false,
 		fetch: true,
 	})
 		.then(() => ({ promise: "success" }))
