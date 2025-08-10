@@ -1020,6 +1020,26 @@ export async function apiProcessLinks(
 }
 
 /**
+ * Get current (non-canceled) subscription for user via API
+ */
+export async function apiGetCurrentSubscription(request: Request) {
+	const client = createApiClient(request);
+	const response = await client.api.subscription.current.$get();
+
+	if (!response.ok) {
+		throw new Error(`Failed to get current subscription: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
  * Get active subscription for user via API
  */
 export async function apiGetActiveSubscription(request: Request) {
@@ -1058,3 +1078,4 @@ export async function apiGetPolarProducts(request: Request) {
 
 	return json;
 }
+

@@ -28,7 +28,6 @@ export default [
 		route("mute/add", "routes/api/mute.add.ts"),
 		route("mute/delete", "routes/api/mute.delete.ts"),
 		route("polar/webhook", "routes/api/polar.webhook.ts"),
-		route("polar/seed", "routes/api/polar.seed.ts"),
 		route("send-newsletter", "routes/api/send-newsletter.tsx"),
 		route("update-accounts", "routes/api/update-accounts.ts"),
 	]),

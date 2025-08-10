@@ -11,7 +11,7 @@ import { useTheme } from "../resources/theme-switch";
 import type { Route } from "./+types/subscription";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
-	apiGetActiveSubscription,
+	apiGetCurrentSubscription,
 	apiGetPolarProducts,
 } from "~/utils/api-client.server";
 
@@ -25,7 +25,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 	const userId = existingUser.id;
 
-	const { subscription: rawSub } = await apiGetActiveSubscription(request);
+	const { subscription: rawSub } = await apiGetCurrentSubscription(request);
 	
 	// Convert date strings to Date objects if subscription exists
 	const sub = rawSub ? {

@@ -1,27 +1,24 @@
 import { Box, DataList, Grid, Heading } from "@radix-ui/themes";
-import { and, eq } from "drizzle-orm";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
 import { Suspense } from "react";
 import { Await } from "react-router";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import FeatureCard from "~/components/subscription/FeatureCard";
-import { db } from "~/drizzle/db.server";
-import { subscription } from "~/drizzle/schema.server";
 import type { Route } from "./+types/checkout";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiGetActiveSubscription } from "~/utils/api-client.server";
 
 const pollForSubscription = async (
-	userId: string,
+	request: Request,
 ): Promise<{ hasSubscription: boolean }> => {
 	const checkSubscription = async (): Promise<boolean> => {
-		const userSubscription = await db.query.subscription.findFirst({
-			where: and(
-				eq(subscription.userId, userId),
-				eq(subscription.status, "active"),
-			),
-		});
-		return !!userSubscription;
+		try {
+			const { subscription } = await apiGetActiveSubscription(request);
+			return !!subscription;
+		} catch (error) {
+			return false;
+		}
 	};
 
 	return new Promise((resolve) => {
@@ -37,12 +34,9 @@ const pollForSubscription = async (
 	});
 };
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
-	const existingUser = await requireUserFromContext(context);
-	const userId = existingUser.id;
-
-	const subscriptionPromise = pollForSubscription(userId);
-
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
+	await requireUserFromContext(context);
+	const subscriptionPromise = pollForSubscription(request);
 	return {
 		subscriptionResult: subscriptionPromise,
 	};
