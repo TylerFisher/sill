@@ -1,25 +1,21 @@
 import { Heading } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import {
-	blueskyAccount,
-	bookmark,
-	digestItem,
-	mastodonAccount,
-} from "~/drizzle/schema.server";
 import { LinkPost } from "~/routes/links/index";
 import { useLayout } from "~/routes/resources/layout-switch";
 import type { Route } from "./+types/feedItem";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiGetDigestItem } from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Daily Digest" },
 ];
 
-export const loader = async ({ params, context }: Route.LoaderArgs) => {
+export const loader = async ({
+	params,
+	context,
+	request,
+}: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
-	const userId = existingUser.id;
 	const subscribed = existingUser.subscriptionStatus;
 
 	const feedItemId = params.feedItemId;
@@ -28,52 +24,41 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 		throw new Error("Feed item ID is required");
 	}
 
-	const feedItem = await db.query.digestItem.findFirst({
-		where: eq(digestItem.id, feedItemId),
-	});
+	try {
+		const { feedItem } = await apiGetDigestItem(request, feedItemId);
 
-	if (!feedItem || !feedItem.json) {
-		throw new Error("Feed item not found");
-	}
-
-	if (feedItem.userId !== userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const bsky = await db.query.blueskyAccount.findFirst({
-		where: eq(blueskyAccount.userId, userId),
-	});
-
-	const mastodon = await db.query.mastodonAccount.findFirst({
-		where: eq(mastodonAccount.userId, userId),
-		with: {
-			mastodonInstance: true,
-		},
-	});
-
-	const bookmarks = await db.query.bookmark.findMany({
-		where: eq(bookmark.userId, userId),
-	});
-
-	for (const item of feedItem.json) {
-		if (!item.posts) {
-			continue;
+		if (!feedItem || !feedItem.json) {
+			throw new Error("Feed item not found");
 		}
-		for (const post of item.posts) {
-			post.postDate = new Date(post.postDate);
-			post.quotedPostDate =
-				post.quotedPostDate && new Date(post.quotedPostDate);
-		}
-	}
 
-	return {
-		links: feedItem.json,
-		pubDate: feedItem.pubDate,
-		bsky: bsky?.handle,
-		instance: mastodon?.mastodonInstance.instance,
-		bookmarks,
-		subscribed,
-	};
+		const bsky = existingUser.blueskyAccounts[0];
+		const mastodon = existingUser.mastodonAccounts[0];
+		const bookmarks = existingUser.bookmarks;
+
+		return {
+			links: feedItem.json,
+			pubDate: feedItem.pubDate,
+			bsky: bsky?.handle,
+			instance: mastodon?.mastodonInstance.instance,
+			bookmarks,
+			subscribed,
+		};
+	} catch (error) {
+		console.error("Digest feed item error:", error);
+
+		if (
+			error instanceof Error &&
+			error.message.includes("Feed item not found")
+		) {
+			throw new Error("Feed item not found");
+		}
+
+		if (error instanceof Error && error.message.includes("Not authenticated")) {
+			throw new Error("Unauthorized");
+		}
+
+		throw new Error("Failed to load digest feed item");
+	}
 };
 
 const DigestFeedItem = ({ loaderData }: Route.ComponentProps) => {

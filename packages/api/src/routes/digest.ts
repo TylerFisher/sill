@@ -24,6 +24,16 @@ const EmailSettingsSchema = z.object({
 	digestType: z.string(),
 });
 
+// Schema for feed by user ID
+const FeedByUserIdSchema = z.object({
+	userId: z.string().uuid(),
+});
+
+// Schema for individual digest item
+const DigestItemSchema = z.object({
+	itemId: z.string().uuid(),
+});
+
 const digest = new Hono()
 	// GET /api/digest/by-month - Get digest items grouped by month for a user
 	.get("/by-month", async (c) => {
@@ -210,6 +220,110 @@ const digest = new Hono()
 			});
 		} catch (error) {
 			console.error("Delete digest settings error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+
+	// GET /api/digest/feed/:userId - Get digest feed data for RSS generation
+	.get("/feed/:userId", zValidator("param", FeedByUserIdSchema), async (c) => {
+		const { userId } = c.req.valid("param");
+
+		try {
+			// Get user info
+			const existingUser = await db.query.user.findFirst({
+				where: eq(user.id, userId),
+				columns: {
+					id: true,
+					name: true,
+				},
+			});
+
+			if (!existingUser) {
+				return c.json({ error: "User not found" }, 404);
+			}
+
+			// Get digest feed with items
+			const feedWithItems = await db.query.digestRssFeed.findFirst({
+				where: eq(digestRssFeed.userId, userId),
+				columns: {
+					title: true,
+					description: true,
+					feedUrl: true,
+				},
+				with: {
+					items: {
+						limit: 10,
+						orderBy: desc(digestItem.pubDate),
+						columns: {
+							id: true,
+							title: true,
+							description: true,
+							html: true,
+							pubDate: true,
+						},
+					},
+				},
+			});
+
+			if (!feedWithItems) {
+				return c.json({ error: "Feed not found" }, 404);
+			}
+
+			return c.json({
+				success: true,
+				user: existingUser,
+				feed: {
+					title: feedWithItems.title,
+					description: feedWithItems.description,
+					feedUrl: feedWithItems.feedUrl,
+					items: feedWithItems.items,
+				},
+			});
+		} catch (error) {
+			console.error("Get digest feed error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+
+	// GET /api/digest/item/:itemId - Get individual digest item
+	.get("/item/:itemId", zValidator("param", DigestItemSchema), async (c) => {
+		const userId = await getUserIdFromSession(c.req.raw);
+
+		if (!userId) {
+			return c.json({ error: "Not authenticated" }, 401);
+		}
+
+		const { itemId } = c.req.valid("param");
+
+		try {
+			// Get digest item
+			const feedItem = await db.query.digestItem.findFirst({
+				where: and(
+					eq(digestItem.id, itemId),
+					eq(digestItem.userId, userId)
+				),
+				columns: {
+					id: true,
+					json: true,
+					pubDate: true,
+					userId: true,
+				},
+			});
+
+			if (!feedItem || !feedItem.json) {
+				return c.json({ error: "Feed item not found" }, 404);
+			}
+
+			return c.json({
+				success: true,
+				feedItem: {
+					id: feedItem.id,
+					json: feedItem.json,
+					pubDate: feedItem.pubDate,
+				},
+			});
+		} catch (error) {
+			console.error("Get digest item error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
 	});

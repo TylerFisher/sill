@@ -885,3 +885,53 @@ export async function apiDeleteMutePhrase(
 
 	return json;
 }
+
+/**
+ * Get digest feed data for RSS generation via API
+ */
+export async function apiGetDigestFeed(
+	request: Request,
+	userId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.digest.feed[":userId"].$get({
+		param: { userId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to get digest feed: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
+ * Get individual digest item via API
+ */
+export async function apiGetDigestItem(
+	request: Request,
+	itemId: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.digest.item[":itemId"].$get({
+		param: { itemId },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to get digest item: ${response.status}`);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
