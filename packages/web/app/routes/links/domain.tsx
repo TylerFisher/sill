@@ -2,11 +2,11 @@ import { invariantResponse } from "@epic-web/invariant";
 import LinksList from "~/components/linkPosts/LinksList";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import { findLinksByDomain } from "~/utils/links.server";
 import type { Route } from "./+types/domain";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiFindLinksByDomain } from "~/utils/api-client.server";
 
-export const loader = async ({ params, context }: Route.LoaderArgs) => {
+export const loader = async ({ params, context, request }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	const subscribed = existingUser.subscriptionStatus;
 
@@ -14,7 +14,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
 	const domain = params.domain;
 
-	const links = await findLinksByDomain(domain);
+	const links = await apiFindLinksByDomain(request, { domain });
 
 	return {
 		links,

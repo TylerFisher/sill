@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server.js";
 import { db } from "../database/db.server.js";
 import { link } from "../database/schema.server.js";
-import { filterLinkOccurrences, findLinksByAuthor } from "../utils/links.server.js";
+import { filterLinkOccurrences, findLinksByAuthor, findLinksByDomain, findLinksByTopic } from "../utils/links.server.js";
 
 // Schema for filtering links
 const FilterLinksSchema = z.object({
@@ -50,6 +50,20 @@ const UpdateMetadataSchema = z.object({
 // Schema for finding links by author
 const FindLinksByAuthorSchema = z.object({
 	author: z.string().min(1),
+	page: z.coerce.number().min(1).default(1),
+	pageSize: z.coerce.number().min(1).max(100).default(10),
+});
+
+// Schema for finding links by domain
+const FindLinksByDomainSchema = z.object({
+	domain: z.string().min(1),
+	page: z.coerce.number().min(1).default(1),
+	pageSize: z.coerce.number().min(1).max(100).default(10),
+});
+
+// Schema for finding links by topic
+const FindLinksByTopicSchema = z.object({
+	topic: z.string().min(1),
 	page: z.coerce.number().min(1).default(1),
 	pageSize: z.coerce.number().min(1).max(100).default(10),
 });
@@ -112,6 +126,30 @@ const links = new Hono()
 			return c.json(result);
 		} catch (error) {
 			console.error("Find links by author error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// GET /api/links/domain - Find links by domain
+	.get("/domain", zValidator("query", FindLinksByDomainSchema), async (c) => {
+		const { domain, page, pageSize } = c.req.valid("query");
+
+		try {
+			const result = await findLinksByDomain(domain, page, pageSize);
+			return c.json(result);
+		} catch (error) {
+			console.error("Find links by domain error:", error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+	})
+	// GET /api/links/topic - Find links by topic
+	.get("/topic", zValidator("query", FindLinksByTopicSchema), async (c) => {
+		const { topic, page, pageSize } = c.req.valid("query");
+
+		try {
+			const result = await findLinksByTopic(topic, page, pageSize);
+			return c.json(result);
+		} catch (error) {
+			console.error("Find links by topic error:", error);
 			return c.json({ error: "Internal server error" }, 500);
 		}
 	})

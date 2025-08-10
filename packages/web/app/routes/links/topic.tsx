@@ -2,11 +2,11 @@ import { invariantResponse } from "@epic-web/invariant";
 import LinksList from "~/components/linkPosts/LinksList";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import { findLinksByTopic } from "~/utils/links.server";
 import type { Route } from "./+types/topic";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiFindLinksByTopic } from "~/utils/api-client.server";
 
-export const loader = async ({ params, context }: Route.LoaderArgs) => {
+export const loader = async ({ params, context, request }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	const subscribed = existingUser.subscriptionStatus;
 
@@ -14,7 +14,7 @@ export const loader = async ({ params, context }: Route.LoaderArgs) => {
 
 	const topic = params.topic;
 
-	const links = await findLinksByTopic(topic);
+	const links = await apiFindLinksByTopic(request, { topic });
 
 	return {
 		links,
