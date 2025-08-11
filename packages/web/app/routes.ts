@@ -52,7 +52,6 @@ export default [
   route("jwks.json", "routes/jwks.ts"),
   ...prefix("links", [
     index("routes/links/index.tsx"),
-    route(":linkId", "routes/links/item.tsx"),
     route("trending", "routes/links/trending.tsx"),
     // route("domain/:domain", "routes/links/domain.tsx"),
     // route("author/:author", "routes/links/author.tsx"),

@@ -31,7 +31,7 @@ export default function WelcomeContent({
 					title="Connect"
 					description="Add more Bluesky and Mastodon accounts, plus subscribe to additional lists and feeds."
 					buttonText="Connect accounts"
-					buttonTo="/settings?tab=connect"
+					buttonTo="/settings/connections"
 				/>
 				{subscribed !== "free" && (
 					<ActionCard

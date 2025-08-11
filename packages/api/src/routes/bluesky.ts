@@ -12,6 +12,7 @@ import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server";
 import { db, blueskyAccount } from "@sill/schema";
 import { createOAuthClient } from "../oauth/client";
+import { eq } from "drizzle-orm";
 
 const AuthorizeSchema = z.object({
   handle: z.string().optional(),
@@ -246,6 +247,23 @@ const bluesky = new Hono()
       }
     } catch (error) {
       console.error("Bluesky callback error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  .delete("/auth/revoke", async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    try {
+      await db.delete(blueskyAccount).where(eq(blueskyAccount.userId, userId));
+
+      return c.json({
+        success: true,
+      });
+    } catch (error) {
+      console.error("Bluesky revoke error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

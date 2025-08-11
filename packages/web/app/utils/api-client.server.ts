@@ -207,6 +207,20 @@ export async function apiBlueskyAuthCallback(
 }
 
 /**
+ * Revoke Bluesky access
+ */
+export async function apiBlueskyAuthRevoke(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.bluesky.auth.revoke.$delete();
+
+  if (!response.ok) {
+    throw new Error("Failed to revoke Bluesky account");
+  }
+
+  return await response.json();
+}
+
+/**
  * Start Mastodon OAuth authorization via API
  */
 export async function apiMastodonAuthStart(
