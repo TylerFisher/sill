@@ -9,7 +9,7 @@ import {
 	linkPlug,
 	preview,
 	title,
-} from "..//utils/digestText";
+} from "../utils/digestText";
 
 interface TopLinksProps {
 	links: MostRecentLinkPosts[];

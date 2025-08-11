@@ -12,7 +12,7 @@ import {
   VerificationTypeSchema,
 } from "@sill/schema";
 import { z } from "zod";
-import { generateTOTP, verifyTOTP } from "./totp.server.js";
+import { generateTOTP, verifyTOTP } from "./totp.server";
 
 export const VerifySchema = z.object({
   [codeQueryParam]: z.string().min(6).max(6),
@@ -130,82 +130,4 @@ export async function deleteVerification(
   await db
     .delete(verification)
     .where(and(eq(verification.type, type), eq(verification.target, target)));
-}
-
-export async function validateRequest(
-  request: Request,
-  body: URLSearchParams | FormData
-) {
-  const submission = await parseWithZod(body, {
-    schema: VerifySchema.superRefine(async (data, ctx) => {
-      const codeIsValid = await isCodeValid({
-        code: data[codeQueryParam],
-        type: data[typeQueryParam],
-        target: data[targetQueryParam],
-      });
-      if (!codeIsValid) {
-        ctx.addIssue({
-          path: ["code"],
-          code: z.ZodIssueCode.custom,
-          message: "Invalid code.",
-        });
-        return;
-      }
-    }),
-    async: true,
-  });
-
-  if (submission.status !== "success") {
-    return Response.json(
-      { result: submission.reply() },
-      { status: submission.status === "error" ? 400 : 200 }
-    );
-  }
-
-  const { value: submissionValue } = submission;
-
-  async function deleteVerification() {
-    await db
-      .delete(verification)
-      .where(
-        and(
-          eq(verification.type, submissionValue[typeQueryParam]),
-          eq(verification.target, submissionValue[targetQueryParam])
-        )
-      );
-  }
-
-  switch (submissionValue[typeQueryParam]) {
-    case "reset-password": {
-      await deleteVerification();
-      return handleResetPasswordVerification({
-        request,
-        body,
-        submission,
-      });
-    }
-    case "onboarding": {
-      await deleteVerification();
-      return handleOnboardingVerification({
-        request,
-        body,
-        submission,
-      });
-    }
-    case "change-email": {
-      await deleteVerification();
-      return handleChangeEmailVerification({
-        request,
-        body,
-        submission,
-      });
-    }
-    case "2fa": {
-      return handleLoginTwoFactorVerification({
-        request,
-        body,
-        submission,
-      });
-    }
-  }
 }

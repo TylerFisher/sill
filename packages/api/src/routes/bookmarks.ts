@@ -3,14 +3,14 @@ import { and, desc, eq, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { getUserIdFromSession } from "../auth/auth.server.js";
+import { getUserIdFromSession } from "../auth/auth.server";
 import {
   db,
   type MostRecentLinkPosts,
   bookmark,
   digestItem,
 } from "@sill/schema";
-import { filterLinkOccurrences } from "../utils/links.server.js";
+import { filterLinkOccurrences } from "../utils/links.server";
 
 // Schema for listing bookmarks
 const ListBookmarksSchema = z.object({

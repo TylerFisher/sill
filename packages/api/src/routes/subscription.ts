@@ -1,12 +1,28 @@
-import { zValidator } from "@hono/zod-validator";
 import { and, eq, not } from "drizzle-orm";
 import { Hono } from "hono";
-import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
-import { getUserIdFromSession } from "../auth/auth.server.js";
-import { db, polarProduct, subscription, user } from "@sill/schema";
-import { bootstrapProducts } from "../utils/polar.server.js";
-import { conflictUpdateSetAllColumns } from "../utils/links.server.js";
+import { getUserIdFromSession } from "../auth/auth.server";
+import { db, subscription, user } from "@sill/schema";
+import { bootstrapProducts } from "../utils/polar.server";
+import { conflictUpdateSetAllColumns } from "../utils/links.server";
+
+// Type definition for the webhook payload (from Polar SDK)
+interface WebhookCustomerStateChangedPayload {
+  type: "customer.state_changed";
+  data: {
+    id: string;
+    externalId?: string;
+    email?: string;
+    activeSubscriptions: Array<{
+      id: string;
+      productId: string;
+      currentPeriodEnd: string;
+      currentPeriodStart: string;
+      cancelAtPeriodEnd: boolean;
+      status: string;
+    }>;
+  };
+}
 
 const subscriptions = new Hono()
   // GET /api/subscription/current - Get current (non-canceled) subscription for user
@@ -87,6 +103,114 @@ const subscriptions = new Hono()
       return c.json({ success: true });
     } catch (error) {
       console.error("Bootstrap products error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // POST /api/subscription/webhook - Handle Polar customer state changed webhook payload
+  .post("/webhook", async (c) => {
+    try {
+      const payload: WebhookCustomerStateChangedPayload = await c.req.json();
+      let foundUsers: { id: string }[] = [];
+
+      // Set Polar customer ID
+      if (payload.data.externalId) {
+        foundUsers = await db
+          .update(user)
+          .set({
+            customerId: payload.data.id,
+          })
+          .where(eq(user.id, payload.data.externalId))
+          .returning({
+            id: user.id,
+          });
+      } else if (payload.data.email) {
+        console.log(
+          "[POLAR WEBHOOK] No external ID found, falling back to email matching"
+        );
+        foundUsers = await db
+          .update(user)
+          .set({
+            customerId: payload.data.id,
+          })
+          .where(eq(user.email, payload.data.email))
+          .returning({
+            id: user.id,
+          });
+      } else {
+        console.error(
+          "[POLAR WEBHOOK] Neither external ID nor email available in payload"
+        );
+        return c.json({ error: "Invalid payload" }, 400);
+      }
+
+      if (foundUsers.length === 0) {
+        console.error(
+          "[POLAR WEBHOOK] Could not find user via external ID or email"
+        );
+        return c.json({ error: "User not found" }, 404);
+      }
+
+      const dbUser = foundUsers[0];
+
+      // Update lapsed subs
+      if (payload.data.activeSubscriptions.length === 0) {
+        await db
+          .update(subscription)
+          .set({
+            status: "canceled",
+          })
+          .where(
+            and(
+              eq(subscription.userId, dbUser.id),
+              eq(subscription.status, "active")
+            )
+          );
+
+        return c.json({ success: true });
+      }
+
+      // Update active subs
+      const sillProducts = await db.query.polarProduct.findMany();
+      const polarSubscription = payload.data.activeSubscriptions.find((sub) =>
+        sillProducts.some((product) => product.polarId === sub.productId)
+      );
+
+      if (!polarSubscription) {
+        console.error("[POLAR WEBHOOK] No valid subscription");
+        return c.json({ error: "No valid subscription" }, 400);
+      }
+
+      const chosenProduct = sillProducts.find(
+        (product) => product.polarId === polarSubscription.productId
+      );
+
+      if (!chosenProduct) {
+        console.error("[POLAR WEBHOOK] Product not found");
+        return c.json({ error: "Product not found" }, 404);
+      }
+
+      await db
+        .insert(subscription)
+        .values({
+          id: uuidv7(),
+          userId: dbUser.id,
+          polarId: polarSubscription.id,
+          polarProductId: chosenProduct.id,
+          periodEnd: new Date(polarSubscription.currentPeriodEnd),
+          periodStart: new Date(polarSubscription.currentPeriodStart),
+          cancelAtPeriodEnd: polarSubscription.cancelAtPeriodEnd,
+          status: polarSubscription.status || "",
+        })
+        .onConflictDoUpdate({
+          target: subscription.polarId,
+          set: {
+            ...conflictUpdateSetAllColumns(subscription),
+          },
+        });
+
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("[POLAR WEBHOOK] Webhook processing error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

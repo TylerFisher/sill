@@ -11,13 +11,13 @@ import {
   resetUserPassword,
   signup,
   verifyUserPassword,
-} from "../auth/auth.server.js";
+} from "../auth/auth.server";
 import {
   checkUserExists,
   deleteVerification,
   isCodeValid,
   prepareVerification,
-} from "../auth/verification.server.js";
+} from "../auth/verification.server";
 import { db, password, user } from "@sill/schema";
 import {
   sendVerificationEmail,
@@ -25,7 +25,7 @@ import {
   sendEmailChangeEmail,
   sendEmailChangeNoticeEmail,
   sendPasswordResetEmail,
-} from "../utils/email.server.js";
+} from "../utils/email.server";
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),

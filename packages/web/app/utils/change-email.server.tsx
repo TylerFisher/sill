@@ -1,11 +1,6 @@
 import { invariant } from "@epic-web/invariant";
-import { eq } from "drizzle-orm";
 import { data, redirect } from "react-router";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import EmailChangeNotice from "~/emails/emailChangeNotice";
 import { newEmailAddressSessionKey } from "~/routes/accounts/change-email";
-import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import {
 	type VerifyFunctionArgs,

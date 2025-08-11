@@ -1,6 +1,8 @@
 import React from "react";
 import { Link, Section, Text } from "@react-email/components";
-import { daysRemaining } from "../utils/misc";
+
+export const daysRemaining = (end: Date) =>
+  Math.round((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
 const PlusTrial = ({ type, endDate }: { type: string; endDate: Date }) => {
 	const remaining = daysRemaining(endDate);

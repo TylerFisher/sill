@@ -1,7 +1,7 @@
 import { asc } from "drizzle-orm";
 import { Hono } from "hono";
 import { user, db } from "@sill/schema";
-import { enqueueJob } from "../utils/queue.server.js";
+import { enqueueJob } from "../utils/queue.server";
 
 const app = new Hono();
 

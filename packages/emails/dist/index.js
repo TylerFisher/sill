@@ -5,14 +5,20 @@ export { default as WelcomeEmail } from "./emails/WelcomeEmail";
 export { default as TopLinksEmail } from "./emails/TopLinksEmail";
 export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
 export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
+import { sendEmail } from "./email-service";
+import VerifyEmail from "./emails/VerifyEmail";
+import PasswordResetEmail from "./emails/PasswordResetEmail";
+import WelcomeEmail from "./emails/WelcomeEmail";
+import TopLinksEmail from "./emails/TopLinksEmail";
+import EmailChangeEmail from "./emails/EmailChangeEmail";
+import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail";
+import RSSLinks from "./components/RSSLinks";
 export { default as EmailLayout } from "./components/Layout";
 export { default as EmailHeading } from "./components/Heading";
 export { default as OTPBlock } from "./components/OTPBlock";
 export { default as Lede } from "./components/Lede";
 export { default as RSSLinks } from "./components/RSSLinks";
 export async function sendVerificationEmail({ to, otp, }) {
-    const { sendEmail } = await import("./email-service");
-    const VerifyEmail = (await import("./emails/VerifyEmail")).default;
     await sendEmail({
         to,
         subject: "Verify your Sill account",
@@ -21,9 +27,6 @@ export async function sendVerificationEmail({ to, otp, }) {
     });
 }
 export async function sendPasswordResetEmail({ to, otp, }) {
-    const { sendEmail } = await import("./email-service");
-    const PasswordResetEmail = (await import("./emails/PasswordResetEmail"))
-        .default;
     await sendEmail({
         to,
         subject: "Reset your Sill password",
@@ -32,8 +35,6 @@ export async function sendPasswordResetEmail({ to, otp, }) {
     });
 }
 export async function sendWelcomeEmail({ to, name, }) {
-    const { sendEmail } = await import("./email-service");
-    const WelcomeEmail = (await import("./emails/WelcomeEmail")).default;
     await sendEmail({
         to,
         subject: "Welcome to Sill!",
@@ -42,8 +43,6 @@ export async function sendWelcomeEmail({ to, name, }) {
     });
 }
 export async function sendEmailChangeEmail({ to, otp, }) {
-    const { sendEmail } = await import("./email-service");
-    const EmailChangeEmail = (await import("./emails/EmailChangeEmail")).default;
     await sendEmail({
         to,
         subject: "Sill Email Change Notification",
@@ -52,8 +51,6 @@ export async function sendEmailChangeEmail({ to, otp, }) {
     });
 }
 export async function sendEmailChangeNoticeEmail({ to, userId, }) {
-    const { sendEmail } = await import("./email-service");
-    const EmailChangeNoticeEmail = (await import("./emails/EmailChangeNoticeEmail")).default;
     await sendEmail({
         to,
         subject: "Your Sill email has been changed",
@@ -62,8 +59,6 @@ export async function sendEmailChangeNoticeEmail({ to, userId, }) {
     });
 }
 export async function sendDigestEmail({ to, subject, links, name, digestUrl, layout = "default", subscribed, freeTrialEnd, }) {
-    const { sendEmail } = await import("./email-service");
-    const TopLinksEmail = (await import("./emails/TopLinksEmail")).default;
     await sendEmail({
         to,
         subject,
@@ -78,8 +73,7 @@ export async function sendDigestEmail({ to, subject, links, name, digestUrl, lay
         "o:tag": "digest",
     });
 }
-export async function renderDigestRSS({ links, name, digestUrl, subscribed, }) {
-    const RSSLinks = (await import("./components/RSSLinks")).default;
+export function renderDigestRSS({ links, name, digestUrl, subscribed, }) {
     return RSSLinks({
         links,
         name,

@@ -3,7 +3,7 @@ import { and, eq, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
-import { getUserIdFromSession } from "../auth/auth.server.js";
+import { getUserIdFromSession } from "../auth/auth.server";
 import { db, list } from "@sill/schema";
 
 // Schema for creating a list

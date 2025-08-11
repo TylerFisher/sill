@@ -5,7 +5,7 @@ export { default as WelcomeEmail } from "./emails/WelcomeEmail";
 export { default as TopLinksEmail } from "./emails/TopLinksEmail";
 export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
 export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
-import type { MostRecentLinkPosts } from "@sill/schema";
+import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 export { default as EmailLayout } from "./components/Layout";
 export { default as EmailHeading } from "./components/Heading";
 export { default as OTPBlock } from "./components/OTPBlock";
@@ -38,7 +38,7 @@ export declare function sendDigestEmail({ to, subject, links, name, digestUrl, l
     name: string | null;
     digestUrl: string;
     layout?: "default" | "dense";
-    subscribed: string;
+    subscribed: SubscriptionStatus;
     freeTrialEnd: Date | null;
 }): Promise<void>;
 export declare function renderDigestRSS({ links, name, digestUrl, subscribed, }: {
@@ -46,4 +46,4 @@ export declare function renderDigestRSS({ links, name, digestUrl, subscribed, }:
     name: string | null;
     digestUrl: string;
     subscribed: string;
-}): Promise<string>;
+}): string;

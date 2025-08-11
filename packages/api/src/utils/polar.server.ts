@@ -1,6 +1,6 @@
 import { Polar } from "@polar-sh/sdk";
-import type { Product } from "@polar-sh/sdk/models/components/product.js";
-import type { ProductPriceFixed } from "@polar-sh/sdk/models/components/productpricefixed.js";
+import type { Product } from "@polar-sh/sdk/models/components/product";
+import type { ProductPriceFixed } from "@polar-sh/sdk/models/components/productpricefixed";
 import { uuidv7 } from "uuidv7-js";
 import { db, polarProduct } from "@sill/schema";
 
