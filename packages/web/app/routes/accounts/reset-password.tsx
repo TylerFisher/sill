@@ -1,7 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Heading, Text } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import {
 	Form,
 	data,
@@ -12,13 +11,11 @@ import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import { resetUserPassword } from "~/utils/auth.server";
 import { PasswordAndConfirmPasswordSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
 import type { Route } from "./+types/reset-password";
 import { requireAnonymousFromContext } from "~/utils/context.server";
+import { apiSearchUser, apiResetPassword } from "~/utils/api-client.server";
 
 export const resetPasswordEmailSessionKey = "resetPasswordEmail";
 
@@ -31,7 +28,7 @@ const ResetPasswordSchema = PasswordAndConfirmPasswordSchema;
  */
 async function requireResetPasswordEmail(
 	request: Request,
-	context: unstable_RouterContextProvider,
+	context: Readonly<unstable_RouterContextProvider>,
 ) {
 	await requireAnonymousFromContext(context);
 	const verifySession = await verifySessionStorage.getSession(
@@ -63,22 +60,33 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 	const { password } = submission.value;
 
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.email, resetPasswordEmail),
-		columns: { id: true },
-	});
+	try {
+		// Search for the user by email via API
+		await apiSearchUser(request, resetPasswordEmail);
+		
+		// Reset the password via API
+		await apiResetPassword(request, {
+			email: resetPasswordEmail,
+			newPassword: password,
+		});
 
-	if (!existingUser) {
-		throw new Error("Something went wrong");
+		const verifySession = await verifySessionStorage.getSession();
+		return redirect("/accounts/login", {
+			headers: {
+				"set-cookie": await verifySessionStorage.destroySession(verifySession),
+			},
+		});
+	} catch (error) {
+		console.error("Password reset error:", error);
+		return data(
+			{
+				result: submission.reply({
+					formErrors: ["Something went wrong. Please try again."],
+				}),
+			},
+			{ status: 400 },
+		);
 	}
-
-	await resetUserPassword({ userId: existingUser.id, newPassword: password });
-	const verifySession = await verifySessionStorage.getSession();
-	return redirect("/accounts/login", {
-		headers: {
-			"set-cookie": await verifySessionStorage.destroySession(verifySession),
-		},
-	});
 }
 
 export const meta: Route.MetaFunction = () => {

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 // Re-export database connection and migration functions
 export { db, runMigrations } from "./db.js";
 
@@ -5,25 +7,25 @@ export { db, runMigrations } from "./db.js";
 export * from "./schema.js";
 
 // Re-export inferred types
-import type { 
-	link,
-	linkPostDenormalized,
-	user,
-	subscription,
-	polarProduct,
-	digestItem,
-	digestRssFeed,
-	digestSettings,
-	notificationItem,
-	notificationGroup,
-	mutePhrase,
-	termsUpdate,
-	termsAgreement,
-	bookmark,
-	list,
-	mastodonAccount,
-	mastodonInstance,
-	blueskyAccount
+import type {
+  link,
+  linkPostDenormalized,
+  user,
+  subscription,
+  polarProduct,
+  digestItem,
+  digestRssFeed,
+  digestSettings,
+  notificationItem,
+  notificationGroup,
+  mutePhrase,
+  termsUpdate,
+  termsAgreement,
+  bookmark,
+  list,
+  mastodonAccount,
+  mastodonInstance,
+  blueskyAccount,
 } from "./schema.js";
 
 // Database table types
@@ -83,35 +85,43 @@ export type NewBlueskyAccount = typeof blueskyAccount.$inferInsert;
 
 // Composite types
 export interface MostRecentLinkPosts {
-	uniqueActorsCount: number;
-	link: Link | null;
-	posts?: LinkPost[];
+  uniqueActorsCount: number;
+  link: Link | null;
+  posts?: LinkPost[];
 }
 
 export interface NotificationQuery {
-	category: {
-		id: string;
-		name: string;
-		type: string;
-		values?: {
-			id: string;
-			name: string;
-		}[];
-	};
-	operator: string;
-	value: string | number;
+  category: {
+    id: string;
+    name: string;
+    type: string;
+    values?: {
+      id: string;
+      name: string;
+    }[];
+  };
+  operator: string;
+  value: string | number;
 }
 
 export interface ListOption {
-	name: string;
-	uri: string;
-	type: "bluesky" | "mastodon";
-	subscribed: boolean;
+  name: string;
+  uri: string;
+  type: "bluesky" | "mastodon";
+  subscribed: boolean;
 }
 
 export type SubscriptionStatus = "free" | "trial" | "active" | "canceled";
 
 export interface AccountWithInstance extends MastodonAccount {
-	mastodonInstance: MastodonInstance;
-	lists: List[];
+  mastodonInstance: MastodonInstance;
+  lists: List[];
 }
+export const codeQueryParam = "code";
+export const targetQueryParam = "target";
+export const typeQueryParam = "type";
+export const redirectToQueryParam = "redirectTo";
+
+const types = ["onboarding", "reset-password", "change-email", "2fa"] as const;
+export const VerificationTypeSchema = z.enum(types);
+export type VerificationTypes = z.infer<typeof VerificationTypeSchema>;

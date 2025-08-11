@@ -9,8 +9,8 @@ import { sendEmail } from "~/utils/email.server";
 import { verifySessionStorage } from "~/utils/verification.server";
 import {
 	type VerifyFunctionArgs,
-	requireRecentVerification,
 } from "~/utils/verify.server";
+import { apiSearchUser, apiUpdateEmail } from "./api-client.server";
 
 /**
  * Handles verification of email change and sends email change notice
@@ -21,7 +21,6 @@ export async function handleVerification({
 	request,
 	submission,
 }: VerifyFunctionArgs) {
-	await requireRecentVerification(request);
 	invariant(
 		submission.status === "success",
 		"Submission should be successful by now",
@@ -43,32 +42,13 @@ export async function handleVerification({
 			{ status: 400 },
 		);
 	}
-	const preUpdateUser = await db.query.user.findFirst({
-		columns: { email: true },
-		where: eq(user.email, submission.value.target),
-	});
+	const preUpdateUser = await apiSearchUser(request, submission.value.target);
 
 	if (!preUpdateUser) {
 		throw new Error("Something went wrong");
 	}
 
-	const updatedUser = await db
-		.update(user)
-		.set({
-			email: newEmail,
-		})
-		.where(eq(user.email, submission.value.target))
-		.returning({
-			id: user.id,
-			email: user.email,
-		});
-
-	await sendEmail({
-		to: preUpdateUser.email,
-		subject: "Sill email changed",
-		"o:tag": "email-change-notice",
-		react: <EmailChangeNotice userId={updatedUser[0].id} />,
-	});
+  await apiUpdateEmail(request, { oldEmail: submission.value.target, newEmail });
 
 	return redirect("/settings", {
 		headers: {

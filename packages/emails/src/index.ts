@@ -1,9 +1,11 @@
 export { sendEmail, renderReactEmail } from "./email-service";
 
-export { default as VerifyEmail } from "./templates/VerifyEmail";
-export { default as PasswordResetEmail } from "./templates/PasswordResetEmail";
-export { default as WelcomeEmail } from "./templates/WelcomeEmail";
-export { default as TopLinksEmail } from "./templates/TopLinksEmail";
+export { default as VerifyEmail } from "./emails/VerifyEmail";
+export { default as PasswordResetEmail } from "./emails/PasswordResetEmail";
+export { default as WelcomeEmail } from "./emails/WelcomeEmail";
+export { default as TopLinksEmail } from "./emails/TopLinksEmail";
+export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
+export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
 
 import type { MostRecentLinkPosts } from "@sill/schema";
 
@@ -21,7 +23,7 @@ export async function sendVerificationEmail({
   otp: string;
 }): Promise<void> {
   const { sendEmail } = await import("./email-service");
-  const VerifyEmail = (await import("./templates/VerifyEmail")).default;
+  const VerifyEmail = (await import("./emails/VerifyEmail")).default;
 
   await sendEmail({
     to,
@@ -39,7 +41,7 @@ export async function sendPasswordResetEmail({
   otp: string;
 }): Promise<void> {
   const { sendEmail } = await import("./email-service");
-  const PasswordResetEmail = (await import("./templates/PasswordResetEmail"))
+  const PasswordResetEmail = (await import("./emails/PasswordResetEmail"))
     .default;
 
   await sendEmail({
@@ -58,13 +60,51 @@ export async function sendWelcomeEmail({
   name: string | null;
 }): Promise<void> {
   const { sendEmail } = await import("./email-service");
-  const WelcomeEmail = (await import("./templates/WelcomeEmail")).default;
+  const WelcomeEmail = (await import("./emails/WelcomeEmail")).default;
 
   await sendEmail({
     to,
     subject: "Welcome to Sill!",
     react: WelcomeEmail({ name }),
     "o:tag": "welcome",
+  });
+}
+
+export async function sendEmailChangeEmail({
+  to,
+  otp,
+}: {
+  to: string;
+  otp: string;
+}): Promise<void> {
+  const { sendEmail } = await import("./email-service");
+  const EmailChangeEmail = (await import("./emails/EmailChangeEmail")).default;
+
+  await sendEmail({
+    to,
+    subject: "Sill Email Change Notification",
+    react: EmailChangeEmail({ otp }),
+    "o:tag": "change-email",
+  });
+}
+
+export async function sendEmailChangeNoticeEmail({
+  to,
+  userId,
+}: {
+  to: string;
+  userId: string;
+}): Promise<void> {
+  const { sendEmail } = await import("./email-service");
+  const EmailChangeNoticeEmail = (
+    await import("./emails/EmailChangeNoticeEmail")
+  ).default;
+
+  await sendEmail({
+    to,
+    subject: "Your Sill email has been changed",
+    react: EmailChangeNoticeEmail({ userId }),
+    "o:tag": "email-change-notice",
   });
 }
 
@@ -88,7 +128,7 @@ export async function sendDigestEmail({
   freeTrialEnd: Date | null;
 }): Promise<void> {
   const { sendEmail } = await import("./email-service");
-  const TopLinksEmail = (await import("./templates/TopLinksEmail")).default;
+  const TopLinksEmail = (await import("./emails/TopLinksEmail")).default;
 
   await sendEmail({
     to,

@@ -8,6 +8,7 @@ import {
   getUserIdFromSession,
   getUserProfile,
   login,
+  resetUserPassword,
   signup,
   verifyUserPassword,
 } from "../auth/auth.server.js";
@@ -21,6 +22,9 @@ import { db, password, user } from "@sill/schema";
 import {
   sendVerificationEmail,
   sendWelcomeEmail,
+  sendEmailChangeEmail,
+  sendEmailChangeNoticeEmail,
+  sendPasswordResetEmail,
 } from "../utils/email.server.js";
 
 const LoginSchema = z.object({
@@ -53,6 +57,28 @@ const VerifyPasswordSchema = z.object({
 
 const ChangePasswordSchema = z.object({
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const SearchUserSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+const ResetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const ChangeEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+const UpdateEmailSchema = z.object({
+  oldEmail: z.string().email("Invalid email address"),
+  newEmail: z.string().email("Invalid email address"),
+});
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
 });
 
 const auth = new Hono()
@@ -410,7 +436,191 @@ const auth = new Hono()
       console.error("Change password error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
-  });
+  })
+  // POST /api/auth/search-user - Search for a user by email
+  .post("/search-user", zValidator("json", SearchUserSchema), async (c) => {
+    const { email } = c.req.valid("json");
+
+    try {
+      const existingUser = await db.query.user.findFirst({
+        where: eq(user.email, email.toLowerCase()),
+        columns: { id: true, email: true },
+      });
+
+      if (!existingUser) {
+        return c.json({ error: "User not found" }, 404);
+      }
+
+      return c.json({
+        user: {
+          id: existingUser.id,
+          email: existingUser.email,
+        },
+      });
+    } catch (error) {
+      console.error("Search user error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // POST /api/auth/reset-password - Reset user password
+  .post(
+    "/reset-password",
+    zValidator("json", ResetPasswordSchema),
+    async (c) => {
+      const { email, newPassword } = c.req.valid("json");
+
+      try {
+        // First, find the user by email
+        const existingUser = await db.query.user.findFirst({
+          where: eq(user.email, email.toLowerCase()),
+          columns: { id: true },
+        });
+
+        if (!existingUser) {
+          return c.json({ error: "User not found" }, 404);
+        }
+
+        // Reset the user's password using the auth function
+        await resetUserPassword({
+          userId: existingUser.id,
+          newPassword,
+        });
+
+        return c.json({ success: true });
+      } catch (error) {
+        console.error("Password reset failed:", error);
+        return c.json({ error: "Failed to reset password" }, 500);
+      }
+    }
+  )
+  // POST /api/auth/change-email - Initiate email change with verification
+  .post("/change-email", zValidator("json", ChangeEmailSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { email } = c.req.valid("json");
+
+    try {
+      // Check if the new email is already in use
+      const existingUser = await db.query.user.findFirst({
+        where: eq(user.email, email.toLowerCase()),
+      });
+
+      if (existingUser) {
+        return c.json(
+          {
+            error: "This email is already in use",
+            field: "email",
+          },
+          409
+        );
+      }
+
+      // Get current user for old email address
+      const currentUser = await db.query.user.findFirst({
+        where: eq(user.id, userId),
+        columns: { email: true },
+      });
+
+      if (!currentUser) {
+        return c.json({ error: "User not found" }, 404);
+      }
+
+      // Generate verification code and prepare verification
+      const { otp, verifyUrl } = await prepareVerification({
+        period: 10 * 60,
+        type: "change-email",
+        target: currentUser.email,
+        request: c.req.raw,
+      });
+
+      // Send verification email to new email address
+      await sendEmailChangeEmail({
+        to: email,
+        otp,
+      });
+
+      return c.json({
+        success: true,
+        verifyUrl: verifyUrl.toString(),
+        newEmail: email,
+        message: "Verification code sent to new email address",
+      });
+    } catch (error) {
+      console.error("Change email error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  .put("/update-email", zValidator("json", UpdateEmailSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { oldEmail, newEmail } = c.req.valid("json");
+
+    try {
+      await db
+        .update(user)
+        .set({
+          email: newEmail,
+        })
+        .where(eq(user.id, userId))
+        .returning({
+          id: user.id,
+          email: user.email,
+        });
+
+      await sendEmailChangeNoticeEmail({
+        to: oldEmail,
+        userId,
+      });
+
+      return c.json({
+        success: true,
+        newEmail,
+      });
+    } catch (error) {
+      console.error("Update email error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  .post(
+    "/forgot-password",
+    zValidator("json", ForgotPasswordSchema),
+    async (c) => {
+      const { email } = c.req.valid("json");
+
+      try {
+        const { otp, verifyUrl } = await prepareVerification({
+          period: 10 * 60,
+          request: c.req.raw,
+          type: "reset-password",
+          target: email,
+        });
+
+        await sendPasswordResetEmail({
+          to: email,
+          otp,
+        });
+        return c.json({
+          success: true,
+          verifyUrl: verifyUrl.toString(),
+          email,
+        });
+      } catch (error) {
+        return c.json(
+          {
+            error: "Internal server error",
+          },
+          500
+        );
+      }
+    }
+  );
 
 /**
  * Extracts session ID from cookie header

@@ -1,22 +1,24 @@
 import { sql } from "drizzle-orm";
-import { db } from "~/drizzle/db.server";
+import { Hono } from "hono";
+import { db } from "@sill/schema";
 import {
 	type ArchiveResult,
 	archivePartitionToR2,
 	dropPartition,
 	getPartitionNameForDate,
-} from "~/utils/partition-archive.server";
-import type { Route } from "./+types/maintain-partitions";
+} from "../utils/partition-archive.server.js";
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-	const authHeader = request.headers.get("Authorization");
+const app = new Hono();
+
+app.get("/", async (c) => {
+	const authHeader = c.req.header("Authorization");
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
-		throw new Response("Unauthorized", { status: 401 });
+		return c.text("Unauthorized", 401);
 	}
 
 	const token = authHeader.split(" ")[1];
 	if (token !== process.env.CRON_API_KEY) {
-		throw new Response("Forbidden", { status: 403 });
+		return c.text("Forbidden", 403);
 	}
 
 	const archiveDate = new Date();
@@ -53,10 +55,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 	}
 
-	return Response.json({
+	return c.json({
 		success: maintenanceSuccess,
 		partition: partitionName,
 		archiveDate: archiveDate.toISOString(),
 		archive: archiveResult,
 	});
-};
+});
+
+export default app;

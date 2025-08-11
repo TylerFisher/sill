@@ -9,9 +9,10 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import Layout from "~/components/nav/Layout";
 import { apiVerifyCode } from "~/utils/api-client.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
-import { verifySessionStorage } from "~/utils/verification.server";
-import { onboardingEmailSessionKey } from "./onboarding";
 import type { Route } from "./+types/verify";
+import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
+import { handleVerification as handleOnboardingVerification } from "~/utils/onboarding.server";
+import { handleVerification as handleResetPasswordVerification } from "~/utils/reset-password.server";
 
 export const codeQueryParam = "code";
 export const targetQueryParam = "target";
@@ -71,20 +72,29 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	}
 	const { redirectTo } = responseData;
 
-	// For onboarding verification, set the email in verification session
-	if (type === "onboarding") {
-		const verifySession = await verifySessionStorage.getSession(
-			request.headers.get("cookie"),
-		);
-		verifySession.set(onboardingEmailSessionKey, target);
 
-		const headers = new Headers();
-		headers.append(
-			"set-cookie",
-			await verifySessionStorage.commitSession(verifySession),
-		);
-
-		return redirect(redirectTo, { headers });
+	switch (type) {
+		case "reset-password": {
+			return handleResetPasswordVerification({
+				request,
+				body: formData,
+				submission,
+			});
+		}
+		case "onboarding": {
+			return handleOnboardingVerification({
+				request,
+				body: formData,
+				submission,
+			});
+		}
+		case "change-email": {
+			return handleChangeEmailVerification({
+				request,
+				body: formData,
+				submission,
+			});
+		}
 	}
 
 	return redirect(redirectTo);

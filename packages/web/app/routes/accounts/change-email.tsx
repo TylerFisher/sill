@@ -1,23 +1,18 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Badge, Box, Heading, Text } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { Form, data, redirect } from "react-router";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput.js";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import EmailChange from "~/emails/emailChange";
-import { sendEmail } from "~/utils/email.server";
 import { EmailSchema } from "~/utils/userValidation";
 import { verifySessionStorage } from "~/utils/verification.server";
-import { prepareVerification } from "~/utils/verify.server";
 import type { Route } from "./+types/change-email";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiChangeEmail } from "~/utils/api-client.server";
 
 export const newEmailAddressSessionKey = "new-email-address";
 
@@ -43,58 +38,53 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
-		schema: ChangeEmailSchema.superRefine(async (data, ctx) => {
-			const userForEmail = await db.query.user.findFirst({
-				where: eq(user.email, data.email),
-			});
-			if (userForEmail) {
+		schema: ChangeEmailSchema.transform(async (data, ctx) => {
+			try {
+				const apiResponse = await apiChangeEmail(request, data);
+				return { ...data, apiResponse };
+			} catch (error) {
 				ctx.addIssue({
-					path: ["email"],
 					code: z.ZodIssueCode.custom,
-					message: "This email is already in use.",
+					message:
+						error instanceof Error
+							? error.message
+							: "Failed to initiate email change",
+					path:
+						error instanceof Error && error.message.includes("email")
+							? ["email"]
+							: [],
 				});
+				return z.NEVER;
 			}
 		}),
 		async: true,
 	});
 
-	if (submission.status !== "success") {
+	if (submission.status !== "success" || !submission.value.apiResponse) {
 		return data(
 			{ result: submission.reply() },
 			{ status: submission.status === "error" ? 400 : 200 },
 		);
 	}
-	const { otp, redirectTo } = await prepareVerification({
-		period: 10 * 60,
-		request,
-		target: existingUser.email,
-		type: "change-email",
-	});
 
-	const response = await sendEmail({
-		to: submission.value.email,
-		subject: "Sill Email Change Notification",
-		"o:tag": "change-email",
-		react: <EmailChange otp={otp} />,
-	});
+	const { apiResponse } = submission.value;
 
-	if (response.status === 200) {
-		const verifySession = await verifySessionStorage.getSession();
-		verifySession.set(newEmailAddressSessionKey, submission.value.email);
-		return redirect(redirectTo.toString(), {
-			headers: {
-				"set-cookie": await verifySessionStorage.commitSession(verifySession),
-			},
-		});
+	if ("error" in apiResponse) {
+		throw new Error(apiResponse.error);
 	}
-	return data(
-		{
-			result: submission.reply({
-				formErrors: [String(response.message)],
-			}),
+
+	const { verifyUrl, newEmail } = apiResponse;
+
+	// Store the new email address in the session for verification
+	const verifySession = await verifySessionStorage.getSession();
+	verifySession.set(newEmailAddressSessionKey, newEmail);
+	
+	// Redirect to verification page
+	return redirect(new URL(verifyUrl).pathname + new URL(verifyUrl).search, {
+		headers: {
+			"set-cookie": await verifySessionStorage.commitSession(verifySession),
 		},
-		{ status: 500 },
-	);
+	});
 }
 
 export default function ChangeEmailIndex({

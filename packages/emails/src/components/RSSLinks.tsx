@@ -1,4 +1,5 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
+import { intro, linkPlug, digestOutro } from "../utils/digestText";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
@@ -6,16 +7,6 @@ interface RSSLinksProps {
 	digestUrl: string;
 	subscribed: string;
 }
-
-// Simple text-based functions for RSS (no JSX components)
-const intro = (name: string | null) =>
-	`Hello${name ? ` ${name}` : ""}, here are your top links from the past 24 hours across your social networks.`;
-
-const linkPlug = (digestUrl: string) =>
-	`View all of these links and the posts that shared them on Sill: ${digestUrl}`;
-
-const digestOutro = (settingsUrl: string) =>
-	`Feedback? Email tyler@sill.social. Want to stop getting the Daily Digest? Adjust your digest settings at ${settingsUrl}`;
 
 const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 	const today = new Intl.DateTimeFormat("en-US", {

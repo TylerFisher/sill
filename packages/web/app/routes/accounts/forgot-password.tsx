@@ -1,7 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { Box, Callout, Heading, Link as RLink, Text } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { CircleAlert } from "lucide-react";
 import { data, redirect } from "react-router";
 import { Form, Link, useFetcher } from "react-router";
@@ -11,14 +10,10 @@ import ErrorList from "~/components/forms/ErrorList";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
-import ForgotPasswordEmail from "~/emails/forgotPassword";
-import { sendEmail } from "~/utils/email.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { EmailSchema } from "~/utils/userValidation";
-import { prepareVerification } from "~/utils/verify.server";
 import type { Route } from "./+types/forgot-password";
+import { apiForgotPassword, apiSearchUser } from "~/utils/api-client.server";
 
 const ForgotPasswordSchema = z.object({
 	email: EmailSchema,
@@ -29,10 +24,7 @@ export async function action({ request }: Route.ActionArgs) {
 	checkHoneypot(formData);
 	const submission = await parseWithZod(formData, {
 		schema: ForgotPasswordSchema.superRefine(async (data, ctx) => {
-			const existingUser = await db.query.user.findFirst({
-				where: eq(user.email, data.email),
-				columns: { id: true },
-			});
+			const existingUser = await apiSearchUser(request, data.email);
 			if (!existingUser) {
 				ctx.addIssue({
 					path: ["email"],
@@ -51,39 +43,8 @@ export async function action({ request }: Route.ActionArgs) {
 		);
 	}
 	const { email } = submission.value;
-
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.email, email),
-		columns: { email: true },
-	});
-
-	if (!existingUser) {
-		throw new Error("Something went wrong");
-	}
-
-	const { redirectTo, otp } = await prepareVerification({
-		period: 10 * 60,
-		request,
-		type: "reset-password",
-		target: email,
-	});
-
-	const response = await sendEmail({
-		to: existingUser.email,
-		subject: "Sill Password Reset",
-		"o:tag": "reset-password",
-		react: <ForgotPasswordEmail otp={otp} />,
-	});
-
-	if (response.status === 200) {
-		return redirect(redirectTo.toString());
-	}
-	return data(
-		{
-			result: submission.reply({ formErrors: [String(response.message)] }),
-		},
-		{ status: 500 },
-	);
+  const response = await apiForgotPassword(request, { email });
+  return redirect(response.verifyUrl);
 }
 
 export const meta: Route.MetaFunction = () => {

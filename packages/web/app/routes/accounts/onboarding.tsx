@@ -46,7 +46,7 @@ const SignupFormSchema = z
  */
 async function requireOnboardingEmail(
 	request: Request,
-	context: unstable_RouterContextProvider,
+	context: Readonly<unstable_RouterContextProvider>,
 ) {
 	await requireAnonymousFromContext(context);
 	const verifySession = await verifySessionStorage.getSession(
