@@ -14,3 +14,4 @@ dozzle
 CLAUDE.md
 .turbo
 .tsc-build
+packages/**/dist/*

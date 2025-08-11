@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { runMigrations } from "./database/db.server.js";
+import { runMigrations } from "@sill/schema";
 
 // Import route modules
 import auth from "./routes/auth.js";
@@ -13,6 +13,7 @@ import links from "./routes/links.js";
 import lists from "./routes/lists.js";
 import mastodon from "./routes/mastodon.js";
 import mute from "./routes/mute.js";
+import newsletter from "./routes/newsletter.js";
 import notifications from "./routes/notifications.js";
 import subscription from "./routes/subscription.js";
 import terms from "./routes/terms.js";
@@ -38,6 +39,7 @@ const routes = app
 	.route("/api/lists", lists)
 	.route("/api/mastodon", mastodon)
 	.route("/api/mute", mute)
+	.route("/api/newsletter", newsletter)
 	.route("/api/notifications", notifications)
 	.route("/api/subscription", subscription)
 	.route("/api/terms", terms);

@@ -5,8 +5,8 @@ import type { ReactElement } from "react";
 
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
-	username: "api",
-	key: process.env.MAILGUN_API_KEY || "",
+  username: "api",
+  key: process.env.MAILGUN_API_KEY || "",
 });
 
 /**
@@ -14,44 +14,44 @@ const mg = mailgun.client({
  * @returns Mailgun API response
  */
 export async function sendEmail({
-	react,
-	...options
+  react,
+  ...options
 }: {
-	to: string;
-	subject: string;
-	"o:tag"?: string;
+  to: string;
+  subject: string;
+  "o:tag"?: string;
 } & (
-	| { html: string; text: string; react?: never }
-	| { react: ReactElement; html?: never; text?: never }
+  | { html: string; text: string; react?: never }
+  | { react: ReactElement; html?: never; text?: never }
 )) {
-	const from = `Sill <noreply@${process.env.EMAIL_DOMAIN}>`;
+  const from = `Sill <noreply@${process.env.EMAIL_DOMAIN}>`;
 
-	const email = {
-		from,
-		...options,
-		...(react ? await renderReactEmail(react) : null),
-		template: "",
-	};
+  const email = {
+    from,
+    ...options,
+    ...(react ? await renderReactEmail(react) : null),
+    template: "",
+  };
 
-	// feel free to remove this condition once you've set up Mailgun
-	if (!process.env.MAILGUN_API_KEY || !process.env.EMAIL_DOMAIN) {
-		console.error("Email settings not set and we're not in mocks mode.");
-		console.error(
-			"To send emails, set the MAILGUN_API_KEY and EMAIL_DOMAIN environment variables.",
-		);
-		console.error(
-			"Would have sent the following email:",
-			JSON.stringify(email),
-		);
-		return {
-			status: "200",
-			id: "mock",
-			message: email,
-		} as const;
-	}
+  // feel free to remove this condition once you've set up Mailgun
+  if (!process.env.MAILGUN_API_KEY || !process.env.EMAIL_DOMAIN) {
+    console.error("Email settings not set and we're not in mocks mode.");
+    console.error(
+      "To send emails, set the MAILGUN_API_KEY and EMAIL_DOMAIN environment variables."
+    );
+    console.error(
+      "Would have sent the following email:",
+      JSON.stringify(email)
+    );
+    return {
+      status: "200",
+      id: "mock",
+      message: email,
+    } as const;
+  }
 
-	const resp = await mg.messages.create(process.env.EMAIL_DOMAIN, email);
-	return resp;
+  const resp = await mg.messages.create(process.env.EMAIL_DOMAIN, email);
+  return resp;
 }
 
 /**
@@ -60,9 +60,9 @@ export async function sendEmail({
  * @returns HTML and plain text email content
  */
 export async function renderReactEmail(react: ReactElement) {
-	const [html, text] = await Promise.all([
-		render(react),
-		render(react, { plainText: true }),
-	]);
-	return { html, text };
+  const [html, text] = await Promise.all([
+    render(react),
+    render(react, { plainText: true }),
+  ]);
+  return { html, text };
 }

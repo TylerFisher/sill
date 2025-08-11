@@ -17,6 +17,7 @@
 		"baseUrl": ".",
 		"jsx": "react-jsx",
 		"composite": true,
+		"typeRoots": ["../../node_modules/@types"],
 		"paths": {
 			"@sill/emails": ["../emails/src"]
 		}

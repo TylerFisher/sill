@@ -1,15 +1,13 @@
-// Re-export the exact same email functions from the web package pattern
 export { sendEmail, renderReactEmail } from "./email-service";
-// Re-export templates 
 export { default as VerifyEmail } from "./templates/VerifyEmail";
 export { default as PasswordResetEmail } from "./templates/PasswordResetEmail";
 export { default as WelcomeEmail } from "./templates/WelcomeEmail";
-// Re-export components
+export { default as TopLinksEmail } from "./templates/TopLinksEmail";
 export { default as EmailLayout } from "./components/Layout";
 export { default as EmailHeading } from "./components/Heading";
 export { default as OTPBlock } from "./components/OTPBlock";
 export { default as Lede } from "./components/Lede";
-// Email sending functions - simple approach
+export { default as RSSLinks } from "./components/RSSLinks";
 export async function sendVerificationEmail({ to, otp, }) {
     const { sendEmail } = await import("./email-service");
     const VerifyEmail = (await import("./templates/VerifyEmail")).default;
@@ -22,7 +20,8 @@ export async function sendVerificationEmail({ to, otp, }) {
 }
 export async function sendPasswordResetEmail({ to, otp, }) {
     const { sendEmail } = await import("./email-service");
-    const PasswordResetEmail = (await import("./templates/PasswordResetEmail")).default;
+    const PasswordResetEmail = (await import("./templates/PasswordResetEmail"))
+        .default;
     await sendEmail({
         to,
         subject: "Reset your Sill password",
@@ -38,5 +37,31 @@ export async function sendWelcomeEmail({ to, name, }) {
         subject: "Welcome to Sill!",
         react: WelcomeEmail({ name }),
         "o:tag": "welcome",
+    });
+}
+export async function sendDigestEmail({ to, subject, links, name, digestUrl, layout = "default", subscribed, freeTrialEnd, }) {
+    const { sendEmail } = await import("./email-service");
+    const TopLinksEmail = (await import("./templates/TopLinksEmail")).default;
+    await sendEmail({
+        to,
+        subject,
+        react: TopLinksEmail({
+            links,
+            name,
+            digestUrl,
+            layout,
+            subscribed,
+            freeTrialEnd,
+        }),
+        "o:tag": "digest",
+    });
+}
+export async function renderDigestRSS({ links, name, digestUrl, subscribed, }) {
+    const RSSLinks = (await import("./components/RSSLinks")).default;
+    return RSSLinks({
+        links,
+        name,
+        digestUrl,
+        subscribed,
     });
 }

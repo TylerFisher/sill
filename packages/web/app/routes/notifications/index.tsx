@@ -1,6 +1,5 @@
 import { parseWithZod } from "@conform-to/zod";
 import { Box } from "@radix-ui/themes";
-import { eq } from "drizzle-orm";
 import { redirect, data } from "react-router";
 import { z } from "zod";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
@@ -9,11 +8,12 @@ import type { NotificationGroupInit } from "~/components/forms/NotificationGroup
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
-import { db } from "~/drizzle/db.server";
-import { user } from "~/drizzle/schema.server";
 import type { Route } from "./+types/index";
 import { requireUserFromContext } from "~/utils/context.server";
-import { apiGetNotificationGroups, apiCreateNotificationGroup } from "~/utils/api-client.server";
+import {
+	apiGetNotificationGroups,
+	apiCreateNotificationGroup,
+} from "~/utils/api-client.server";
 
 type NotificationGroups = Awaited<ReturnType<typeof apiGetNotificationGroups>>;
 
@@ -38,19 +38,7 @@ export const NotificationSchema = z.object({
 });
 
 export const action = async ({ request, context }: Route.ActionArgs) => {
-	const { id: userId } = await requireUserFromContext(context);
-
-	if (!userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const notificationUser = await db.query.user.findFirst({
-		where: eq(user.id, userId),
-	});
-
-	if (!notificationUser) {
-		throw new Error("Unauthorized");
-	}
+	await requireUserFromContext(context);
 
 	const formData = await request.formData();
 	const submission = await parseWithZod(formData, {
@@ -122,7 +110,11 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 	} catch (error) {
 		console.error("Failed to create notification group:", error);
 		return data(
-			{ result: submission.reply({ fieldErrors: { root: ["Failed to create notification group"] } }) },
+			{
+				result: submission.reply({
+					fieldErrors: { root: ["Failed to create notification group"] },
+				}),
+			},
 			{ status: 500 },
 		);
 	}
