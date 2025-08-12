@@ -1,4 +1,4 @@
-import { Callout, Flex, Link, Text } from "@radix-ui/themes";
+import { Flex, Link, Text } from "@radix-ui/themes";
 import { daysRemaining } from "~/utils/misc";
 import styles from "./TrialBanner.module.css";
 

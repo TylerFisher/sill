@@ -1,1 +1,0 @@
-ALTER TABLE "list" DROP CONSTRAINT "list_uri_unique";

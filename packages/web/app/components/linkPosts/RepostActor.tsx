@@ -1,6 +1,6 @@
 import { Button, Link, Popover, Text } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
-import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import type { linkPostDenormalized } from "@sill/schema";
 
 interface RepostActorProps {
 	posts: (typeof linkPostDenormalized.$inferSelect)[];

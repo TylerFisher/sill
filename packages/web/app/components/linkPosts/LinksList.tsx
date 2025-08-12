@@ -1,9 +1,8 @@
 import { Box, Separator } from "@radix-ui/themes";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
-import type { bookmark } from "~/drizzle/schema.server";
+import type { bookmark, MostRecentLinkPosts } from "@sill/schema";
 import { useLayout } from "~/routes/resources/layout-switch";
-import type { SubscriptionStatus } from "~/utils/auth.server";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { SubscriptionStatus } from "@sill/schema";
 
 interface LinksListProps {
 	links: MostRecentLinkPosts[];

@@ -97,7 +97,7 @@ const newsletter = new Hono()
           title: subject,
           json: links,
           description: preview(links),
-          pubDate: new Date(),
+          pubDate: new Date().toDateString(),
           userId: dbUser.id,
         };
 
@@ -113,7 +113,7 @@ const newsletter = new Hono()
               digestUrl,
               layout: digest.layout,
               subscribed,
-              freeTrialEnd: dbUser.freeTrialEnd,
+              freeTrialEnd: new Date(dbUser.freeTrialEnd) || null,
             });
             console.log(`Email sent to ${dbUser.email}: ${emailSubject}`);
           } catch (error) {

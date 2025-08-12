@@ -1,7 +1,7 @@
 import { Box, Flex, IconButton, Select, TextField } from "@radix-ui/themes";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { list } from "~/drizzle/schema.server";
+import type { list } from "@sill/schema";
 
 interface NotificationCategory {
 	id: string;

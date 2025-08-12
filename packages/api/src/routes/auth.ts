@@ -26,6 +26,7 @@ import {
   sendEmailChangeNoticeEmail,
   sendPasswordResetEmail,
 } from "../utils/email.server";
+import { createOAuthClient } from "../oauth/client";
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -620,7 +621,27 @@ const auth = new Hono()
         );
       }
     }
-  );
+  )
+  // GET /api/auth/client-metadata - Get OAuth client metadata
+  .get("/client-metadata", async (c) => {
+    try {
+      const oauthClient = await createOAuthClient(c.req.raw);
+
+      return c.json(oauthClient.clientMetadata, {
+        headers: {
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to get client metadata:", error);
+      return c.json(
+        {
+          error: "Internal server error",
+        },
+        500
+      );
+    }
+  });
 
 /**
  * Extracts session ID from cookie header

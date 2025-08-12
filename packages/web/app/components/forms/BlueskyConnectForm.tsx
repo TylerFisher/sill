@@ -6,14 +6,12 @@ import {
 	Callout,
 	Card,
 	Heading,
-	Link,
 	Text,
 	TextField,
 } from "@radix-ui/themes";
 import { ChevronDown, CircleAlert } from "lucide-react";
 import { Form } from "react-router";
-import type { blueskyAccount } from "~/drizzle/schema.server";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { blueskyAccount, SubscriptionStatus } from "@sill/schema";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
 import SubmitButton from "./SubmitButton";

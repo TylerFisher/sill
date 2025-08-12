@@ -9,21 +9,10 @@ import {
 } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { Form } from "react-router";
-import type {
-	list,
-	mastodonAccount,
-	mastodonInstance,
-} from "~/drizzle/schema.server";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus, AccountWithInstance } from "@sill/schema";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
 import SubmitButton from "./SubmitButton";
-
-type Account = typeof mastodonAccount.$inferSelect;
-export interface AccountWithInstance extends Account {
-	mastodonInstance: typeof mastodonInstance.$inferSelect;
-	lists: (typeof list.$inferSelect)[];
-}
 
 interface MastodonConnectFormProps {
 	account: AccountWithInstance | null;

@@ -1,6 +1,5 @@
 import { Flex, Link, Text } from "@radix-ui/themes";
 import { useTheme } from "~/routes/resources/theme-switch";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 
 interface DisplayHostProps {
 	link: MostRecentLinkPosts["link"];

@@ -1,5 +1,4 @@
 import { AspectRatio, Inset, Link } from "@radix-ui/themes";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 import styles from "../LinkRep.module.css";
 
 interface LinkImageProps {

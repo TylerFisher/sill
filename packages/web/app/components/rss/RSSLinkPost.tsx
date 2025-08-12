@@ -1,5 +1,5 @@
 import { Heading, Link, Text } from "@radix-ui/themes";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { MostRecentLinkPosts } from "@sill/schema";
 
 const RSSLinkPost = ({
 	linkPost,

@@ -160,7 +160,7 @@ export const getBlueskyList = async (
       await db
         .update(list)
         .set({
-          mostRecentPostDate: new Date(),
+          mostRecentPostDate: new Date().toDateString(),
         })
         .where(eq(list.uri, dbList.uri));
     }
@@ -228,8 +228,8 @@ export const getBlueskyTimeline = async (
         .update(blueskyAccount)
         .set({
           mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-            ? new Date(firstPost.reason.indexedAt)
-            : new Date(firstPost.post.indexedAt),
+            ? firstPost.reason.indexedAt
+            : firstPost.post.indexedAt,
         })
         .where(eq(blueskyAccount.id, account.id));
     }

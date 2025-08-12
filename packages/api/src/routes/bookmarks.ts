@@ -62,18 +62,6 @@ const bookmarks = new Hono()
           offset: (page - 1) * limit,
         });
 
-      // Process post dates
-      for (const bookmark of bookmarkResults) {
-        if (!bookmark.posts.posts) {
-          continue;
-        }
-        for (const post of bookmark.posts.posts) {
-          post.postDate = new Date(post.postDate);
-          post.quotedPostDate =
-            post.quotedPostDate && new Date(post.quotedPostDate);
-        }
-      }
-
       return c.json({
         bookmarks: bookmarkResults,
         page,

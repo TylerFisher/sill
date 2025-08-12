@@ -13,6 +13,7 @@ import { getUserIdFromSession } from "../auth/auth.server";
 import { db, blueskyAccount } from "@sill/schema";
 import { createOAuthClient } from "../oauth/client";
 import { eq } from "drizzle-orm";
+import { getBlueskyLists } from "../utils/bluesky.server";
 
 const AuthorizeSchema = z.object({
   handle: z.string().optional(),
@@ -264,6 +265,32 @@ const bluesky = new Hono()
       });
     } catch (error) {
       console.error("Bluesky revoke error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // GET /api/bluesky/lists - Get Bluesky lists for the authenticated user
+  .get("/lists", async (c) => {
+    try {
+      const userId = await getUserIdFromSession(c.req.raw);
+      if (!userId) {
+        return c.json({ error: "Not authenticated" }, 401);
+      }
+
+      const account = await db.query.blueskyAccount.findFirst({
+        where: eq(blueskyAccount.userId, userId),
+        with: {
+          lists: true,
+        },
+      });
+
+      if (!account) {
+        return c.json({ error: "Bluesky account not found" }, 404);
+      }
+
+      const lists = await getBlueskyLists(account);
+      return c.json({ lists });
+    } catch (error) {
+      console.error("Get Bluesky lists error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

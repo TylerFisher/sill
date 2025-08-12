@@ -2,9 +2,8 @@ import { Avatar, Box, Card, Flex, Inset, Separator } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
-import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import type { linkPostDenormalized } from "@sill/schema";
 import { useTheme } from "~/routes/resources/theme-switch";
-import ToolDropdown from "./ToolDropdown";
 import Toolbar from "./Toolbar";
 interface PostRepProps {
 	group: (typeof linkPostDenormalized.$inferSelect)[];

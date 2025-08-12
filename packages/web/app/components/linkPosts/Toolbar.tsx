@@ -1,5 +1,5 @@
 import { Flex } from "@radix-ui/themes";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import BookmarkLink from "./BookmarkLink";
 import CopyLink from "./CopyLink";
 import MuteActions from "./MuteActions";

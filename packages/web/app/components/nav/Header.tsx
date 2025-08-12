@@ -2,7 +2,7 @@ import { Box, Button, Dialog, IconButton, Text } from "@radix-ui/themes";
 import { Menu } from "lucide-react";
 import { NavLink } from "react-router";
 import { useTheme } from "~/routes/resources/theme-switch";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import styles from "./Header.module.css";
 import Logo from "./Logo";
 import Nav from "./Nav";

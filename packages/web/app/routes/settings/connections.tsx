@@ -7,16 +7,16 @@ import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
-import { getBlueskyLists } from "~/utils/bluesky.server";
-import { getMastodonLists } from "~/utils/mastodon.server";
 import type { Route } from "./+types/connections";
 import { requireUserFromContext } from "~/utils/context.server";
+import { apiGetBlueskyLists, apiGetMastodonLists } from "~/utils/api-client.server";
+
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connection Settings" },
 ];
 
-export async function loader({ context }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
 	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
 	const subscribed = existingUser.subscriptionStatus;
@@ -25,9 +25,8 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 	if (existingUser.blueskyAccounts.length > 0 && subscribed) {
 		try {
-			listOptions.push(
-				...(await getBlueskyLists(existingUser.blueskyAccounts[0])),
-			);
+			const response = await apiGetBlueskyLists(request);
+			listOptions.push(...response.lists);
 		} catch (e) {
 			console.error("error getting bluesky lists", e);
 		}
@@ -35,14 +34,12 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 	if (existingUser.mastodonAccounts.length > 0 && subscribed !== "free") {
 		try {
-			listOptions.push(
-				...(await getMastodonLists(existingUser.mastodonAccounts[0])),
-			);
+			const response = await apiGetMastodonLists(request);
+			listOptions.push(...response.lists);
 		} catch (e) {
 			console.error("error getting mastodon lists", e);
 		}
 	}
-
 	return { user: existingUser, subscribed, listOptions };
 }
 

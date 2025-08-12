@@ -9,12 +9,12 @@ import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { LinkPost } from "~/routes/links";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 import { apiListBookmarks } from "~/utils/api-client.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
+import type { MostRecentLinkPosts } from "@sill/schema";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type BookmarkWithLinkPosts = {
@@ -22,7 +22,7 @@ type BookmarkWithLinkPosts = {
 	posts: MostRecentLinkPosts;
 	userId: string;
 	linkUrl: string;
-	createdAt: string | Date;
+	createdAt: string;
 	linkPosts?: MostRecentLinkPosts;
 };
 
@@ -138,7 +138,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 			groups[date].push(bookmark);
 			return groups;
 		},
-		{} as Record<string, typeof bookmarks>,
+		{} as Record<string, BookmarkWithLinkPosts[]>,
 	);
 
 	const bookmarksByDate = Object.entries(groupedBookmarks);

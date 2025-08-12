@@ -1,4 +1,4 @@
-import type { MostRecentLinkPosts } from "./links.server";
+import type { MostRecentLinkPosts } from "@sill/schema";
 
 export const subject = "Your Sill Daily Digest";
 export const preview = (linkPosts: MostRecentLinkPosts[]) => {

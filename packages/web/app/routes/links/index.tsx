@@ -1,13 +1,7 @@
-import {
-	OAuthResolverError,
-	OAuthResponseError,
-	TokenRefreshError,
-} from "@atproto/oauth-client-node";
 import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import { Suspense, useEffect, useRef, useState } from "react";
 import {
 	Await,
-	redirect,
 	useFetcher,
 	useLocation,
 	useSearchParams,
@@ -18,13 +12,11 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
-import type { bookmark } from "~/drizzle/schema.server";
 import { useLayout } from "~/routes/resources/layout-switch";
-import { createOAuthClient } from "~/server/oauth/client";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { MostRecentLinkPosts, bookmark } from "@sill/schema";
 import type { Route } from "./+types/index";
 import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
 
@@ -42,34 +34,34 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const bsky = userProfile.blueskyAccounts[0] || null;
 
 	// Check if we need to reauthenticate with Bluesky
-	if (bsky) {
-		try {
-			const client = await createOAuthClient();
-			await client.restore(bsky.did);
-		} catch (error) {
-			if (error instanceof OAuthResponseError) {
-				const client = await createOAuthClient();
-				await client.restore(bsky.did);
-			}
-			if (error instanceof TokenRefreshError) {
-				const client = await createOAuthClient();
-				try {
-					const url = await client.authorize(bsky.handle, {
-						scope: "atproto transition:generic",
-					});
-					return redirect(url.toString());
-				} catch (error) {
-					const url = await client.authorize(bsky.did, {
-						scope: "atproto transition:generic",
-					});
-					return redirect(url.toString());
-				}
-			}
-			if (error instanceof OAuthResolverError) {
-				return redirect("/settings?tab=connect&error=resolver");
-			}
-		}
-	}
+	// if (bsky) {
+	// 	try {
+	// 		const client = await createOAuthClient();
+	// 		await client.restore(bsky.did);
+	// 	} catch (error) {
+	// 		if (error instanceof OAuthResponseError) {
+	// 			const client = await createOAuthClient();
+	// 			await client.restore(bsky.did);
+	// 		}
+	// 		if (error instanceof TokenRefreshError) {
+	// 			const client = await createOAuthClient();
+	// 			try {
+	// 				const url = await client.authorize(bsky.handle, {
+	// 					scope: "atproto transition:generic",
+	// 				});
+	// 				return redirect(url.toString());
+	// 			} catch (error) {
+	// 				const url = await client.authorize(bsky.did, {
+	// 					scope: "atproto transition:generic",
+	// 				});
+	// 				return redirect(url.toString());
+	// 			}
+	// 		}
+	// 		if (error instanceof OAuthResolverError) {
+	// 			return redirect("/settings?tab=connect&error=resolver");
+	// 		}
+	// 	}
+	// }
 
 	// Use the Mastodon account from the API response
 	const mastodon = userProfile.mastodonAccounts[0] || null;

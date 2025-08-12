@@ -142,7 +142,7 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
     const denormalized = chunk
       .map((p) => p.denormalized)
       .filter((p) => p.linkUrl.length <= MAX_URL_LENGTH)
-      .filter((p) => p.postDate >= new Date(Date.now() - ONE_DAY_MS));
+      .filter((p) => new Date(p.postDate) >= new Date(Date.now() - ONE_DAY_MS));
 
     await db.transaction(async (tx) => {
       if (links.length > 0)
@@ -382,7 +382,7 @@ export const filterLinkOccurrences = async ({
             and(
               eq(linkPostDenormalized.linkUrl, row.url || ""),
               eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start),
+              gte(linkPostDenormalized.postDate, start.toDateString()),
               listRecord
                 ? eq(linkPostDenormalized.listId, listRecord.id)
                 : undefined,
@@ -622,7 +622,7 @@ export const evaluateNotifications = async (
     .where(
       and(
         eq(linkPostDenormalized.userId, userId),
-        gte(linkPostDenormalized.postDate, start),
+        gte(linkPostDenormalized.postDate, start.toDateString()),
         notInArray(link.url, seenLinks),
         ...urlMuteClauses,
         ...linkSQLQueries,
@@ -645,7 +645,7 @@ export const evaluateNotifications = async (
             and(
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
               eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start),
+              gte(linkPostDenormalized.postDate, start.toDateString()),
               sql`${postMuteCondition} = 1`
             )
           )
@@ -686,7 +686,7 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
           .where(
             and(
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              gte(linkPostDenormalized.postDate, start)
+              gte(linkPostDenormalized.postDate, start.toDateString())
             )
           )
           .orderBy(desc(sql`count`))

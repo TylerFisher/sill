@@ -13,7 +13,7 @@ import {
 
 export const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30;
 export const getSessionExpirationDate = () =>
-  new Date(Date.now() + SESSION_EXPIRATION_TIME);
+  new Date(Date.now() + SESSION_EXPIRATION_TIME).toDateString();
 
 export const sessionKey = "sessionId";
 
@@ -37,7 +37,7 @@ export async function getUserIdFromSession(
     },
     where: and(
       eq(session.id, sessionId),
-      gt(session.expirationDate, new Date())
+      gt(session.expirationDate, new Date().toDateString())
     ),
   });
 
@@ -82,7 +82,7 @@ export async function validateSession(
     },
     where: and(
       eq(session.id, sessionId),
-      gt(session.expirationDate, new Date())
+      gt(session.expirationDate, new Date().toDateString())
     ),
   });
 
@@ -153,7 +153,9 @@ export async function signup({
         email: email.toLowerCase(),
         name,
         emailConfirmed: true,
-        freeTrialEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14),
+        freeTrialEnd: new Date(
+          Date.now() + 1000 * 60 * 60 * 24 * 14
+        ).toDateString(),
       })
       .returning({
         id: user.id,
@@ -298,7 +300,7 @@ export const isSubscribed = async (
 
   const subscribed = dbUser.subscriptions.length > 0;
   if (!subscribed && dbUser.freeTrialEnd) {
-    if (new Date() < dbUser.freeTrialEnd) {
+    if (new Date() < new Date(dbUser.freeTrialEnd)) {
       return "trial";
     }
   }
@@ -367,7 +369,7 @@ export const getUserProfile = async (userId: string) => {
     subscriptionStatus = "plus";
   } else if (
     userWithAccounts.freeTrialEnd &&
-    new Date() < userWithAccounts.freeTrialEnd
+    new Date() < new Date(userWithAccounts.freeTrialEnd)
   ) {
     subscriptionStatus = "trial";
   }

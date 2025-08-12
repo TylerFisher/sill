@@ -17,14 +17,14 @@ import { Theme as RadixTheme } from "@radix-ui/themes";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
 import { useTheme } from "./routes/resources/theme-switch";
-import { type SubscriptionStatus, hasAgreed } from "./utils/auth.server";
-import { apiGetUserProfileOptional } from "./utils/api-client.server";
+import { apiGetLatestTermsUpdate, apiGetTermsAgreement, apiGetUserProfileOptional } from "./utils/api-client.server";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme";
 import { userContext } from "./context/user-context";
+import type { SubscriptionStatus } from "@sill/schema";
 
 // Middleware to fetch user profile and set in context
 const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
@@ -56,7 +56,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 		dbUser = userProfile; // Use the user data from context
 		subscribed = userProfile.subscriptionStatus;
 		try {
-			agreed = await hasAgreed(userProfile.id);
+      const latestTerms = await apiGetLatestTermsUpdate(request);
+      const { agreement } = await apiGetTermsAgreement(request, latestTerms.id);
+			agreed = !!agreement;
 		} catch (error) {
 			console.error("Database error in hasAgreed:", error);
 		}

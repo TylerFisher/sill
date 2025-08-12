@@ -5,6 +5,7 @@ import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
 import { getUserIdFromSession } from "../auth/auth.server";
 import { db, mastodonAccount, mastodonInstance, user } from "@sill/schema";
+import { getMastodonLists } from "../utils/mastodon.server";
 
 const AuthorizeSchema = z.object({
   instance: z.string().min(1),
@@ -278,6 +279,33 @@ const mastodon = new Hono()
       });
     } catch (error) {
       console.error("Mastodon revoke error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // GET /api/mastodon/lists - Get Mastodon lists for the authenticated user
+  .get("/lists", async (c) => {
+    try {
+      const userId = await getUserIdFromSession(c.req.raw);
+      if (!userId) {
+        return c.json({ error: "Not authenticated" }, 401);
+      }
+
+      const account = await db.query.mastodonAccount.findFirst({
+        where: eq(mastodonAccount.userId, userId),
+        with: {
+          mastodonInstance: true,
+          lists: true,
+        },
+      });
+
+      if (!account) {
+        return c.json({ error: "Mastodon account not found" }, 404);
+      }
+
+      const lists = await getMastodonLists(account);
+      return c.json({ lists });
+    } catch (error) {
+      console.error("Get Mastodon lists error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

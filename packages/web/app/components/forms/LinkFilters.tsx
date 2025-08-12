@@ -3,7 +3,7 @@ import { Form, useSearchParams } from "react-router";
 import FilterButtonGroup, {
 	type ButtonGroup,
 } from "~/components/forms/FilterButtonGroup";
-import type { list } from "~/drizzle/schema.server";
+import type { list } from "@sill/schema";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import { getCustomizedFilters } from "~/utils/filterUtils";
 import styles from "./LinkFilters.module.css";

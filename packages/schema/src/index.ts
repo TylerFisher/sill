@@ -111,7 +111,7 @@ export interface ListOption {
   subscribed: boolean;
 }
 
-export type SubscriptionStatus = "free" | "trial" | "active" | "canceled";
+export type SubscriptionStatus = "free" | "trial" | "plus";
 
 export interface AccountWithInstance extends MastodonAccount {
   mastodonInstance: MastodonInstance;

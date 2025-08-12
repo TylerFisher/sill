@@ -1,7 +1,7 @@
 import { Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
-import type { linkPostDenormalized } from "~/drizzle/schema.server";
+import type { linkPostDenormalized } from "@sill/schema";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");

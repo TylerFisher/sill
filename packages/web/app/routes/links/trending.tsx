@@ -16,22 +16,22 @@ import LinkRep from "~/components/linkPosts/LinkRep";
 import NumberRanking from "~/components/linkPosts/NumberRanking";
 import PostRep from "~/components/linkPosts/PostRep";
 import Layout from "~/components/nav/Layout";
-import type { SubscriptionStatus } from "~/utils/auth.server";
-import { networkTopTen } from "~/utils/links.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types/trending";
 import { getUserFromContext } from "~/utils/context.server";
+import { apiGetNetworkTopTen } from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Trending" }];
 
-export const loader = async ({ context }: Route.LoaderArgs) => {
+export const loader = async ({ context, request }: Route.LoaderArgs) => {
 	const existingUser = await getUserFromContext(context);
 	let subscribed: SubscriptionStatus = "free";
 	if (existingUser) {
 		subscribed = existingUser.subscriptionStatus;
 	}
 
-	const topTen = networkTopTen();
+	const topTen = apiGetNetworkTopTen(request);
 
 	return {
 		existingUser,

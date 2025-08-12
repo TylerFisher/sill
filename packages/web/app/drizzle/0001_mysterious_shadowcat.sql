@@ -1,1 +1,0 @@
-ALTER TABLE "link_post" ADD COLUMN "date" timestamp(3) NOT NULL;

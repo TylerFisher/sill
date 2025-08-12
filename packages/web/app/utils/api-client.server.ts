@@ -1189,3 +1189,77 @@ export async function apiForgotPassword(
 
   return json;
 }
+
+/**
+ * Get OAuth client metadata via API
+ */
+export async function apiGetClientMetadata(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.auth["client-metadata"].$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get client metadata: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Get Bluesky lists for the authenticated user via API
+ */
+export async function apiGetBlueskyLists(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.bluesky.lists.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get Bluesky lists: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Get Mastodon lists for the authenticated user via API
+ */
+export async function apiGetMastodonLists(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.mastodon.lists.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get Mastodon lists: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Get network top ten trending links via API
+ */
+export async function apiGetNetworkTopTen(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.links.trending.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get network top ten: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}

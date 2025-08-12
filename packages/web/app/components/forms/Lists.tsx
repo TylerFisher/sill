@@ -2,10 +2,8 @@ import { Box, Callout, Flex, Heading, Link, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { useFetcher } from "react-router";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
-import type { blueskyAccount } from "~/drizzle/schema.server";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { blueskyAccount, SubscriptionStatus, AccountWithInstance } from "@sill/schema";
 import ListSwitch, { type ListOption } from "./ListSwitch";
-import type { AccountWithInstance } from "./MastodonConnectForm";
 
 const Lists = ({
 	listOptions,

@@ -9,7 +9,7 @@ import {
 import { Ellipsis } from "lucide-react";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { useFetcher } from "react-router";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import styles from "./ToolDropdown.module.css";
 
 interface ToolDropdownProps {

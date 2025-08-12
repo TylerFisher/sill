@@ -1,8 +1,7 @@
 import { Box, Card, Inset, Separator, Text } from "@radix-ui/themes";
 import { useClientMetadata } from "~/hooks/useClientMetadata";
 import { useTheme } from "~/routes/resources/theme-switch";
-import type { SubscriptionStatus } from "~/utils/auth.server";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import styles from "./LinkRep.module.css";
 import ToolDropdown from "./ToolDropdown";
 import Toolbar from "./Toolbar";

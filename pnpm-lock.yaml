@@ -239,6 +239,9 @@ importers:
       '@sill/api':
         specifier: workspace:*
         version: link:../api
+      '@sill/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@types/jsdom':
         specifier: ^21.1.7
         version: 21.1.7

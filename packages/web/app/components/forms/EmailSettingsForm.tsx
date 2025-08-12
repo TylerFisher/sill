@@ -13,7 +13,7 @@ import {
 } from "@radix-ui/themes";
 import { useState } from "react";
 import { Form, Link, useFetcher } from "react-router";
-import type { digestSettings } from "~/drizzle/schema.server";
+import type { digestSettings } from "@sill/schema";
 import { EmailSettingsSchema, type action } from "~/routes/email/add";
 import CopyLink from "../linkPosts/CopyLink";
 import CheckboxField from "./CheckboxField";

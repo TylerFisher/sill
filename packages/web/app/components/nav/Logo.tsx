@@ -1,6 +1,6 @@
 import { Heading } from "@radix-ui/themes";
 import { Link } from "react-router";
-import type { SubscriptionStatus } from "~/utils/auth.server";
+import type { SubscriptionStatus } from "@sill/schema";
 import styles from "./logo.module.css";
 
 const Logo = ({

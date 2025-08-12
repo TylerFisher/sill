@@ -11,6 +11,7 @@ import {
   findLinksByTopic,
   fetchLinks,
   insertNewLinks,
+  networkTopTen,
 } from "../utils/links.server";
 
 // Schema for filtering links
@@ -200,12 +201,14 @@ const links = new Hono()
       count: 0,
     });
   })
-  .get("/trending", (c) => {
-    return c.json({
-      message: "Trending links endpoint",
-      data: [],
-      count: 0,
-    });
+  .get("/trending", async (c) => {
+    try {
+      const result = await networkTopTen();
+      return c.json(result);
+    } catch (error) {
+      console.error("Network top ten error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
   })
   // Example with validation
   .get(

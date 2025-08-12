@@ -1,7 +1,7 @@
 import type { SubmissionResult } from "@conform-to/react";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { uuidv7 } from "uuidv7-js";
-import type { list } from "~/drizzle/schema.server";
+import type { list } from "@sill/schema";
 import {
 	useNotifications,
 	useNotificationsDispatch,

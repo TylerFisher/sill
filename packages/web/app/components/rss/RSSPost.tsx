@@ -1,6 +1,6 @@
 import { Blockquote, Box, Heading, Link, Text } from "@radix-ui/themes";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
 import RSSRepost from "./RSSRepost";
+import type { MostRecentLinkPosts } from "@sill/schema";
 
 const RSSPost = ({
 	postUrl,

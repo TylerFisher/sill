@@ -37,6 +37,7 @@
     "@react-router/node": "^7.7.0",
     "@react-router/serve": "^7.7.0",
     "@sill/api": "workspace:*",
+    "@sill/schema": "workspace:*",
     "@types/jsdom": "^21.1.7",
     "bcryptjs": "^2.4.3",
     "cloudflare": "^4.4.1",

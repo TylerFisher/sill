@@ -1,4 +1,4 @@
-import { createOAuthClient } from "~/server/oauth/client";
+import { apiGetClientMetadata } from "~/utils/api-client.server";
 import type { Route } from "./+types/client-metadata";
 
 export const headers: Route.HeadersFunction = () => ({
@@ -6,7 +6,7 @@ export const headers: Route.HeadersFunction = () => ({
 	"Cache-Control": "public, max-age=3600",
 });
 
-export const loader = async () => {
-	const oauthClient = await createOAuthClient();
-	return Response.json(oauthClient.clientMetadata);
+export const loader = async ({ request }: Route.LoaderArgs) => {
+	const clientMetadata = await apiGetClientMetadata(request);
+	return Response.json(clientMetadata);
 };

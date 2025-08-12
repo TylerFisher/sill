@@ -18,7 +18,7 @@ import {
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Form, useFetcher } from "react-router";
-import type { list } from "~/drizzle/schema.server";
+import type { list } from "@sill/schema";
 import { NotificationSchema } from "~/routes/notifications";
 import { useNotificationsDispatch } from "../contexts/NotificationsContext";
 import CopyLink from "../linkPosts/CopyLink";
