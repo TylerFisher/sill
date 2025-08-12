@@ -382,7 +382,7 @@ export const filterLinkOccurrences = async ({
             and(
               eq(linkPostDenormalized.linkUrl, row.url || ""),
               eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start.toDateString()),
+              gte(linkPostDenormalized.postDate, start.toISOString()),
               listRecord
                 ? eq(linkPostDenormalized.listId, listRecord.id)
                 : undefined,
@@ -610,7 +610,7 @@ export const evaluateNotifications = async (
     .where(
       and(
         eq(linkPostDenormalized.userId, userId),
-        gte(linkPostDenormalized.postDate, start.toDateString()),
+        gte(linkPostDenormalized.postDate, start.toISOString()),
         notInArray(link.url, seenLinks),
         ...urlMuteClauses,
         ...linkSQLQueries,
@@ -633,7 +633,7 @@ export const evaluateNotifications = async (
             and(
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
               eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start.toDateString()),
+              gte(linkPostDenormalized.postDate, start.toISOString()),
               sql`${postMuteCondition} = 1`
             )
           )
@@ -674,7 +674,7 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
           .where(
             and(
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              gte(linkPostDenormalized.postDate, start.toDateString())
+              gte(linkPostDenormalized.postDate, start.toISOString())
             )
           )
           .orderBy(desc(sql`count`))

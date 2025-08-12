@@ -254,7 +254,7 @@ const processMastodonLink = async (
     id: uuidv7(),
     linkUrl: link.url,
     postText: original.content,
-    postDate: original.createdAt,
+    postDate: new Date(original.createdAt).toISOString(),
     postType: postType.enumValues[1],
     postUrl: url,
     actorHandle: original.account.acct,

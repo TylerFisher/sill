@@ -13,7 +13,7 @@ import {
 
 export const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30;
 export const getSessionExpirationDate = () =>
-  new Date(Date.now() + SESSION_EXPIRATION_TIME).toDateString();
+  new Date(Date.now() + SESSION_EXPIRATION_TIME).toISOString();
 
 export const sessionKey = "sessionId";
 
@@ -37,7 +37,7 @@ export async function getUserIdFromSession(
     },
     where: and(
       eq(session.id, sessionId),
-      gt(session.expirationDate, new Date().toDateString())
+      gt(session.expirationDate, new Date().toISOString())
     ),
   });
 
@@ -82,7 +82,7 @@ export async function validateSession(
     },
     where: and(
       eq(session.id, sessionId),
-      gt(session.expirationDate, new Date().toDateString())
+      gt(session.expirationDate, new Date().toISOString())
     ),
   });
 
@@ -155,7 +155,7 @@ export async function signup({
         emailConfirmed: true,
         freeTrialEnd: new Date(
           Date.now() + 1000 * 60 * 60 * 24 * 14
-        ).toDateString(),
+        ).toISOString(),
       })
       .returning({
         id: user.id,

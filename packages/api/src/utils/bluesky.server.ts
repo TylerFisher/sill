@@ -116,11 +116,11 @@ export const getBlueskyList = async (
         continue;
 
       const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
-        ? new Date(item.reason.indexedAt)
-        : new Date(item.post.indexedAt);
+        ? item.reason.indexedAt
+        : item.post.indexedAt;
 
       // skip a few posts in case of pinned posts
-      if (postDate <= checkDate && index > 5) {
+      if (new Date(postDate) <= new Date(checkDate) && index > 5) {
         reachedEnd = true;
         break;
       }
@@ -160,7 +160,7 @@ export const getBlueskyList = async (
       await db
         .update(list)
         .set({
-          mostRecentPostDate: new Date().toDateString(),
+          mostRecentPostDate: new Date().toISOString(),
         })
         .where(eq(list.uri, dbList.uri));
     }
@@ -192,7 +192,7 @@ export const getBlueskyTimeline = async (
     const timeline = response.data.feed;
     const checkDate = account?.mostRecentPostDate
       ? account.mostRecentPostDate
-      : new Date(Date.now() - ONE_DAY_MS).toDateString();
+      : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
     let reachedEnd = false;
     const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
@@ -205,8 +205,8 @@ export const getBlueskyTimeline = async (
         continue;
 
       const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
-        ? item.reason.indexedAt
-        : item.post.indexedAt;
+        ? new Date(item.reason.indexedAt).toISOString()
+        : new Date(item.post.indexedAt).toISOString();
       if (new Date(postDate) <= new Date(checkDate)) {
         reachedEnd = true;
         break;
@@ -435,7 +435,7 @@ const processBlueskyLink = async (
     id: uuidv7(),
     postUrl,
     postText: serializeBlueskyPostToHtml(record),
-    postDate: t.post.indexedAt,
+    postDate: new Date(t.post.indexedAt).toISOString(),
     postType: postType.enumValues[0],
     postImages: imageGroup.map((image) => ({
       alt: image.alt,
@@ -456,7 +456,9 @@ const processBlueskyLink = async (
     quotedPostText: quotedValue
       ? serializeBlueskyPostToHtml(quotedValue)
       : undefined,
-    quotedPostDate: quotedRecord ? quotedRecord.indexedAt : undefined,
+    quotedPostDate: quotedRecord
+      ? new Date(quotedRecord.indexedAt).toISOString()
+      : undefined,
     quotedPostImages: quotedImageGroup.map((image) => ({
       alt: image.alt,
       url: image.thumb,

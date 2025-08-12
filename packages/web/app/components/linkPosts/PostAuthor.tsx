@@ -20,8 +20,9 @@ interface PostAuthorProps {
 	layout: "default" | "dense";
 }
 
-const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => (
-	<Text
+const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => {
+  return (
+  <Text
 		size={{
 			initial: layout === "dense" ? "1" : "2",
 			sm: layout === "dense" ? "2" : "3",
@@ -59,12 +60,14 @@ const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => (
 				</Text>
 				<Link href={postUrl} target="_blank" rel="noreferrer" underline="hover">
 					<Text color="gray" weight="regular">
-						{timeAgo.format(new Date(postDate), "twitter-now")}
+						{timeAgo.format(new Date(`${postDate}Z`), "twitter-now")}
 					</Text>
 				</Link>
 			</>
 		)}
 	</Text>
-);
+  )
+	
+};
 
 export default PostAuthor;

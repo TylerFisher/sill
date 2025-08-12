@@ -64,13 +64,13 @@ export async function prepareVerification({
     .values({
       id: uuidv7(),
       ...verificationData,
-      expiresAt: verificationData.expiresAt.toDateString(),
+      expiresAt: verificationData.expiresAt.toISOString(),
     })
     .onConflictDoUpdate({
       target: [verification.target, verification.type],
       set: {
         ...verificationData,
-        expiresAt: verificationData.expiresAt.toDateString(),
+        expiresAt: verificationData.expiresAt.toISOString(),
       },
     });
 
@@ -106,7 +106,7 @@ export async function isCodeValid({
       eq(verification.target, target),
       eq(verification.type, type),
       or(
-        gt(verification.expiresAt, new Date().toDateString()),
+        gt(verification.expiresAt, new Date().toISOString()),
         isNull(verification.expiresAt)
       )
     ),

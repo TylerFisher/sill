@@ -73,7 +73,7 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 					)}
 					{publishDate && (
 						<Text as="span">
-							{timeAgo.format(new Date(publishDate), "round-minute")}
+							{timeAgo.format(new Date(`${publishDate}`), "round-minute")}
 						</Text>
 					)}
 				</Text>

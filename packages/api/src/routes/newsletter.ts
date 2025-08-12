@@ -97,7 +97,7 @@ const newsletter = new Hono()
           title: subject,
           json: links,
           description: preview(links),
-          pubDate: new Date().toDateString(),
+          pubDate: new Date().toISOString(),
           userId: dbUser.id,
         };
 
