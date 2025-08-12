@@ -1,14 +1,14 @@
-import { Box, Card, Inset, Separator, Text } from "@radix-ui/themes";
+import { Box, Card, Inset } from "@radix-ui/themes";
 import { useClientMetadata } from "~/hooks/useClientMetadata";
 import { useTheme } from "~/routes/resources/theme-switch";
-import type { SubscriptionStatus } from "@sill/schema";
+import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 import styles from "./LinkRep.module.css";
 import ToolDropdown from "./ToolDropdown";
 import Toolbar from "./Toolbar";
 import DisplayHost from "./link/DisplayHost";
 import LinkDescription from "./link/LinkDescription";
 import LinkImage from "./link/LinkImage";
-import LinkMetadata, { LinkTags } from "./link/LinkMetadata";
+import LinkMetadata from "./link/LinkMetadata";
 import LinkTitle from "./link/LinkTitle";
 import XEmbed from "./link/XEmbed";
 import YoutubeEmbed from "./link/YoutubeEmbed";

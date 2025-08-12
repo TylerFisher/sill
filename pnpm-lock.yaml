@@ -154,9 +154,9 @@ importers:
       drizzle-orm:
         specifier: ^0.36.0
         version: 0.36.4(@libsql/client-wasm@0.15.10)(@types/pg@8.15.5)(@types/react@18.3.23)(pg@8.16.3)(postgres@3.4.7)(react@18.3.1)
-      postgres:
-        specifier: ^3.4.5
-        version: 3.4.7
+      pg:
+        specifier: ^8.13.1
+        version: 8.16.3
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -164,6 +164,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.17.1
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.15.5
       typescript:
         specifier: ^5.0.0
         version: 5.9.2
@@ -10395,7 +10398,8 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  postgres@3.4.7: {}
+  postgres@3.4.7:
+    optional: true
 
   prettier@3.6.2: {}
 

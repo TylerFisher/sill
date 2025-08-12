@@ -254,7 +254,7 @@ const processMastodonLink = async (
     id: uuidv7(),
     linkUrl: link.url,
     postText: original.content,
-    postDate: new Date(original.createdAt),
+    postDate: original.createdAt,
     postType: postType.enumValues[1],
     postUrl: url,
     actorHandle: original.account.acct,
@@ -283,6 +283,8 @@ const processMastodonLink = async (
 export const getLinksFromMastodon = async (
   userId: string
 ): Promise<ProcessedResult[]> => {
+  const start = new Date();
+  console.log("starting mastodon fetch");
   const account = await db.query.mastodonAccount.findFirst({
     where: eq(mastodonAccount.userId, userId),
     with: {
@@ -332,7 +334,11 @@ export const getLinksFromMastodon = async (
         );
       }
     }
-
+    const end = new Date();
+    console.log(
+      "finished mastodon fetch",
+      end.getSeconds() - start.getSeconds()
+    );
     return processedResults;
   } catch (e) {
     console.error(

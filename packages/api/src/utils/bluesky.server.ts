@@ -183,6 +183,7 @@ export const getBlueskyTimeline = async (
   account: typeof blueskyAccount.$inferSelect,
   agent: Agent
 ) => {
+  console.log(account.mostRecentPostDate);
   async function getTimeline(cursor: string | undefined = undefined) {
     const response = await agent.getTimeline({
       limit: 100,
@@ -191,7 +192,7 @@ export const getBlueskyTimeline = async (
     const timeline = response.data.feed;
     const checkDate = account?.mostRecentPostDate
       ? account.mostRecentPostDate
-      : new Date(Date.now() - ONE_DAY_MS);
+      : new Date(Date.now() - ONE_DAY_MS).toDateString();
 
     let reachedEnd = false;
     const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
@@ -204,9 +205,9 @@ export const getBlueskyTimeline = async (
         continue;
 
       const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
-        ? new Date(item.reason.indexedAt)
-        : new Date(item.post.indexedAt);
-      if (postDate <= checkDate) {
+        ? item.reason.indexedAt
+        : item.post.indexedAt;
+      if (new Date(postDate) <= new Date(checkDate)) {
         reachedEnd = true;
         break;
       }
@@ -434,7 +435,7 @@ const processBlueskyLink = async (
     id: uuidv7(),
     postUrl,
     postText: serializeBlueskyPostToHtml(record),
-    postDate: new Date(t.post.indexedAt),
+    postDate: t.post.indexedAt,
     postType: postType.enumValues[0],
     postImages: imageGroup.map((image) => ({
       alt: image.alt,
@@ -455,7 +456,7 @@ const processBlueskyLink = async (
     quotedPostText: quotedValue
       ? serializeBlueskyPostToHtml(quotedValue)
       : undefined,
-    quotedPostDate: quotedRecord ? new Date(quotedRecord.indexedAt) : undefined,
+    quotedPostDate: quotedRecord ? quotedRecord.indexedAt : undefined,
     quotedPostImages: quotedImageGroup.map((image) => ({
       alt: image.alt,
       url: image.thumb,
@@ -488,6 +489,8 @@ const processBlueskyLink = async (
 export const getLinksFromBluesky = async (
   userId: string
 ): Promise<ProcessedResult[]> => {
+  const start = new Date();
+  console.log("starting bluesky fetch");
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
     with: {
@@ -544,6 +547,8 @@ export const getLinksFromBluesky = async (
       );
     }
   }
+  const end = new Date();
+  console.log("finished bluesky fetch", end.getSeconds() - start.getSeconds());
 
   return processedResults;
 };

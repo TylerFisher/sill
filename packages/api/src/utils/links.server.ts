@@ -396,15 +396,6 @@ export const filterLinkOccurrences = async ({
           )
           .orderBy(desc(linkPostDenormalized.postDate));
 
-        // Convert string dates back to Date objects for frontend
-        const convertedPosts = posts.map((post) => ({
-          ...post,
-          postDate:
-            typeof post.postDate === "string"
-              ? new Date(post.postDate)
-              : post.postDate,
-        }));
-
         return {
           uniqueActorsCount: Number(row.uniqueactorscount) || 0,
           link: {
@@ -416,15 +407,12 @@ export const filterLinkOccurrences = async ({
             giftUrl: row.giftUrl,
             metadata: row.metadata,
             scraped: row.scraped,
-            publishedDate:
-              typeof row.publishedDate === "string"
-                ? new Date(row.publishedDate)
-                : row.publishedDate,
+            publishedDate: row.publishedDate,
             authors: row.authors,
             siteName: row.siteName,
             topics: row.topics,
           },
-          posts: convertedPosts,
+          posts,
         };
       })
     );

@@ -95,7 +95,6 @@ const links = new Hono()
         userId,
         ...params,
       });
-
       return c.json(result);
     } catch (error) {
       console.error("Filter links error:", error);

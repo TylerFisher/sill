@@ -113,7 +113,9 @@ const newsletter = new Hono()
               digestUrl,
               layout: digest.layout,
               subscribed,
-              freeTrialEnd: new Date(dbUser.freeTrialEnd) || null,
+              freeTrialEnd: dbUser.freeTrialEnd
+                ? new Date(dbUser.freeTrialEnd)
+                : null,
             });
             console.log(`Email sent to ${dbUser.email}: ${emailSubject}`);
           } catch (error) {
