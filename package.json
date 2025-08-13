@@ -18,5 +18,10 @@
 	"engines": {
 		"node": ">=22.0.0"
 	},
-	"packageManager": "pnpm@9.15.0"
+	"packageManager": "pnpm@9.15.0",
+	"pnpm": {
+		"overrides": {
+			"drizzle-orm": "0.44.4"
+		}
+	}
 }

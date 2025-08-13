@@ -17,7 +17,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
-import { isSubscribed } from "../auth/auth.server";
+import { isSubscribed } from "@sill/auth";
 import {
   db,
   blueskyAccount,
@@ -26,8 +26,8 @@ import {
   postType,
   type ListOption,
 } from "@sill/schema";
-import { createOAuthClient } from "../oauth/client";
-import type { ProcessedResult } from "./links.server";
+import { createOAuthClient } from "@sill/auth";
+import type { ProcessedResult } from "./links";
 import {
   getFullUrl,
   isGiftLink,
@@ -183,7 +183,6 @@ export const getBlueskyTimeline = async (
   account: typeof blueskyAccount.$inferSelect,
   agent: Agent
 ) => {
-  console.log(account.mostRecentPostDate);
   async function getTimeline(cursor: string | undefined = undefined) {
     const response = await agent.getTimeline({
       limit: 100,
@@ -492,7 +491,6 @@ export const getLinksFromBluesky = async (
   userId: string
 ): Promise<ProcessedResult[]> => {
   const start = new Date();
-  console.log("starting bluesky fetch");
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
     with: {
@@ -550,8 +548,6 @@ export const getLinksFromBluesky = async (
     }
   }
   const end = new Date();
-  console.log("finished bluesky fetch", end.getSeconds() - start.getSeconds());
-
   return processedResults;
 };
 

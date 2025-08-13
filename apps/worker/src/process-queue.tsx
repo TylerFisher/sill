@@ -1,9 +1,7 @@
-import { and, asc, count, eq, gte, ilike, is, not, sql } from "drizzle-orm";
-import { renderToString } from "react-dom/server";
+import { and, asc, count, eq, gte, ilike, not, sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
-import RSSNotificationItem from "~/components/rss/RSSNotificationItem";
-import { db } from "~/drizzle/db.server";
 import {
+	db,
 	accountUpdateQueue,
 	bookmark,
 	link,
@@ -12,20 +10,21 @@ import {
 	notificationGroup,
 	notificationItem,
 	user,
-} from "~/drizzle/schema.server";
-import Notification from "~/emails/Notification";
-import { isSubscribed } from "~/utils/auth.server";
-import { renderPageContent } from "~/utils/cloudflare.server";
-import { renderReactEmail, sendEmail } from "~/utils/email.server";
+} from "@sill/schema";
 import {
 	type ProcessedResult,
 	evaluateNotifications,
 	fetchLinks,
 	filterLinkOccurrences,
 	insertNewLinks,
-} from "~/utils/links.server";
-import { extractHtmlMetadata, fetchHtmlViaProxy } from "~/utils/metadata";
-import { dequeueJobs, enqueueJob } from "~/utils/queue.server";
+	dequeueJobs,
+	enqueueJob,
+  extractHtmlMetadata,
+  fetchHtmlViaProxy,
+  renderPageContent
+} from "@sill/links";
+import { isSubscribed } from "@sill/auth";
+import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
 
 const MAX_ERRORS_PER_BATCH = 10;
 
@@ -112,35 +111,27 @@ async function processQueue() {
 					group.userId,
 					group.query,
 					group.seenLinks,
-					group.createdAt,
+					new Date(group.createdAt),
 				);
 				if (newItems.length > 0) {
 					console.log(
 						`sending notification for group ${group.name}, user ${groupUser.email}`,
 					);
 					if (group.notificationType === "email") {
-						const emailBody = {
-							from: `Sill <noreply@${process.env.EMAIL_DOMAIN}>`,
+						await sendNotificationEmail({
 							to: groupUser.email,
-							subject:
-								newItems[0].link?.title ||
-								`New Sill notification: ${group.name}`,
-							"o:tag": "notification",
-							...(await renderReactEmail(
-								<Notification
-									links={newItems}
-									groupName={group.name}
-									subscribed={subscribed}
-									freeTrialEnd={groupUser.freeTrialEnd}
-								/>,
-							)),
-						};
-						await sendEmail(emailBody);
+							subject: newItems[0].link?.title || `New Sill notification: ${group.name}`,
+							links: newItems,
+							groupName: group.name,
+							subscribed,
+							freeTrialEnd: groupUser.freeTrialEnd ? new Date(groupUser.freeTrialEnd) : null,
+						});
 					} else if (group.notificationType === "rss") {
 						for (const item of newItems) {
-							const html = renderToString(
-								<RSSNotificationItem linkPost={item} subscribed={subscribed} />,
-							);
+							const html = await renderNotificationRSS({
+                item,
+                subscribed
+              });
 							await db.insert(notificationItem).values({
 								id: uuidv7(),
 								notificationGroupId: group.id,

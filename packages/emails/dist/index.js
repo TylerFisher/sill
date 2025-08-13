@@ -1,10 +1,4 @@
-export { sendEmail, renderReactEmail } from "./email-service";
-export { default as VerifyEmail } from "./emails/VerifyEmail";
-export { default as PasswordResetEmail } from "./emails/PasswordResetEmail";
-export { default as WelcomeEmail } from "./emails/WelcomeEmail";
-export { default as TopLinksEmail } from "./emails/TopLinksEmail";
-export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
-export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
+import { renderToString } from "react-dom/server";
 import { sendEmail } from "./email-service";
 import VerifyEmail from "./emails/VerifyEmail";
 import PasswordResetEmail from "./emails/PasswordResetEmail";
@@ -12,7 +6,16 @@ import WelcomeEmail from "./emails/WelcomeEmail";
 import TopLinksEmail from "./emails/TopLinksEmail";
 import EmailChangeEmail from "./emails/EmailChangeEmail";
 import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail";
+import Notification from "./emails/Notification";
 import RSSLinks from "./components/RSSLinks";
+export { sendEmail, renderReactEmail } from "./email-service";
+export { default as VerifyEmail } from "./emails/VerifyEmail";
+export { default as PasswordResetEmail } from "./emails/PasswordResetEmail";
+export { default as WelcomeEmail } from "./emails/WelcomeEmail";
+export { default as TopLinksEmail } from "./emails/TopLinksEmail";
+export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
+export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
+import RSSNotificationItem from "./components/RSSNotificationItem";
 export { default as EmailLayout } from "./components/Layout";
 export { default as EmailHeading } from "./components/Heading";
 export { default as OTPBlock } from "./components/OTPBlock";
@@ -73,11 +76,34 @@ export async function sendDigestEmail({ to, subject, links, name, digestUrl, lay
         "o:tag": "digest",
     });
 }
-export function renderDigestRSS({ links, name, digestUrl, subscribed, }) {
+export async function renderDigestRSS({ links, name, digestUrl, subscribed, }) {
     return RSSLinks({
         links,
         name,
         digestUrl,
         subscribed,
     });
+}
+export async function sendNotificationEmail({ to, subject, links, groupName, subscribed, freeTrialEnd, }) {
+    const notificationElement = Notification({
+        links,
+        groupName,
+        subscribed,
+        freeTrialEnd,
+    });
+    if (!notificationElement) {
+        throw new Error("Failed to render notification email");
+    }
+    await sendEmail({
+        to,
+        subject,
+        react: notificationElement,
+        "o:tag": "notification",
+    });
+}
+export async function renderNotificationRSS({ item, subscribed, }) {
+    return renderToString(RSSNotificationItem({
+        linkPost: item,
+        subscribed,
+    }));
 }

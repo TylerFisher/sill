@@ -30,15 +30,15 @@ import {
   postType,
   type NotificationQuery,
 } from "@sill/schema";
-import { getLinksFromBluesky } from "./bluesky.server";
-import { getLinksFromMastodon } from "./mastodon.server";
+import { getLinksFromBluesky } from "./bluesky";
+import { getLinksFromMastodon } from "./mastodon";
 import {
   type OrderField,
   type QueryContext,
   type WhereCondition,
   createQueryBuilder,
   createQueryEngine,
-} from "./query-federation.server";
+} from "./query-federation";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {

@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { getUserIdFromSession } from "../auth/auth.server";
+import { getUserIdFromSession } from "@sill/auth";
 import { db, mastodonAccount, mastodonInstance, user } from "@sill/schema";
-import { getMastodonLists } from "../utils/mastodon.server";
+import { getMastodonLists } from "@sill/links";
 
 const AuthorizeSchema = z.object({
   instance: z.string().min(1),

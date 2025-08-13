@@ -9,11 +9,10 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { getUserIdFromSession } from "../auth/auth.server";
+import { getUserIdFromSession, createOAuthClient } from "@sill/auth";
 import { db, blueskyAccount } from "@sill/schema";
-import { createOAuthClient } from "../oauth/client";
 import { eq } from "drizzle-orm";
-import { getBlueskyLists } from "../utils/bluesky.server";
+import { getBlueskyLists } from "@sill/links";
 
 const AuthorizeSchema = z.object({
   handle: z.string().optional(),

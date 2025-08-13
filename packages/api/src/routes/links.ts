@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { getUserIdFromSession } from "../auth/auth.server";
+import { getUserIdFromSession } from "@sill/auth";
 import { link, db } from "@sill/schema";
 import {
   filterLinkOccurrences,
@@ -12,7 +12,7 @@ import {
   fetchLinks,
   insertNewLinks,
   networkTopTen,
-} from "../utils/links.server";
+} from "@sill/links";
 
 // Schema for filtering links
 const FilterLinksSchema = z.object({

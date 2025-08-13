@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
-import { getUserIdFromSession } from "../auth/auth.server";
+import { getUserIdFromSession } from "@sill/auth";
 import { db, termsAgreement, termsUpdate } from "@sill/schema";
 
 // Schema for getting terms agreement

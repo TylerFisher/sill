@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
-import { getUserIdFromSession } from "../auth/auth.server";
+import { getUserIdFromSession } from "@sill/auth";
 import { db, mutePhrase } from "@sill/schema";
 
 // Schema for adding a new mute phrase

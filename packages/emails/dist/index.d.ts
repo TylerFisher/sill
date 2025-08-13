@@ -46,4 +46,16 @@ export declare function renderDigestRSS({ links, name, digestUrl, subscribed, }:
     name: string | null;
     digestUrl: string;
     subscribed: string;
-}): string;
+}): Promise<string>;
+export declare function sendNotificationEmail({ to, subject, links, groupName, subscribed, freeTrialEnd, }: {
+    to: string;
+    subject: string;
+    links: MostRecentLinkPosts[];
+    groupName: string;
+    subscribed: SubscriptionStatus;
+    freeTrialEnd: Date | null;
+}): Promise<void>;
+export declare function renderNotificationRSS({ item, subscribed, }: {
+    item: MostRecentLinkPosts;
+    subscribed: SubscriptionStatus;
+}): Promise<string>;

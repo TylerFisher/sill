@@ -1,3 +1,14 @@
+import { renderToString } from "react-dom/server";
+import { sendEmail } from "./email-service";
+import VerifyEmail from "./emails/VerifyEmail";
+import PasswordResetEmail from "./emails/PasswordResetEmail";
+import WelcomeEmail from "./emails/WelcomeEmail";
+import TopLinksEmail from "./emails/TopLinksEmail";
+import EmailChangeEmail from "./emails/EmailChangeEmail";
+import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail";
+import Notification from "./emails/Notification";
+import RSSLinks from "./components/RSSLinks";
+
 export { sendEmail, renderReactEmail } from "./email-service";
 
 export { default as VerifyEmail } from "./emails/VerifyEmail";
@@ -7,16 +18,8 @@ export { default as TopLinksEmail } from "./emails/TopLinksEmail";
 export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
 export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
 
-import { sendEmail } from "./email-service";
-import VerifyEmail from "./emails/VerifyEmail";
-import PasswordResetEmail from "./emails/PasswordResetEmail";
-import WelcomeEmail from "./emails/WelcomeEmail";
-import TopLinksEmail from "./emails/TopLinksEmail";
-import EmailChangeEmail from "./emails/EmailChangeEmail";
-import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail";
-import RSSLinks from "./components/RSSLinks";
-
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
+import RSSNotificationItem from "./components/RSSNotificationItem";
 
 export { default as EmailLayout } from "./components/Layout";
 export { default as EmailHeading } from "./components/Heading";
@@ -133,7 +136,7 @@ export async function sendDigestEmail({
   });
 }
 
-export function renderDigestRSS({
+export async function renderDigestRSS({
   links,
   name,
   digestUrl,
@@ -143,11 +146,60 @@ export function renderDigestRSS({
   name: string | null;
   digestUrl: string;
   subscribed: string;
-}): string {
+}): Promise<string> {
   return RSSLinks({
     links,
     name,
     digestUrl,
     subscribed,
   });
+}
+
+export async function sendNotificationEmail({
+  to,
+  subject,
+  links,
+  groupName,
+  subscribed,
+  freeTrialEnd,
+}: {
+  to: string;
+  subject: string;
+  links: MostRecentLinkPosts[];
+  groupName: string;
+  subscribed: SubscriptionStatus;
+  freeTrialEnd: Date | null;
+}): Promise<void> {
+  const notificationElement = Notification({
+    links,
+    groupName,
+    subscribed,
+    freeTrialEnd,
+  });
+
+  if (!notificationElement) {
+    throw new Error("Failed to render notification email");
+  }
+
+  await sendEmail({
+    to,
+    subject,
+    react: notificationElement,
+    "o:tag": "notification",
+  });
+}
+
+export async function renderNotificationRSS({
+  item,
+  subscribed,
+}: {
+  item: MostRecentLinkPosts;
+  subscribed: SubscriptionStatus;
+}) {
+  return renderToString(
+    RSSNotificationItem({
+      linkPost: item,
+      subscribed,
+    })
+  );
 }

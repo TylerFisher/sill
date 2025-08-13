@@ -8,8 +8,8 @@ import {
   user,
   type MostRecentLinkPosts,
 } from "@sill/schema";
-import { isSubscribed } from "../auth/auth.server";
-import { filterLinkOccurrences } from "../utils/links.server";
+import { isSubscribed } from "@sill/auth";
+import { filterLinkOccurrences } from "@sill/links";
 import { preview, subject } from "../utils/digestText.server";
 import { sendDigestEmail, renderDigestRSS } from "@sill/emails";
 

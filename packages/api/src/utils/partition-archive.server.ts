@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@sill/schema";
-import { getR2Client } from "./r2.server";
+import { getR2Client } from "@sill/links";
 import {
   exportPartitionToParquet,
   getPartitionRowCount,

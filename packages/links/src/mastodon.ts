@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
-import { isSubscribed } from "src/auth/auth.server";
+import { isSubscribed } from "@sill/auth";
 import {
   db,
   list,
@@ -10,7 +10,7 @@ import {
   type ListOption,
 } from "@sill/schema";
 import { uuidv7 } from "uuidv7-js";
-import type { ProcessedResult } from "./links.server";
+import type { ProcessedResult } from "./links";
 import {
   getFullUrl,
   isGiftLink,
