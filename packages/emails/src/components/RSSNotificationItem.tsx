@@ -1,7 +1,7 @@
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
-import { notificationOutro } from "../utils/digestText";
-import RSSPost from "./RSSPost";
+import { notificationOutro } from "../utils/digestText.js";
+import RSSPost from "./RSSPost.js";
 
 const RSSNotificationItem = ({
 	linkPost,

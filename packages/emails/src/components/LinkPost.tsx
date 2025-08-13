@@ -10,7 +10,7 @@ import {
 } from "@react-email/components";
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts } from "@sill/schema";
-import Post from "./Post";
+import Post from "./Post.js";
 
 interface LinkPostProps {
 	linkPost: MostRecentLinkPosts;

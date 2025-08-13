@@ -14,6 +14,7 @@
 		"verbatimModuleSyntax": true,
 		"declaration": true,
 		"outDir": "dist",
+		"rootDir": "src",
 		"baseUrl": ".",
 		"jsx": "react-jsx",
 		"composite": true,

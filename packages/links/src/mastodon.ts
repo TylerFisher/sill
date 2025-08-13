@@ -10,13 +10,13 @@ import {
   type ListOption,
 } from "@sill/schema";
 import { uuidv7 } from "uuidv7-js";
-import type { ProcessedResult } from "./links";
+import type { ProcessedResult } from "./links.js";
 import {
   getFullUrl,
   isGiftLink,
   isShortenedLink,
   normalizeLink,
-} from "./normalizeLink";
+} from "./normalizeLink.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds

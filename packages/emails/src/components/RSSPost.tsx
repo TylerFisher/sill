@@ -1,4 +1,4 @@
-import RSSRepost from "./RSSRepost";
+import RSSRepost from "./RSSRepost.js";
 import type { MostRecentLinkPosts } from "@sill/schema";
 
 const RSSPost = ({

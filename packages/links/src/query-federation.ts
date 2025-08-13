@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@sill/schema";
-import { getDuckDBService } from "./duckdb";
+import { getDuckDBService } from "./duckdb.js";
 
 // ============================================================================
 // SQL Dialect Abstraction Layer

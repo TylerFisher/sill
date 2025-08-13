@@ -1,10 +1,10 @@
 import React from "react"
 import { Button, Heading, Hr, Text } from "@react-email/components";
-import EmailLayout from "../components/Layout";
-import LinkPost from "../components/LinkPost";
-import PlusTrial from "../components/PlusTrial";
+import EmailLayout from "../components/Layout.js";
+import LinkPost from "../components/LinkPost.js";
+import PlusTrial from "../components/PlusTrial.js";
 import type { SubscriptionStatus, MostRecentLinkPosts } from "@sill/schema";
-import { notificationOutro } from "../utils/digestText";
+import { notificationOutro } from "../utils/digestText.js";
 
 interface NotificationProps {
 	links: MostRecentLinkPosts[];

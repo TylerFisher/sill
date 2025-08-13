@@ -6,32 +6,20 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:-tyler@sill.social}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--api.insecure=true"
     ports:
       - "80:80"
-      - "443:443"
+      - "8080:8080"  # Traefik dashboard
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
     networks:
       - net
     restart: always
-    labels:
-      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN:-traefik.sill.social}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
 
   db:
     image: postgres:alpine
     container_name: postgres_db
-    shm_size: 20gb
+    shm_size: 1gb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -39,6 +27,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
       - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5433:5432"  # Expose on different port to avoid conflicts
     networks:
       - net
     restart: always
@@ -47,15 +37,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    deploy:
-      resources:
-        limits:
-          cpus: 10.0
 
   pgbouncer:
     container_name: pgbouncer
@@ -75,9 +56,13 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
     restart: always
+    networks:
+      - net
 
   web:
-    image: ghcr.io/tylerfisher/sill/web:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
     env_file:
       - .env
     environment:
@@ -86,25 +71,19 @@ services:
     depends_on:
       - pgbouncer
       - traefik
-      - dozzle
       - api
     networks:
       - net
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN:-localhost}`)"
-      - "traefik.http.routers.web.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.web.tls.certresolver=myresolver"
+      - "traefik.http.routers.web.rule=Host(`localhost`)"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
 
   api:
-    image: ghcr.io/tylerfisher/sill/api:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
     env_file:
       - .env
     environment:
@@ -117,18 +96,13 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN:-api.localhost}`) || (Host(`${WEB_DOMAIN:-localhost}`) && PathPrefix(`/api`))"
-      - "traefik.http.routers.api.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.services.api.loadbalancer.server.port=3001"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
   
   worker:
-    image: ghcr.io/tylerfisher/sill/worker:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
     env_file:
       - .env
     environment:
@@ -138,11 +112,6 @@ services:
       - pgbouncer
       - api
     restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
     networks:
       - net
 
@@ -155,20 +124,11 @@ services:
       - net
     environment:
       DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: simple
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN:-dozzle.localhost}`)"
-      - "traefik.http.routers.dozzle.tls=${USE_SSL:-false}"
-      - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
+      - "traefik.http.routers.dozzle.rule=Host(`localhost`) && PathPrefix(`/logs`)"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
 
 volumes:
   postgres_data:

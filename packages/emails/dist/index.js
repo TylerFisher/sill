@@ -1,26 +1,26 @@
 import { renderToString } from "react-dom/server";
-import { sendEmail } from "./email-service";
-import VerifyEmail from "./emails/VerifyEmail";
-import PasswordResetEmail from "./emails/PasswordResetEmail";
-import WelcomeEmail from "./emails/WelcomeEmail";
-import TopLinksEmail from "./emails/TopLinksEmail";
-import EmailChangeEmail from "./emails/EmailChangeEmail";
-import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail";
-import Notification from "./emails/Notification";
-import RSSLinks from "./components/RSSLinks";
-export { sendEmail, renderReactEmail } from "./email-service";
-export { default as VerifyEmail } from "./emails/VerifyEmail";
-export { default as PasswordResetEmail } from "./emails/PasswordResetEmail";
-export { default as WelcomeEmail } from "./emails/WelcomeEmail";
-export { default as TopLinksEmail } from "./emails/TopLinksEmail";
-export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
-export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
-import RSSNotificationItem from "./components/RSSNotificationItem";
-export { default as EmailLayout } from "./components/Layout";
-export { default as EmailHeading } from "./components/Heading";
-export { default as OTPBlock } from "./components/OTPBlock";
-export { default as Lede } from "./components/Lede";
-export { default as RSSLinks } from "./components/RSSLinks";
+import { sendEmail } from "./email-service.js";
+import VerifyEmail from "./emails/VerifyEmail.js";
+import PasswordResetEmail from "./emails/PasswordResetEmail.js";
+import WelcomeEmail from "./emails/WelcomeEmail.js";
+import TopLinksEmail from "./emails/TopLinksEmail.js";
+import EmailChangeEmail from "./emails/EmailChangeEmail.js";
+import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail.js";
+import Notification from "./emails/Notification.js";
+import RSSLinks from "./components/RSSLinks.js";
+export { sendEmail, renderReactEmail } from "./email-service.js";
+export { default as VerifyEmail } from "./emails/VerifyEmail.js";
+export { default as PasswordResetEmail } from "./emails/PasswordResetEmail.js";
+export { default as WelcomeEmail } from "./emails/WelcomeEmail.js";
+export { default as TopLinksEmail } from "./emails/TopLinksEmail.js";
+export { default as EmailChangeEmail } from "./emails/EmailChangeEmail.js";
+export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail.js";
+import RSSNotificationItem from "./components/RSSNotificationItem.js";
+export { default as EmailLayout } from "./components/Layout.js";
+export { default as EmailHeading } from "./components/Heading.js";
+export { default as OTPBlock } from "./components/OTPBlock.js";
+export { default as Lede } from "./components/Lede.js";
+export { default as RSSLinks } from "./components/RSSLinks.js";
 export async function sendVerificationEmail({ to, otp, }) {
     await sendEmail({
         to,

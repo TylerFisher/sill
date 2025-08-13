@@ -4,7 +4,7 @@ import { uuidv7 } from "uuidv7-js";
 import { getUserIdFromSession } from "@sill/auth";
 import { db, subscription, user } from "@sill/schema";
 import { conflictUpdateSetAllColumns } from "@sill/links";
-import { bootstrapProducts } from "../utils/polar.server";
+import { bootstrapProducts } from "../utils/polar.server.js";
 
 // Type definition for the webhook payload (from Polar SDK)
 interface WebhookCustomerStateChangedPayload {

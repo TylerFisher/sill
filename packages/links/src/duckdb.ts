@@ -1,5 +1,5 @@
 import { type DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
-import { getR2Client } from "./r2";
+import { getR2Client } from "./r2.js";
 
 export interface DuckDBQueryResult<T = Record<string, unknown>> {
   rows: T[];

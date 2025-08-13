@@ -27,13 +27,13 @@ import {
   type ListOption,
 } from "@sill/schema";
 import { createOAuthClient } from "@sill/auth";
-import type { ProcessedResult } from "./links";
+import type { ProcessedResult } from "./links.js";
 import {
   getFullUrl,
   isGiftLink,
   isShortenedLink,
   normalizeLink,
-} from "./normalizeLink";
+} from "./normalizeLink.js";
 
 interface BskyDetectedLink {
   uri: string;

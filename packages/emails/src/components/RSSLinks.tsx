@@ -1,5 +1,5 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
-import { intro, linkPlug, digestOutro } from "../utils/digestText";
+import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];

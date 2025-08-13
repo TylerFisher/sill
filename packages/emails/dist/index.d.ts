@@ -1,16 +1,16 @@
-export { sendEmail, renderReactEmail } from "./email-service";
-export { default as VerifyEmail } from "./emails/VerifyEmail";
-export { default as PasswordResetEmail } from "./emails/PasswordResetEmail";
-export { default as WelcomeEmail } from "./emails/WelcomeEmail";
-export { default as TopLinksEmail } from "./emails/TopLinksEmail";
-export { default as EmailChangeEmail } from "./emails/EmailChangeEmail";
-export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail";
+export { sendEmail, renderReactEmail } from "./email-service.js";
+export { default as VerifyEmail } from "./emails/VerifyEmail.js";
+export { default as PasswordResetEmail } from "./emails/PasswordResetEmail.js";
+export { default as WelcomeEmail } from "./emails/WelcomeEmail.js";
+export { default as TopLinksEmail } from "./emails/TopLinksEmail.js";
+export { default as EmailChangeEmail } from "./emails/EmailChangeEmail.js";
+export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail.js";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
-export { default as EmailLayout } from "./components/Layout";
-export { default as EmailHeading } from "./components/Heading";
-export { default as OTPBlock } from "./components/OTPBlock";
-export { default as Lede } from "./components/Lede";
-export { default as RSSLinks } from "./components/RSSLinks";
+export { default as EmailLayout } from "./components/Layout.js";
+export { default as EmailHeading } from "./components/Heading.js";
+export { default as OTPBlock } from "./components/OTPBlock.js";
+export { default as Lede } from "./components/Lede.js";
+export { default as RSSLinks } from "./components/RSSLinks.js";
 export declare function sendVerificationEmail({ to, otp, }: {
     to: string;
     otp: string;

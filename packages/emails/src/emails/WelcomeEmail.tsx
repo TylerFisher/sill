@@ -1,7 +1,7 @@
 import React from "react";
 import { Heading, Img, Link, Text } from "@react-email/components";
-import EmailHeading from "../components/Heading";
-import EmailLayout from "../components/Layout";
+import EmailHeading from "../components/Heading.js";
+import EmailLayout from "../components/Layout.js";
 
 interface WelcomeEmailProps {
 	name: string | null;

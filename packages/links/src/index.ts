@@ -1,5 +1,5 @@
-export { getBlueskyLists } from "./bluesky";
-export { getMastodonLists } from "./mastodon";
+export { getBlueskyLists } from "./bluesky.js";
+export { getMastodonLists } from "./mastodon.js";
 export {
   type ProcessedResult,
   evaluateNotifications,
@@ -11,8 +11,8 @@ export {
   findLinksByTopic,
   networkTopTen,
   conflictUpdateSetAllColumns,
-} from "./links";
-export { dequeueJobs, enqueueJob } from "./queue";
-export { fetchHtmlViaProxy, extractHtmlMetadata } from "./metadata";
-export { renderPageContent } from "./cloudflare";
-export { getR2Client } from "./r2";
+} from "./links.js";
+export { dequeueJobs, enqueueJob } from "./queue.js";
+export { fetchHtmlViaProxy, extractHtmlMetadata } from "./metadata.js";
+export { renderPageContent } from "./cloudflare.js";
+export { getR2Client } from "./r2.js";

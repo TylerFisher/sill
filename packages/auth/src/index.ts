@@ -10,12 +10,12 @@ export {
   resetUserPassword,
   hasAgreed,
   getUserProfile,
-} from "./auth";
+} from "./auth.js";
 export {
   isCodeValid,
   checkUserExists,
   prepareVerification,
   deleteVerification,
-} from "./verification";
-export { createOAuthClient } from "./client";
-export { SessionStore, StateStore } from "./storage";
+} from "./verification.js";
+export { createOAuthClient } from "./client.js";
+export { SessionStore, StateStore } from "./storage.js";

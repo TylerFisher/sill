@@ -5,7 +5,7 @@ import {
   exportPartitionToParquet,
   getPartitionRowCount,
   partitionExists,
-} from "./parquet-archive.server";
+} from "./parquet-archive.server.js";
 
 export interface ArchiveResult {
   success: boolean;

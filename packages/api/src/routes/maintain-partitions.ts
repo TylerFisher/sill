@@ -6,7 +6,7 @@ import {
   archivePartitionToR2,
   dropPartition,
   getPartitionNameForDate,
-} from "../utils/partition-archive.server";
+} from "../utils/partition-archive.server.js";
 
 const app = new Hono();
 

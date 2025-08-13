@@ -10,7 +10,7 @@ import {
 } from "@sill/schema";
 import { isSubscribed } from "@sill/auth";
 import { filterLinkOccurrences } from "@sill/links";
-import { preview, subject } from "../utils/digestText.server";
+import { preview, subject } from "../utils/digestText.server.js";
 import { sendDigestEmail, renderDigestRSS } from "@sill/emails";
 
 const newsletter = new Hono()

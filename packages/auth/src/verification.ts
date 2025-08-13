@@ -12,7 +12,7 @@ import {
   VerificationTypeSchema,
 } from "@sill/schema";
 import { z } from "zod";
-import { generateTOTP, verifyTOTP } from "./totp.server";
+import { generateTOTP, verifyTOTP } from "./totp.server.js";
 
 export const VerifySchema = z.object({
   [codeQueryParam]: z.string().min(6).max(6),

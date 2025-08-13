@@ -5,20 +5,20 @@ import { logger } from "hono/logger";
 import { runMigrations } from "@sill/schema";
 
 // Import route modules
-import auth from "./routes/auth";
-import bluesky from "./routes/bluesky";
-import bookmarks from "./routes/bookmarks";
-import digest from "./routes/digest";
-import links from "./routes/links";
-import lists from "./routes/lists";
-import maintainPartitions from "./routes/maintain-partitions";
-import mastodon from "./routes/mastodon";
-import mute from "./routes/mute";
-import newsletter from "./routes/newsletter";
-import notifications from "./routes/notifications";
-import subscription from "./routes/subscription";
-import terms from "./routes/terms";
-import updateAccounts from "./routes/update-accounts";
+import auth from "./routes/auth.js";
+import bluesky from "./routes/bluesky.js";
+import bookmarks from "./routes/bookmarks.js";
+import digest from "./routes/digest.js";
+import links from "./routes/links.js";
+import lists from "./routes/lists.js";
+import maintainPartitions from "./routes/maintain-partitions.js";
+import mastodon from "./routes/mastodon.js";
+import mute from "./routes/mute.js";
+import newsletter from "./routes/newsletter.js";
+import notifications from "./routes/notifications.js";
+import subscription from "./routes/subscription.js";
+import terms from "./routes/terms.js";
+import updateAccounts from "./routes/update-accounts.js";
 
 const app = new Hono()
   // Middleware

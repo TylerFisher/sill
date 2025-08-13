@@ -270,7 +270,7 @@ export async function resetUserPassword({
 }: {
   userId: string;
   newPassword: string;
-}) {
+}): Promise<unknown> {
   const hashedPassword = await getPasswordHash(newPassword);
   return await db
     .update(password)

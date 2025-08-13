@@ -1,9 +1,9 @@
 import React from "react";
 import { Text } from "@react-email/components";
-import EmailHeading from "../components/Heading";
-import EmailLayout from "../components/Layout";
-import Lede from "../components/Lede";
-import OTPBlock from "../components/OTPBlock";
+import EmailHeading from "../components/Heading.js";
+import EmailLayout from "../components/Layout.js";
+import Lede from "../components/Lede.js";
+import OTPBlock from "../components/OTPBlock.js";
 
 interface VerifyEmailProps {
 	otp: string;
