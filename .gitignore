@@ -15,3 +15,5 @@ CLAUDE.md
 .turbo
 .tsc-build
 packages/**/dist/*
+apps/**/build/*
+packages/**/build/*
