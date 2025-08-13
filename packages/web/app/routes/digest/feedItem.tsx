@@ -68,7 +68,7 @@ const DigestFeedItem = ({ loaderData }: Route.ComponentProps) => {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	}).format(new Date(pubDate));
+	}).format(new Date(`${pubDate}Z`));
 	const layout = useLayout();
 
 	return (

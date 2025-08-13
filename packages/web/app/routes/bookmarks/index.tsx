@@ -125,7 +125,7 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 
 	const groupedBookmarks = fetchedBookmarks.reduce(
 		(groups, bookmark) => {
-			const date = new Date(bookmark.createdAt).toLocaleDateString("en-US", {
+			const date = new Date(`${bookmark.createdAt}Z`).toLocaleDateString("en-US", {
 				year: "numeric",
 				month: "long",
 				day: "numeric",

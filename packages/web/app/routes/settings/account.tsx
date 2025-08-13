@@ -32,7 +32,7 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	}).format(new Date(user.createdAt));
+	}).format(new Date(`${user.createdAt}Z`));
 
 	return (
 		<Layout>

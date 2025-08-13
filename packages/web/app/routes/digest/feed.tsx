@@ -31,7 +31,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 			image: "https://sill.social/favicon-96x96.png",
 			favicon: "https://sill.social/favicon-96x96.png",
 			copyright: "",
-			updated: feedWithItems.items[0]?.pubDate ? new Date(feedWithItems.items[0].pubDate) : new Date(),
+			updated: feedWithItems.items[0]?.pubDate ? new Date(`${feedWithItems.items[0].pubDate}Z`) : new Date(),
 			generator: "Sill",
 			feedLinks: {
 				rss: `${baseUrl}/digest/${userId}.rss`,
@@ -46,7 +46,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 				link: digestUrl,
 				description: item.description || undefined,
 				content: item.html || undefined,
-				date: new Date(item.pubDate),
+				date: new Date(`${item.pubDate}Z`),
 			});
 		}
 

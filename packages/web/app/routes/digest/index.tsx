@@ -47,7 +47,7 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 				...monthData,
 				items: monthData.items.map((item: { id: string; pubDate: string }) => ({
 					...item,
-					pubDate: new Date(item.pubDate),
+					pubDate: new Date(`${item.pubDate}Z`),
 				})),
 			},
 		]),

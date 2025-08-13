@@ -30,8 +30,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	// Convert date strings to Date objects if subscription exists
 	const sub = rawSub ? {
 		...rawSub,
-		periodStart: rawSub.periodStart ? new Date(rawSub.periodStart) : null,
-		periodEnd: rawSub.periodEnd ? new Date(rawSub.periodEnd) : null,
+		periodStart: rawSub.periodStart ? new Date(`${rawSub.periodStart}Z`) : null,
+		periodEnd: rawSub.periodEnd ? new Date(`${rawSub.periodEnd}Z`) : null,
 	} : null;
 	
 	const { products } = await apiGetPolarProducts(request);
