@@ -259,7 +259,7 @@ const getPostUrl = async (authorHandle: string, postUri: string) => {
  * @returns Quoted post, external link, and image group data
  */
 const handleEmbeds = async (embed: PostView["embed"]) => {
-  let quoted: AppBskyFeedDefs.PostView["embed"] | null = null;
+  let quoted: AppBskyEmbedRecord.View | null = null;
   let quotedRecord: AppBskyEmbedRecord.ViewRecord | null = null;
   let quotedValue: AppBskyFeedPost.Record | null = null;
   let externalRecord: AppBskyEmbedExternal.View | null = null;
@@ -271,7 +271,9 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
   if (AppBskyEmbedRecord.isView(embed)) {
     quoted = embed;
   } else if (AppBskyEmbedRecordWithMedia.isView(embed)) {
-    quoted = embed.record;
+    if (AppBskyEmbedRecord.isView(embed.record)) {
+      quoted = embed.record;
+    }
     if (AppBskyEmbedExternal.isView(embed.media)) {
       externalRecord = embed.media;
     }
@@ -279,7 +281,7 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
       imageGroup = embed.media.images;
     }
   }
-  if (quoted) {
+  if (quoted && AppBskyEmbedRecord.isView(quoted)) {
     if (AppBskyEmbedRecord.isViewRecord(quoted.record)) {
       quotedRecord = quoted.record;
       quotedPostUrl = await getPostUrl(
@@ -309,11 +311,11 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
           externalRecord = quotedRecordWithMedia.media;
         }
       }
-    }
-    if (AppBskyFeedPost.isRecord(quoted.record.value)) {
-      quotedValue = quoted.record.value;
-      if (!externalRecord) {
-        detectedLink = await findBlueskyLinkFacets(quotedValue);
+      if (AppBskyFeedPost.isRecord(quoted.record.value)) {
+        quotedValue = quoted.record.value as AppBskyFeedPost.Record;
+        if (!externalRecord && quotedValue) {
+          detectedLink = await findBlueskyLinkFacets(quotedValue);
+        }
       }
     }
   }
@@ -383,12 +385,10 @@ const processBlueskyLink = async (
   t: AppBskyFeedDefs.FeedViewPost,
   listId?: string
 ) => {
-  let record: AppBskyFeedPost.Record | null = null;
-  if (AppBskyFeedPost.isRecord(t.post.record)) {
-    record = t.post.record;
-  } else {
+  if (!AppBskyFeedPost.isRecord(t.post.record)) {
     return null;
   }
+  const record = t.post.record;
   const postUrl = await getPostUrl(t.post.author.handle, t.post.uri);
 
   const {
@@ -402,7 +402,7 @@ const processBlueskyLink = async (
   } = await handleEmbeds(t.post.embed);
 
   const detectedLink = await getDetectedLink(
-    record,
+    record as AppBskyFeedPost.Record,
     externalRecord,
     initialDetectedLink
   );
@@ -433,7 +433,7 @@ const processBlueskyLink = async (
   const denormalized = {
     id: uuidv7(),
     postUrl,
-    postText: serializeBlueskyPostToHtml(record),
+    postText: serializeBlueskyPostToHtml(record as AppBskyFeedPost.Record),
     postDate: new Date(t.post.indexedAt).toISOString(),
     postType: postType.enumValues[0],
     postImages: imageGroup.map((image) => ({
@@ -605,7 +605,7 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
     if (segment.text && !segment.facet && !segment.link) {
       html.push(segment.text);
     } else if (segment.link && !segment.facet) {
-      html.push(`<a href="${segment.link.uri}">${segment.link.text}</a>`);
+      html.push(`<a href="${segment.link.uri}">${segment.text}</a>`);
     } else if (
       segment.facet?.features.find((f) => AppBskyRichtextFacet.isLink(f))
     ) {
