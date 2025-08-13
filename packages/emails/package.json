@@ -9,8 +9,6 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "dev:local": "tsc --watch",
-    "lint": "biome lint src/",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

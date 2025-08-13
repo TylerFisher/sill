@@ -16,7 +16,6 @@
     "@sill/emails": "workspace:*",
     "@sill/api": "workspace:*",
     "drizzle-orm": "^0.44.4",
-    "hono": "^4.6.14",
     "uuidv7-js": "^1.1.4"
   },
   "devDependencies": {
