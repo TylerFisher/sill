@@ -83,6 +83,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+      - API_BASE_URL=http://api:3001
     depends_on:
       - pgbouncer
       - traefik

@@ -14,7 +14,7 @@ COPY packages/schema/package.json ./packages/schema/
 COPY packages/links/package.json ./packages/links/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/emails/package.json ./packages/emails/
-COPY packages/api/package.json ./packages/api/
+COPY apps/api/package.json ./apps/api/
 RUN pnpm install --frozen-lockfile
 
 # Production dependencies stage  
@@ -25,7 +25,7 @@ COPY packages/schema/package.json ./packages/schema/
 COPY packages/links/package.json ./packages/links/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/emails/package.json ./packages/emails/
-COPY packages/api/package.json ./packages/api/
+COPY apps/api/package.json ./apps/api/
 RUN pnpm install --frozen-lockfile --prod
 
 # Build stage
@@ -36,13 +36,13 @@ COPY --from=deps /app/packages/schema/node_modules ./packages/schema/node_module
 COPY --from=deps /app/packages/links/node_modules ./packages/links/node_modules
 COPY --from=deps /app/packages/auth/node_modules ./packages/auth/node_modules
 COPY --from=deps /app/packages/emails/node_modules ./packages/emails/node_modules
-COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
 COPY packages/schema ./packages/schema
 COPY packages/links ./packages/links
 COPY packages/auth ./packages/auth
 COPY packages/emails ./packages/emails
-COPY packages/api ./packages/api
+COPY apps/api ./apps/api
 COPY apps/worker ./apps/worker
 
 # Build dependencies first
@@ -58,7 +58,7 @@ RUN pnpm build
 WORKDIR /app/packages/links
 RUN pnpm build
 
-WORKDIR /app/packages/api
+WORKDIR /app/apps/api
 RUN pnpm build
 
 # Build the worker
@@ -87,8 +87,8 @@ COPY --from=build /app/packages/emails/package.json ./packages/emails/package.js
 COPY --from=build /app/packages/links/dist ./packages/links/dist
 COPY --from=build /app/packages/links/src/normalizers/*.txt ./packages/links/dist/normalizers/
 COPY --from=build /app/packages/links/package.json ./packages/links/package.json
-COPY --from=build /app/packages/api/dist ./packages/api/dist
-COPY --from=build /app/packages/api/package.json ./packages/api/package.json
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 
 # Copy production node_modules
 COPY --from=production-deps /app/node_modules ./node_modules
@@ -97,7 +97,7 @@ COPY --from=production-deps /app/packages/schema/node_modules ./packages/schema/
 COPY --from=production-deps /app/packages/auth/node_modules ./packages/auth/node_modules
 COPY --from=production-deps /app/packages/emails/node_modules ./packages/emails/node_modules
 COPY --from=production-deps /app/packages/links/node_modules ./packages/links/node_modules
-COPY --from=production-deps /app/packages/api/node_modules ./packages/api/node_modules
+COPY --from=production-deps /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/worker
 
