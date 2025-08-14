@@ -24,6 +24,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "dev:local": "tsc --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
