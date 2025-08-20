@@ -16,6 +16,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@anaralabs/lector": "^3.5.8",
     "@atproto/api": "^0.13.15",
     "@atproto/identity": "^0.4.2",
     "@atproto/jwk-jose": "^0.1.2",
@@ -47,6 +48,7 @@
     "masto": "^6.8.0",
     "node-html-markdown": "^1.3.0",
     "object.groupby": "^1.0.3",
+    "pdfjs-dist": "^4.10.38",
     "pg": "^8.13.1",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",

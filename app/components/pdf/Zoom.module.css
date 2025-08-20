@@ -1,0 +1,31 @@
+.zoomContainer {
+	border-bottom: 1px solid var(--gray-a6);
+	background-color: var(--accent-1);
+}
+
+.zoomOut {
+	padding: 0.25rem 0.75rem;
+	margin-right: -0.5rem;
+	background-color: var(--accent-1);
+	border: none;
+	color: var(--accent-11);
+	cursor: pointer;
+}
+
+.currentZoom {
+	background-color: var(--accent-1);
+	border: 1px solid var(--gray-a6);
+	border-radius: var(--radius-6);
+	text-align: center;
+	width: 4rem;
+	padding: 0.25rem 0.75rem;
+}
+
+.zoomIn {
+	padding: 0.25rem 0.75rem;
+	margin-left: -0.5rem;
+	background-color: var(--accent-1);
+	border: none;
+	color: var(--accent-11);
+	cursor: pointer;
+}
