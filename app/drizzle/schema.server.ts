@@ -17,7 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
 import type { NotificationQuery } from "~/components/forms/NotificationQueryItem";
-import type { MostRecentLinkPosts } from "~/utils/links.server";
+import type { MostRecentLinkPosts, PlatformMutes } from "~/utils/links.server";
 
 export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
 
@@ -173,6 +173,7 @@ export const mastodonAccount = pgTable("mastodon_account", {
 		.default(sql`CURRENT_TIMESTAMP`)
 		.notNull(),
 	mostRecentPostId: text(),
+	mutes: json().$type<PlatformMutes>(),
 	userId: uuid()
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
@@ -186,6 +187,7 @@ export const blueskyAccount = pgTable(
 		handle: text().notNull().unique(),
 		did: text().notNull().unique(),
 		mostRecentPostDate: timestamp({ precision: 3, mode: "date" }),
+		mutes: json().$type<PlatformMutes>(),
 		userId: uuid()
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
