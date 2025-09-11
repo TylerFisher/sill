@@ -109,6 +109,36 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 								{link.title || link.url}
 							</Heading>
 							<Text style={text}>{link.description}</Text>
+							{(link.authors || link.publishedDate) && (
+								<Text style={metadata}>
+									{link.authors && (
+										<span>
+											by{" "}
+											{link.authors.length === 2 ? (
+												link.authors.map((author, index) => (
+													<span key={author}>
+														{author}
+														{index === 0 && " and "}
+													</span>
+												))
+											) : link.authors.length > 2 ? (
+												link.authors.map((author, index) => (
+													<span key={author}>
+														{author}
+														{index < link.authors!.length - 1 &&
+															(index === link.authors!.length - 2
+																? " and "
+																: ", ")}
+													</span>
+												))
+											) : (
+												<span>{link.authors[0]}</span>
+											)}
+										</span>
+									)}
+									{link.authors && link.publishedDate && <span> • </span>}
+								</Text>
+							)}
 						</Column>
 					</Row>
 				</Section>
@@ -226,6 +256,13 @@ const accountsHeading = {};
 
 const postsLink = {
 	color: "#9E6C00",
+};
+
+const metadata = {
+	margin: "0.33em 0 0 0",
+	color: "gray",
+	fontSize: "12px",
+	lineHeight: 1,
 };
 
 export default LinkPost;

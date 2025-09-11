@@ -95,7 +95,7 @@ const TopLinks = ({
 					</Button>
 				</>
 			)}
-			<Text>{digestOutro("https://sill.social/digest/settings")}</Text>
+			<Text>{digestOutro("https://sill.social/digest?tab=settings")}</Text>
 		</EmailLayout>
 	);
 };

@@ -76,7 +76,7 @@ export const notificationOutro = (settingsUrl: string) => (
 
 export const linkPlug = (digestUrl: string) => (
 	<>
-		View all of these links and the posts that shared them on{" "}
+		View the digest with full detail on the posts from your network on{" "}
 		<a
 			href={digestUrl}
 			style={{

@@ -67,7 +67,9 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				</>
 			)}
 
-			<Text as="p">{digestOutro("https://sill.social/digest/settings")}</Text>
+			<Text as="p">
+				{digestOutro("https://sill.social/digest?tab=settings")}
+			</Text>
 		</article>
 	);
 };

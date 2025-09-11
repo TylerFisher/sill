@@ -1,5 +1,6 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
 import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
+import { renderToString } from "react-dom/server";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
@@ -31,43 +32,57 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 					If this doesn't work for you, please email 
 					<a href="mailto:tyler@sill.social">tyler@sill.social</a>.
 				</p>
-				<p>${digestOutro("https://sill.social/digest/settings")}</p>
+				<p>${digestOutro("https://sill.social/digest?tab=settings")}</p>
 			</article>
 		`;
 	}
 
-	const linksHtml = links.map((linkPost, i) => {
-		const link = linkPost.link;
-		if (!link?.url) return "";
+	const linksHtml = links
+		.map((linkPost, i) => {
+			const link = linkPost.link;
+			if (!link?.url) return "";
 
-		return `
+			let authors = link.authors?.join(", ");
+
+			if (link.authors && link.authors.length === 2) {
+				authors = `${link.authors[0]} and ${link.authors[1]}`;
+			}
+
+			return `
 			<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+        ${link.siteName ? `<h5 style="color: #999;">${link.siteName}</h5>` : ""}
 				<h2><a href="${link.url}">${link.title || link.url}</a></h2>
 				${link.description ? `<p style="color: #666;">${link.description}</p>` : ""}
+        ${authors ? `<p style="font-size: 12px; color: #999;">by ${authors}</p>` : ""}
 				<p style="font-size: 12px; color: #999;">
 					Shared by ${linkPost.posts?.length || 0} ${(linkPost.posts?.length || 0) === 1 ? "person" : "people"}
 				</p>
-				${link.siteName ? `<p style="font-size: 12px; color: #999;">From: ${link.siteName}</p>` : ""}
+        <hr />
 			</div>
 		`;
-	}).join("");
+		})
+		.join("");
 
 	return `
 		<article>
 			<h1>${today}</h1>
 			<p>${intro(name)}</p>
-			${subscribed === "trial" ? `
+			${
+				subscribed === "trial"
+					? `
 				<p>
 					You are on a free trial of Sill+. 
 					<a href="https://sill.social/settings/subscription">Subscribe now</a> 
 					to maintain access.
 				</p>
-			` : ""}
-			<p>${linkPlug(digestUrl)}</p>
+			`
+					: ""
+			}
+			<p>${renderToString(linkPlug(digestUrl))}</p>
 			<hr />
 			${linksHtml}
 			<p><a href="https://sill.social/links">See all links on Sill</a></p>
-			<p>${digestOutro("https://sill.social/digest/settings")}</p>
+			<p>${renderToString(digestOutro("https://sill.social/digest?tab=settings"))}</p>
 		</article>
 	`;
 };
