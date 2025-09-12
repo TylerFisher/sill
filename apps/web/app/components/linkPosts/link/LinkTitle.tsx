@@ -5,6 +5,7 @@ interface LinkTitleProps {
 	href: string;
 	layout: "default" | "dense";
 	host: string;
+	siteName: string | null;
 }
 
 const LinkTitle = ({
@@ -12,7 +13,11 @@ const LinkTitle = ({
 	href,
 	layout = "default",
 	host,
+	siteName,
 }: LinkTitleProps) => {
+	const displayHost = siteName || host;
+	const nb = displayHost.replaceAll(" ", "\u00A0");
+
 	return (
 		<Heading
 			as="h3"
@@ -27,12 +32,6 @@ const LinkTitle = ({
 			<Link target="_blank" rel="noreferrer" href={href} weight="bold">
 				{title}
 			</Link>
-			{layout === "dense" && (
-				<Text color="gray" weight="regular">
-					{" · "}
-					{host}
-				</Text>
-			)}
 		</Heading>
 	);
 };

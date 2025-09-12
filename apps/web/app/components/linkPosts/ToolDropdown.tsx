@@ -123,7 +123,7 @@ const ToolDropdown = ({
 					<DropdownMenu.Sub>
 						<DropdownMenu.SubTrigger>Mute</DropdownMenu.SubTrigger>
 						<DropdownMenu.SubContent>
-							<fetcher.Form method="POST" action="/moderation">
+							<fetcher.Form method="POST" action="/api/mute/add">
 								<input
 									type="hidden"
 									name="newPhrase"
@@ -139,7 +139,7 @@ const ToolDropdown = ({
 									</Button>
 								</DropdownMenu.Item>
 							</fetcher.Form>
-							<fetcher.Form method="POST" action="/moderation">
+							<fetcher.Form method="POST" action="/api/mute/add">
 								<DropdownMenu.Item>
 									<input
 										type="hidden"

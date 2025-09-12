@@ -20,19 +20,40 @@ interface LinkMetadataProps {
 	publishDate: string | null;
 	articleTags: string[];
 	url: URL;
+	host: string;
+	siteName: string | null;
+	layout: "default" | "dense";
 }
 
-const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
+const LinkMetadata = ({
+	authors,
+	publishDate,
+	host,
+	siteName,
+	layout,
+}: LinkMetadataProps) => {
+	const displayHost = siteName || host;
+
 	return (
 		<>
-			{(authors || publishDate) && (
+			{((layout === "dense" && displayHost) || authors || publishDate) && (
 				<Text as="p" size="1" color="gray" mt="1">
+					{layout === "dense" && (
+						<Text>
+							{displayHost}
+							{displayHost && (authors || publishDate) && (
+								<Text as="span" mx="1">
+									•
+								</Text>
+							)}
+						</Text>
+					)}
 					{authors && (
 						<>
 							by{" "}
 							{authors.length === 2 ? (
 								authors.map((author, index) => (
-									<span key={author}>
+									<Text key={author}>
 										{/* <Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
@@ -40,11 +61,11 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 										{author}
 										{/* </Link> */}
 										{index === 0 && " and "}
-									</span>
+									</Text>
 								))
 							) : authors.length > 2 ? (
 								authors.map((author, index) => (
-									<span key={author}>
+									<Text key={author}>
 										{/* <Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
@@ -53,7 +74,7 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 										{/* </Link> */}
 										{index < authors.length - 1 &&
 											(index === authors.length - 2 ? " and " : ", ")}
-									</span>
+									</Text>
 								))
 							) : (
 								// <Link
@@ -66,13 +87,9 @@ const LinkMetadata = ({ authors, publishDate }: LinkMetadataProps) => {
 							)}
 						</>
 					)}
-					{authors && publishDate && (
-						<Text as="span" mx="1">
-							•
-						</Text>
-					)}
+					{authors && publishDate && <Text mx="1">•</Text>}
 					{publishDate && (
-						<Text as="span">
+						<Text>
 							{timeAgo.format(new Date(`${publishDate}`), "round-minute")}
 						</Text>
 					)}

@@ -95,12 +95,16 @@ const LinkRep = ({
 					href={effectiveLink.url}
 					layout={layout}
 					host={host}
+					siteName={effectiveLink.siteName}
 				/>
 				<LinkMetadata
 					authors={effectiveLink.authors}
 					publishDate={effectiveLink.publishedDate}
 					articleTags={effectiveLink.topics || []}
 					url={url}
+					host={host}
+					siteName={effectiveLink.siteName}
+					layout={layout}
 				/>
 				<LinkDescription
 					description={effectiveLink.description || ""}
