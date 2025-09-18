@@ -24,6 +24,11 @@ const PostContent = ({ post, layout }: PostContentProps) => {
 			/<a href/g,
 			'<a target="_blank" rel="noopener noreferrer" href',
 		);
+		// Remove <p> tags with class quote-inline
+		post.postText = post.postText.replace(
+			/<p[^>]*class="quote-inline"[^>]*>.*?<\/p>/gi,
+			"",
+		);
 	}
 
 	return (

@@ -17,6 +17,8 @@ import {
   isShortenedLink,
   normalizeLink,
 } from "./normalizeLink.js";
+import type { Quote } from "masto/dist/esm/mastodon/entities/v1/quote.js";
+import type { ShallowQuote } from "masto/dist/esm/mastodon/entities/v1/shallow-quote.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -27,7 +29,9 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  * @returns Authorization URL for the Mastodon instance
  */
 export const getAuthorizationUrl = (instance: string, clientId: string) => {
-  return `https://${instance}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&instance=${encodeURIComponent(instance)}`;
+  return `https://${instance}/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
+    REDIRECT_URI
+  )}&instance=${encodeURIComponent(instance)}`;
 };
 
 /**
@@ -207,6 +211,25 @@ const getYoutubeUrl = async (content: string): Promise<string | null> => {
   return youtubeUrls ? youtubeUrls[0] : null;
 };
 
+const isObj = (v: unknown): v is Record<string, unknown> => {
+  return typeof v === "object" && v !== null;
+};
+
+function hasProp<K extends PropertyKey>(
+  data: object,
+  prop: K
+): data is Record<K, unknown> {
+  return prop in data;
+}
+
+const isQuote = (
+  quote: Quote | ShallowQuote | null | undefined
+): quote is Quote => {
+  return (
+    isObj(quote) && hasProp(quote, "quotedStatus") && quote.state === "accepted"
+  );
+};
+
 /**
  * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
  * @param userId ID for logged in user
@@ -220,7 +243,8 @@ const processMastodonLink = async (
 ) => {
   const original = t.reblog || t;
   const url = original.url;
-  const card = original.card;
+  const quote = isQuote(t.quote) ? t.quote : null;
+  const card = quote?.quotedStatus?.card || original.card;
 
   if (!url || !card) {
     return null;
@@ -254,7 +278,7 @@ const processMastodonLink = async (
     id: uuidv7(),
     linkUrl: link.url,
     postText: original.content,
-    postDate: new Date(original.createdAt).toISOString(),
+    postDate: original.createdAt,
     postType: postType.enumValues[1],
     postUrl: url,
     actorHandle: original.account.acct,
@@ -265,6 +289,18 @@ const processMastodonLink = async (
     repostActorName: t.reblog ? t.account.displayName : undefined,
     repostActorUrl: t.reblog ? t.account.url : undefined,
     repostActorAvatarUrl: t.reblog ? t.account.avatar : undefined,
+    quotedActorHandle: quote ? quote.quotedStatus?.account.acct : undefined,
+    quotedActorName: quote
+      ? quote.quotedStatus?.account.displayName
+      : undefined,
+    quotedActorUrl: quote ? quote.quotedStatus?.account.url : undefined,
+    quotedActorAvatarUrl: quote
+      ? quote.quotedStatus?.account.avatar
+      : undefined,
+    quotedPostUrl: quote ? quote.quotedStatus?.url : undefined,
+    quotedPostText: quote ? quote.quotedStatus?.content : undefined,
+    quotedPostDate: quote ? quote.quotedStatus?.createdAt : undefined,
+    quotedPostType: quote ? postType.enumValues[1] : undefined,
     userId,
     listId,
   };
@@ -303,7 +339,13 @@ export const getLinksFromMastodon = async (
       ),
     ]);
 
-    const linksOnly = timeline.filter((t) => t.card || t.reblog?.card);
+    const linksOnly = timeline.filter(
+      (t) =>
+        t.card ||
+        t.reblog?.card ||
+        (isQuote(t.quote) && t.quote.quotedStatus?.card)
+    );
+
     const processedResults = (
       await Promise.all(
         linksOnly.map(async (t) => processMastodonLink(userId, t))
@@ -320,7 +362,12 @@ export const getLinksFromMastodon = async (
           ),
         ]);
 
-        const linksOnly = listPosts.filter((t) => t.card || t.reblog?.card);
+        const linksOnly = listPosts.filter(
+          (t) =>
+            t.card ||
+            t.reblog?.card ||
+            (isQuote(t.quote) && t.quote.quotedStatus?.card)
+        );
         processedResults.push(
           ...(
             await Promise.all(
