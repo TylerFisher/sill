@@ -1,5 +1,9 @@
+import {
+  CompositeHandleResolver,
+  WellKnownHandleResolver,
+} from "@atcute/identity-resolver";
+import { NodeDnsHandleResolver } from "@atcute/identity-resolver-node";
 import { Agent } from "@atproto/api";
-import { HandleResolver } from "@atproto/identity";
 import {
   OAuthCallbackError,
   OAuthResolverError,
@@ -58,9 +62,16 @@ const bluesky = new Hono()
         handle = `${handle}.bsky.social`;
       }
 
-      const resolver = new HandleResolver();
+      const resolver = new CompositeHandleResolver({
+        strategy: "race",
+        methods: {
+          dns: new NodeDnsHandleResolver(),
+          http: new WellKnownHandleResolver(),
+        },
+      });
 
       try {
+        console.log("trying authorize");
         const url = await oauthClient.authorize(handle, {
           scope: "atproto transition:generic",
         });
@@ -69,6 +80,7 @@ const bluesky = new Hono()
           redirectUrl: url.toString(),
         });
       } catch (error) {
+        console.error("caught error", error);
         if (error instanceof OAuthResponseError) {
           const url = await oauthClient.authorize(handle, {
             scope: "atproto transition:generic",
@@ -80,7 +92,7 @@ const bluesky = new Hono()
         }
 
         if (error instanceof OAuthResolverError) {
-          const did = await resolver.resolve(handle);
+          const did = await resolver.resolve(handle as `${string}.${string}`);
           if (did) {
             try {
               const url = await oauthClient.authorize(did, {
@@ -149,8 +161,9 @@ const bluesky = new Hono()
       const oauthClient = await createOAuthClient(c.req.raw);
 
       try {
-        const { session: oauthSession } =
-          await oauthClient.callback(searchParams);
+        const { session: oauthSession } = await oauthClient.callback(
+          searchParams
+        );
         const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({
           actor: oauthSession.did,
@@ -209,8 +222,9 @@ const bluesky = new Hono()
         }
 
         // Fallback - try callback again
-        const { session: oauthSession } =
-          await oauthClient.callback(searchParams);
+        const { session: oauthSession } = await oauthClient.callback(
+          searchParams
+        );
         const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({
           actor: oauthSession.did,

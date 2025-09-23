@@ -17,6 +17,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@atcute/identity-resolver':
+        specifier: ^1.1.3
+        version: 1.1.3(@atcute/identity@1.1.0)
+      '@atcute/identity-resolver-node':
+        specifier: ^1.0.2
+        version: 1.0.2(@atcute/identity-resolver@1.1.3(@atcute/identity@1.1.0))(@atcute/identity@1.1.0)
       '@atproto/api':
         specifier: ^0.13.5
         version: 0.13.35
@@ -246,10 +252,6 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
-    optionalDependencies:
-      '@rollup/rollup-linux-x64-gnu':
-        specifier: 4.9.5
-        version: 4.9.5
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.0
@@ -299,6 +301,10 @@ importers:
       vitest:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.17.1)(happy-dom@15.11.7)
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-gnu':
+        specifier: 4.9.5
+        version: 4.9.5
 
   apps/worker:
     dependencies:
@@ -484,6 +490,26 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@atcute/identity-resolver-node@1.0.2':
+    resolution: {integrity: sha512-QhcnDr0vn3DAzGkLFU8md6MzLdm1xPt+65z/pkVO92ADhS4hoeX6esQIz/ucUiCEwroXUFLH07JZ1GLUo8hWIg==}
+    peerDependencies:
+      '@atcute/identity': ^1.0.0
+      '@atcute/identity-resolver': ^1.0.0
+
+  '@atcute/identity-resolver@1.1.3':
+    resolution: {integrity: sha512-KZgGgg99CWaV7Df3+h3X/WMrDzTPQVfsaoIVbTNLx2B56BvCL2EmaxPSVw/7BFUJMZHlVU4rtoEB4lyvNyMswA==}
+    peerDependencies:
+      '@atcute/identity': ^1.0.0
+
+  '@atcute/identity@1.1.0':
+    resolution: {integrity: sha512-6vRvRqJatDB+JUQsb+UswYmtBGQnSZcqC3a2y6H5DB/v5KcIh+6nFFtc17G0+3W9rxdk7k9M4KkgkdKf/YDNoQ==}
+
+  '@atcute/lexicons@1.1.1':
+    resolution: {integrity: sha512-k6qy5p3j9fJJ6ekaMPfEfp3ni4TW/XNuH9ZmsuwC0fi0tOjp+Fa8ZQakHwnqOzFt/cVBfGcmYE/lKNAbeTjgUg==}
+
+  '@atcute/util-fetch@1.0.2':
+    resolution: {integrity: sha512-6kOwQzaoPu7ss0EwvgSOPVg/JIJdozbXva5d/g99bBg8RaSX8se//INOyr/nby/GwrpxCIZU9Wzm+pl7xerI0Q==}
 
   '@atproto-labs/did-resolver@0.1.13':
     resolution: {integrity: sha512-DG3YNaCKc6PAIv1Gsz3E1Kufw2t14OBxe4LdKK7KKLCNoex51hm+A5yMevShe3BSll+QosqWYIEgkPSc5xBoGQ==}
@@ -919,6 +945,10 @@ packages:
   '@babel/types@7.28.2':
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
+
+  '@badrap/valita@0.4.6':
+    resolution: {integrity: sha512-4kdqcjyxo/8RQ8ayjms47HCWZIF5981oE5nIenbfThKDxWXtEHKipAOWlflpPJzZx9y/JWYQkp18Awr7VuepFg==}
+    engines: {node: '>= 18'}
 
   '@biomejs/biome@1.9.0':
     resolution: {integrity: sha512-NlWh2F1wbxB3O/wE+aohGL0BziTS6e+6+dyFvpdeqLsbQZY7EsiklFb9W5Xs41U4vEmY7ANgdNp+oVDij6sQdA==}
@@ -3702,6 +3732,9 @@ packages:
   escape-html@1.0.3:
     resolution: {integrity: sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==}
 
+  esm-env@1.2.2:
+    resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
+
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
@@ -5498,6 +5531,32 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.30
 
+  '@atcute/identity-resolver-node@1.0.2(@atcute/identity-resolver@1.1.3(@atcute/identity@1.1.0))(@atcute/identity@1.1.0)':
+    dependencies:
+      '@atcute/identity': 1.1.0
+      '@atcute/identity-resolver': 1.1.3(@atcute/identity@1.1.0)
+      '@atcute/lexicons': 1.1.1
+
+  '@atcute/identity-resolver@1.1.3(@atcute/identity@1.1.0)':
+    dependencies:
+      '@atcute/identity': 1.1.0
+      '@atcute/lexicons': 1.1.1
+      '@atcute/util-fetch': 1.0.2
+      '@badrap/valita': 0.4.6
+
+  '@atcute/identity@1.1.0':
+    dependencies:
+      '@atcute/lexicons': 1.1.1
+      '@badrap/valita': 0.4.6
+
+  '@atcute/lexicons@1.1.1':
+    dependencies:
+      esm-env: 1.2.2
+
+  '@atcute/util-fetch@1.0.2':
+    dependencies:
+      '@badrap/valita': 0.4.6
+
   '@atproto-labs/did-resolver@0.1.13':
     dependencies:
       '@atproto-labs/fetch': 0.2.3
@@ -6440,6 +6499,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@badrap/valita@0.4.6': {}
 
   '@biomejs/biome@1.9.0':
     optionalDependencies:
@@ -9282,6 +9343,8 @@ snapshots:
   escalade@3.2.0: {}
 
   escape-html@1.0.3: {}
+
+  esm-env@1.2.2: {}
 
   estree-walker@3.0.3:
     dependencies:

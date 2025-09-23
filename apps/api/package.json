@@ -19,6 +19,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@atcute/identity-resolver": "^1.1.3",
+    "@atcute/identity-resolver-node": "^1.0.2",
     "@atproto/api": "^0.13.5",
     "@atproto/identity": "^0.4.1",
     "@atproto/jwk-jose": "^0.1.2",
