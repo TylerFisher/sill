@@ -6,3 +6,25 @@
 .linkTag:hover {
 	opacity: 0.8;
 }
+
+.deleteButton {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	padding: 0 var(--space-1);
+	color: var(--gray-11);
+	transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.deleteButton:hover:not(:disabled) {
+	background-color: var(--red-a3);
+	color: var(--red-11);
+}
+
+.deleteButton:disabled {
+	cursor: default;
+}
+
+.deleteButton[data-deleting="true"] {
+	cursor: default;
+}

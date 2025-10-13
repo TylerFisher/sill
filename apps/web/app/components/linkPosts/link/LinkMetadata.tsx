@@ -1,8 +1,9 @@
-import { Badge, Flex, HoverCard, Link, Text } from "@radix-ui/themes";
+import { Badge, Flex, HoverCard, Link, Spinner, Text } from "@radix-ui/themes";
+import { X } from "lucide-react";
+import { useFetcher } from "react-router";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import styles from "./LinkMetadata.module.css";
-import type { bookmark } from "@sill/schema";
 import type { BookmarkWithLinkPosts } from "~/routes/bookmarks";
 
 TimeAgo.addDefaultLocale(en);
@@ -93,6 +94,72 @@ const LinkMetadata = ({
 	);
 };
 
+const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
+	const fetcher = useFetcher();
+
+	const handleDelete = (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const formData = new FormData();
+		formData.append("url", url.toString());
+		formData.append("tagName", tag);
+		fetcher.submit(formData, {
+			method: "POST",
+			action: "/bookmarks/delete-tag",
+		});
+	};
+
+	const isDeleting = fetcher.state === "submitting" || fetcher.state === "loading";
+
+	return (
+		<Flex
+			gap="0"
+			align="center"
+			display="inline-flex"
+			style={{
+				backgroundColor: "var(--gray-a3)",
+				borderRadius: "var(--radius-2)",
+				overflow: "hidden",
+			}}
+		>
+			<Link
+				href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
+				className={styles.linkTag}
+				size="1"
+				style={{
+					textDecoration: "none",
+					padding: "0 var(--space-2)",
+					height: "20px",
+					display: "flex",
+					alignItems: "center",
+					color: "var(--gray-12)",
+				}}
+			>
+				{tag}
+			</Link>
+			<Flex
+				asChild
+				align="center"
+				justify="center"
+				style={{
+					height: "20px",
+					borderLeft: "1px solid var(--gray-a5)",
+				}}
+			>
+				<button
+					type="button"
+					onClick={handleDelete}
+					disabled={isDeleting}
+					className={styles.deleteButton}
+					data-deleting={isDeleting}
+				>
+					{isDeleting ? <Spinner size="1" /> : <X size={12} />}
+				</button>
+			</Flex>
+		</Flex>
+	);
+};
+
 export const LinkTags = ({
 	articleTags,
 	url,
@@ -105,15 +172,7 @@ export const LinkTags = ({
 	return (
 		<Flex gap="1" wrap="wrap" mt="3" align="center">
 			{articleTags.slice(0, 6).map((tag) => (
-				<Link
-					key={`${url}-${tag}`}
-					href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
-					className={styles.linkTag}
-				>
-					<Badge variant="soft" color="gray" size="1">
-						{tag}
-					</Badge>
-				</Link>
+				<TagBadge key={`${url}-${tag}`} tag={tag} url={url} />
 			))}
 			{articleTags.length > 3 && (
 				<span>
@@ -126,15 +185,7 @@ export const LinkTags = ({
 						<HoverCard.Content>
 							<Flex gap="1" wrap="wrap">
 								{articleTags.slice(6).map((tag) => (
-									<Link
-										key={`${url}-remaining-${tag}`}
-										href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
-										className={styles.linkTag}
-									>
-										<Badge variant="soft" color="gray" size="1">
-											{tag}
-										</Badge>
-									</Link>
+									<TagBadge key={`${url}-remaining-${tag}`} tag={tag} url={url} />
 								))}
 							</Flex>
 						</HoverCard.Content>

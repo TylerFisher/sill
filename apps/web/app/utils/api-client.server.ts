@@ -388,6 +388,21 @@ export async function apiGetBookmarkTags(request: Request) {
 }
 
 /**
+ * Delete a tag from a bookmark via API
+ */
+export async function apiDeleteBookmarkTag(
+  request: Request,
+  data: { url: string; tagName: string }
+) {
+  const client = createApiClient(request);
+  const response = await client.api.bookmarks.tag.$delete({
+    json: data,
+  });
+
+  return response;
+}
+
+/**
  * Get digest items grouped by month via API
  */
 export async function apiGetDigestItemsByMonth(request: Request) {

@@ -1,5 +1,6 @@
 import {
 	Button,
+	Callout,
 	Dialog,
 	Flex,
 	IconButton,
@@ -17,6 +18,7 @@ const BookmarkLink = ({
 	const fetcher = useFetcher();
 	const [open, setOpen] = useState(false);
 	const [tags, setTags] = useState("");
+	const [error, setError] = useState("");
 
 	const handleIconClick = () => {
 		if (isBookmarked) {
@@ -31,6 +33,19 @@ const BookmarkLink = ({
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+
+		// Validate tag lengths (max 30 characters each)
+		if (tags.trim()) {
+			const tagList = tags.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+			const invalidTags = tagList.filter((t) => t.length > 30);
+
+			if (invalidTags.length > 0) {
+				setError(`Tags must be 30 characters or less: ${invalidTags.join(", ")}`);
+				return;
+			}
+		}
+
+		setError("");
 		const formData = new FormData(e.target as HTMLFormElement);
 		fetcher.submit(formData, { method: "POST", action: "/bookmarks/add" });
 		setOpen(false);
@@ -69,6 +84,12 @@ const BookmarkLink = ({
 						<input type="hidden" name="url" value={url} />
 
 						<Flex direction="column" gap="3">
+							{error && (
+								<Callout.Root color="red" size="1">
+									<Callout.Text>{error}</Callout.Text>
+								</Callout.Root>
+							)}
+
 							<TextField.Root
 								name="tags"
 								placeholder="e.g. tech, javascript, tutorial"

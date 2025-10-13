@@ -33,6 +33,12 @@ const DeleteBookmarkSchema = z.object({
   url: z.string().url(),
 });
 
+// Schema for deleting a tag from a bookmark
+const DeleteBookmarkTagSchema = z.object({
+  url: z.string().url(),
+  tagName: z.string(),
+});
+
 type BookmarkTagData = {
   tag: typeof tag.$inferSelect;
 };
@@ -291,6 +297,55 @@ const bookmarks = new Hono()
       return c.json({ tags });
     } catch (error) {
       console.error("Get tags error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+
+  // DELETE /api/bookmarks/tag - Delete a tag from a bookmark
+  .delete("/tag", zValidator("json", DeleteBookmarkTagSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { url, tagName } = c.req.valid("json");
+
+    try {
+      // Find the bookmark
+      const existingBookmark = await db.query.bookmark.findFirst({
+        where: and(eq(bookmark.userId, userId), eq(bookmark.linkUrl, url)),
+      });
+
+      if (!existingBookmark) {
+        return c.json({ error: "Bookmark not found" }, 404);
+      }
+
+      // Find the tag
+      const existingTag = await db.query.tag.findFirst({
+        where: and(eq(tag.userId, userId), eq(tag.name, tagName)),
+      });
+
+      if (!existingTag) {
+        return c.json({ error: "Tag not found" }, 404);
+      }
+
+      // Delete the bookmark-tag association
+      await db
+        .delete(bookmarkTag)
+        .where(
+          and(
+            eq(bookmarkTag.bookmarkId, existingBookmark.id),
+            eq(bookmarkTag.tagId, existingTag.id)
+          )
+        );
+
+      return c.json({
+        success: true,
+        message: "Tag removed from bookmark",
+      });
+    } catch (error) {
+      console.error("Delete bookmark tag error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });
