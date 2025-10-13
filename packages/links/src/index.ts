@@ -15,4 +15,3 @@ export {
 export { dequeueJobs, enqueueJob } from "./queue.js";
 export { fetchHtmlViaProxy, extractHtmlMetadata } from "./metadata.js";
 export { renderPageContent } from "./cloudflare.js";
-export { getR2Client } from "./r2.js";
