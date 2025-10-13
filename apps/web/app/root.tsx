@@ -17,7 +17,7 @@ import { Theme as RadixTheme } from "@radix-ui/themes";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "~/utils/honeypot.server";
 import { useTheme } from "./routes/resources/theme-switch";
-import { apiGetLatestTermsUpdate, apiGetTermsAgreement, apiGetUserProfileOptional } from "./utils/api-client.server";
+import { apiGetUserProfileOptional } from "./utils/api-client.server";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
 import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
@@ -55,13 +55,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	if (userProfile) {
 		dbUser = userProfile; // Use the user data from context
 		subscribed = userProfile.subscriptionStatus;
-		try {
-      const latestTerms = await apiGetLatestTermsUpdate(request);
-      const { agreement } = await apiGetTermsAgreement(request, latestTerms.id);
-			agreed = !!agreement;
-		} catch (error) {
-			console.error("Database error in hasAgreed:", error);
-		}
+		// agreedToLatestTerms is now included in the userProfile from the API
+		agreed = userProfile.agreedToLatestTerms ?? true;
 	}
 
 	return data({

@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -17,7 +17,7 @@ import {
   prepareVerification,
   createOAuthClient,
 } from "@sill/auth";
-import { db, password, user } from "@sill/schema";
+import { db, password, termsAgreement, termsUpdate, user } from "@sill/schema";
 import {
   sendVerificationEmail,
   sendWelcomeEmail,
@@ -331,7 +331,7 @@ const auth = new Hono()
       authenticated: true,
     });
   })
-  // GET /api/auth/profile - Get user profile with social accounts
+  // GET /api/auth/profile - Get user profile with social accounts and terms agreement
   .get("/profile", async (c) => {
     const userId = await getUserIdFromSession(c.req.raw);
 
@@ -346,7 +346,31 @@ const auth = new Hono()
         return c.json({ error: "User not found" }, 404);
       }
 
-      return c.json(userProfile);
+      // Get latest terms update and check if user has agreed
+      let agreedToLatestTerms = true;
+      try {
+        const latestTerms = await db.query.termsUpdate.findFirst({
+          orderBy: desc(termsUpdate.termsDate),
+        });
+
+        if (latestTerms) {
+          const agreement = await db.query.termsAgreement.findFirst({
+            where: and(
+              eq(termsAgreement.termsUpdateId, latestTerms.id),
+              eq(termsAgreement.userId, userId)
+            ),
+          });
+          agreedToLatestTerms = !!agreement;
+        }
+      } catch (error) {
+        console.error("Error checking terms agreement:", error);
+        // Don't fail the entire request if terms check fails
+      }
+
+      return c.json({
+        ...userProfile,
+        agreedToLatestTerms,
+      });
     } catch (error) {
       console.error("Get profile error:", error);
       return c.json({ error: "Internal server error" }, 500);
