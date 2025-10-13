@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "preserveWatchOutput": true
   },
   "include": [
     "src/**/*"

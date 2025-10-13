@@ -18,7 +18,8 @@
 		"baseUrl": ".",
 		"jsx": "react-jsx",
 		"composite": true,
-		"typeRoots": ["../../node_modules/@types"]
+		"typeRoots": ["../../node_modules/@types"],
+    "preserveWatchOutput": true
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]

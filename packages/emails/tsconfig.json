@@ -12,7 +12,8 @@
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "preserveWatchOutput": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

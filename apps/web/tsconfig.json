@@ -31,6 +31,7 @@
 		},
 		"rootDirs": [".", "./.react-router/types"],
 		"verbatimModuleSyntax": true,
-		"outDir": ".tsc-build"
+		"outDir": ".tsc-build",
+    "preserveWatchOutput": true
 	}
 }

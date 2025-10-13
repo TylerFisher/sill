@@ -13,7 +13,8 @@
 		"jsx": "react-jsx",
 		"resolveJsonModule": true,
 		"isolatedModules": true,
-		"noEmit": true
+		"noEmit": true,
+    "preserveWatchOutput": true
 	},
 	"include": [
 		"src/**/*"
