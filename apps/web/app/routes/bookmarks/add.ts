@@ -13,13 +13,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 	const formData = await request.formData();
 	const url = String(formData.get("url"));
 	const tags = formData.get("tags") ? String(formData.get("tags")) : undefined;
+	const publishToAtproto = formData.get("publishToAtproto") === "true";
 
 	if (!url) {
 		return redirect("/bookmarks");
 	}
 
 	try {
-		const response = await apiAddBookmark(request, { url, tags });
+		const response = await apiAddBookmark(request, { url, tags, publishToAtproto });
 		
 		if (!response.ok) {
 			const errorData = await response.json();

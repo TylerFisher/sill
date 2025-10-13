@@ -342,7 +342,7 @@ export async function apiListBookmarks(
  */
 export async function apiAddBookmark(
   request: Request,
-  data: { url: string; tags?: string }
+  data: { url: string; tags?: string; publishToAtproto?: boolean }
 ) {
   const client = createApiClient(request);
   const response = await client.api.bookmarks.$post({

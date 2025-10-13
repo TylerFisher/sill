@@ -459,6 +459,8 @@ export const bookmark = pgTable("bookmark", {
   createdAt: timestamp({ precision: 3, mode: "string" })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
+  published: boolean().notNull().default(false),
+  atprotoRkey: text(),
 });
 
 export const tag = pgTable(
@@ -502,7 +504,9 @@ export const bookmarkTag = pgTable(
   (table) => {
     return {
       unq: unique().on(table.bookmarkId, table.tagId),
-      bookmarkIdTagIdKey: uniqueIndex("bookmark_tag_bookmark_id_tag_id_key").using(
+      bookmarkIdTagIdKey: uniqueIndex(
+        "bookmark_tag_bookmark_id_tag_id_key"
+      ).using(
         "btree",
         table.bookmarkId.asc().nullsLast(),
         table.tagId.asc().nullsLast()

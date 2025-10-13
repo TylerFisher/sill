@@ -3,7 +3,7 @@ import { and, desc, eq, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { getUserIdFromSession } from "@sill/auth";
+import { getUserIdFromSession, createOAuthClient } from "@sill/auth";
 import {
   db,
   type MostRecentLinkPosts,
@@ -11,8 +11,98 @@ import {
   bookmarkTag,
   digestItem,
   tag,
+  blueskyAccount,
 } from "@sill/schema";
 import { filterLinkOccurrences } from "@sill/links";
+import { Agent } from "@atproto/api";
+import { TID } from "@atproto/common";
+
+/**
+ * Get an ATProto agent for a user's Bluesky account
+ */
+async function getAgentForUser(
+  userId: string,
+  request: Request
+): Promise<Agent | null> {
+  const account = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+
+  if (!account) {
+    return null;
+  }
+
+  const oauthClient = await createOAuthClient(request);
+  const oauthSession = await oauthClient.restore(account.did);
+
+  if (!oauthSession) {
+    return null;
+  }
+
+  return new Agent(oauthSession);
+}
+
+/**
+ * Publish a bookmark to the user's ATProto PDS
+ * Returns the rkey of the created record
+ */
+async function publishBookmarkToAtproto(
+  agent: Agent,
+  url: string,
+  tags?: string[]
+): Promise<string> {
+  const rkey = TID.nextStr();
+
+  await agent.com.atproto.repo.putRecord({
+    repo: agent.assertDid,
+    collection: "community.lexicon.bookmarks.bookmark",
+    rkey,
+    record: {
+      $type: "community.lexicon.bookmarks.bookmark",
+      subject: url,
+      createdAt: new Date().toISOString(),
+      ...(tags && tags.length > 0 ? { tags } : {}),
+    },
+  });
+
+  return rkey;
+}
+
+/**
+ * Delete a bookmark from the user's ATProto PDS
+ */
+async function deleteBookmarkFromAtproto(
+  agent: Agent,
+  rkey: string
+): Promise<void> {
+  await agent.com.atproto.repo.deleteRecord({
+    repo: agent.assertDid,
+    collection: "community.lexicon.bookmarks.bookmark",
+    rkey,
+  });
+}
+
+/**
+ * Update a bookmark in the user's ATProto PDS
+ */
+async function updateBookmarkInAtproto(
+  agent: Agent,
+  rkey: string,
+  url: string,
+  tags?: string[]
+): Promise<void> {
+  await agent.com.atproto.repo.putRecord({
+    repo: agent.assertDid,
+    collection: "community.lexicon.bookmarks.bookmark",
+    rkey,
+    record: {
+      $type: "community.lexicon.bookmarks.bookmark",
+      subject: url,
+      createdAt: new Date().toISOString(),
+      ...(tags && tags.length > 0 ? { tags } : {}),
+    },
+  });
+}
 
 // Schema for listing bookmarks
 const ListBookmarksSchema = z.object({
@@ -26,6 +116,7 @@ const ListBookmarksSchema = z.object({
 const AddBookmarkSchema = z.object({
   url: z.string().url(),
   tags: z.string().optional(),
+  publishToAtproto: z.boolean().optional(),
 });
 
 // Schema for deleting a bookmark
@@ -69,7 +160,9 @@ const bookmarks = new Hono()
           or(
             sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
             sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
-            sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`
+            sql`${
+              bookmark.posts
+            }::jsonb->>'link.description' ILIKE ${`%${query}%`}`
           )!
         );
       }
@@ -122,7 +215,7 @@ const bookmarks = new Hono()
       return c.json({ error: "Not authenticated" }, 401);
     }
 
-    const { url, tags: tagsString } = c.req.valid("json");
+    const { url, tags: tagsString, publishToAtproto } = c.req.valid("json");
 
     try {
       // Check if bookmark already exists
@@ -169,6 +262,31 @@ const bookmarks = new Hono()
         return c.json({ error: "No post data found for this URL" }, 404);
       }
 
+      // Publish to ATProto first if requested, so we have the rkey
+      let atprotoRkey: string | undefined;
+      if (publishToAtproto) {
+        try {
+          const agent = await getAgentForUser(userId, c.req.raw);
+          if (agent) {
+            const tagNames = tagsString
+              ? tagsString
+                  .split(",")
+                  .map((t) => t.trim())
+                  .filter((t) => t.length > 0)
+              : undefined;
+
+            atprotoRkey = await publishBookmarkToAtproto(agent, url, tagNames);
+          } else {
+            console.warn(
+              "Could not get ATProto agent for user, skipping publish"
+            );
+          }
+        } catch (error) {
+          console.error("Failed to publish bookmark to ATProto:", error);
+          // Continue with bookmark creation even if ATProto publish fails
+        }
+      }
+
       // Create bookmark and tags in a transaction
       const result = await db.transaction(async (tx) => {
         // Create bookmark
@@ -179,6 +297,8 @@ const bookmarks = new Hono()
             userId,
             linkUrl: url,
             posts: posts[0],
+            published: publishToAtproto && !!atprotoRkey,
+            atprotoRkey: atprotoRkey || null,
           })
           .returning();
 
@@ -196,7 +316,11 @@ const bookmarks = new Hono()
           const invalidTags = tagNames.filter((t) => t.length > 30);
           if (invalidTags.length > 0) {
             return c.json(
-              { error: `Tags must be 30 characters or less: ${invalidTags.join(", ")}` },
+              {
+                error: `Tags must be 30 characters or less: ${invalidTags.join(
+                  ", "
+                )}`,
+              },
               400
             );
           }
@@ -261,14 +385,37 @@ const bookmarks = new Hono()
     const { url } = c.req.valid("json");
 
     try {
+      // First, find the bookmark to check if it was published
+      const existingBookmark = await db.query.bookmark.findFirst({
+        where: and(eq(bookmark.userId, userId), eq(bookmark.linkUrl, url)),
+      });
+
+      if (!existingBookmark) {
+        return c.json({ error: "Bookmark not found" }, 404);
+      }
+
+      // Delete from ATProto if it was published
+      if (existingBookmark.published && existingBookmark.atprotoRkey) {
+        try {
+          const agent = await getAgentForUser(userId, c.req.raw);
+          if (agent) {
+            await deleteBookmarkFromAtproto(agent, existingBookmark.atprotoRkey);
+          } else {
+            console.warn(
+              "Could not get ATProto agent for user, skipping ATProto deletion"
+            );
+          }
+        } catch (error) {
+          console.error("Failed to delete bookmark from ATProto:", error);
+          // Continue with local deletion even if ATProto deletion fails
+        }
+      }
+
+      // Delete from local database
       const deletedBookmarks = await db
         .delete(bookmark)
         .where(and(eq(bookmark.userId, userId), eq(bookmark.linkUrl, url)))
         .returning();
-
-      if (deletedBookmarks.length === 0) {
-        return c.json({ error: "Bookmark not found" }, 404);
-      }
 
       return c.json({
         success: true,
@@ -312,9 +459,16 @@ const bookmarks = new Hono()
     const { url, tagName } = c.req.valid("json");
 
     try {
-      // Find the bookmark
+      // Find the bookmark with its tags
       const existingBookmark = await db.query.bookmark.findFirst({
         where: and(eq(bookmark.userId, userId), eq(bookmark.linkUrl, url)),
+        with: {
+          bookmarkTags: {
+            with: {
+              tag: true,
+            },
+          },
+        },
       });
 
       if (!existingBookmark) {
@@ -339,6 +493,33 @@ const bookmarks = new Hono()
             eq(bookmarkTag.tagId, existingTag.id)
           )
         );
+
+      // Update ATProto record if the bookmark was published
+      if (existingBookmark.published && existingBookmark.atprotoRkey) {
+        try {
+          const agent = await getAgentForUser(userId, c.req.raw);
+          if (agent) {
+            // Get remaining tags after deletion
+            const remainingTags = existingBookmark.bookmarkTags
+              .map((bt) => bt.tag.name)
+              .filter((name) => name !== tagName);
+
+            await updateBookmarkInAtproto(
+              agent,
+              existingBookmark.atprotoRkey,
+              url,
+              remainingTags.length > 0 ? remainingTags : undefined
+            );
+          } else {
+            console.warn(
+              "Could not get ATProto agent for user, skipping ATProto update"
+            );
+          }
+        } catch (error) {
+          console.error("Failed to update bookmark in ATProto:", error);
+          // Continue even if ATProto update fails
+        }
+      }
 
       return c.json({
         success: true,

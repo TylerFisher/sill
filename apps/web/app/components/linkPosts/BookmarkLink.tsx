@@ -5,6 +5,8 @@ import {
 	Flex,
 	IconButton,
 	Spinner,
+	Switch,
+	Text,
 	TextField,
 } from "@radix-ui/themes";
 import { Bookmark } from "lucide-react";
@@ -19,6 +21,7 @@ const BookmarkLink = ({
 	const [open, setOpen] = useState(false);
 	const [tags, setTags] = useState("");
 	const [error, setError] = useState("");
+	const [publishToAtproto, setPublishToAtproto] = useState(false);
 
 	const handleIconClick = () => {
 		if (isBookmarked) {
@@ -36,11 +39,16 @@ const BookmarkLink = ({
 
 		// Validate tag lengths (max 30 characters each)
 		if (tags.trim()) {
-			const tagList = tags.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+			const tagList = tags
+				.split(",")
+				.map((t) => t.trim())
+				.filter((t) => t.length > 0);
 			const invalidTags = tagList.filter((t) => t.length > 30);
 
 			if (invalidTags.length > 0) {
-				setError(`Tags must be 30 characters or less: ${invalidTags.join(", ")}`);
+				setError(
+					`Tags must be 30 characters or less: ${invalidTags.join(", ")}`,
+				);
 				return;
 			}
 		}
@@ -50,6 +58,7 @@ const BookmarkLink = ({
 		fetcher.submit(formData, { method: "POST", action: "/bookmarks/add" });
 		setOpen(false);
 		setTags("");
+		setPublishToAtproto(false);
 	};
 
 	return (
@@ -82,6 +91,11 @@ const BookmarkLink = ({
 
 					<form onSubmit={handleSubmit}>
 						<input type="hidden" name="url" value={url} />
+						<input
+							type="hidden"
+							name="publishToAtproto"
+							value={publishToAtproto ? "true" : "false"}
+						/>
 
 						<Flex direction="column" gap="3">
 							{error && (
@@ -96,6 +110,17 @@ const BookmarkLink = ({
 								value={tags}
 								onChange={(e) => setTags(e.target.value)}
 							/>
+
+							<Text as="label" size="2">
+								<Flex gap="2" align="center">
+									<Switch
+										size="1"
+										checked={publishToAtproto}
+										onCheckedChange={setPublishToAtproto}
+									/>
+									Publish to PDS
+								</Flex>
+							</Text>
 
 							<Flex gap="3" mt="4" justify="end">
 								<Dialog.Close>
