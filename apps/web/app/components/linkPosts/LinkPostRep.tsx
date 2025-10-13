@@ -110,7 +110,7 @@ const LinkPostRep = ({
 	const [open, setOpen] = useState(autoExpand);
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
 	const uniqueActors = getUniqueAvatarUrls(linkPost.posts);
-	const isBookmarked = bookmarks.some(
+	const isBookmarked = bookmarks.find(
 		(bookmark) => bookmark.linkUrl === linkPost.link?.url,
 	);
 

@@ -2,6 +2,8 @@ import { Badge, Flex, HoverCard, Link, Text } from "@radix-ui/themes";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import styles from "./LinkMetadata.module.css";
+import type { bookmark } from "@sill/schema";
+import type { BookmarkWithLinkPosts } from "~/routes/bookmarks";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
@@ -19,6 +21,7 @@ interface LinkMetadataProps {
 	authors: string[] | null;
 	publishDate: string | null;
 	articleTags: string[];
+	bookmark: BookmarkWithLinkPosts | undefined;
 	url: URL;
 	host: string;
 	siteName: string | null;

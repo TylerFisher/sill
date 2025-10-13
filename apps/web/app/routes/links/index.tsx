@@ -1,11 +1,6 @@
 import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import { Suspense, useEffect, useRef, useState } from "react";
-import {
-	Await,
-	useFetcher,
-	useLocation,
-	useSearchParams,
-} from "react-router";
+import { Await, useFetcher, useLocation, useSearchParams } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
@@ -16,9 +11,10 @@ import { useLayout } from "~/routes/resources/layout-switch";
 import type { SubscriptionStatus } from "@sill/schema";
 import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
-import type { MostRecentLinkPosts, bookmark } from "@sill/schema";
+import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
 import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
+import type { BookmarkWithLinkPosts } from "../bookmarks";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
@@ -290,7 +286,7 @@ export const LinkPost = ({
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
-	bookmarks: (typeof bookmark.$inferSelect)[];
+	bookmarks: BookmarkWithLinkPosts[];
 	subscribed: SubscriptionStatus;
 }) => {
 	const location = useLocation();

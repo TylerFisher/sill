@@ -353,7 +353,15 @@ export const getUserProfile = async (userId: string) => {
           eq(subscription.userId, userId)
         ),
       },
-      bookmarks: true,
+      bookmarks: {
+        with: {
+          bookmarkTags: {
+            with: {
+              tag: true,
+            },
+          },
+        },
+      },
     },
   });
 

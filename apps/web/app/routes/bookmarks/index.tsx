@@ -14,16 +14,21 @@ import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
-import type { MostRecentLinkPosts } from "@sill/schema";
+import type { MostRecentLinkPosts, tag } from "@sill/schema";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
-type BookmarkWithLinkPosts = {
+type TagData = {
+	tag: typeof tag.$inferSelect;
+};
+
+export type BookmarkWithLinkPosts = {
 	id: string;
 	posts: MostRecentLinkPosts;
 	userId: string;
 	linkUrl: string;
 	createdAt: string;
 	linkPosts?: MostRecentLinkPosts;
+	bookmarkTags?: TagData[];
 };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -125,11 +130,14 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 
 	const groupedBookmarks = fetchedBookmarks.reduce(
 		(groups, bookmark) => {
-			const date = new Date(`${bookmark.createdAt}Z`).toLocaleDateString("en-US", {
-				year: "numeric",
-				month: "long",
-				day: "numeric",
-			});
+			const date = new Date(`${bookmark.createdAt}Z`).toLocaleDateString(
+				"en-US",
+				{
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				},
+			);
 
 			if (!groups[date]) {
 				groups[date] = [];

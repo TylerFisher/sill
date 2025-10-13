@@ -461,6 +461,56 @@ export const bookmark = pgTable("bookmark", {
     .notNull(),
 });
 
+export const tag = pgTable(
+  "tag",
+  {
+    id: uuid().primaryKey().notNull(),
+    name: text().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => {
+    return {
+      unq: unique().on(table.name, table.userId),
+      userIdNameKey: uniqueIndex("tag_user_id_name_key").using(
+        "btree",
+        table.userId.asc().nullsLast(),
+        table.name.asc().nullsLast()
+      ),
+    };
+  }
+);
+
+export const bookmarkTag = pgTable(
+  "bookmark_tag",
+  {
+    id: uuid().primaryKey().notNull(),
+    bookmarkId: uuid()
+      .notNull()
+      .references(() => bookmark.id, { onDelete: "cascade" }),
+    tagId: uuid()
+      .notNull()
+      .references(() => tag.id, { onDelete: "cascade" }),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => {
+    return {
+      unq: unique().on(table.bookmarkId, table.tagId),
+      bookmarkIdTagIdKey: uniqueIndex("bookmark_tag_bookmark_id_tag_id_key").using(
+        "btree",
+        table.bookmarkId.asc().nullsLast(),
+        table.tagId.asc().nullsLast()
+      ),
+    };
+  }
+);
+
 export const linkPostDenormalizedRelations = relations(
   linkPostDenormalized,
   ({ one }) => ({
@@ -491,6 +541,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   notificationGroups: many(notificationGroup),
   subscriptions: many(subscription),
   bookmarks: many(bookmark),
+  tags: many(tag),
 }));
 
 export const passwordRelations = relations(password, ({ one }) => ({
@@ -649,7 +700,7 @@ export const termsAgreementRelations = relations(termsAgreement, ({ one }) => ({
   }),
 }));
 
-export const bookmarkRelations = relations(bookmark, ({ one }) => ({
+export const bookmarkRelations = relations(bookmark, ({ one, many }) => ({
   user: one(user, {
     fields: [bookmark.userId],
     references: [user.id],
@@ -657,6 +708,26 @@ export const bookmarkRelations = relations(bookmark, ({ one }) => ({
   link: one(link, {
     fields: [bookmark.linkUrl],
     references: [link.url],
+  }),
+  bookmarkTags: many(bookmarkTag),
+}));
+
+export const tagRelations = relations(tag, ({ one, many }) => ({
+  user: one(user, {
+    fields: [tag.userId],
+    references: [user.id],
+  }),
+  bookmarkTags: many(bookmarkTag),
+}));
+
+export const bookmarkTagRelations = relations(bookmarkTag, ({ one }) => ({
+  bookmark: one(bookmark, {
+    fields: [bookmarkTag.bookmarkId],
+    references: [bookmark.id],
+  }),
+  tag: one(tag, {
+    fields: [bookmarkTag.tagId],
+    references: [tag.id],
   }),
 }));
 

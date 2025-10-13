@@ -1,5 +1,13 @@
-import { IconButton, Spinner } from "@radix-ui/themes";
+import {
+	Button,
+	Dialog,
+	Flex,
+	IconButton,
+	Spinner,
+	TextField,
+} from "@radix-ui/themes";
 import { Bookmark } from "lucide-react";
+import { useState } from "react";
 import { useFetcher } from "react-router";
 
 const BookmarkLink = ({
@@ -7,14 +15,38 @@ const BookmarkLink = ({
 	isBookmarked,
 }: { url: string; isBookmarked: boolean }) => {
 	const fetcher = useFetcher();
+	const [open, setOpen] = useState(false);
+	const [tags, setTags] = useState("");
+
+	const handleIconClick = () => {
+		if (isBookmarked) {
+			fetcher.submit(
+				{ url },
+				{ method: "DELETE", action: "/bookmarks/delete" },
+			);
+		} else {
+			setOpen(true);
+		}
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		const formData = new FormData(e.target as HTMLFormElement);
+		fetcher.submit(formData, { method: "POST", action: "/bookmarks/add" });
+		setOpen(false);
+		setTags("");
+	};
 
 	return (
-		<fetcher.Form
-			method={isBookmarked ? "DELETE" : "POST"}
-			action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
-		>
-			<input type="hidden" name="url" value={url} />
-			<IconButton variant="ghost" size="1" aria-label="Bookmark" color="gray">
+		<>
+			<IconButton
+				variant="ghost"
+				size="1"
+				aria-label="Bookmark"
+				color="gray"
+				onClick={handleIconClick}
+				disabled={fetcher.state === "submitting" || fetcher.state === "loading"}
+			>
 				{fetcher.state === "submitting" || fetcher.state === "loading" ? (
 					<Spinner />
 				) : (
@@ -25,7 +57,38 @@ const BookmarkLink = ({
 					/>
 				)}
 			</IconButton>
-		</fetcher.Form>
+
+			<Dialog.Root open={open} onOpenChange={setOpen}>
+				<Dialog.Content maxWidth="450px">
+					<Dialog.Title>Add Bookmark</Dialog.Title>
+					<Dialog.Description size="2" mb="4">
+						Add tags to organize this bookmark (optional, comma-separated)
+					</Dialog.Description>
+
+					<form onSubmit={handleSubmit}>
+						<input type="hidden" name="url" value={url} />
+
+						<Flex direction="column" gap="3">
+							<TextField.Root
+								name="tags"
+								placeholder="e.g. tech, javascript, tutorial"
+								value={tags}
+								onChange={(e) => setTags(e.target.value)}
+							/>
+
+							<Flex gap="3" mt="4" justify="end">
+								<Dialog.Close>
+									<Button variant="soft" color="gray" type="button">
+										Cancel
+									</Button>
+								</Dialog.Close>
+								<Button type="submit">Add Bookmark</Button>
+							</Flex>
+						</Flex>
+					</form>
+				</Dialog.Content>
+			</Dialog.Root>
+		</>
 	);
 };
 

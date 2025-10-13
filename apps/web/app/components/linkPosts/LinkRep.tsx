@@ -8,17 +8,18 @@ import Toolbar from "./Toolbar";
 import DisplayHost from "./link/DisplayHost";
 import LinkDescription from "./link/LinkDescription";
 import LinkImage from "./link/LinkImage";
-import LinkMetadata from "./link/LinkMetadata";
+import LinkMetadata, { LinkTags } from "./link/LinkMetadata";
 import LinkTitle from "./link/LinkTitle";
 import XEmbed from "./link/XEmbed";
 import YoutubeEmbed from "./link/YoutubeEmbed";
+import type { BookmarkWithLinkPosts } from "~/routes/bookmarks";
 interface LinkRepProps {
 	link: MostRecentLinkPosts["link"];
 	instance: string | undefined;
 	bsky: string | undefined;
 	layout: "dense" | "default";
 	toolbar?: boolean;
-	isBookmarked: boolean;
+	isBookmarked: BookmarkWithLinkPosts | undefined;
 	subscribed: SubscriptionStatus;
 }
 
@@ -101,6 +102,7 @@ const LinkRep = ({
 					authors={effectiveLink.authors}
 					publishDate={effectiveLink.publishedDate}
 					articleTags={effectiveLink.topics || []}
+					bookmark={isBookmarked}
 					url={url}
 					host={host}
 					siteName={effectiveLink.siteName}
@@ -110,7 +112,12 @@ const LinkRep = ({
 					description={effectiveLink.description || ""}
 					layout={layout}
 				/>
-				{/* <LinkTags articleTags={effectiveLink.topics || []} url={url} /> */}
+				<LinkTags
+					articleTags={
+						isBookmarked?.bookmarkTags?.map((tag) => tag.tag.name) || []
+					}
+					url={url}
+				/>
 			</Box>
 			{toolbar && layout === "default" && (
 				<Inset
@@ -136,7 +143,7 @@ const LinkRep = ({
 							instance={instance}
 							bsky={bsky}
 							type="link"
-							isBookmarked={isBookmarked}
+							isBookmarked={!!isBookmarked}
 							layout={layout}
 							subscribed={subscribed}
 						/>
@@ -149,7 +156,7 @@ const LinkRep = ({
 					giftUrl={effectiveLink.giftUrl}
 					instance={instance}
 					bsky={bsky}
-					isBookmarked={isBookmarked}
+					isBookmarked={!!isBookmarked}
 					narrowMutePhrase={effectiveLink.url}
 					broadMutePhrase={host}
 				/>

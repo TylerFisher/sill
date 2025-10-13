@@ -339,7 +339,10 @@ export async function apiListBookmarks(
 /**
  * Add a bookmark via API
  */
-export async function apiAddBookmark(request: Request, data: { url: string }) {
+export async function apiAddBookmark(
+  request: Request,
+  data: { url: string; tags?: string }
+) {
   const client = createApiClient(request);
   const response = await client.api.bookmarks.$post({
     json: data,

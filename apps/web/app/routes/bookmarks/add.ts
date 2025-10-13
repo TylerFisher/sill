@@ -12,13 +12,14 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 
 	const formData = await request.formData();
 	const url = String(formData.get("url"));
+	const tags = formData.get("tags") ? String(formData.get("tags")) : undefined;
 
 	if (!url) {
 		return redirect("/bookmarks");
 	}
 
 	try {
-		const response = await apiAddBookmark(request, { url });
+		const response = await apiAddBookmark(request, { url, tags });
 		
 		if (!response.ok) {
 			const errorData = await response.json();
