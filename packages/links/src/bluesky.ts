@@ -102,8 +102,10 @@ export const getBlueskyList = async (
 
     const list = response.data.feed;
     const checkDate = dbList.mostRecentPostDate
-      ? dbList.mostRecentPostDate
-      : new Date(Date.now() - ONE_DAY_MS);
+      ? new Date(
+          `${dbList.mostRecentPostDate.replace(" ", "T")}Z`
+        ).toISOString()
+      : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
     let reachedEnd = false;
     const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
@@ -116,11 +118,11 @@ export const getBlueskyList = async (
         continue;
 
       const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
-        ? item.reason.indexedAt
-        : item.post.indexedAt;
+        ? new Date(item.reason.indexedAt).toISOString()
+        : new Date(item.post.indexedAt).toISOString();
 
       // skip a few posts in case of pinned posts
-      if (new Date(postDate) <= new Date(checkDate) && index > 5) {
+      if (postDate <= checkDate && index > 5) {
         reachedEnd = true;
         break;
       }
@@ -190,7 +192,9 @@ export const getBlueskyTimeline = async (
     });
     const timeline = response.data.feed;
     const checkDate = account?.mostRecentPostDate
-      ? account.mostRecentPostDate
+      ? new Date(
+          `${account.mostRecentPostDate.replace(" ", "T")}Z`
+        ).toISOString()
       : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
     let reachedEnd = false;
@@ -206,7 +210,8 @@ export const getBlueskyTimeline = async (
       const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
         ? new Date(item.reason.indexedAt).toISOString()
         : new Date(item.post.indexedAt).toISOString();
-      if (new Date(postDate) <= new Date(checkDate)) {
+
+      if (postDate <= checkDate) {
         reachedEnd = true;
         break;
       }
@@ -250,7 +255,9 @@ export const getBlueskyTimeline = async (
  * @returns Full URL for the post
  */
 const getPostUrl = async (authorHandle: string, postUri: string) => {
-  return `https://bsky.app/profile/${authorHandle}/post/${postUri.split("/").at(-1)}`;
+  return `https://bsky.app/profile/${authorHandle}/post/${postUri
+    .split("/")
+    .at(-1)}`;
 };
 
 /**
@@ -623,12 +630,16 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
       );
       if (mentionFacet) {
         html.push(
-          `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${segment.text}</a>`
+          `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
+            segment.text
+          }</a>`
         );
       }
     } else if (segment.isMention()) {
       html.push(
-        `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${segment.text}</a>`
+        `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
+          segment.text
+        }</a>`
       );
     } else {
       html.push(segment.text);

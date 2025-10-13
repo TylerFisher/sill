@@ -19,9 +19,9 @@ import {
 	insertNewLinks,
 	dequeueJobs,
 	enqueueJob,
-  extractHtmlMetadata,
-  fetchHtmlViaProxy,
-  renderPageContent
+	extractHtmlMetadata,
+	fetchHtmlViaProxy,
+	renderPageContent,
 } from "@sill/links";
 import { isSubscribed } from "@sill/auth";
 import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
@@ -120,18 +120,22 @@ async function processQueue() {
 					if (group.notificationType === "email") {
 						await sendNotificationEmail({
 							to: groupUser.email,
-							subject: newItems[0].link?.title || `New Sill notification: ${group.name}`,
+							subject:
+								newItems[0].link?.title ||
+								`New Sill notification: ${group.name}`,
 							links: newItems,
 							groupName: group.name,
 							subscribed,
-							freeTrialEnd: groupUser.freeTrialEnd ? new Date(groupUser.freeTrialEnd) : null,
+							freeTrialEnd: groupUser.freeTrialEnd
+								? new Date(groupUser.freeTrialEnd)
+								: null,
 						});
 					} else if (group.notificationType === "rss") {
 						for (const item of newItems) {
 							const html = await renderNotificationRSS({
-                item,
-                subscribed
-              });
+								item,
+								subscribed,
+							});
 							await db.insert(notificationItem).values({
 								id: uuidv7(),
 								notificationGroupId: group.id,

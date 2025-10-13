@@ -153,9 +153,13 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
             target: [link.url],
             set: {
               ...conflictUpdateSetAllColumns(link),
-              giftUrl: sql`CASE 
+              giftUrl: sql`CASE
                 WHEN ${link.giftUrl} IS NULL THEN excluded."giftUrl"
-                ELSE ${link.giftUrl} 
+                ELSE ${link.giftUrl}
+              END`,
+              scraped: sql`CASE
+                WHEN ${link.scraped} = true THEN true
+                ELSE COALESCE(excluded."scraped", false)
               END`,
             },
           });
