@@ -8,15 +8,6 @@ import type { BookmarkWithLinkPosts } from "~/routes/bookmarks";
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
-const formatTag = (tag: string): string => {
-	// If the tag is all lowercase, capitalize the first letter
-	if (tag === tag.toLowerCase()) {
-		return tag.charAt(0).toUpperCase() + tag.slice(1);
-	}
-	// Otherwise, return the tag as-is
-	return tag;
-};
-
 interface LinkMetadataProps {
 	authors: string[] | null;
 	publishDate: string | null;
@@ -113,14 +104,14 @@ export const LinkTags = ({
 
 	return (
 		<Flex gap="1" wrap="wrap" mt="3" align="center">
-			{articleTags.slice(0, 3).map((tag) => (
+			{articleTags.slice(0, 6).map((tag) => (
 				<Link
 					key={`${url}-${tag}`}
-					href={`/links/topic/${encodeURIComponent(tag)}`}
+					href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
 					className={styles.linkTag}
 				>
 					<Badge variant="soft" color="gray" size="1">
-						{formatTag(tag)}
+						{tag}
 					</Badge>
 				</Link>
 			))}
@@ -129,19 +120,19 @@ export const LinkTags = ({
 					<HoverCard.Root>
 						<HoverCard.Trigger>
 							<Badge variant="outline" color="gray" size="1">
-								+{articleTags.length - 3} more
+								+{articleTags.length - 6} more
 							</Badge>
 						</HoverCard.Trigger>
 						<HoverCard.Content>
 							<Flex gap="1" wrap="wrap">
-								{articleTags.slice(3).map((tag) => (
+								{articleTags.slice(6).map((tag) => (
 									<Link
 										key={`${url}-remaining-${tag}`}
-										href={`/links/topic/${encodeURIComponent(tag)}`}
+										href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
 										className={styles.linkTag}
 									>
 										<Badge variant="soft" color="gray" size="1">
-											{formatTag(tag)}
+											{tag}
 										</Badge>
 									</Link>
 								))}
