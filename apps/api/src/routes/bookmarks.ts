@@ -17,6 +17,7 @@ import { filterLinkOccurrences } from "@sill/links";
 // Schema for listing bookmarks
 const ListBookmarksSchema = z.object({
   query: z.string().optional(),
+  tag: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(10),
 });
@@ -50,25 +51,39 @@ const bookmarks = new Hono()
       return c.json({ error: "Not authenticated" }, 401);
     }
 
-    const { query, page, limit } = c.req.valid("query");
+    const { query, tag: tagFilter, page, limit } = c.req.valid("query");
 
     try {
+      // Build where conditions
+      const conditions = [eq(bookmark.userId, userId)];
+
+      // Add text search condition
+      if (query) {
+        conditions.push(
+          or(
+            sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
+            sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
+            sql`${bookmark.posts}::jsonb->>'link.description' ILIKE ${`%${query}%`}`
+          )!
+        );
+      }
+
+      // Add tag filter condition
+      if (tagFilter) {
+        conditions.push(
+          sql`EXISTS (
+            SELECT 1 FROM bookmark_tag
+            INNER JOIN tag ON bookmark_tag."tagId" = tag.id
+            WHERE bookmark_tag."bookmarkId" = bookmark.id
+            AND tag.name = ${tagFilter}
+            AND tag."userId" = ${userId}
+          )`
+        );
+      }
+
       const bookmarkResults: BookmarkWithLinkPosts[] =
         await db.query.bookmark.findMany({
-          where: and(
-            eq(bookmark.userId, userId),
-            query
-              ? or(
-                  sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
-                  sql`${
-                    bookmark.posts
-                  }::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
-                  sql`${
-                    bookmark.posts
-                  }::jsonb->>'link.description' ILIKE ${`%${query}%`}`
-                )
-              : undefined
-          ),
+          where: and(...conditions),
           with: {
             bookmarkTags: {
               with: {
@@ -171,6 +186,15 @@ const bookmarks = new Hono()
             .map((t) => t.trim())
             .filter((t) => t.length > 0);
 
+          // Validate tag lengths (max 30 characters)
+          const invalidTags = tagNames.filter((t) => t.length > 30);
+          if (invalidTags.length > 0) {
+            return c.json(
+              { error: `Tags must be 30 characters or less: ${invalidTags.join(", ")}` },
+              400
+            );
+          }
+
           // Create or get existing tags
           const tagIds: string[] = [];
           for (const tagName of tagNames) {
@@ -246,6 +270,27 @@ const bookmarks = new Hono()
       });
     } catch (error) {
       console.error("Delete bookmark error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+
+  // GET /api/bookmarks/tags - Get all unique tags for the user
+  .get("/tags", async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    try {
+      const tags = await db.query.tag.findMany({
+        where: eq(tag.userId, userId),
+        orderBy: desc(tag.name),
+      });
+
+      return c.json({ tags });
+    } catch (error) {
+      console.error("Get tags error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

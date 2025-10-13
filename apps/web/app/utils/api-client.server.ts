@@ -310,6 +310,7 @@ export async function apiListBookmarks(
   request: Request,
   params?: {
     query?: string;
+    tag?: string;
     page?: number;
     limit?: number;
   }
@@ -364,6 +365,26 @@ export async function apiDeleteBookmark(
   });
 
   return response;
+}
+
+/**
+ * Get all tags for the user via API
+ */
+export async function apiGetBookmarkTags(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.bookmarks.tags.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get bookmark tags: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
 }
 
 /**
