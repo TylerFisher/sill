@@ -1,20 +1,24 @@
 import { Box, Card, Heading, IconButton, Link, Text } from "@radix-ui/themes";
 import { Bookmark } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Form, redirect, useFetcher, useSearchParams } from "react-router";
+import { redirect, useFetcher, useSearchParams } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
-import SearchField from "~/components/forms/SearchField";
+import BookmarkFilters from "~/components/forms/BookmarkFilters";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import { LinkPost } from "~/routes/links";
-import { apiListBookmarks } from "~/utils/api-client.server";
+import {
+	apiGetBookmarkTags,
+	apiListBookmarks,
+} from "~/utils/api-client.server";
 import { useLayout } from "../resources/layout-switch";
 import type { Route } from "./+types";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
 import type { MostRecentLinkPosts, tag } from "@sill/schema";
+import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type TagData = {
@@ -45,16 +49,21 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 	const url = new URL(request.url);
 	const query = url.searchParams.get("query") || undefined;
+	const tag = url.searchParams.get("tag") || undefined;
 	const page = url.searchParams.get("page") || "1";
 
 	const bookmarkData = await apiListBookmarks(request, {
 		query,
+		tag,
 		page: Number.parseInt(page),
 		limit: 10,
 	});
 
+	const tagsData = await apiGetBookmarkTags(request);
+
 	return {
 		bookmarks: bookmarkData.bookmarks,
+		tags: tagsData.tags,
 		subscribed,
 		bsky: bsky?.handle,
 		instance: mastodon?.mastodonInstance.instance,
@@ -63,7 +72,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 }
 
 export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
-	const { bookmarks, subscribed, bsky, instance } = loaderData;
+	const { bookmarks, tags, subscribed, bsky, instance } = loaderData;
 	const layout = useLayout();
 
 	const [searchParams] = useSearchParams();
@@ -125,8 +134,10 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	useEffect(() => {
 		if (key !== loaderData.key) {
 			setKey(loaderData.key);
+			setFetchedBookmarks(bookmarks);
+			setNextPage(2);
 		}
-	}, [key, loaderData.key]);
+	}, [key, loaderData.key, bookmarks]);
 
 	const groupedBookmarks = fetchedBookmarks.reduce(
 		(groups, bookmark) => {
@@ -151,20 +162,24 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 
 	const bookmarksByDate = Object.entries(groupedBookmarks);
 
+	const hasActiveFilters = searchParams.get("query") || searchParams.get("tag");
+	const filterCount = [
+		searchParams.get("query"),
+		searchParams.get("tag") && searchParams.get("tag") !== "all",
+	].filter(Boolean).length;
+
 	return (
-		<Layout>
+		<Layout sidebar={<BookmarkFilters tags={tags} />}>
+			<LinkFiltersCollapsible customFilterCount={filterCount}>
+				<BookmarkFilters tags={tags} reverse={true} />
+			</LinkFiltersCollapsible>
 			<PageHeading
 				title="Bookmarks"
 				dek="Sill can save links you bookmark for easy access later. If you bookmark a link, Sill will track all posts sharing that link for you."
 			/>
-			{subscribed === "trial" && (
-				<SubscriptionCallout featureName="Bookmarks" />
-			)}
-			<Box mb="6" key="search">
-				<Form method="GET">
-					<SearchField />
-				</Form>
-			</Box>
+			{/* {subscribed === "trial" && ( */}
+			<SubscriptionCallout featureName="Bookmarks" />
+			{/* )} */}
 			<Box my="4">
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (
@@ -188,15 +203,19 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 				) : (
 					<Card>
 						<Text as="p" mb="4">
-							You haven't bookmarked any links yet.
+							{hasActiveFilters
+								? "No bookmarks match your filters."
+								: "You haven't bookmarked any links yet."}
 						</Text>
-						<Text as="p">
-							Bookmark posts using the bookmark icon{" "}
-							<IconButton variant="ghost" size="1">
-								<Bookmark />
-							</IconButton>{" "}
-							on links <Link href="/links">in your feed</Link>.
-						</Text>
+						{!hasActiveFilters && (
+							<Text as="p">
+								Bookmark posts using the bookmark icon{" "}
+								<IconButton variant="ghost" size="1">
+									<Bookmark />
+								</IconButton>{" "}
+								on links <Link href="/links">in your feed</Link>.
+							</Text>
+						)}
 					</Card>
 				)}
 				<Box position="absolute" top="90%">

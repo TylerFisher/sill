@@ -54,10 +54,10 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
 						<DataList.Label>Signed up on</DataList.Label>
 						<DataList.Value>{signedUpOn}</DataList.Value>
 					</DataList.Item>
-					<DataList.Item align="center">
+					{/* <DataList.Item align="center">
 						<DataList.Label>Subscription tier</DataList.Label>
 						<DataList.Value>{`${subscribed[0].toLocaleUpperCase()}${subscribed.slice(1)}`}</DataList.Value>
-					</DataList.Item>
+					</DataList.Item> */}
 				</DataList.Root>
 				<Heading as="h5" size="4" mt="6" mb="2">
 					Account actions
@@ -98,7 +98,7 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
 							</Button>
 						</Link>
 					</Box>
-					<Box>
+					{/* <Box>
 						<Link to="/settings/subscription">
 							<Button
 								variant="soft"
@@ -124,7 +124,7 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
 								)}
 							</Button>
 						</Link>
-					</Box>
+					</Box> */}
 
 					<AlertDialog.Root>
 						<AlertDialog.Trigger>

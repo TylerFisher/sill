@@ -6,7 +6,10 @@ import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import type { Route } from "./+types/index";
-import { apiGetDigestItemsByMonth, apiGetDigestSettings } from "~/utils/api-client.server";
+import {
+	apiGetDigestItemsByMonth,
+	apiGetDigestSettings,
+} from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 
 export const meta: Route.MetaFunction = () => [
@@ -38,7 +41,7 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 
 	// Get digest items by month via API
 	const digestResult = await apiGetDigestItemsByMonth(request);
-	
+
 	// Convert pubDate strings back to Date objects
 	const itemsByMonth = Object.fromEntries(
 		Object.entries(digestResult.itemsByMonth).map(([key, monthData]) => [
@@ -120,9 +123,9 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 							title="Daily Digest Settings"
 							dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest using the form below."
 						/>
-						{subscribed === "trial" && (
-							<SubscriptionCallout featureName="Daily Digests" />
-						)}
+						{/* {subscribed === "trial" && ( */}
+						<SubscriptionCallout featureName="Daily Digests" />
+						{/* )} */}
 					</Box>
 
 					<EmailSettingForm currentSettings={currentSettings} email={email} />

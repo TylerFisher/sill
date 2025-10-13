@@ -371,16 +371,16 @@ export const getUserProfile = async (userId: string) => {
 
   // Calculate subscription status
   const subscribed = userWithAccounts.subscriptions.length > 0;
-  let subscriptionStatus: SubscriptionStatus = "free";
+  const subscriptionStatus: SubscriptionStatus = "plus";
 
-  if (subscribed) {
-    subscriptionStatus = "plus";
-  } else if (
-    userWithAccounts.freeTrialEnd &&
-    new Date() < new Date(userWithAccounts.freeTrialEnd)
-  ) {
-    subscriptionStatus = "trial";
-  }
+  // if (subscribed) {
+  //   subscriptionStatus = "plus";
+  // } else if (
+  //   userWithAccounts.freeTrialEnd &&
+  //   new Date() < new Date(userWithAccounts.freeTrialEnd)
+  // ) {
+  //   subscriptionStatus = "plus";
+  // }
 
   // Return user with subscription status
   return {

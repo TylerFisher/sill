@@ -182,9 +182,9 @@ export default function Notifications({
 					notifications: initial,
 				}}
 			>
-				{loaderData.subscribed === "trial" && (
-					<SubscriptionCallout featureName="Notifications" />
-				)}
+				{/* {loaderData.subscribed === "trial" && ( */}
+				<SubscriptionCallout featureName="Notifications" />
+				{/* )} */}
 				<NotificationForm lastResult={actionData?.result} allLists={allLists} />
 			</NotificationsProvider>
 		</Layout>

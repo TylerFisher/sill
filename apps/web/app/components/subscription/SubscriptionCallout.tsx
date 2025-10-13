@@ -18,18 +18,7 @@ const SubscriptionCallout = ({
 				<Sparkles width="18" height="18" />
 			</Callout.Icon>
 			<Callout.Text>
-				{featureName} are part of{" "}
-				<Text
-					color={color}
-					style={{
-						fontWeight: 900,
-						fontStyle: "italic",
-					}}
-				>
-					sill+
-				</Text>
-				. <Link href="/settings/subscription">Subscribe now</Link> to maintain
-				access.
+				{featureName} will be part of Sill's paid features.
 			</Callout.Text>
 		</Callout.Root>
 	);

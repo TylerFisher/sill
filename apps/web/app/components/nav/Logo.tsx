@@ -16,8 +16,11 @@ const Logo = ({
 			className={extraBig ? styles["big-logo-heading"] : styles["logo-heading"]}
 			mb="2"
 		>
-			<Link to="/" className={styles["logo-link"]}>
+			{/* <Link to="/" className={styles["logo-link"]}>
 				Sill{subscribed === "plus" && "+"}
+			</Link> */}
+			<Link to="/" className={styles["logo-link"]}>
+				Sill
 			</Link>
 		</Heading>
 	);
