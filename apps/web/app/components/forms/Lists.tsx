@@ -1,4 +1,4 @@
-import { Box, Callout, Flex, Heading, Link, Text } from "@radix-ui/themes";
+import { Box, Callout, Flex, Heading, Link, Spinner, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { useFetcher } from "react-router";
 import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
@@ -9,10 +9,12 @@ const Lists = ({
 	listOptions,
 	account,
 	subscribed,
+	loading = false,
 }: {
 	listOptions: ListOption[];
 	account: AccountWithInstance | typeof blueskyAccount.$inferSelect;
 	subscribed: SubscriptionStatus;
+	loading?: boolean;
 }) => {
 	const fetcher = useFetcher();
 	return (
@@ -49,17 +51,24 @@ const Lists = ({
 						Sill will track any enabled lists for new links. Sill works best
 						with chronological lists rather than algorithmic ones.
 					</Text>
-					{listOptions.length > 0 && (
-						<Flex direction="column" gap="4">
-							{listOptions.map((list) => (
-								<ListSwitch
-									key={list.uri}
-									item={list}
-									account={account}
-									fetcher={fetcher}
-								/>
-							))}
+					{loading ? (
+						<Flex align="center" gap="2">
+							<Spinner />
+							<Text size="2">Loading lists...</Text>
 						</Flex>
+					) : (
+						listOptions.length > 0 && (
+							<Flex direction="column" gap="4">
+								{listOptions.map((list) => (
+									<ListSwitch
+										key={list.uri}
+										item={list}
+										account={account}
+										fetcher={fetcher}
+									/>
+								))}
+							</Flex>
+						)
 					)}
 				</>
 			)}

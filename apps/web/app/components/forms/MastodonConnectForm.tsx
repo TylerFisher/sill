@@ -19,6 +19,7 @@ interface MastodonConnectFormProps {
 	searchParams: URLSearchParams;
 	listOptions: ListOption[];
 	subscribed: SubscriptionStatus;
+	loading?: boolean;
 }
 
 const MastodonConnectForm = ({
@@ -26,6 +27,7 @@ const MastodonConnectForm = ({
 	searchParams,
 	listOptions,
 	subscribed,
+	loading = false,
 }: MastodonConnectFormProps) => {
 	return (
 		<Card>
@@ -63,6 +65,7 @@ const MastodonConnectForm = ({
 						listOptions={listOptions}
 						account={account}
 						subscribed={subscribed}
+						loading={loading}
 					/>
 				</>
 			) : (

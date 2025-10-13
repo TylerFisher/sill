@@ -21,6 +21,7 @@ interface BlueskyConnectFormProps {
 	searchParams: URLSearchParams;
 	listOptions: ListOption[];
 	subscribed: SubscriptionStatus;
+	loading?: boolean;
 }
 
 const BlueskyConnectForm = ({
@@ -28,6 +29,7 @@ const BlueskyConnectForm = ({
 	searchParams,
 	listOptions,
 	subscribed,
+	loading = false,
 }: BlueskyConnectFormProps) => {
 	return (
 		<Card mb="6">
@@ -46,6 +48,7 @@ const BlueskyConnectForm = ({
 						listOptions={listOptions}
 						account={account}
 						subscribed={subscribed}
+						loading={loading}
 					/>
 				</>
 			) : (
