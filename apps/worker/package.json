@@ -1,0 +1,26 @@
+{
+  "name": "@sill/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsx src/build.ts",
+    "dev": "tsx watch ./src/process-queue.tsx",
+    "dev:local": "tsx watch --env-file ../../.env ./src/process-queue.tsx",
+    "start": "node ./build/worker.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sill/schema": "workspace:*",
+    "@sill/links": "workspace:*",
+    "@sill/auth": "workspace:*",
+    "@sill/emails": "workspace:*",
+    "@sill/api": "workspace:*",
+    "drizzle-orm": "^0.44.4",
+    "uuidv7-js": "^1.1.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5.1.6"
+  }
+}

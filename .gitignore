@@ -12,3 +12,8 @@ public/sw.js
 dozzle
 .react-router
 CLAUDE.md
+.turbo
+.tsc-build
+build
+dist
+tsconfig.tsbuildinfo

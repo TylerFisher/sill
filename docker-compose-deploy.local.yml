@@ -1,0 +1,142 @@
+services:
+  traefik:
+    image: traefik:v3.2.0
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.insecure=true"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - net
+    restart: always
+
+  db:
+    image: postgres:alpine
+    container_name: postgres_db
+    shm_size: 1gb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5433:5432"  # Expose on different port to avoid conflicts
+    networks:
+      - net
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    container_name: pgbouncer
+    image: edoburu/pgbouncer:latest
+    environment:
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_NAME=${POSTGRES_DB:-postgres}
+      - AUTH_TYPE=scram-sha-256
+      - POOL_MODE=transaction
+      - ADMIN_USERS=${POSTGRES_USER:-postgres}
+    ports:
+      - "5432:5432"
+    depends_on:
+      - db
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', 'localhost']
+    restart: always
+    networks:
+      - net
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+      - API_BASE_URL=http://api:3001
+      - HOST=0.0.0.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - pgbouncer
+      - traefik
+      - api
+    networks:
+      - net
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=PathPrefix(`/`)"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+    depends_on:
+      - pgbouncer
+    networks:
+      - net
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.api.loadbalancer.server.port=3001"
+  
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+    depends_on:
+      - pgbouncer
+      - api
+    restart: unless-stopped
+    networks:
+      - net
+
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./dozzle/data:/data
+    networks:
+      - net
+    environment:
+      DOZZLE_NO_ANALYTICS: true
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=PathPrefix(`/logs`)"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+
+volumes:
+  postgres_data:
+
+networks:
+  net:
+    driver: bridge

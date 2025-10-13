@@ -1,8 +1,0 @@
-.linkTag {
-	transition: opacity 0.15s ease-in-out;
-	cursor: pointer;
-}
-
-.linkTag:hover {
-	opacity: 0.8;
-}

@@ -1,0 +1,336 @@
+import { and, asc, count, eq, gte, ilike, not, sql } from "drizzle-orm";
+import { uuidv7 } from "uuidv7-js";
+import {
+	db,
+	accountUpdateQueue,
+	bookmark,
+	link,
+	linkPostDenormalized,
+	networkTopTenView,
+	notificationGroup,
+	notificationItem,
+	user,
+} from "@sill/schema";
+import {
+	type ProcessedResult,
+	evaluateNotifications,
+	fetchLinks,
+	filterLinkOccurrences,
+	insertNewLinks,
+	dequeueJobs,
+	enqueueJob,
+	extractHtmlMetadata,
+	fetchHtmlViaProxy,
+	renderPageContent,
+} from "@sill/links";
+import { isSubscribed } from "@sill/auth";
+import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
+
+const MAX_ERRORS_PER_BATCH = 10;
+
+async function processQueue() {
+	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
+
+	while (true) {
+		const batchStart = Date.now();
+		const jobs = await dequeueJobs(BATCH_SIZE);
+
+		if (jobs.length > 0) {
+			console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
+			const allLinks: ProcessedResult[] = [];
+			const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
+			const bookmarks: (typeof bookmark.$inferSelect)[] = [];
+			const results = await Promise.all(
+				jobs.map(async (job) => {
+					const jobStart = Date.now();
+					try {
+						const timeoutPromise = new Promise((_, reject) => {
+							const timer = setTimeout(() => {
+								reject(new Error("Job timed out after 3 minutes"));
+							}, 180000);
+							// Clear timer when promise resolves
+							return () => clearTimeout(timer);
+						});
+						const jobPromise = (async () => {
+							const links = await fetchLinks(job.userId);
+							allLinks.push(...links);
+
+							const groups = await db.query.notificationGroup.findMany({
+								where: eq(notificationGroup.userId, job.userId),
+							});
+
+							const userBookmarks = await db.query.bookmark.findMany({
+								where: eq(bookmark.userId, job.userId),
+							});
+
+							notificationGroups.push(...groups);
+							bookmarks.push(...userBookmarks);
+							await db
+								.update(accountUpdateQueue)
+								.set({
+									status: "completed",
+									processedAt: new Date(),
+								})
+								.where(eq(accountUpdateQueue.id, job.id));
+						})();
+
+						await Promise.race([timeoutPromise, jobPromise]);
+						return { status: "success", duration: Date.now() - jobStart };
+					} catch (error) {
+						console.log(`Error for user ${job.userId}: ${error}`);
+
+						await db
+							.update(accountUpdateQueue)
+							.set({
+								status: "failed",
+								error: String(error),
+								retries: sql`${accountUpdateQueue.retries} + 1`,
+							})
+							.where(eq(accountUpdateQueue.id, job.id));
+
+						return { status: "error", error, duration: Date.now() - jobStart };
+					}
+				}),
+			);
+
+			await insertNewLinks(allLinks);
+
+			for (const group of notificationGroups) {
+				const groupUser = await db.query.user.findFirst({
+					where: eq(user.id, group.userId),
+					with: { subscriptions: true },
+				});
+				if (!groupUser) {
+					continue;
+				}
+				const subscribed = await isSubscribed(groupUser.id);
+				if (subscribed === "free") {
+					continue;
+				}
+				const newItems = await evaluateNotifications(
+					group.userId,
+					group.query,
+					group.seenLinks,
+					new Date(group.createdAt),
+				);
+				if (newItems.length > 0) {
+					console.log(
+						`sending notification for group ${group.name}, user ${groupUser.email}`,
+					);
+					if (group.notificationType === "email") {
+						await sendNotificationEmail({
+							to: groupUser.email,
+							subject:
+								newItems[0].link?.title ||
+								`New Sill notification: ${group.name}`,
+							links: newItems,
+							groupName: group.name,
+							subscribed,
+							freeTrialEnd: groupUser.freeTrialEnd
+								? new Date(groupUser.freeTrialEnd)
+								: null,
+						});
+					} else if (group.notificationType === "rss") {
+						for (const item of newItems) {
+							const html = await renderNotificationRSS({
+								item,
+								subscribed,
+							});
+							await db.insert(notificationItem).values({
+								id: uuidv7(),
+								notificationGroupId: group.id,
+								itemHtml: html,
+								itemData: item,
+							});
+						}
+					}
+				}
+				await db
+					.update(notificationGroup)
+					.set({
+						seenLinks: [
+							...group.seenLinks,
+							...newItems.map((n) => n.link?.url || ""),
+						].slice(-10000),
+					})
+					.where(eq(notificationGroup.id, group.id));
+			}
+
+			for (const userBookmark of bookmarks) {
+				const posts = userBookmark.posts;
+				const newPosts = await filterLinkOccurrences({
+					userId: userBookmark.userId,
+					url: userBookmark.linkUrl,
+				});
+
+				if (newPosts.length > 0) {
+					for (const newPost of newPosts[0].posts.reverse()) {
+						if (!posts.posts?.some((p) => p.id === newPost.id)) {
+							posts.posts?.unshift(newPost);
+						}
+					}
+
+					// Update uniqueActorsCount by counting unique actors
+					const uniqueActors = new Set();
+
+					for (const post of posts.posts || []) {
+						const actorHandle = post.repostActorHandle || post.actorHandle;
+						const actorName = post.repostActorHandle
+							? post.repostActorName
+							: post.actorName;
+
+						const normalizedHandle =
+							post.postType === "mastodon"
+								? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
+								: actorHandle
+										.replace(".bsky.social", "")
+										.replace("@", "")
+										.toLowerCase();
+
+						if (normalizedHandle) {
+							const normalizedName = actorName
+								?.toLowerCase()
+								.replace(/\s*\(.*?\)\s*/g, "");
+							uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
+						}
+					}
+
+					// Update the uniqueActorsCount in the posts object
+					posts.uniqueActorsCount = uniqueActors.size;
+
+					await db
+						.update(bookmark)
+						.set({
+							posts: posts,
+						})
+						.where(eq(bookmark.id, userBookmark.id));
+				}
+			}
+
+			const errorCount = results.filter((r) => r.status === "error").length;
+			const batchDuration = Date.now() - batchStart;
+
+			console.log(`[Queue] Batch complete:
+      Processed: ${jobs.length}
+      Success: ${results.filter((r) => r.status === "success").length}
+      Errors: ${results.filter((r) => r.status === "error").length}
+      Batch Duration: ${batchDuration}ms
+    `);
+			if (errorCount >= MAX_ERRORS_PER_BATCH) {
+				console.error(
+					`[Queue] Too many errors (${errorCount}), restarting process...`,
+				);
+				process.exit(1); // Exit with error code to trigger restart
+			}
+		} else {
+			await db.refreshMaterializedView(networkTopTenView);
+
+			// Find links with n+ posts in the last 24 hours that haven't been scraped
+			const threshold = process.env.SCRAPE_SHARE_THRESHOLD
+				? Number.parseInt(process.env.SCRAPE_SHARE_THRESHOLD)
+				: 5;
+			const linkPostCounts = await db
+				.select({
+					linkUrl: linkPostDenormalized.linkUrl,
+					postCount: count(linkPostDenormalized.id).as("postCount"),
+				})
+				.from(linkPostDenormalized)
+				.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+				.where(
+					and(
+						gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '1 day'`),
+						eq(link.scraped, false),
+						not(ilike(link.url, "%.pdf")),
+					),
+				)
+				.groupBy(linkPostDenormalized.linkUrl)
+				.having(sql`COUNT(${linkPostDenormalized.id}) >= ${threshold}`);
+
+			const highActivityUrls = [
+				...new Set(linkPostCounts.map((lpc) => lpc.linkUrl)),
+			];
+
+			if (highActivityUrls.length > 0) {
+				console.log(
+					`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`,
+				);
+
+				// Process URLs concurrently with rate limiting
+				const processUrl = async (url: string) => {
+					const result = await renderPageContent({ url });
+					if (result.success) {
+						const metadata = await extractHtmlMetadata(result.html);
+						if (metadata) {
+							await db.update(link).set(metadata).where(eq(link.url, url));
+							console.log(
+								`[BROWSER RENDER] updated metadata from cloudflare for ${url}`,
+							);
+						} else {
+							const html = await fetchHtmlViaProxy(url);
+							if (html) {
+								const metadata = await extractHtmlMetadata(result.html);
+								if (metadata) {
+									await db.update(link).set(metadata).where(eq(link.url, url));
+									console.log(
+										`[BROWSER RENDER] updated metadata from proxy for ${url}`,
+									);
+								} else {
+									await db
+										.update(link)
+										.set({ scraped: true })
+										.where(eq(link.url, url));
+									console.log(`[BROWSER RENDER] no metadata found for ${url}`);
+								}
+							} else {
+								await db
+									.update(link)
+									.set({ scraped: true })
+									.where(eq(link.url, url));
+							}
+						}
+					} else {
+						console.log("[BROWSER RENDER] error", url, result.error);
+						await db
+							.update(link)
+							.set({ scraped: true })
+							.where(eq(link.url, url));
+					}
+				};
+
+				// Create promises with 1-second intervals between starts
+				const promises = highActivityUrls.map(
+					(url, index) =>
+						new Promise((resolve) =>
+							setTimeout(() => resolve(processUrl(url)), index * 1000),
+						),
+				);
+
+				await Promise.all(promises);
+			}
+			if (process.env.NODE_ENV === "production") {
+				const users = await db.query.user.findMany({
+					orderBy: asc(user.createdAt),
+				});
+
+				// slow down the queue processing if there are less than BATCH_SIZE users
+				if (users.length < BATCH_SIZE) {
+					await new Promise((resolve) => setTimeout(resolve, 60000));
+				}
+
+				// delete completed jobs
+				await db
+					.delete(accountUpdateQueue)
+					.where(eq(accountUpdateQueue.status, "completed"));
+
+				await Promise.all(users.map((user) => enqueueJob(user.id)));
+				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+	}
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+	processQueue().catch(console.error);
+}

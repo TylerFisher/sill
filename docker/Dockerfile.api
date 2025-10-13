@@ -1,0 +1,93 @@
+# Dockerfile for API package in monorepo
+ARG NODE_VERSION=22.17.1
+FROM node:${NODE_VERSION}-slim AS base
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# Development dependencies stage
+FROM base AS deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/emails/package.json ./packages/emails/
+COPY packages/schema/package.json ./packages/schema/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/links/package.json ./packages/links/
+RUN pnpm install --frozen-lockfile
+
+# Production dependencies stage  
+FROM base AS production-deps
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/emails/package.json ./packages/emails/
+COPY packages/schema/package.json ./packages/schema/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/links/package.json ./packages/links/
+RUN pnpm install --frozen-lockfile --filter @sill/api --filter @sill/emails --filter @sill/schema --filter @sill/auth --filter @sill/links
+
+# Build stage
+FROM base AS build
+COPY --from=production-deps /app/node_modules ./node_modules
+COPY --from=production-deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=production-deps /app/packages/emails/node_modules ./packages/emails/node_modules
+COPY --from=production-deps /app/packages/schema/node_modules ./packages/schema/node_modules
+COPY --from=production-deps /app/packages/auth/node_modules ./packages/auth/node_modules
+COPY --from=production-deps /app/packages/links/node_modules ./packages/links/node_modules
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
+COPY apps/api ./apps/api
+COPY packages/emails ./packages/emails
+COPY packages/schema ./packages/schema
+COPY packages/auth ./packages/auth
+COPY packages/links ./packages/links
+
+# Build packages in dependency order
+WORKDIR /app/packages/schema
+RUN pnpm build
+
+WORKDIR /app/packages/auth
+RUN pnpm build
+
+WORKDIR /app/packages/emails
+RUN pnpm build
+
+WORKDIR /app/packages/links
+RUN pnpm build
+
+# Build API
+WORKDIR /app/apps/api
+RUN pnpm build
+
+# Production stage
+FROM base AS production
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy workspace configuration
+COPY --from=build /app/pnpm-workspace.yaml /app/package.json ./
+
+# Copy built application and production dependencies
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/packages/emails/dist ./packages/emails/dist
+COPY --from=build /app/packages/emails/package.json ./packages/emails/package.json
+COPY --from=build /app/packages/schema/dist ./packages/schema/dist
+COPY --from=build /app/packages/schema/src/migrations ./packages/schema/dist/migrations
+COPY --from=build /app/packages/schema/package.json ./packages/schema/package.json
+COPY --from=build /app/packages/auth/dist ./packages/auth/dist
+COPY --from=build /app/packages/auth/package.json ./packages/auth/package.json
+COPY --from=build /app/packages/links/dist ./packages/links/dist
+COPY --from=build /app/packages/links/src/normalizers/*.txt ./packages/links/dist/normalizers/
+COPY --from=build /app/packages/links/package.json ./packages/links/package.json
+
+# Copy workspace and package node_modules
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build /app/packages/emails/node_modules ./packages/emails/node_modules
+COPY --from=build /app/packages/schema/node_modules ./packages/schema/node_modules
+COPY --from=build /app/packages/auth/node_modules ./packages/auth/node_modules
+COPY --from=build /app/packages/links/node_modules ./packages/links/node_modules
+
+WORKDIR /app/apps/api
+
+EXPOSE 3001
+CMD ["pnpm", "start"]
