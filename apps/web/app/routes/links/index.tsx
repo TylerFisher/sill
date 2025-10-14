@@ -104,7 +104,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 	const links = apiFilterLinkOccurrences(request, {
 		time,
-		fetch: process.env.NODE_ENV === "development",
+		fetch: false,
 		...options,
 	});
 

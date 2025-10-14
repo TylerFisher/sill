@@ -22,6 +22,9 @@ import {
 	extractHtmlMetadata,
 	fetchHtmlViaProxy,
 	renderPageContent,
+	fetchLatestBookmarks,
+	evaluateBookmark,
+	formatBookmark,
 } from "@sill/links";
 import { isSubscribed } from "@sill/auth";
 import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
@@ -40,6 +43,8 @@ async function processQueue() {
 			const allLinks: ProcessedResult[] = [];
 			const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
 			const bookmarks: (typeof bookmark.$inferSelect)[] = [];
+			const atBookmarks = await fetchLatestBookmarks();
+
 			const results = await Promise.all(
 				jobs.map(async (job) => {
 					const jobStart = Date.now();
@@ -65,6 +70,26 @@ async function processQueue() {
 
 							notificationGroups.push(...groups);
 							bookmarks.push(...userBookmarks);
+
+							const validBookmarks = (
+								await Promise.all(
+									atBookmarks.map(async (b) =>
+										(await evaluateBookmark(b, job.userId)) ? b : null,
+									),
+								)
+							).filter((b): b is NonNullable<typeof b> => b !== null);
+
+							console.log("found", validBookmarks.length, "valid bookmarks");
+
+							const formattedBookmarks = await Promise.all(
+								validBookmarks.map(
+									async (b) => await formatBookmark(b, job.userId),
+								),
+							);
+							allLinks.push(
+								...formattedBookmarks.filter((f) => f !== undefined),
+							);
+
 							await db
 								.update(accountUpdateQueue)
 								.set({
@@ -307,24 +332,23 @@ async function processQueue() {
 
 				await Promise.all(promises);
 			}
-			if (process.env.NODE_ENV === "production") {
-				const users = await db.query.user.findMany({
-					orderBy: asc(user.createdAt),
-				});
 
-				// slow down the queue processing if there are less than BATCH_SIZE users
-				if (users.length < BATCH_SIZE) {
-					await new Promise((resolve) => setTimeout(resolve, 60000));
-				}
+			const users = await db.query.user.findMany({
+				orderBy: asc(user.createdAt),
+			});
 
-				// delete completed jobs
-				await db
-					.delete(accountUpdateQueue)
-					.where(eq(accountUpdateQueue.status, "completed"));
-
-				await Promise.all(users.map((user) => enqueueJob(user.id)));
-				console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+			// slow down the queue processing if there are less than BATCH_SIZE users
+			if (users.length < BATCH_SIZE) {
+				await new Promise((resolve) => setTimeout(resolve, 10000));
 			}
+
+			// delete completed jobs
+			await db
+				.delete(accountUpdateQueue)
+				.where(eq(accountUpdateQueue.status, "completed"));
+
+			await Promise.all(users.map((user) => enqueueJob(user.id)));
+			console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 1000));

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."post_type" ADD VALUE 'atbookmark';

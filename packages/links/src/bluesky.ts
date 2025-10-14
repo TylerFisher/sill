@@ -42,7 +42,7 @@ interface BskyDetectedLink {
   imageUrl?: string | null;
 }
 
-const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
+export const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 /**
  * Restores Bluesky OAuth session based on account did.

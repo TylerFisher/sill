@@ -17,7 +17,11 @@ import {
 import { relations } from "drizzle-orm/relations";
 import type { MostRecentLinkPosts, NotificationQuery } from "./index";
 
-export const postType = pgEnum("post_type", ["bluesky", "mastodon"]);
+export const postType = pgEnum("post_type", [
+  "bluesky",
+  "mastodon",
+  "atbookmark",
+]);
 
 export const digestType = pgEnum("digest_type", ["email", "rss"]);
 export const digestLayout = pgEnum("digest_layout", ["default", "dense"]);
