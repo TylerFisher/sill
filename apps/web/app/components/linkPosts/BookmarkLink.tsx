@@ -16,7 +16,8 @@ import { useFetcher } from "react-router";
 const BookmarkLink = ({
 	url,
 	isBookmarked,
-}: { url: string; isBookmarked: boolean }) => {
+	hasBlueskyAccount = false,
+}: { url: string; isBookmarked: boolean; hasBlueskyAccount?: boolean }) => {
 	const fetcher = useFetcher();
 	const [open, setOpen] = useState(false);
 	const [tags, setTags] = useState("");
@@ -111,16 +112,18 @@ const BookmarkLink = ({
 								onChange={(e) => setTags(e.target.value)}
 							/>
 
-							<Text as="label" size="2">
-								<Flex gap="2" align="center">
-									<Switch
-										size="1"
-										checked={publishToAtproto}
-										onCheckedChange={setPublishToAtproto}
-									/>
-									Publish to PDS
-								</Flex>
-							</Text>
+							{hasBlueskyAccount && (
+								<Text as="label" size="2">
+									<Flex gap="2" align="center">
+										<Switch
+											size="1"
+											checked={publishToAtproto}
+											onCheckedChange={setPublishToAtproto}
+										/>
+										Publish to PDS
+									</Flex>
+								</Text>
+							)}
 
 							<Flex gap="3" mt="4" justify="end">
 								<Dialog.Close>

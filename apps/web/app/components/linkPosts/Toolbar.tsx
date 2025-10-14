@@ -43,7 +43,11 @@ const Toolbar = ({
 				layout={layout}
 			/>
 			{type === "link" && subscribed !== "free" && (
-				<BookmarkLink url={url} isBookmarked={isBookmarked} />
+				<BookmarkLink
+					url={url}
+					isBookmarked={isBookmarked}
+					hasBlueskyAccount={!!bsky}
+				/>
 			)}
 			<OpenLink url={giftUrl || url} isGift={!!giftUrl} layout={layout} />
 			<MuteActions

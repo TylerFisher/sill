@@ -109,7 +109,8 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 		});
 	};
 
-	const isDeleting = fetcher.state === "submitting" || fetcher.state === "loading";
+	const isDeleting =
+		fetcher.state === "submitting" || fetcher.state === "loading";
 
 	return (
 		<Flex
@@ -118,7 +119,7 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 			display="inline-flex"
 			style={{
 				backgroundColor: "var(--gray-a3)",
-				borderRadius: "var(--radius-2)",
+				borderRadius: "var(--radius-4)",
 				overflow: "hidden",
 			}}
 		>
@@ -129,7 +130,7 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 				style={{
 					textDecoration: "none",
 					padding: "0 var(--space-2)",
-					height: "20px",
+					height: "32px",
 					display: "flex",
 					alignItems: "center",
 					color: "var(--gray-12)",
@@ -142,7 +143,7 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 				align="center"
 				justify="center"
 				style={{
-					height: "20px",
+					height: "32px",
 					borderLeft: "1px solid var(--gray-a5)",
 				}}
 			>
@@ -153,7 +154,7 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 					className={styles.deleteButton}
 					data-deleting={isDeleting}
 				>
-					{isDeleting ? <Spinner size="1" /> : <X size={12} />}
+					{isDeleting ? <Spinner size="2" /> : <X size={12} />}
 				</button>
 			</Flex>
 		</Flex>
@@ -170,7 +171,7 @@ export const LinkTags = ({
 	if (articleTags.length === 0) return null;
 
 	return (
-		<Flex gap="1" wrap="wrap" mt="3" align="center">
+		<Flex gap="3" wrap="wrap" mt="3" align="center">
 			{articleTags.slice(0, 6).map((tag) => (
 				<TagBadge key={`${url}-${tag}`} tag={tag} url={url} />
 			))}
@@ -185,7 +186,11 @@ export const LinkTags = ({
 						<HoverCard.Content>
 							<Flex gap="1" wrap="wrap">
 								{articleTags.slice(6).map((tag) => (
-									<TagBadge key={`${url}-remaining-${tag}`} tag={tag} url={url} />
+									<TagBadge
+										key={`${url}-remaining-${tag}`}
+										tag={tag}
+										url={url}
+									/>
 								))}
 							</Flex>
 						</HoverCard.Content>
