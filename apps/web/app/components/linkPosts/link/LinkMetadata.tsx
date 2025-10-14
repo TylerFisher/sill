@@ -117,24 +117,15 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 			gap="0"
 			align="center"
 			display="inline-flex"
-			style={{
-				backgroundColor: "var(--gray-a3)",
-				borderRadius: "var(--radius-4)",
-				overflow: "hidden",
-			}}
+			overflow="hidden"
+			className={styles.linkTagWrapper}
 		>
 			<Link
 				href={`/bookmarks/?tag=${encodeURIComponent(tag)}`}
 				className={styles.linkTag}
 				size="1"
-				style={{
-					textDecoration: "none",
-					padding: "0 var(--space-2)",
-					height: "32px",
-					display: "flex",
-					alignItems: "center",
-					color: "var(--gray-12)",
-				}}
+				color="gray"
+				underline="none"
 			>
 				{tag}
 			</Link>
@@ -142,10 +133,7 @@ const TagBadge = ({ tag, url }: { tag: string; url: URL }) => {
 				asChild
 				align="center"
 				justify="center"
-				style={{
-					height: "32px",
-					borderLeft: "1px solid var(--gray-a5)",
-				}}
+				className={styles.deleteButtonWrapper}
 			>
 				<button
 					type="button"
