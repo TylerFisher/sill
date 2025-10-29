@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  SERVICES_TO_PUSH: web, api, worker
+  SERVICES_TO_PUSH: web,api,worker
   ROOT_DIRECTORY: /opt
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
           import os
 
           def parse_docker_compose():
-              with open('docker-compose-deploy.yml', 'r') as file:
+              with open('docker-compose-deploy.local.yml', 'r') as file:
                   return yaml.safe_load(file)
 
           def build_and_push_image(service, config):
