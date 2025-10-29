@@ -17,8 +17,6 @@ import {
   isShortenedLink,
   normalizeLink,
 } from "./normalizeLink.js";
-import type { Quote } from "masto/dist/esm/mastodon/entities/v1/quote.js";
-import type { ShallowQuote } from "masto/dist/esm/mastodon/entities/v1/shallow-quote.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -223,8 +221,8 @@ function hasProp<K extends PropertyKey>(
 }
 
 const isQuote = (
-  quote: Quote | ShallowQuote | null | undefined
-): quote is Quote => {
+  quote: mastodon.v1.Quote | mastodon.v1.ShallowQuote | null | undefined
+): quote is mastodon.v1.Quote => {
   return (
     isObj(quote) && hasProp(quote, "quotedStatus") && quote.state === "accepted"
   );

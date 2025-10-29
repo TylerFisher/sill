@@ -35,7 +35,7 @@
     "@sill/auth": "workspace:*",
     "cloudflare": "^4.4.1",
     "drizzle-orm": "^0.44.4",
-    "masto": "^7.2.0",
+    "masto": "^7.4.0",
     "open-graph-scraper-lite": "^2.1.0",
     "uuidv7-js": "^1.1.4",
     "zod": "^3.23.8"

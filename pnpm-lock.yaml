@@ -414,8 +414,8 @@ importers:
         specifier: 0.44.4
         version: 0.44.4(@types/pg@8.15.5)(pg@8.16.3)
       masto:
-        specifier: ^7.2.0
-        version: 7.2.0
+        specifier: ^7.4.0
+        version: 7.4.0
       open-graph-scraper-lite:
         specifier: ^2.1.0
         version: 2.1.0
@@ -3239,6 +3239,9 @@ packages:
   change-case@4.1.2:
     resolution: {integrity: sha512-bSxY2ws9OtviILG1EiY5K7NNxkqg/JnRnFxLtKQ96JaviiIxi7djMrSd0ECT9AC+lttClmYwKw53BWpOMblo7A==}
 
+  change-case@5.4.4:
+    resolution: {integrity: sha512-HRQyTk2/YPEkt9TnUPbOpr64Uw3KOicFWPVBb+xiHvd6eBx/qPr9xqfBFDT8P2vWsvvz4jbEkfDe71W3VyNu2w==}
+
   chardet@2.1.0:
     resolution: {integrity: sha512-bNFETTG/pM5ryzQ9Ad0lJOTa6HWD/YsScAR3EnCPZRPlQh77JocYktSHOUHelyhm8IARL+o4c4F1bP5KVOjiRA==}
 
@@ -3686,6 +3689,9 @@ packages:
 
   events-to-async@2.0.1:
     resolution: {integrity: sha512-RtnLYrMbXp4JkZIoZu+3VTqV21bNVBlJBZ4NmtwvMNqSE3qouhxv2gvLE4JJDaQc54ioPkrX74V6x+hp/hqjkQ==}
+
+  events-to-async@2.0.2:
+    resolution: {integrity: sha512-WzI6m/SU+F38t2tejHh6IQuQkNZ0dMOmSEmODJb9czaeMYtQ5FVZ+b6DOHr3hC6hNKNnn9CwDUN8mJiAkWSI9Q==}
 
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
@@ -4152,8 +4158,8 @@ packages:
   masto@6.10.4:
     resolution: {integrity: sha512-TqIkWaZa884j9jik39efsv6mdpgalUElwiGLLPHevLlIuCSnGjapGC++VovlQvvVV6O5e4ce/gzWNy17cF6PHg==}
 
-  masto@7.2.0:
-    resolution: {integrity: sha512-fjaLIEj0rOn4fzrvOzA/YXgI8kwFX10Z5G8c7hIof6zmbS9aPg5sdrRp54F0gjQZWgBjjWKxVh155zxWnx4Udg==}
+  masto@7.4.0:
+    resolution: {integrity: sha512-fZACJfBqsUMj8Z5e5aUWd9fHH5BA2vH/CveM/e3JuZ/+lfgJ4v6uze9YEJC2dsbQs/MCBwjekTyctihzuM9xiQ==}
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -8705,6 +8711,8 @@ snapshots:
       snake-case: 3.0.4
       tslib: 2.8.1
 
+  change-case@5.4.4: {}
+
   chardet@2.1.0: {}
 
   check-error@2.1.1: {}
@@ -9210,6 +9218,8 @@ snapshots:
 
   events-to-async@2.0.1: {}
 
+  events-to-async@2.0.2: {}
+
   events@3.3.0: {}
 
   exit-hook@2.2.1: {}
@@ -9709,10 +9719,10 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  masto@7.2.0:
+  masto@7.4.0:
     dependencies:
-      change-case: 4.1.2
-      events-to-async: 2.0.1
+      change-case: 5.4.4
+      events-to-async: 2.0.2
       isomorphic-ws: 5.0.0(ws@8.18.3)
       ts-custom-error: 3.3.1
       ws: 8.18.3
