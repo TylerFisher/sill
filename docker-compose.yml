@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:latest
     volumes:
-      - postgres_db:/var/lib/postgresql/data
+      - sill_postgres_db:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -49,7 +49,7 @@ services:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
 volumes:
-  postgres_db:
+  sill_postgres_db:
 
 networks:
   net:
