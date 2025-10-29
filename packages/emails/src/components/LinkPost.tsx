@@ -24,7 +24,7 @@ function normalizeActorName(name: string | null): string | null {
 }
 
 function normalizeActorHandle(
-	postType: "mastodon" | "bluesky",
+	postType: "mastodon" | "bluesky" | "atbookmark",
 	handle: string | null,
 ): string | null {
 	if (!handle) return null;
