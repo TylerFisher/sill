@@ -15,7 +15,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm/relations";
-import type { MostRecentLinkPosts, NotificationQuery } from "./index";
+import type { MostRecentLinkPosts, NotificationQuery } from "./index.js";
 
 export const postType = pgEnum("post_type", [
   "bluesky",

@@ -30,8 +30,8 @@ import {
   postType,
   type NotificationQuery,
 } from "@sill/schema";
-import { getLinksFromBluesky } from "./bluesky";
-import { getLinksFromMastodon } from "./mastodon";
+import { getLinksFromBluesky } from "./bluesky.js";
+import { getLinksFromMastodon } from "./mastodon.js";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {

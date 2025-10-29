@@ -1,9 +1,9 @@
 import { uuidv7 } from "uuidv7-js";
 import { blueskyAccount, db, type linkPostDenormalized } from "@sill/schema";
-import { handleBlueskyOAuth, ONE_DAY_MS } from "./bluesky";
+import { handleBlueskyOAuth, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
 import { Agent } from "@atproto/api";
-import type { ProcessedResult } from "./links";
+import type { ProcessedResult } from "./links.js";
 
 type BaseSliceResponse = {
   cid: string;
