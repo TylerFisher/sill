@@ -46,7 +46,7 @@ jobs:
           import os
 
           def parse_docker_compose():
-              with open('docker-compose.yml', 'r') as file:
+              with open('docker-compose-deploy.yml', 'r') as file:
                   return yaml.safe_load(file)
 
           def build_and_push_image(service, config):
@@ -102,7 +102,7 @@ jobs:
           echo "VITE_PUBLIC_DOMAIN=${{ secrets.VITE_PUBLIC_DOMAIN }}" >> .env
           echo "VITE_ADMIN_EMAIL=${{ secrets.VITE_ADMIN_EMAIL }}" >> .env
           echo "EMAIL_DOMAIN=${{ secrets.EMAIL_DOMAIN }}" >> .env
-          echo "TRAEFIK_DASHBOARD_DOMAIN=traefik.sill.social" >> .env
+          echo "TRAEFIK_DASHBOARD_DOMAIN=traefik.eu.sill.social" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
           echo "DOZZLE_DOMAIN=${{ secrets.DOZZLE_DOMAIN }}" >> .env
