@@ -75,6 +75,8 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
     restart: always
+    networks:
+      - net
 
   web:
     image: ghcr.io/tylerfisher/sill/web:latest
