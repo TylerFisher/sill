@@ -60,11 +60,8 @@ const ToolDropdown = ({
 									type="submit"
 									className={styles.submitButtonDropdown}
 									variant="ghost"
-									style={{
-										paddingLeft: "0.33rem",
-									}}
 								>
-									{isBookmarked ? "Unbookmark" : "Bookmark"}
+									{isBookmarked ? "Delete bookmark" : "Bookmark"}
 								</Button>
 							</DropdownMenu.Item>
 						</fetcher.Form>

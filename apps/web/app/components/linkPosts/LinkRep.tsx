@@ -29,7 +29,7 @@ interface WrapperComponentProps extends React.PropsWithChildren {
 
 const WrapperComponent = ({ layout, children }: WrapperComponentProps) => {
 	if (layout === "dense") {
-		return <Box mb="5">{children}</Box>;
+		return <Box>{children}</Box>;
 	}
 	return <Card mb="5">{children}</Card>;
 };
@@ -82,7 +82,7 @@ const LinkRep = ({
 						<XEmbed url={url} />
 					</Inset>
 				)}
-			<Box position="relative" mb="5">
+			<Box position="relative" mb={layout === "default" ? "5" : "0"}>
 				{layout === "default" && (
 					<DisplayHost
 						link={effectiveLink}
