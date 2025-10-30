@@ -1,6 +1,13 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
-import { db, accountUpdateQueue } from "@sill/schema";
+import {
+  db,
+  accountUpdateQueue,
+  notificationGroup,
+  bookmark,
+} from "@sill/schema";
+import { fetchLinks } from "./links.js";
+import { addNewBookmarks } from "./bookmarks.js";
 
 export async function enqueueJob(userId: string) {
   return await db
@@ -57,10 +64,9 @@ interface ProcessJobResult {
 export async function processJob(
   job: typeof accountUpdateQueue.$inferSelect
 ): Promise<ProcessJobResult> {
-  const { fetchLinks } = await import("./links.js");
-  const { notificationGroup, bookmark } = await import("@sill/schema");
-
   const links = await fetchLinks(job.userId);
+  // get new bookmarks from ATProto repo
+  await addNewBookmarks(job.userId);
 
   const groups = await db.query.notificationGroup.findMany({
     where: eq(notificationGroup.userId, job.userId),

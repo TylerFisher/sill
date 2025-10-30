@@ -33,6 +33,8 @@ export type BookmarkWithLinkPosts = {
 	createdAt: string;
 	linkPosts?: MostRecentLinkPosts;
 	bookmarkTags?: TagData[];
+	atprotoRkey: string | null;
+	published: boolean;
 };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -73,6 +75,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	const { bookmarks, tags, subscribed, bsky, instance } = loaderData;
+	console.log(bookmarks);
 	const layout = useLayout();
 
 	const [searchParams] = useSearchParams();

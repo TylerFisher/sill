@@ -12,6 +12,7 @@ import { handleBlueskyOAuth, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
 import { Agent } from "@atproto/api";
 import type { ProcessedResult } from "./links.js";
+import { filterLinkOccurrences } from "./links.js";
 
 type BaseSliceResponse = {
   cid: string;
@@ -166,11 +167,6 @@ export const evaluateBookmark = async (
   return followDids.includes(bookmark.did);
 };
 
-interface GetActorBookmarksResponse {
-  bookmarks: ATBookmark[];
-  cursor?: string;
-}
-
 export const getUserBookmarks = async (userId: string) => {
   const bsky = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
@@ -187,15 +183,20 @@ export const getUserBookmarks = async (userId: string) => {
   let reachedPreviousBookmark = false;
 
   do {
-    const response = await agent.call(
-      "community.lexicon.bookmarks.getActorBookmarks",
-      {
-        limit: 100,
-        cursor,
-      }
-    );
+    // Use com.atproto.repo.listRecords instead of the custom lexicon query
+    // since the agent doesn't have the community lexicon loaded
+    const response = await agent.com.atproto.repo.listRecords({
+      repo: bsky.did,
+      collection: "community.lexicon.bookmarks.bookmark",
+      limit: 100,
+      cursor,
+      reverse: true, // Get newest first
+    });
 
-    const data = response.data as GetActorBookmarksResponse;
+    const data = {
+      bookmarks: response.data.records as unknown as ATBookmark[],
+      cursor: response.data.cursor,
+    };
 
     // Check each bookmark to see if we've reached the most recent one we've seen
     for (const bookmark of data.bookmarks) {
@@ -321,53 +322,60 @@ export const updateBookmarkPosts = async (
   userBookmark: typeof bookmark.$inferSelect
 ) => {
   const posts = userBookmark.posts;
-  const { filterLinkOccurrences } = await import("./links.js");
 
   const newPosts = await filterLinkOccurrences({
     userId: userBookmark.userId,
     url: userBookmark.linkUrl,
   });
 
-  if (newPosts.length > 0) {
+  // Merge new posts if found
+  if (newPosts.length > 0 && newPosts[0].posts) {
     for (const newPost of newPosts[0].posts.reverse()) {
       if (!posts.posts?.some((p) => p.id === newPost.id)) {
         posts.posts?.unshift(newPost);
       }
     }
-
-    // Update uniqueActorsCount by counting unique actors
-    const uniqueActors = new Set();
-
-    for (const post of posts.posts || []) {
-      const actorHandle = post.repostActorHandle || post.actorHandle;
-      const actorName = post.repostActorHandle
-        ? post.repostActorName
-        : post.actorName;
-
-      const normalizedHandle =
-        post.postType === "mastodon"
-          ? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
-          : actorHandle
-              .replace(".bsky.social", "")
-              .replace("@", "")
-              .toLowerCase();
-
-      if (normalizedHandle) {
-        const normalizedName = actorName
-          ?.toLowerCase()
-          .replace(/\s*\(.*?\)\s*/g, "");
-        uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
-      }
-    }
-
-    // Update the uniqueActorsCount in the posts object
-    posts.uniqueActorsCount = uniqueActors.size;
-
-    await db
-      .update(bookmark)
-      .set({
-        posts: posts,
-      })
-      .where(eq(bookmark.id, userBookmark.id));
   }
+
+  // Update uniqueActorsCount by counting unique actors
+  const uniqueActors = new Set();
+
+  for (const post of posts.posts || []) {
+    const actorHandle = post.repostActorHandle || post.actorHandle;
+    const actorName = post.repostActorHandle
+      ? post.repostActorName
+      : post.actorName;
+
+    const normalizedHandle =
+      post.postType === "mastodon"
+        ? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
+        : actorHandle
+            .replace(".bsky.social", "")
+            .replace("@", "")
+            .toLowerCase();
+
+    if (normalizedHandle) {
+      const normalizedName = actorName
+        ?.toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g, "");
+      uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
+    }
+  }
+
+  // Fetch link from database to get latest metadata
+  const linkData = await db.query.link.findFirst({
+    where: eq(link.url, userBookmark.linkUrl),
+  });
+
+  // Update posts object with new data
+  posts.uniqueActorsCount = uniqueActors.size;
+  posts.link = linkData || null;
+  posts.posts = posts.posts || [];
+
+  await db
+    .update(bookmark)
+    .set({
+      posts: posts,
+    })
+    .where(eq(bookmark.id, userBookmark.id));
 };
