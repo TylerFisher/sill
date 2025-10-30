@@ -125,31 +125,33 @@ const LinkPostRep = ({
 				isBookmarked={isBookmarked}
 				subscribed={subscribed}
 			/>
-			<Collapsible.Root
-				className="CollapsibleRoot"
-				open={open}
-				onOpenChange={setOpen}
-			>
-				<SharedByBug
-					uniqueActors={uniqueActors}
-					uniqueActorsCount={linkPost.uniqueActorsCount}
+			{Object.entries(groupedPosts).length > 0 && (
+				<Collapsible.Root
+					className="CollapsibleRoot"
 					open={open}
-					layout={layout}
-				/>
-				<Collapsible.Content>
-					<Box mt="5">
-						{Object.entries(groupedPosts).map(([postUrl, group]) => (
-							<PostRep
-								key={postUrl}
-								group={group}
-								instance={instance}
-								bsky={bsky}
-								layout={layout}
-							/>
-						))}
-					</Box>
-				</Collapsible.Content>
-			</Collapsible.Root>
+					onOpenChange={setOpen}
+				>
+					<SharedByBug
+						uniqueActors={uniqueActors}
+						uniqueActorsCount={linkPost.uniqueActorsCount}
+						open={open}
+						layout={layout}
+					/>
+					<Collapsible.Content>
+						<Box mt="5">
+							{Object.entries(groupedPosts).map(([postUrl, group]) => (
+								<PostRep
+									key={postUrl}
+									group={group}
+									instance={instance}
+									bsky={bsky}
+									layout={layout}
+								/>
+							))}
+						</Box>
+					</Collapsible.Content>
+				</Collapsible.Root>
+			)}
 		</WrapperComponent>
 	);
 };

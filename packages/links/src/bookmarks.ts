@@ -190,7 +190,6 @@ export const getUserBookmarks = async (userId: string) => {
       collection: "community.lexicon.bookmarks.bookmark",
       limit: 100,
       cursor,
-      reverse: true, // Get newest first
     });
 
     const data = {
@@ -200,10 +199,12 @@ export const getUserBookmarks = async (userId: string) => {
 
     // Check each bookmark to see if we've reached the most recent one we've seen
     for (const bookmark of data.bookmarks) {
-      // Extract TID from URI (format: at://did/collection/tid)
-      const tid = bookmark.uri.split("/").at(-1);
-
-      if (tid === bsky.mostRecentBookmarkTid) {
+      const checkDate = bsky.mostRecentBookmarkDate
+        ? new Date(
+            `${bsky.mostRecentBookmarkDate.replace(" ", "T")}Z`
+          ).toISOString()
+        : new Date().toISOString();
+      if (new Date(bookmark.value.createdAt).toISOString() === checkDate) {
         reachedPreviousBookmark = true;
         break;
       }
@@ -220,11 +221,10 @@ export const getUserBookmarks = async (userId: string) => {
 
   // Update the most recent bookmark TID if we found new bookmarks
   if (allBookmarks.length > 0) {
-    const mostRecentTid = allBookmarks[0].uri.split("/").at(-1);
     await db
       .update(blueskyAccount)
       .set({
-        mostRecentBookmarkTid: mostRecentTid,
+        mostRecentBookmarkDate: allBookmarks[0].value.createdAt,
       })
       .where(eq(blueskyAccount.userId, userId));
   }
@@ -257,20 +257,23 @@ export const addNewBookmarks = async (userId: string) => {
   const insertedBookmarks = [];
 
   for (const atBookmark of newBookmarks) {
-    // Extract the TID (rkey) from the bookmark URI
-    const rkey = atBookmark.uri.split("/").at(-1);
-
     // First, check if link exists and preserve its title
-    const existingLink = await db.query.link.findFirst({
-      where: eq(link.url, atBookmark.value.subject),
-    });
-
-    if (!existingLink) {
-      await db.insert(link).values({
-        id: uuidv7(),
-        url: atBookmark.value.subject,
-        title: "",
+    let dbLink: typeof link.$inferSelect | undefined =
+      await db.query.link.findFirst({
+        where: eq(link.url, atBookmark.value.subject),
       });
+
+    if (!dbLink) {
+      const insert = await db
+        .insert(link)
+        .values({
+          id: uuidv7(),
+          url: atBookmark.value.subject,
+          title: "",
+        })
+        .returning();
+
+      dbLink = insert[0];
     }
 
     // Insert the bookmark
@@ -280,12 +283,14 @@ export const addNewBookmarks = async (userId: string) => {
         id: uuidv7(),
         linkUrl: atBookmark.value.subject,
         userId,
+        createdAt: atBookmark.value.createdAt,
         posts: {
           uniqueActorsCount: 0,
-          link: null,
+          link: dbLink,
           posts: [],
         },
-        atprotoRkey: rkey,
+        atprotoRkey: atBookmark.uri.split("/").pop(),
+        published: true,
       })
       .onConflictDoNothing()
       .returning();
@@ -296,7 +301,21 @@ export const addNewBookmarks = async (userId: string) => {
       // Process tags for this bookmark
       for (const tagName of atBookmark.value.tags) {
         // Upsert the tag (creates if doesn't exist, does nothing if it does)
-        const tag = await upsertTag(userId, tagName);
+        const tagResult = await upsertTag(userId, tagName);
+
+        // If tag was inserted, use it; otherwise fetch existing tag
+        let tagId: string;
+        if (tagResult.length > 0) {
+          tagId = tagResult[0].id;
+        } else {
+          // Tag already exists, fetch it
+          const existingTag = await db.query.tag.findFirst({
+            where: eq(tag.userId, userId) && eq(tag.name, tagName),
+            columns: { id: true },
+          });
+          if (!existingTag) continue; // Skip if tag not found
+          tagId = existingTag.id;
+        }
 
         // Insert the bookmark-tag relationship
         await db
@@ -304,7 +323,7 @@ export const addNewBookmarks = async (userId: string) => {
           .values({
             id: uuidv7(),
             bookmarkId: insertedBookmark.id,
-            tagId: tag[0].id,
+            tagId,
           })
           .onConflictDoNothing();
       }
@@ -362,14 +381,8 @@ export const updateBookmarkPosts = async (
     }
   }
 
-  // Fetch link from database to get latest metadata
-  const linkData = await db.query.link.findFirst({
-    where: eq(link.url, userBookmark.linkUrl),
-  });
-
   // Update posts object with new data
   posts.uniqueActorsCount = uniqueActors.size;
-  posts.link = linkData || null;
   posts.posts = posts.posts || [];
 
   await db
