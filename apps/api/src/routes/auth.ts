@@ -663,6 +663,26 @@ const auth = new Hono()
         500
       );
     }
+  })
+  // GET /api/auth/jwks - Get OAuth JWKs
+  .get("/jwks", async (c) => {
+    try {
+      const oauthClient = await createOAuthClient(c.req.raw);
+
+      return c.json(oauthClient.jwks, {
+        headers: {
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to get jwks:", error);
+      return c.json(
+        {
+          error: "Internal server error",
+        },
+        500
+      );
+    }
   });
 
 /**

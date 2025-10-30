@@ -1,4 +1,4 @@
-import { apiGetClientMetadata } from "~/utils/api-client.server";
+import { apiGetJwks } from "~/utils/api-client.server";
 import type { Route } from "./+types/jwks";
 
 export const headers: Route.HeadersFunction = () => ({
@@ -7,8 +7,6 @@ export const headers: Route.HeadersFunction = () => ({
 });
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  const clientMetadata = await apiGetClientMetadata(request);
-  // Extract JWKS from the client metadata response
-  const jwks = clientMetadata.jwks;
+  const jwks = await apiGetJwks(request);
   return Response.json(jwks);
 };

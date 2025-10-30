@@ -1244,6 +1244,20 @@ export async function apiGetClientMetadata(request: Request) {
 }
 
 /**
+ * Get OAuth JWKs via API
+ */
+export async function apiGetJwks(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.auth.jwks.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get client metadata: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
  * Get Bluesky lists for the authenticated user via API
  */
 export async function apiGetBlueskyLists(request: Request) {
