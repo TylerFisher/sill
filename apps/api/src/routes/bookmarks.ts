@@ -12,6 +12,7 @@ import {
   digestItem,
   tag,
   blueskyAccount,
+  link,
 } from "@sill/schema";
 import { filterLinkOccurrences } from "@sill/links";
 import { Agent } from "@atproto/api";
@@ -48,10 +49,12 @@ async function getAgentForUser(
  */
 async function publishBookmarkToAtproto(
   agent: Agent,
+  userId: string,
   url: string,
   tags?: string[]
 ): Promise<string> {
   const rkey = TID.nextStr();
+  const createdAt = new Date().toISOString();
 
   await agent.com.atproto.repo.putRecord({
     repo: agent.assertDid,
@@ -60,10 +63,16 @@ async function publishBookmarkToAtproto(
     record: {
       $type: "community.lexicon.bookmarks.bookmark",
       subject: url,
-      createdAt: new Date().toISOString(),
+      createdAt,
       ...(tags && tags.length > 0 ? { tags } : {}),
     },
   });
+
+  // Update the mostRecentBookmarkDate in the blueskyAccount
+  await db
+    .update(blueskyAccount)
+    .set({ mostRecentBookmarkDate: createdAt })
+    .where(eq(blueskyAccount.userId, userId));
 
   return rkey;
 }
@@ -98,7 +107,6 @@ async function updateBookmarkInAtproto(
     record: {
       $type: "community.lexicon.bookmarks.bookmark",
       subject: url,
-      createdAt: new Date().toISOString(),
       ...(tags && tags.length > 0 ? { tags } : {}),
     },
   });
@@ -228,38 +236,35 @@ const bookmarks = new Hono()
       }
 
       // Get link posts data
-      const posts: MostRecentLinkPosts[] = await filterLinkOccurrences({
+      let posts: MostRecentLinkPosts[] = await filterLinkOccurrences({
         userId,
         url,
       });
 
-      // If no posts found, try to find in digest items
       if (posts.length === 0) {
-        const digestEdition = await db.query.digestItem.findFirst({
-          where: and(
-            eq(digestItem.userId, userId),
-            sql`EXISTS (
-							SELECT 1 FROM json_array_elements(${digestItem.json}::json) as items
-							WHERE items->'link'->>'url' = ${url}
-						)`
-          ),
-        });
+        let dbLink: typeof link.$inferSelect | undefined =
+          await db.query.link.findFirst({
+            where: eq(link.url, url),
+          });
 
-        let matchingPost: MostRecentLinkPosts | null | undefined = null;
-        if (digestEdition?.json) {
-          matchingPost = digestEdition.json.find(
-            (item) => item.link?.url === url
-          );
+        if (!dbLink) {
+          [dbLink] = await db
+            .insert(link)
+            .values({
+              id: uuidv7(),
+              url,
+              title: "",
+            })
+            .returning();
         }
 
-        if (matchingPost) {
-          posts.push(matchingPost);
-        }
-      }
-
-      // If still no posts, return error
-      if (posts.length === 0) {
-        return c.json({ error: "No post data found for this URL" }, 404);
+        posts = [
+          {
+            link: dbLink,
+            posts: [],
+            uniqueActorsCount: 0,
+          },
+        ];
       }
 
       // Publish to ATProto first if requested, so we have the rkey
@@ -275,7 +280,12 @@ const bookmarks = new Hono()
                   .filter((t) => t.length > 0)
               : undefined;
 
-            atprotoRkey = await publishBookmarkToAtproto(agent, url, tagNames);
+            atprotoRkey = await publishBookmarkToAtproto(
+              agent,
+              userId,
+              url,
+              tagNames
+            );
           } else {
             console.warn(
               "Could not get ATProto agent for user, skipping publish"

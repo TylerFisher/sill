@@ -1,9 +1,10 @@
-import { Box, Card, Heading, IconButton, Link, Text } from "@radix-ui/themes";
+import { Box, Button, Card, Heading, IconButton, Link, Text } from "@radix-ui/themes";
 import { Bookmark } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { redirect, useFetcher, useSearchParams } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
+import AddBookmarkDialog from "~/components/forms/AddBookmarkDialog";
 import BookmarkFilters from "~/components/forms/BookmarkFilters";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
@@ -75,7 +76,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	const { bookmarks, tags, subscribed, bsky, instance } = loaderData;
-	console.log(bookmarks);
 	const layout = useLayout();
 
 	const [searchParams] = useSearchParams();
@@ -87,6 +87,8 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 	const [key, setKey] = useState(loaderData.key);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
+
+	const [dialogOpen, setDialogOpen] = useState(false);
 
 	function setupIntersectionObserver() {
 		const $form = formRef.current;
@@ -183,6 +185,19 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 			{/* {subscribed === "trial" && ( */}
 			<SubscriptionCallout featureName="Bookmarks" />
 			{/* )} */}
+
+			<Box my="4">
+				<Button onClick={() => setDialogOpen(true)}>
+					Add Bookmark
+				</Button>
+			</Box>
+
+			<AddBookmarkDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				hasBlueskyAccount={!!bsky}
+			/>
+
 			<Box my="4">
 				{bookmarksByDate.length > 0 ? (
 					bookmarksByDate.map(([date, dateBookmarks]) => (

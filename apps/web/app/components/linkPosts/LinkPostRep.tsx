@@ -105,7 +105,6 @@ const LinkPostRep = ({
 	bookmarks = [],
 	subscribed,
 }: LinkPostRepProps) => {
-	console.log(linkPost);
 	if (!linkPost) return null;
 	if (!linkPost.link) return null;
 	const [open, setOpen] = useState(autoExpand);
