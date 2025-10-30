@@ -1,6 +1,8 @@
 import ogs, { type SuccessResult } from "open-graph-scraper-lite";
 import { z } from "zod";
-import type { link } from "@sill/schema";
+import { db, link, linkPostDenormalized } from "@sill/schema";
+import { and, count, eq, gte, ilike, not, sql } from "drizzle-orm";
+import { renderPageContent } from "./cloudflare.js";
 
 export async function fetchHtmlViaProxy(url: string): Promise<string | null> {
   try {
@@ -270,4 +272,85 @@ export async function extractHtmlMetadata(
     topics: articleTags,
     siteName,
   };
+}
+
+/**
+ * Processes a URL to fetch and store metadata.
+ * First tries Cloudflare browser rendering, falls back to direct fetch if that fails.
+ * Updates the link record in the database with extracted metadata.
+ */
+export async function processUrl(url: string): Promise<void> {
+  const result = await renderPageContent({ url });
+  if (result.success) {
+    const metadata = await extractHtmlMetadata(result.html);
+    if (metadata) {
+      await db.update(link).set(metadata).where(eq(link.url, url));
+      console.log(
+        `[BROWSER RENDER] updated metadata from cloudflare for ${url}`,
+      );
+    } else {
+      const html = await fetchHtmlViaProxy(url);
+      if (html) {
+        const metadata = await extractHtmlMetadata(result.html);
+        if (metadata) {
+          await db.update(link).set(metadata).where(eq(link.url, url));
+          console.log(
+            `[BROWSER RENDER] updated metadata from proxy for ${url}`,
+          );
+        } else {
+          await db
+            .update(link)
+            .set({ scraped: true })
+            .where(eq(link.url, url));
+          console.log(`[BROWSER RENDER] no metadata found for ${url}`);
+        }
+      } else {
+        await db
+          .update(link)
+          .set({ scraped: true })
+          .where(eq(link.url, url));
+      }
+    }
+  } else {
+    console.log("[BROWSER RENDER] error", url, result.error);
+    await db
+      .update(link)
+      .set({ scraped: true })
+      .where(eq(link.url, url));
+  }
+}
+
+/**
+ * Finds URLs with high activity in the last 24 hours that haven't been scraped yet.
+ * Returns links that have been shared at least `threshold` times and excludes PDFs.
+ * @param threshold - Minimum number of shares required (default: 5, can be overridden via SCRAPE_SHARE_THRESHOLD env var)
+ * @returns Array of unique URLs that meet the criteria
+ */
+export async function getHighActivityUrls(
+  threshold?: number
+): Promise<string[]> {
+  const shareThreshold =
+    threshold ??
+    (process.env.SCRAPE_SHARE_THRESHOLD
+      ? Number.parseInt(process.env.SCRAPE_SHARE_THRESHOLD)
+      : 5);
+
+  const linkPostCounts = await db
+    .select({
+      linkUrl: linkPostDenormalized.linkUrl,
+      postCount: count(linkPostDenormalized.id).as("postCount"),
+    })
+    .from(linkPostDenormalized)
+    .innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
+    .where(
+      and(
+        gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '1 day'`),
+        eq(link.scraped, false),
+        not(ilike(link.url, "%.pdf"))
+      )
+    )
+    .groupBy(linkPostDenormalized.linkUrl)
+    .having(sql`COUNT(${linkPostDenormalized.id}) >= ${shareThreshold}`);
+
+  return [...new Set(linkPostCounts.map((lpc) => lpc.linkUrl))];
 }

@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
@@ -158,7 +158,7 @@ const bookmarks = new Hono()
       if (query) {
         conditions.push(
           or(
-            sql`${bookmark.linkUrl} ILIKE ${`%${query}%`}`,
+            ilike(bookmark.linkUrl, query),
             sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
             sql`${
               bookmark.posts
@@ -399,7 +399,10 @@ const bookmarks = new Hono()
         try {
           const agent = await getAgentForUser(userId, c.req.raw);
           if (agent) {
-            await deleteBookmarkFromAtproto(agent, existingBookmark.atprotoRkey);
+            await deleteBookmarkFromAtproto(
+              agent,
+              existingBookmark.atprotoRkey
+            );
           } else {
             console.warn(
               "Could not get ATProto agent for user, skipping ATProto deletion"

@@ -41,3 +41,46 @@ export async function dequeueJobs(batchSize: number) {
     return jobs;
   });
 }
+
+interface ProcessJobResult {
+  links: Awaited<ReturnType<typeof import("./links.js").fetchLinks>>;
+  notificationGroups: Awaited<
+    ReturnType<typeof db.query.notificationGroup.findMany>
+  >;
+  bookmarks: Awaited<ReturnType<typeof db.query.bookmark.findMany>>;
+}
+
+/**
+ * Processes a single job by fetching links, notification groups, and bookmarks for a user.
+ * Marks the job as completed upon success.
+ */
+export async function processJob(
+  job: typeof accountUpdateQueue.$inferSelect
+): Promise<ProcessJobResult> {
+  const { fetchLinks } = await import("./links.js");
+  const { notificationGroup, bookmark } = await import("@sill/schema");
+
+  const links = await fetchLinks(job.userId);
+
+  const groups = await db.query.notificationGroup.findMany({
+    where: eq(notificationGroup.userId, job.userId),
+  });
+
+  const userBookmarks = await db.query.bookmark.findMany({
+    where: eq(bookmark.userId, job.userId),
+  });
+
+  await db
+    .update(accountUpdateQueue)
+    .set({
+      status: "completed",
+      processedAt: new Date(),
+    })
+    .where(eq(accountUpdateQueue.id, job.id));
+
+  return {
+    links,
+    notificationGroups: groups,
+    bookmarks: userBookmarks,
+  };
+}

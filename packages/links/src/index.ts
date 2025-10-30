@@ -12,11 +12,18 @@ export {
   networkTopTen,
   conflictUpdateSetAllColumns,
 } from "./links.js";
-export { dequeueJobs, enqueueJob } from "./queue.js";
-export { fetchHtmlViaProxy, extractHtmlMetadata } from "./metadata.js";
+export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
+export {
+  fetchHtmlViaProxy,
+  extractHtmlMetadata,
+  processUrl,
+  getHighActivityUrls,
+} from "./metadata.js";
 export { renderPageContent } from "./cloudflare.js";
 export {
   fetchLatestBookmarks,
   formatBookmark,
   evaluateBookmark,
+  updateBookmarkPosts,
 } from "./bookmarks.js";
+export { processNotificationGroup } from "./notifications.js";

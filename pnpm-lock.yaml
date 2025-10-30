@@ -404,6 +404,9 @@ importers:
       '@sill/auth':
         specifier: workspace:*
         version: link:../auth
+      '@sill/emails':
+        specifier: workspace:*
+        version: link:../emails
       '@sill/schema':
         specifier: workspace:*
         version: link:../schema

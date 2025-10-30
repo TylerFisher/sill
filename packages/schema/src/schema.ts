@@ -42,16 +42,14 @@ export const verification = pgTable(
     charSet: text().notNull(),
     expiresAt: timestamp({ precision: 3, mode: "string" }),
   },
-  (table) => {
-    return {
-      targetTypeUnique: unique().on(table.target, table.type),
-      targetTypeKey: uniqueIndex("verification_target_type_key").using(
-        "btree",
-        table.target.asc().nullsLast(),
-        table.type.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    unique().on(table.target, table.type),
+    uniqueIndex("verification_target_type_key").using(
+      "btree",
+      table.target.asc().nullsLast(),
+      table.type.asc().nullsLast()
+    ),
+  ]
 );
 
 export const password = pgTable("password", {
@@ -74,14 +72,9 @@ export const session = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => {
-    return {
-      userIdIdx: index("session_user_id_idx").using(
-        "btree",
-        table.userId.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    index("session_user_id_idx").using("btree", table.userId.asc().nullsLast()),
+  ]
 );
 
 export const digestSettings = pgTable("digest_settings", {
@@ -188,22 +181,21 @@ export const blueskyAccount = pgTable(
     handle: text().notNull().unique(),
     did: text().notNull().unique(),
     mostRecentPostDate: timestamp({ precision: 3, mode: "string" }),
+    mostRecentBookmarkTid: text(),
     userId: uuid()
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => {
-    return {
-      didKey: uniqueIndex("bluesky_account_did_key").using(
-        "btree",
-        table.did.asc().nullsLast()
-      ),
-      handleKey: uniqueIndex("bluesky_account_handle_key").using(
-        "btree",
-        table.handle.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    uniqueIndex("bluesky_account_did_key").using(
+      "btree",
+      table.did.asc().nullsLast()
+    ),
+    uniqueIndex("bluesky_account_handle_key").using(
+      "btree",
+      table.handle.asc().nullsLast()
+    ),
+  ]
 );
 
 export const list = pgTable("list", {
@@ -236,18 +228,16 @@ export const link = pgTable(
     siteName: text(),
     topics: json().$type<string[]>(),
   },
-  (table) => {
-    return {
-      searchIndex: index("link_search_index").using(
-        "gin",
-        sql`(
+  (table) => [
+    index("link_search_index").using(
+      "gin",
+      sql`(
           setweight(to_tsvector('english', ${table.title}), 'A') ||
           setweight(to_tsvector('english', ${table.description}), 'B')
         )`
-      ),
-      linkUrlUnique: uniqueIndex().using("btree", table.url),
-    };
-  }
+    ),
+    uniqueIndex().using("btree", table.url),
+  ]
 );
 
 export const emailToken = pgTable(
@@ -262,14 +252,12 @@ export const emailToken = pgTable(
       .unique()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => {
-    return {
-      userIdKey: uniqueIndex("email_token_user_id_key").using(
-        "btree",
-        table.userId.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    uniqueIndex("email_token_user_id_key").using(
+      "btree",
+      table.userId.asc().nullsLast()
+    ),
+  ]
 );
 
 export const user = pgTable(
@@ -285,14 +273,9 @@ export const user = pgTable(
       .notNull(),
     emailConfirmed: boolean("email_confirmed").default(false).notNull(),
   },
-  (table) => {
-    return {
-      emailKey: uniqueIndex("user_email_key").using(
-        "btree",
-        table.email.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    uniqueIndex("user_email_key").using("btree", table.email.asc().nullsLast()),
+  ]
 );
 
 export const atprotoAuthSession = pgTable("atproto_auth_session", {
@@ -318,16 +301,14 @@ export const mutePhrase = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
-  (table) => {
-    return {
-      unq: unique().on(table.phrase, table.userId),
-      userIdPhraseKey: uniqueIndex("mute_phrase_user_id_phrase_key").using(
-        "btree",
-        table.userId.asc().nullsLast(),
-        table.phrase.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    unique().on(table.phrase, table.userId),
+    uniqueIndex("mute_phrase_user_id_phrase_key").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.phrase.asc().nullsLast()
+    ),
+  ]
 );
 
 export const linkPostDenormalized = pgTable(
@@ -479,16 +460,14 @@ export const tag = pgTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
   },
-  (table) => {
-    return {
-      unq: unique().on(table.name, table.userId),
-      userIdNameKey: uniqueIndex("tag_user_id_name_key").using(
-        "btree",
-        table.userId.asc().nullsLast(),
-        table.name.asc().nullsLast()
-      ),
-    };
-  }
+  (table) => [
+    unique().on(table.name, table.userId),
+    uniqueIndex("tag_user_id_name_key").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.name.asc().nullsLast()
+    ),
+  ]
 );
 
 export const bookmarkTag = pgTable(
@@ -506,16 +485,14 @@ export const bookmarkTag = pgTable(
       .notNull(),
   },
   (table) => {
-    return {
-      unq: unique().on(table.bookmarkId, table.tagId),
-      bookmarkIdTagIdKey: uniqueIndex(
-        "bookmark_tag_bookmark_id_tag_id_key"
-      ).using(
+    return [
+      unique().on(table.bookmarkId, table.tagId),
+      uniqueIndex("bookmark_tag_bookmark_id_tag_id_key").using(
         "btree",
         table.bookmarkId.asc().nullsLast(),
         table.tagId.asc().nullsLast()
       ),
-    };
+    ];
   }
 );
 

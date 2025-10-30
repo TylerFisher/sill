@@ -1,360 +1,257 @@
-import { and, asc, count, eq, gte, ilike, not, sql } from "drizzle-orm";
-import { uuidv7 } from "uuidv7-js";
+import { asc, eq, sql } from "drizzle-orm";
 import {
 	db,
 	accountUpdateQueue,
-	bookmark,
-	link,
-	linkPostDenormalized,
 	networkTopTenView,
-	notificationGroup,
-	notificationItem,
 	user,
+	type bookmark,
+	type notificationGroup,
 } from "@sill/schema";
 import {
 	type ProcessedResult,
-	evaluateNotifications,
-	fetchLinks,
-	filterLinkOccurrences,
 	insertNewLinks,
 	dequeueJobs,
 	enqueueJob,
-	extractHtmlMetadata,
-	fetchHtmlViaProxy,
-	renderPageContent,
-	fetchLatestBookmarks,
-	evaluateBookmark,
-	formatBookmark,
+	processUrl,
+	updateBookmarkPosts,
+	processJob,
+	processNotificationGroup,
+	getHighActivityUrls,
 } from "@sill/links";
-import { isSubscribed } from "@sill/auth";
-import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
 
+// Constants
 const MAX_ERRORS_PER_BATCH = 10;
+const JOB_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const CLOUDFLARE_RATE_LIMIT_MS = 1000; // 1 second between URL scrapes (Cloudflare requirement)
+const QUEUE_POLL_INTERVAL_MS = 1000; // Poll queue every 1 second
+const SLOW_QUEUE_DELAY_MS = 10 * 1000; // 10 seconds delay when few users
+const MAX_CONCURRENT_NOTIFICATIONS = 10; // Process max 10 notifications concurrently
+const MAX_CONCURRENT_BOOKMARKS = 10; // Process max 10 bookmarks concurrently
 
-async function processQueue() {
-	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
+type JobResult =
+	| { status: "success"; duration: number }
+	| { status: "error"; error: unknown; duration: number };
 
-	while (true) {
-		const batchStart = Date.now();
-		const jobs = await dequeueJobs(BATCH_SIZE);
+// Graceful shutdown support
+let isShuttingDown = false;
 
-		if (jobs.length > 0) {
-			console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
-			const allLinks: ProcessedResult[] = [];
-			const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
-			const bookmarks: (typeof bookmark.$inferSelect)[] = [];
-			const atBookmarks = await fetchLatestBookmarks();
+process.on("SIGTERM", () => {
+	console.log("[Queue] Received SIGTERM, shutting down gracefully...");
+	isShuttingDown = true;
+});
 
-			const results = await Promise.all(
-				jobs.map(async (job) => {
-					const jobStart = Date.now();
-					try {
-						const timeoutPromise = new Promise((_, reject) => {
-							const timer = setTimeout(() => {
-								reject(new Error("Job timed out after 3 minutes"));
-							}, 180000);
-							// Clear timer when promise resolves
-							return () => clearTimeout(timer);
-						});
-						const jobPromise = (async () => {
-							const links = await fetchLinks(job.userId);
-							allLinks.push(...links);
+process.on("SIGINT", () => {
+	console.log("[Queue] Received SIGINT, shutting down gracefully...");
+	isShuttingDown = true;
+});
 
-							const groups = await db.query.notificationGroup.findMany({
-								where: eq(notificationGroup.userId, job.userId),
-							});
-
-							const userBookmarks = await db.query.bookmark.findMany({
-								where: eq(bookmark.userId, job.userId),
-							});
-
-							notificationGroups.push(...groups);
-							bookmarks.push(...userBookmarks);
-
-							const validBookmarks = (
-								await Promise.all(
-									atBookmarks.map(async (b) =>
-										(await evaluateBookmark(b, job.userId)) ? b : null,
-									),
-								)
-							).filter((b): b is NonNullable<typeof b> => b !== null);
-
-							console.log("found", validBookmarks.length, "valid bookmarks");
-
-							const formattedBookmarks = await Promise.all(
-								validBookmarks.map(
-									async (b) => await formatBookmark(b, job.userId),
-								),
-							);
-							allLinks.push(
-								...formattedBookmarks.filter((f) => f !== undefined),
-							);
-
-							await db
-								.update(accountUpdateQueue)
-								.set({
-									status: "completed",
-									processedAt: new Date(),
-								})
-								.where(eq(accountUpdateQueue.id, job.id));
-						})();
-
-						await Promise.race([timeoutPromise, jobPromise]);
-						return { status: "success", duration: Date.now() - jobStart };
-					} catch (error) {
-						console.log(`Error for user ${job.userId}: ${error}`);
-
-						await db
-							.update(accountUpdateQueue)
-							.set({
-								status: "failed",
-								error: String(error),
-								retries: sql`${accountUpdateQueue.retries} + 1`,
-							})
-							.where(eq(accountUpdateQueue.id, job.id));
-
-						return { status: "error", error, duration: Date.now() - jobStart };
-					}
-				}),
-			);
-
-			await insertNewLinks(allLinks);
-
-			for (const group of notificationGroups) {
-				const groupUser = await db.query.user.findFirst({
-					where: eq(user.id, group.userId),
-					with: { subscriptions: true },
-				});
-				if (!groupUser) {
-					continue;
-				}
-				const subscribed = await isSubscribed(groupUser.id);
-				if (subscribed === "free") {
-					continue;
-				}
-				const newItems = await evaluateNotifications(
-					group.userId,
-					group.query,
-					group.seenLinks,
-					new Date(group.createdAt),
-				);
-				if (newItems.length > 0) {
-					console.log(
-						`sending notification for group ${group.name}, user ${groupUser.email}`,
-					);
-					if (group.notificationType === "email") {
-						await sendNotificationEmail({
-							to: groupUser.email,
-							subject:
-								newItems[0].link?.title ||
-								`New Sill notification: ${group.name}`,
-							links: newItems,
-							groupName: group.name,
-							subscribed,
-							freeTrialEnd: groupUser.freeTrialEnd
-								? new Date(groupUser.freeTrialEnd)
-								: null,
-						});
-					} else if (group.notificationType === "rss") {
-						for (const item of newItems) {
-							const html = await renderNotificationRSS({
-								item,
-								subscribed,
-							});
-							await db.insert(notificationItem).values({
-								id: uuidv7(),
-								notificationGroupId: group.id,
-								itemHtml: html,
-								itemData: item,
-							});
-						}
-					}
-				}
-				await db
-					.update(notificationGroup)
-					.set({
-						seenLinks: [
-							...group.seenLinks,
-							...newItems.map((n) => n.link?.url || ""),
-						].slice(-10000),
-					})
-					.where(eq(notificationGroup.id, group.id));
-			}
-
-			for (const userBookmark of bookmarks) {
-				const posts = userBookmark.posts;
-				const newPosts = await filterLinkOccurrences({
-					userId: userBookmark.userId,
-					url: userBookmark.linkUrl,
-				});
-
-				if (newPosts.length > 0) {
-					for (const newPost of newPosts[0].posts.reverse()) {
-						if (!posts.posts?.some((p) => p.id === newPost.id)) {
-							posts.posts?.unshift(newPost);
-						}
-					}
-
-					// Update uniqueActorsCount by counting unique actors
-					const uniqueActors = new Set();
-
-					for (const post of posts.posts || []) {
-						const actorHandle = post.repostActorHandle || post.actorHandle;
-						const actorName = post.repostActorHandle
-							? post.repostActorName
-							: post.actorName;
-
-						const normalizedHandle =
-							post.postType === "mastodon"
-								? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
-								: actorHandle
-										.replace(".bsky.social", "")
-										.replace("@", "")
-										.toLowerCase();
-
-						if (normalizedHandle) {
-							const normalizedName = actorName
-								?.toLowerCase()
-								.replace(/\s*\(.*?\)\s*/g, "");
-							uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
-						}
-					}
-
-					// Update the uniqueActorsCount in the posts object
-					posts.uniqueActorsCount = uniqueActors.size;
-
-					await db
-						.update(bookmark)
-						.set({
-							posts: posts,
-						})
-						.where(eq(bookmark.id, userBookmark.id));
-				}
-			}
-
-			const errorCount = results.filter((r) => r.status === "error").length;
-			const batchDuration = Date.now() - batchStart;
-
-			console.log(`[Queue] Batch complete:
-      Processed: ${jobs.length}
-      Success: ${results.filter((r) => r.status === "success").length}
-      Errors: ${results.filter((r) => r.status === "error").length}
-      Batch Duration: ${batchDuration}ms
-    `);
-			if (errorCount >= MAX_ERRORS_PER_BATCH) {
-				console.error(
-					`[Queue] Too many errors (${errorCount}), restarting process...`,
-				);
-				process.exit(1); // Exit with error code to trigger restart
-			}
-		} else {
-			await db.refreshMaterializedView(networkTopTenView);
-
-			// Find links with n+ posts in the last 24 hours that haven't been scraped
-			const threshold = process.env.SCRAPE_SHARE_THRESHOLD
-				? Number.parseInt(process.env.SCRAPE_SHARE_THRESHOLD)
-				: 5;
-			const linkPostCounts = await db
-				.select({
-					linkUrl: linkPostDenormalized.linkUrl,
-					postCount: count(linkPostDenormalized.id).as("postCount"),
-				})
-				.from(linkPostDenormalized)
-				.innerJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-				.where(
-					and(
-						gte(linkPostDenormalized.postDate, sql`NOW() - INTERVAL '1 day'`),
-						eq(link.scraped, false),
-						not(ilike(link.url, "%.pdf")),
-					),
-				)
-				.groupBy(linkPostDenormalized.linkUrl)
-				.having(sql`COUNT(${linkPostDenormalized.id}) >= ${threshold}`);
-
-			const highActivityUrls = [
-				...new Set(linkPostCounts.map((lpc) => lpc.linkUrl)),
-			];
-
-			if (highActivityUrls.length > 0) {
-				console.log(
-					`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`,
-				);
-
-				// Process URLs concurrently with rate limiting
-				const processUrl = async (url: string) => {
-					const result = await renderPageContent({ url });
-					if (result.success) {
-						const metadata = await extractHtmlMetadata(result.html);
-						if (metadata) {
-							await db.update(link).set(metadata).where(eq(link.url, url));
-							console.log(
-								`[BROWSER RENDER] updated metadata from cloudflare for ${url}`,
-							);
-						} else {
-							const html = await fetchHtmlViaProxy(url);
-							if (html) {
-								const metadata = await extractHtmlMetadata(result.html);
-								if (metadata) {
-									await db.update(link).set(metadata).where(eq(link.url, url));
-									console.log(
-										`[BROWSER RENDER] updated metadata from proxy for ${url}`,
-									);
-								} else {
-									await db
-										.update(link)
-										.set({ scraped: true })
-										.where(eq(link.url, url));
-									console.log(`[BROWSER RENDER] no metadata found for ${url}`);
-								}
-							} else {
-								await db
-									.update(link)
-									.set({ scraped: true })
-									.where(eq(link.url, url));
-							}
-						}
-					} else {
-						console.log("[BROWSER RENDER] error", url, result.error);
-						await db
-							.update(link)
-							.set({ scraped: true })
-							.where(eq(link.url, url));
-					}
-				};
-
-				// Create promises with 1-second intervals between starts
-				const promises = highActivityUrls.map(
-					(url, index) =>
-						new Promise((resolve) =>
-							setTimeout(() => resolve(processUrl(url)), index * 1000),
-						),
-				);
-
-				await Promise.all(promises);
-			}
-
-			const users = await db.query.user.findMany({
-				orderBy: asc(user.createdAt),
-			});
-
-			// slow down the queue processing if there are less than BATCH_SIZE users
-			if (users.length < BATCH_SIZE) {
-				await new Promise((resolve) => setTimeout(resolve, 10000));
-			}
-
-			// delete completed jobs
-			await db
-				.delete(accountUpdateQueue)
-				.where(eq(accountUpdateQueue.status, "completed"));
-
-			await Promise.all(users.map((user) => enqueueJob(user.id)));
-			console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
-		}
-
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+/**
+ * Processes items in batches with controlled concurrency to prevent connection pool exhaustion
+ * and database deadlocks.
+ * @param items - Array of items to process
+ * @param processFn - Async function to process each item
+ * @param concurrency - Maximum number of items to process concurrently
+ */
+async function processConcurrently<T>(
+	items: T[],
+	processFn: (item: T) => Promise<void>,
+	concurrency: number,
+): Promise<void> {
+	for (let i = 0; i < items.length; i += concurrency) {
+		const batch = items.slice(i, i + concurrency);
+		const batchPromises = batch.map((item) =>
+			processFn(item).catch((error) => {
+				console.error("[Queue] Error processing item:", error);
+				// Continue processing other items even if one fails
+			}),
+		);
+		await Promise.all(batchPromises);
 	}
 }
 
+/**
+ * Processes a single job with timeout protection
+ */
+async function processJobWithTimeout(
+	job: typeof accountUpdateQueue.$inferSelect,
+	allLinks: ProcessedResult[],
+	notificationGroups: (typeof notificationGroup.$inferSelect)[],
+	bookmarks: (typeof bookmark.$inferSelect)[],
+): Promise<JobResult> {
+	const jobStart = Date.now();
+	let timeoutId: NodeJS.Timeout | undefined;
+
+	try {
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timeoutId = setTimeout(() => {
+				reject(new Error("Job timed out after 3 minutes"));
+			}, JOB_TIMEOUT_MS);
+		});
+
+		const result = await Promise.race([timeoutPromise, processJob(job)]);
+
+		// Only push results if we got here (didn't timeout)
+		allLinks.push(...result.links);
+		notificationGroups.push(...result.notificationGroups);
+		bookmarks.push(...result.bookmarks);
+
+		return { status: "success", duration: Date.now() - jobStart };
+	} catch (error) {
+		console.error(
+			`[Queue] Error processing job ${job.id} for user ${job.userId}:`,
+			error,
+		);
+
+		await db
+			.update(accountUpdateQueue)
+			.set({
+				status: "failed",
+				error: String(error),
+				retries: sql`${accountUpdateQueue.retries} + 1`,
+			})
+			.where(eq(accountUpdateQueue.id, job.id));
+
+		return { status: "error", error, duration: Date.now() - jobStart };
+	} finally {
+		if (timeoutId) clearTimeout(timeoutId);
+	}
+}
+
+/**
+ * Processes a batch of jobs
+ */
+async function processBatch(
+	jobs: (typeof accountUpdateQueue.$inferSelect)[],
+): Promise<void> {
+	console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
+	const batchStart = Date.now();
+
+	const allLinks: ProcessedResult[] = [];
+	const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
+	const bookmarks: (typeof bookmark.$inferSelect)[] = [];
+
+	// Process all jobs in parallel
+	const results = await Promise.all(
+		jobs.map((job) =>
+			processJobWithTimeout(job, allLinks, notificationGroups, bookmarks),
+		),
+	);
+
+	// Insert all new links
+	await insertNewLinks(allLinks);
+
+	// Process notifications with controlled concurrency to prevent connection pool exhaustion
+	await processConcurrently(
+		notificationGroups,
+		processNotificationGroup,
+		MAX_CONCURRENT_NOTIFICATIONS,
+	);
+
+	// Update bookmarks with controlled concurrency to prevent deadlocks
+	await processConcurrently(
+		bookmarks,
+		updateBookmarkPosts,
+		MAX_CONCURRENT_BOOKMARKS,
+	);
+
+	// Log batch results
+	const errorCount = results.filter((r) => r.status === "error").length;
+	const successCount = results.filter((r) => r.status === "success").length;
+	const batchDuration = Date.now() - batchStart;
+
+	console.log(
+		`[Queue] Batch complete: ${successCount} success, ${errorCount} errors, ${batchDuration}ms`,
+	);
+
+	// Exit if too many errors
+	if (errorCount >= MAX_ERRORS_PER_BATCH) {
+		console.error(
+			`[Queue] Too many errors (${errorCount}/${MAX_ERRORS_PER_BATCH}), restarting process...`,
+		);
+		process.exit(1);
+	}
+}
+
+/**
+ * Handles idle queue state
+ */
+async function handleIdleQueue(batchSize: number): Promise<void> {
+	// Refresh materialized view
+	await db.refreshMaterializedView(networkTopTenView);
+
+	// Scrape high-activity URLs with Cloudflare rate limiting
+	const highActivityUrls = await getHighActivityUrls();
+	if (highActivityUrls.length > 0) {
+		console.log(`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`);
+
+		// Create promises with 1-second intervals between starts (Cloudflare requirement)
+		const promises = highActivityUrls.map(
+			(url, index) =>
+				new Promise((resolve) =>
+					setTimeout(
+						() => resolve(processUrl(url)),
+						index * CLOUDFLARE_RATE_LIMIT_MS,
+					),
+				),
+		);
+
+		await Promise.all(promises);
+	}
+
+	// Enqueue all users
+	const users = await db.query.user.findMany({
+		orderBy: asc(user.createdAt),
+	});
+
+	// Delete completed jobs
+	await db
+		.delete(accountUpdateQueue)
+		.where(eq(accountUpdateQueue.status, "completed"));
+
+	// Enqueue users in parallel
+	await Promise.all(users.map((u) => enqueueJob(u.id)));
+	console.log(`[Queue] No jobs found, enqueued ${users.length} users`);
+
+	// Slow down if few users
+	if (users.length < batchSize) {
+		await new Promise((resolve) => setTimeout(resolve, SLOW_QUEUE_DELAY_MS));
+	}
+}
+
+/**
+ * Main queue processing loop
+ */
+async function processQueue() {
+	const BATCH_SIZE = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "100");
+
+	console.log(`[Queue] Starting with batch size ${BATCH_SIZE}`);
+
+	while (!isShuttingDown) {
+		try {
+			const jobs = await dequeueJobs(BATCH_SIZE);
+
+			if (jobs.length > 0) {
+				await processBatch(jobs);
+			} else {
+				await handleIdleQueue(BATCH_SIZE);
+			}
+
+			// Wait before next poll
+			await new Promise((resolve) =>
+				setTimeout(resolve, QUEUE_POLL_INTERVAL_MS),
+			);
+		} catch (error) {
+			console.error("[Queue] Unexpected error in main loop:", error);
+			// Continue processing despite errors in individual iterations
+		}
+	}
+
+	console.log("[Queue] Shutdown complete");
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
-	processQueue().catch(console.error);
+	processQueue().catch((error) => {
+		console.error("[Queue] Fatal error:", error);
+		process.exit(1);
+	});
 }

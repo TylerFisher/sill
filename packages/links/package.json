@@ -33,6 +33,7 @@
     "@aws-sdk/client-s3": "^3.864.0",
     "@sill/schema": "workspace:*",
     "@sill/auth": "workspace:*",
+    "@sill/emails": "workspace:*",
     "cloudflare": "^4.4.1",
     "drizzle-orm": "^0.44.4",
     "masto": "^7.4.0",
