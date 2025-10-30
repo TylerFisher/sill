@@ -15,7 +15,7 @@ const SingleAccountShare = ({
 		: `https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`;
 	return (
 		<Link href={link} target="_blank" rel="noreferrer" aria-label="Share">
-			<IconButton aria-label="Share" variant="ghost" title="Share">
+			<IconButton aria-label="Share" variant="ghost" title="Share" color="gray">
 				<Share
 					width={layout === "default" ? "18" : "14"}
 					height={layout === "default" ? "18" : "14"}
