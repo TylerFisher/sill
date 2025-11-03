@@ -1,27 +1,27 @@
 {
-	"name": "sill-monorepo",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"build": "turbo build",
-		"dev": "turbo dev",
-		"dev:local": "turbo dev:local",
-		"dev:docker": "docker-compose -f docker-compose.dev.yml up -d && turbo dev",
-		"lint": "turbo lint",
-		"typecheck": "turbo typecheck",
-		"test": "turbo test",
-		"generate-secrets": "sh ./scripts/generate-secrets.sh"
-	},
-	"devDependencies": {
-		"turbo": "^2.3.0"
-	},
-	"engines": {
-		"node": ">=22.0.0"
-	},
-	"packageManager": "pnpm@10.17.1",
-	"pnpm": {
-		"overrides": {
-			"drizzle-orm": "0.44.4"
-		}
-	}
+  "name": "sill-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "dev:local": "turbo dev:local",
+    "dev:docker": "docker-compose -f docker-compose.dev.yml up -d && turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "generate-secrets": "sh ./scripts/generate-secrets.sh"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.44.4"
+    }
+  }
 }
