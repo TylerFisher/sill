@@ -120,7 +120,7 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN:-api.localhost}`) || (Host(`${WEB_DOMAIN:-localhost}`) && PathPrefix(`/api`))"
+      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN:-api.localhost}`)"
       - "traefik.http.routers.api.tls=${USE_SSL:-false}"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.services.api.loadbalancer.server.port=3001"
