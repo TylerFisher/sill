@@ -45,7 +45,7 @@ class FetchQueue {
       const fetchFn = this.queue.shift();
       if (fetchFn) {
         await fetchFn();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 333));
       }
     }
 
@@ -93,17 +93,15 @@ export function useClientMetadata({
             setClientMetadata(extractedMetadata);
 
             try {
-              // TODO: public env var
-              await fetch("http://localhost:3001/api/links/metadata", {
+              const formData = new FormData();
+              formData.append("url", url);
+              formData.append("metadata", JSON.stringify(extractedMetadata));
+
+              fetch("/api/link/update-metadata", {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                  url,
-                  metadata: extractedMetadata,
-                }),
+                body: formData,
+              }).catch((apiError) => {
+                console.error("Failed to update metadata in database:", apiError);
               });
             } catch (apiError) {
               console.error("Failed to update metadata in database:", apiError);

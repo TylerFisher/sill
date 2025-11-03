@@ -22,6 +22,7 @@ export default [
   ]),
   ...prefix("api", [
     route("agree-to-terms", "routes/api/agree-to-terms.ts"),
+    route("link/update-metadata", "routes/api/link.update-metadata.ts"),
     route("list/subscribe", "routes/api/list.subscribe.ts"),
     route("mute/add", "routes/api/mute.add.ts"),
     route("mute/delete", "routes/api/mute.delete.ts"),
