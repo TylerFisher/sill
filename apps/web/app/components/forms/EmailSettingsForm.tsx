@@ -78,7 +78,7 @@ const EmailSettingForm = ({
 									`2000-01-01T${currentSettings.scheduledTime}Z`,
 								);
 								const localHour = utcTime.getHours();
-								return hours[localHour + 1];
+								return hours[localHour];
 							})()}{" "}
 						to {email}.
 					</Text>
