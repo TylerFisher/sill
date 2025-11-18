@@ -47,6 +47,14 @@ const newsletter = new Hono()
         })
       );
 
+      console.log(
+        `found ${
+          digests.length
+        } to send for ${new Date().getUTCHours()}, out of ${
+          scheduledDigests.length
+        }`
+      );
+
       for (const digest of digests) {
         if (!digest) {
           continue;
