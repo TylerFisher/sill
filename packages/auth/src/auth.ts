@@ -298,16 +298,16 @@ export const isSubscribed = async (
   });
   if (!dbUser) return "free";
 
-  const subscribed = dbUser.subscriptions.length > 0;
-  if (!subscribed && dbUser.freeTrialEnd) {
-    if (new Date() < new Date(dbUser.freeTrialEnd)) {
-      return "trial";
-    }
-  }
+  // const subscribed = dbUser.subscriptions.length > 0;
+  // if (!subscribed && dbUser.freeTrialEnd) {
+  //   if (new Date() < new Date(dbUser.freeTrialEnd)) {
+  //     return "trial";
+  //   }
+  // }
 
-  if (!subscribed) {
-    return "free";
-  }
+  // if (!subscribed) {
+  //   return "free";
+  // }
 
   return "plus";
 };
