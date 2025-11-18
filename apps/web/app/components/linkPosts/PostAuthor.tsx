@@ -21,53 +21,64 @@ interface PostAuthorProps {
 }
 
 const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => {
-  return (
-  <Text
-		size={{
-			initial: layout === "dense" ? "1" : "2",
-			sm: layout === "dense" ? "2" : "3",
-		}}
-		weight="bold"
-		as="p"
-		style={{
-			marginBottom: "2px",
-			whiteSpace: "pre-wrap",
-		}}
-	>
-		<Link
-			href={actor.actorUrl}
-			target="_blank"
-			rel="noreferrer"
-			underline="hover"
+	return (
+		<Text
+			size={{
+				initial: layout === "dense" ? "1" : "2",
+				sm: layout === "dense" ? "2" : "3",
+			}}
+			weight="bold"
+			as="p"
+			style={{
+				marginBottom: "2px",
+				whiteSpace: "pre-wrap",
+			}}
 		>
-			{actor.actorName}{" "}
-		</Link>
-		<Link
-			href={actor.actorUrl}
-			target="_blank"
-			rel="noreferrer"
-			underline="none"
-		>
-			{" "}
-			<Text color="gray" weight="regular">
-				@{actor.actorHandle}
-			</Text>
-		</Link>
-		{postUrl && postDate && (
-			<>
-				<Text mx="1" color="gray">
-					·
+			<Link
+				href={actor.actorUrl}
+				target="_blank"
+				rel="noreferrer"
+				underline="hover"
+			>
+				{actor.actorName}{" "}
+			</Link>
+			<Link
+				href={actor.actorUrl}
+				target="_blank"
+				rel="noreferrer"
+				underline="none"
+			>
+				{" "}
+				<Text color="gray" weight="regular">
+					@{actor.actorHandle}
 				</Text>
-				<Link href={postUrl} target="_blank" rel="noreferrer" underline="hover">
-					<Text color="gray" weight="regular">
-						{timeAgo.format(new Date(`${postDate}Z`), "twitter-now")}
-					</Text>
-				</Link>
-			</>
-		)}
-	</Text>
-  )
-	
+			</Link>
+			{postUrl &&
+				postDate &&
+				(() => {
+					const date = new Date(`${postDate}Z`);
+					const isValidDate = !Number.isNaN(date.getTime());
+
+					return isValidDate ? (
+						<>
+							<Text mx="1" color="gray">
+								·
+							</Text>
+							<Link
+								href={postUrl}
+								target="_blank"
+								rel="noreferrer"
+								underline="hover"
+							>
+								<Text color="gray" weight="regular">
+									{timeAgo.format(date, "twitter-now")}
+								</Text>
+							</Link>
+						</>
+					) : null;
+				})()}
+		</Text>
+	);
 };
 
 export default PostAuthor;
