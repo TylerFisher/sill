@@ -1,0 +1,7 @@
+.submitButtonDropdown {
+	color: var(--gray-12);
+}
+
+.submitButtonDropdown:hover {
+	color: var(--accent-contrast);
+}

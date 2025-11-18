@@ -1,0 +1,37 @@
+.card {
+	flex: 1;
+}
+
+.cardHighlighted {
+	background: linear-gradient(to bottom right, var(--accent-3), var(--accent-1));
+}
+
+.cardHighlighted:after {
+	box-shadow: 0 0 0 2px var(--accent-8);
+}
+
+.cardHighlighted h4 {
+	color: var(--accent-11);
+	font-weight: 900;
+	font-style: italic;
+}
+
+.featureList {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.featureList li {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+}
+
+.checkIcon {
+	width: 20px;
+	height: 20px;
+	color: var(--accent-11);
+	vertical-align: middle;
+}

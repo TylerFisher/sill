@@ -1,0 +1,19 @@
+.ranking-wrapper {
+	position: absolute;
+	background-color: var(--accent-11);
+	border-radius: 100%;
+	z-index: 1;
+	color: var(--accent-1);
+}
+
+.ranking-number {
+	font-weight: 900;
+	font-style: italic;
+	position: relative;
+}
+
+@-moz-document url-prefix("") {
+	.ranking-number {
+		top: 1.5px;
+	}
+}

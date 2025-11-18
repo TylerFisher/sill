@@ -1,28 +1,8 @@
 services:
-  traefik:
-    image: traefik:v3.1.2
-    command:
-      - "--api.insecure=true"  # Enable dashboard for local dev
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.remix.address=:3000"
-    ports:
-      - "3000:3000"
-      - "8080:8080"  # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - net
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-
   db:
     image: postgres:latest
     volumes:
-      - postgres_db:/var/lib/postgresql/data
+      - sill_postgres_db:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -54,10 +34,16 @@ services:
       - AUTH_TYPE=scram-sha-256
       - POOL_MODE=transaction
       - ADMIN_USERS=postgres
+      - MAX_CLIENT_CONN=200
+      - MIN_POOL_SIZE=10
+      - RESERVE_POOL_SIZE=10
+      - MAX_DB_CONNECTIONS=50
     ports:
       - "5432:5432"
     depends_on:
       - db
+    networks:
+      - net
     logging:
       driver: json-file
       options:
@@ -66,81 +52,8 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
 
-  remix:
-    image: sill-app
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - db
-    networks:
-      - net
-    volumes:
-      - ${APP_DIR}:/app
-      - /app/node_modules
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`) || Host(`127.0.0.1`)"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
-    command: ["npm", "run", "dev"]
-
-  worker:
-    image: sill-app
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - db
-    networks:
-      - net
-    volumes:
-      - ${APP_DIR}:/app
-      - /app/node_modules
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
-    command: npm run dev:worker
-    restart: unless-stopped
-
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      # - /path/to/dozzle/data:/data
-      - ./dozzle/data:/data
-    networks:
-      - net
-    environment:
-      DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: simple
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
-
 volumes:
-  postgres_db:
+  sill_postgres_db:
 
 networks:
   net:

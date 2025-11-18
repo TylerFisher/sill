@@ -1,0 +1,82 @@
+@font-face {
+	font-family: "Nacelle";
+	src: url("fonts/Nacelle-Regular.ttf") format("truetype"),
+		url("fonts/Nacelle-Regular.woff") format("woff"),
+		url("fonts/Nacelle-Regular.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Nacelle";
+	src: url("fonts/Nacelle-Italic.ttf") format("truetype"),
+		url("fonts/Nacelle-Italic.woff") format("woff"),
+		url("fonts/Nacelle-Italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: "Nacelle";
+	src: url("fonts/Nacelle-Bold.ttf") format("truetype"),
+		url("fonts/Nacelle-Bold.woff") format("woff"),
+		url("fonts/Nacelle-Bold.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Nacelle";
+	src: url("fonts/Nacelle-BoldItalic.ttf") format("truetype"),
+		url("fonts/Nacelle-BoldItalic.woff") format("woff"),
+		url("fonts/Nacelle-BoldItalic.woff2") format("woff2");
+	font-weight: 700;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: "Nacelle";
+	src: url("fonts/Nacelle-BlackItalic.ttf") format("truetype"),
+		url("fonts/Nacelle-BlackItalic.woff") format("woff"),
+		url("fonts/Nacelle-BlackItalic.woff2") format("woff2");
+	font-weight: 900;
+	font-style: italic;
+}
+
+.radix-themes {
+	--cursor-button: pointer;
+	--cursor-checkbox: pointer;
+	--cursor-disabled: default;
+	--cursor-link: pointer;
+	--cursor-menu-item: pointer;
+	--cursor-radio: pointer;
+	--cursor-slider-thumb: grab;
+	--cursor-slider-thumb-active: grabbing;
+	--cursor-switch: pointer;
+	--default-font-family: "Nacelle";
+	--heading-font-family: "Nacelle";
+}
+
+.rt-BaseDialogOverlay {
+	&:where([data-state="closed"]) {
+		animation: rt-dialog-overlay-no-op 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+	}
+	&:where([data-state="open"])::before {
+		backdrop-filter: saturate(180%) blur(20px);
+		animation: rt-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+	}
+	&:where([data-state="closed"])::before {
+		opacity: 0;
+		animation: rt-fade-out 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+	}
+}
+
+.rt-BaseDialogContent {
+	&:where([data-state="open"]) {
+		animation: rt-dialog-content-show 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+	}
+	&:where([data-state="closed"]) {
+		opacity: 0;
+		animation: rt-dialog-content-hide 100ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+	}
+}

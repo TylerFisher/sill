@@ -1,0 +1,17 @@
+.post-content > p {
+	overflow-wrap: anywhere;
+	white-space: pre-line;
+}
+
+.post-content a {
+	text-decoration: none;
+	color: var(--accent-11);
+}
+
+.post-content a:hover {
+	text-decoration: underline;
+	text-decoration-color: var(--accent-a5);
+	text-decoration-style: solid;
+	text-decoration-thickness: min(2px, max(1px, 0.05em));
+	text-underline-offset: calc(0.025em + 2px);
+}

@@ -75,17 +75,22 @@ services:
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
     restart: always
+    networks:
+      - net
 
-  remix:
-    image: ghcr.io/tylerfisher/sill/remix:latest
+  web:
+    image: ghcr.io/tylerfisher/sill/web:latest
     env_file:
       - .env
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+      - API_BASE_URL=http://api:3001
     depends_on:
       - pgbouncer
       - traefik
       - dozzle
+      - api
     networks:
       - net
     restart: always
@@ -100,18 +105,41 @@ services:
       options:
         max-size: "50m"
         max-file: "6"
-  
-  worker:
-    image: ghcr.io/tylerfisher/sill/remix:latest
+
+  api:
+    image: ghcr.io/tylerfisher/sill/api:latest
     env_file:
       - .env
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
     depends_on:
       - pgbouncer
-      - traefik
-      - dozzle
-    command: npm run start:worker
+    networks:
+      - net
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN:-api.localhost}`)"
+      - "traefik.http.routers.api.tls=${USE_SSL:-false}"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.services.api.loadbalancer.server.port=3001"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
+  
+  worker:
+    image: ghcr.io/tylerfisher/sill/worker:latest
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+    depends_on:
+      - pgbouncer
+      - api
     restart: unless-stopped
     logging:
       driver: json-file

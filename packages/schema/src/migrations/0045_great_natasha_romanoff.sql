@@ -1,0 +1,1 @@
+ALTER TABLE "bluesky_account" ADD COLUMN "mostRecentBookmarkTid" text;

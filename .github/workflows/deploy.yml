@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  SERVICES_TO_PUSH: remix
+  SERVICES_TO_PUSH: web,api,worker
   ROOT_DIRECTORY: /opt
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
           import os
 
           def parse_docker_compose():
-              with open('docker-compose.yml', 'r') as file:
+              with open('docker-compose-deploy.local.yml', 'r') as file:
                   return yaml.safe_load(file)
 
           def build_and_push_image(service, config):
@@ -97,6 +97,7 @@ jobs:
           echo "NODE_ENV=production" >> .env
           echo "USE_SSL=true" >> .env
           echo "WEB_DOMAIN=${{ secrets.PUBLIC_DOMAIN }}" >> .env
+          echo "API_DOMAIN=${{ secrets.API_DOMAIN }}" >> .env
           echo "PUBLIC_URL=https://${{ secrets.PUBLIC_DOMAIN }}" >> .env
           echo "VITE_PUBLIC_DOMAIN=${{ secrets.VITE_PUBLIC_DOMAIN }}" >> .env
           echo "VITE_ADMIN_EMAIL=${{ secrets.VITE_ADMIN_EMAIL }}" >> .env
@@ -117,6 +118,12 @@ jobs:
           echo "TRAEFIK_DASHBOARD_AUTH=${{ secrets.TRAEFIK_DASHBOARD_AUTH }}" >> .env
           echo "CRON_API_KEY=${{ secrets.CRON_API_KEY }}" >> .env
           echo "UPDATE_BATCH_SIZE=${{ secrets.UPDATE_BATCH_SIZE }}" >> .env
+          echo "POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}" >> .env
+          echo "POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}" >> .env
+          echo "SUCCESS_URL=${{ secrets.SUCCESS_URL }}" >> .env
+          echo "CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }}" >> .env
+          echo "CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" >> .env
+          echo "SCRAPE_SHARE_THRESHOLD=${{ secrets.SCRAPE_SHARE_THRESHOLD }}" >> .env
 
       - name: Copy .env and docker-compose-prod files to remote server
         uses: appleboy/scp-action@master

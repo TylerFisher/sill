@@ -1,0 +1,1 @@
+ALTER TABLE "bookmark" ADD COLUMN "published" boolean DEFAULT false NOT NULL;

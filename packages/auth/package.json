@@ -1,0 +1,44 @@
+{
+  "name": "@sill/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
+      "production": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "dev:local": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sill/schema": "workspace:*",
+    "@atproto/oauth-client-node": "^0.2.5",
+    "@atproto/jwk-jose": "^0.1.9",
+    "@epic-web/totp": "^1.1.0",
+    "bcryptjs": "^2.4.3",
+    "drizzle-orm": "^0.44.4",
+    "uuidv7-js": "^1.1.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.1.6"
+  }
+}

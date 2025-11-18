@@ -1,0 +1,10 @@
+.bug {
+	top: 56px;
+	scroll-margin-top: 56px;
+}
+@media (min-width: 1024px) {
+	.bug {
+		top: 0px;
+		scroll-margin-top: 0px;
+	}
+}

@@ -1,0 +1,21 @@
+.featureCard {
+	transition: all 0.2s ease;
+}
+
+.featureCard:hover {
+	border-color: var(--yellow-7);
+	background-color: var(--yellow-2);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.featureCardLink {
+	text-decoration: none;
+	color: inherit;
+	display: block;
+}
+
+.featureCardLink:hover {
+	text-decoration: none;
+	color: inherit;
+}

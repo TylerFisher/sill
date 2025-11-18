@@ -1,7 +1,0 @@
-/* app/components/marketing/MarketingFooter.module.css */
-.footer {
-  background-color: var(--accent-2);
-  border-top: 1px solid var(--accent-6);
-  padding: var(--space-6) 0;
-  margin-top: var(--space-9);
-}

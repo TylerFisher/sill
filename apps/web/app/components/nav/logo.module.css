@@ -1,0 +1,24 @@
+.big-logo-heading,
+.logo-heading {
+	font-weight: 900;
+	font-style: italic;
+	color: var(--accent-11);
+	text-transform: lowercase;
+	padding-top: 0.5rem;
+}
+
+.big-logo-heading {
+	padding-top: 0;
+	font-size: 60px;
+}
+
+@media (min-width: 768px) {
+	.big-logo-heading {
+		font-size: 90px;
+	}
+}
+
+.logo-link {
+	color: inherit;
+	text-decoration: none;
+}

@@ -1,9 +1,0 @@
-.submitButtonDropdown {
-	width: 100%;
-	color: var(--gray-12);
-	text-align: left;
-}
-
-.submitButtonDropdown:hover {
-	color: var(--accent-contrast);
-}
