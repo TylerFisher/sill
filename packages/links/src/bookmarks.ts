@@ -34,7 +34,7 @@ export interface ATBookmark extends BaseSliceResponse {
 export interface ATBookmarkValue {
   $type: "community.lexicon.bookmarks.bookmark";
   subject: string;
-  tags: string[];
+  tags?: string[];
   createdAt: string;
 }
 
@@ -199,12 +199,19 @@ export const getUserBookmarks = async (userId: string) => {
 
     // Check each bookmark to see if we've reached the most recent one we've seen
     for (const bookmark of data.bookmarks) {
-      const checkDate = bsky.mostRecentBookmarkDate
-        ? new Date(
-            `${bsky.mostRecentBookmarkDate.replace(" ", "T")}Z`
-          ).toISOString()
-        : new Date().toISOString();
-      if (new Date(bookmark.value.createdAt).toISOString() === checkDate) {
+      let checkDate: string | null = null;
+
+      if (bsky.mostRecentBookmarkDate) {
+        const dateStr = `${bsky.mostRecentBookmarkDate.replace(" ", "T")}Z`;
+        const parsedDate = new Date(dateStr);
+
+        // Validate the date is valid before using it
+        if (!Number.isNaN(parsedDate.getTime())) {
+          checkDate = parsedDate.toISOString();
+        }
+      }
+
+      if (checkDate && new Date(bookmark.value.createdAt).toISOString() === checkDate) {
         reachedPreviousBookmark = true;
         break;
       }
@@ -299,7 +306,10 @@ export const addNewBookmarks = async (userId: string) => {
       insertedBookmarks.push(insertedBookmark);
 
       // Process tags for this bookmark
-      for (const tagName of atBookmark.value.tags) {
+      const tags = atBookmark.value.tags;
+      if (!Array.isArray(tags)) continue;
+
+      for (const tagName of tags) {
         // Upsert the tag (creates if doesn't exist, does nothing if it does)
         const tagResult = await upsertTag(userId, tagName);
 
