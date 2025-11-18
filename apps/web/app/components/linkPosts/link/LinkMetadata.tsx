@@ -83,11 +83,16 @@ const LinkMetadata = ({
 						</>
 					)}
 					{authors && publishDate && <Text mx="1">•</Text>}
-					{publishDate && (
-						<Text>
-							{timeAgo.format(new Date(`${publishDate}`), "round-minute")}
-						</Text>
-					)}
+					{publishDate && (() => {
+						const date = new Date(`${publishDate}`);
+						const isValidDate = !Number.isNaN(date.getTime());
+
+						return isValidDate ? (
+							<Text>
+								{timeAgo.format(date, "round-minute")}
+							</Text>
+						) : null;
+					})()}
 				</Text>
 			)}
 		</>
