@@ -61,7 +61,7 @@ const Header = ({
 					</Box>
 				)}
 				<Logo subscribed={subscribed} />
-				{subscribed === "free" && (
+				{/* {subscribed === "free" && (
 					<Box
 						position="absolute"
 						top="0.8rem"
@@ -87,7 +87,7 @@ const Header = ({
 							</Button>
 						</NavLink>
 					</Box>
-				)}
+				)} */}
 			</Box>
 		</header>
 	);

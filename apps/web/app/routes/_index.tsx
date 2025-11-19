@@ -35,7 +35,7 @@ const Index = () => {
 				<HeroAnimation />
 				<Features />
 				<TestimonialSection />
-				<Pricing />
+				{/* <Pricing /> */}
 			</Container>
 			<MarketingFooter />
 		</Box>

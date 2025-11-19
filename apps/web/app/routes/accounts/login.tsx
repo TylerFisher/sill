@@ -41,7 +41,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 	await requireAnonymousFromContext(context);
 	const formData = await request.formData();
 	checkHoneypot(formData);
-	
+
 	// Store API response outside of form validation
 	let apiResponseHeaders: Headers | undefined;
 
@@ -88,7 +88,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	// Use the redirect URL from the API response or the form data
-	const finalRedirectTo = (apiResponse && 'redirectTo' in apiResponse ? apiResponse.redirectTo : undefined) || redirectTo || "/links";
+	const finalRedirectTo =
+		(apiResponse && "redirectTo" in apiResponse
+			? apiResponse.redirectTo
+			: undefined) ||
+		redirectTo ||
+		"/links";
 	console.log("Redirecting to:", finalRedirectTo);
 
 	return redirect(finalRedirectTo, { headers });
@@ -113,21 +118,6 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 		<Layout hideNav>
 			<Box mb="5">
 				<Heading size="8">Log in</Heading>
-			</Box>
-			<Box mb="5">
-				<Callout.Root color="red">
-					<Callout.Icon>
-						<CircleAlert />
-					</Callout.Icon>
-					<Callout.Text>
-						Sill recently experienced data loss. If you had a Sill account
-						before February 8, 2025, you may need to{" "}
-						<RLink asChild>
-							<Link to="/accounts/signup">sign up</Link>
-						</RLink>{" "}
-						again. We apologize for the inconvenience.
-					</Callout.Text>
-				</Callout.Root>
 			</Box>
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
