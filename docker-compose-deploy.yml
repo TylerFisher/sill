@@ -68,6 +68,12 @@ services:
       - AUTH_TYPE=scram-sha-256
       - POOL_MODE=transaction
       - ADMIN_USERS=${POSTGRES_USER:-postgres}
+      - MAX_CLIENT_CONN=200
+      - DEFAULT_POOL_SIZE=25
+      - MIN_POOL_SIZE=5
+      - RESERVE_POOL_SIZE=5
+      - MAX_DB_CONNECTIONS=25
+      - SERVER_IDLE_TIMEOUT=60
     ports:
       - "5432:5432"
     depends_on:
