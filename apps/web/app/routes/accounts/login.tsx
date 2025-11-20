@@ -63,7 +63,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 						// Add form-level error (no path) for credential errors
 						ctx.addIssue({
 							code: z.ZodIssueCode.custom,
-							message: apiResponse.error || "Invalid email or password",
+							message: ("error" in apiResponse ? apiResponse.error : undefined) || "Invalid email or password",
 						});
 						return z.NEVER;
 					}
@@ -135,7 +135,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 			</Box>
 
 			{/* Bluesky Login */}
-			<Form action="/bluesky/auth" method="GET">
+			{/* <Form action="/bluesky/auth" method="GET">
 				<Box mb="4">
 					<Text htmlFor="handle" size="2" as="label" mb="2" style={{ display: "block" }}>
 						Log in with Bluesky
@@ -188,7 +188,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 				<Separator style={{ flex: 1 }} />
 				<Text size="2" color="gray">or</Text>
 				<Separator style={{ flex: 1 }} />
-			</Flex>
+			</Flex> */}
 
 			{/* Email/Password Login */}
 			<Form method="post" {...getFormProps(form)}>
