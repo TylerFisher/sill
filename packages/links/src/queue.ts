@@ -8,6 +8,7 @@ import {
 } from "@sill/schema";
 import { fetchLinks } from "./links.js";
 import { addNewBookmarks } from "./bookmarks.js";
+import { clearOAuthSessionCache } from "./bluesky.js";
 
 export async function enqueueJob(userId: string) {
   return await db
@@ -64,29 +65,35 @@ interface ProcessJobResult {
 export async function processJob(
   job: typeof accountUpdateQueue.$inferSelect
 ): Promise<ProcessJobResult> {
-  const links = await fetchLinks(job.userId);
-  // get new bookmarks from ATProto repo
-  await addNewBookmarks(job.userId);
+  try {
+    const links = await fetchLinks(job.userId);
+    // get new bookmarks from ATProto repo
+    await addNewBookmarks(job.userId);
 
-  const groups = await db.query.notificationGroup.findMany({
-    where: eq(notificationGroup.userId, job.userId),
-  });
+    const groups = await db.query.notificationGroup.findMany({
+      where: eq(notificationGroup.userId, job.userId),
+    });
 
-  const userBookmarks = await db.query.bookmark.findMany({
-    where: eq(bookmark.userId, job.userId),
-  });
+    const userBookmarks = await db.query.bookmark.findMany({
+      where: eq(bookmark.userId, job.userId),
+    });
 
-  await db
-    .update(accountUpdateQueue)
-    .set({
-      status: "completed",
-      processedAt: new Date(),
-    })
-    .where(eq(accountUpdateQueue.id, job.id));
+    await db
+      .update(accountUpdateQueue)
+      .set({
+        status: "completed",
+        processedAt: new Date(),
+      })
+      .where(eq(accountUpdateQueue.id, job.id));
 
-  return {
-    links,
-    notificationGroups: groups,
-    bookmarks: userBookmarks,
-  };
+    return {
+      links,
+      notificationGroups: groups,
+      bookmarks: userBookmarks,
+    };
+  } finally {
+    // Clear OAuth session cache after job completion to free memory
+    // and ensure fresh sessions for the next job
+    clearOAuthSessionCache();
+  }
 }

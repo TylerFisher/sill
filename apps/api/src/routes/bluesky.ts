@@ -8,6 +8,7 @@ import {
   OAuthCallbackError,
   OAuthResolverError,
   OAuthResponseError,
+  TokenRefreshError,
 } from "@atproto/oauth-client-node";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -305,6 +306,109 @@ const bluesky = new Hono()
     } catch (error) {
       console.error("Get Bluesky lists error:", error);
       return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // GET /api/bluesky/auth/status - Check Bluesky OAuth status and refresh if needed
+  .get("/auth/status", async (c) => {
+    try {
+      const userId = await getUserIdFromSession(c.req.raw);
+      if (!userId) {
+        return c.json({ error: "Not authenticated" }, 401);
+      }
+
+      const account = await db.query.blueskyAccount.findFirst({
+        where: eq(blueskyAccount.userId, userId),
+      });
+
+      if (!account) {
+        return c.json({
+          status: "not_connected",
+          needsAuth: false
+        });
+      }
+
+      try {
+        const client = await createOAuthClient(c.req.raw);
+        await client.restore(account.did);
+
+        return c.json({
+          status: "connected",
+          needsAuth: false,
+          account: {
+            did: account.did,
+            handle: account.handle,
+          },
+        });
+      } catch (error) {
+        if (error instanceof OAuthResponseError) {
+          // Try again after catching OAuthResponseError
+          try {
+            const client = await createOAuthClient(c.req.raw);
+            await client.restore(account.did);
+
+            return c.json({
+              status: "connected",
+              needsAuth: false,
+              account: {
+                did: account.did,
+                handle: account.handle,
+              },
+            });
+          } catch (retryError) {
+            console.error("Bluesky status check retry error:", retryError);
+          }
+        }
+
+        if (error instanceof TokenRefreshError) {
+          // Token refresh failed, need to re-authorize
+          const client = await createOAuthClient(c.req.raw);
+          try {
+            const url = await client.authorize(account.handle, {
+              scope: "atproto transition:generic",
+            });
+            return c.json({
+              status: "needs_reauth",
+              needsAuth: true,
+              redirectUrl: url.toString(),
+            });
+          } catch (authError) {
+            // Try with DID if handle fails
+            try {
+              const url = await client.authorize(account.did, {
+                scope: "atproto transition:generic",
+              });
+              return c.json({
+                status: "needs_reauth",
+                needsAuth: true,
+                redirectUrl: url.toString(),
+              });
+            } catch {
+              return c.json({
+                status: "error",
+                needsAuth: true,
+                error: "Failed to initiate re-authorization",
+              }, 500);
+            }
+          }
+        }
+
+        if (error instanceof OAuthResolverError) {
+          return c.json({
+            status: "error",
+            needsAuth: true,
+            error: "resolver",
+          }, 400);
+        }
+
+        throw error;
+      }
+    } catch (error) {
+      console.error("Bluesky status check error:", error);
+      return c.json({
+        status: "error",
+        needsAuth: false,
+        error: "Internal server error"
+      }, 500);
     }
   });
 

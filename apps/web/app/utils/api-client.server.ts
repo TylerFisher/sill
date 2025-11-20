@@ -1279,6 +1279,26 @@ export async function apiGetBlueskyLists(request: Request) {
 }
 
 /**
+ * Check Bluesky OAuth status and trigger re-authorization if needed via API
+ */
+export async function apiCheckBlueskyStatus(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.bluesky.auth.status.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to check Bluesky status: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
  * Get Mastodon lists for the authenticated user via API
  */
 export async function apiGetMastodonLists(request: Request) {

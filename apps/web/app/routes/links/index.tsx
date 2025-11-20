@@ -13,8 +13,9 @@ import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
-import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
+import { apiFilterLinkOccurrences, apiCheckBlueskyStatus } from "~/utils/api-client.server";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
+import { redirect } from "react-router";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
@@ -30,34 +31,24 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const bsky = userProfile.blueskyAccounts[0] || null;
 
 	// Check if we need to reauthenticate with Bluesky
-	// if (bsky) {
-	// 	try {
-	// 		const client = await createOAuthClient();
-	// 		await client.restore(bsky.did);
-	// 	} catch (error) {
-	// 		if (error instanceof OAuthResponseError) {
-	// 			const client = await createOAuthClient();
-	// 			await client.restore(bsky.did);
-	// 		}
-	// 		if (error instanceof TokenRefreshError) {
-	// 			const client = await createOAuthClient();
-	// 			try {
-	// 				const url = await client.authorize(bsky.handle, {
-	// 					scope: "atproto transition:generic",
-	// 				});
-	// 				return redirect(url.toString());
-	// 			} catch (error) {
-	// 				const url = await client.authorize(bsky.did, {
-	// 					scope: "atproto transition:generic",
-	// 				});
-	// 				return redirect(url.toString());
-	// 			}
-	// 		}
-	// 		if (error instanceof OAuthResolverError) {
-	// 			return redirect("/settings?tab=connect&error=resolver");
-	// 		}
-	// 	}
-	// }
+	if (bsky) {
+		try {
+			const statusResult = await apiCheckBlueskyStatus(request);
+
+			// If re-authorization is needed, redirect to the OAuth URL
+			if (statusResult.needsAuth && "redirectUrl" in statusResult && statusResult.redirectUrl) {
+				return redirect(statusResult.redirectUrl);
+			}
+
+			// If there's an error with resolver, redirect to settings
+			if (statusResult.status === "error" && "error" in statusResult && statusResult.error === "resolver") {
+				return redirect("/settings?tab=connect&error=resolver");
+			}
+		} catch (error) {
+			console.error("Bluesky status check error:", error);
+			// Continue loading the page even if status check fails
+		}
+	}
 
 	// Use the Mastodon account from the API response
 	const mastodon = userProfile.mastodonAccounts[0] || null;

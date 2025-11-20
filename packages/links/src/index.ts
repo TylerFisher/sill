@@ -1,4 +1,4 @@
-export { getBlueskyLists } from "./bluesky.js";
+export { getBlueskyLists, clearOAuthSessionCache } from "./bluesky.js";
 export { getMastodonLists } from "./mastodon.js";
 export {
   type ProcessedResult,

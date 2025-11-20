@@ -45,8 +45,20 @@ interface BskyDetectedLink {
 export const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 /**
+ * OAuth session cache to prevent duplicate restore attempts within a single operation
+ */
+interface OAuthSessionCacheEntry {
+  session: OAuthSession | null;
+  timestamp: number;
+}
+
+const oauthSessionCache = new Map<string, OAuthSessionCacheEntry>();
+const CACHE_TTL = 60000; // 1 minute cache
+
+/**
  * Restores Bluesky OAuth session based on account did.
  * Handles OAuthResponseError (for DPoP nonce) by attempting to restore session again.
+ * Uses caching to prevent duplicate restore attempts within a short time window.
  * @param account Account object with did
  * @returns Bluesky OAuth session
  */
@@ -54,6 +66,12 @@ export const handleBlueskyOAuth = async (account: {
   did: string;
   handle: string;
 }) => {
+  // Check cache first
+  const cached = oauthSessionCache.get(account.did);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.session;
+  }
+
   let oauthSession: OAuthSession | null = null;
   try {
     const client = await createOAuthClient();
@@ -71,7 +89,26 @@ export const handleBlueskyOAuth = async (account: {
       );
     }
   }
+
+  // Cache the result (even if null)
+  oauthSessionCache.set(account.did, {
+    session: oauthSession,
+    timestamp: Date.now(),
+  });
+
   return oauthSession;
+};
+
+/**
+ * Clears the OAuth session cache for a specific account or all accounts
+ * @param did Optional account DID to clear. If not provided, clears all cached sessions.
+ */
+export const clearOAuthSessionCache = (did?: string) => {
+  if (did) {
+    oauthSessionCache.delete(did);
+  } else {
+    oauthSessionCache.clear();
+  }
 };
 
 export const getBlueskyList = async (
