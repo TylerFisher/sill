@@ -57,6 +57,17 @@ export async function action({ request, context }: Route.ActionArgs) {
 					const response = await apiLogin(request, data);
 					apiResponseHeaders = response.headers;
 					const apiResponse = await response.json();
+
+					// Check if the API returned an error
+					if (!response.ok || "error" in apiResponse) {
+						// Add form-level error (no path) for credential errors
+						ctx.addIssue({
+							code: z.ZodIssueCode.custom,
+							message: apiResponse.error || "Invalid email or password",
+						});
+						return z.NEVER;
+					}
+
 					return { ...data, apiResponse };
 				} catch (error) {
 					ctx.addIssue({
@@ -131,8 +142,9 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 					</Text>
 					<TextField.Root
 						name="handle"
-						placeholder="username.bsky.social (optional)"
+						placeholder="username.bsky.social"
 						mb="3"
+						required
 					>
 						<TextField.Slot />
 					</TextField.Root>
@@ -147,6 +159,26 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 						</Callout.Icon>
 						<Callout.Text>
 							We had trouble logging you in with Bluesky. Please try again.
+						</Callout.Text>
+					</Callout.Root>
+				)}
+				{searchParams.get("error") === "account_not_found" && (
+					<Callout.Root mb="4" color="red">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text>
+							No account found with this Bluesky handle. Please sign up with email first.
+						</Callout.Text>
+					</Callout.Root>
+				)}
+				{searchParams.get("error") === "handle_required" && (
+					<Callout.Root mb="4" color="red">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text>
+							Please enter your Bluesky handle to log in.
 						</Callout.Text>
 					</Callout.Root>
 				)}

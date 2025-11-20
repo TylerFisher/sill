@@ -19,15 +19,8 @@ import {
   createOAuthClient,
   getSessionExpirationDate,
 } from "@sill/auth";
-import {
-  db,
-  blueskyAccount,
-  user,
-  session,
-  termsAgreement,
-  termsUpdate,
-} from "@sill/schema";
-import { eq, desc } from "drizzle-orm";
+import { db, blueskyAccount, session } from "@sill/schema";
+import { eq } from "drizzle-orm";
 import { getBlueskyLists } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
@@ -42,8 +35,26 @@ const bluesky = new Hono()
       const oauthClient = await createOAuthClient(c.req.raw);
       let { handle } = c.req.valid("query");
 
-      // If no handle provided, use default Bluesky social
-      if (!handle) {
+      // Check if user is already authenticated
+      const userId = await getUserIdFromSession(c.req.raw);
+      const isLogin = !userId;
+
+      // If this is a login attempt (no user session), we need to verify the account exists
+      if (isLogin) {
+        // If no handle provided, return error (we can't check for existing account)
+        if (!handle) {
+          return c.json(
+            {
+              error: "Handle is required for login",
+              code: "handle_required",
+            },
+            400
+          );
+        }
+      }
+
+      // For connecting an account (user already logged in), allow without handle
+      if (!isLogin && !handle) {
         const url = await oauthClient.authorize("https://bsky.social", {
           scope: "atproto transition:generic",
         });
@@ -54,7 +65,7 @@ const bluesky = new Hono()
       }
 
       // Clean up handle
-      handle = handle.trim();
+      handle = handle!.trim();
       // Strip invisible Unicode control and format characters
       handle = handle.replace(/[\p{Cc}\p{Cf}]/gu, "");
       handle = handle.toLocaleLowerCase();
@@ -73,6 +84,23 @@ const bluesky = new Hono()
 
       if (!handle.includes(".") && !handle.startsWith("did:")) {
         handle = `${handle}.bsky.social`;
+      }
+
+      // For login flow, check if account exists
+      if (isLogin) {
+        const existingAccount = await db.query.blueskyAccount.findFirst({
+          where: eq(blueskyAccount.handle, handle),
+        });
+
+        if (!existingAccount) {
+          return c.json(
+            {
+              error: "No account found with this Bluesky handle.",
+              code: "account_not_found",
+            },
+            404
+          );
+        }
       }
 
       const resolver = new CompositeHandleResolver({
@@ -181,60 +209,26 @@ const bluesky = new Hono()
           actor: oauthSession.did,
         });
 
-        // Handle login/signup flow (no existing user session)
+        // Handle login flow (no existing user session)
         if (isLogin) {
           // Check if account already exists
           const existingAccount = await db.query.blueskyAccount.findFirst({
             where: eq(blueskyAccount.did, oauthSession.did),
           });
 
-          if (existingAccount) {
-            // User exists, log them in
-            userId = existingAccount.userId;
-          } else {
-            // Create new user with Bluesky account
-            const newUserId = uuidv7();
-
-            // Get email from OAuth session (com.atproto.server.getSession)
-            const atprotoSession = await agent.com.atproto.server.getSession();
-            const email = atprotoSession.data.email;
-
-            await db.transaction(async (tx) => {
-              await tx.insert(user).values({
-                id: newUserId,
-                email: email!,
-                name: profile.data.displayName || profile.data.handle,
-                emailConfirmed: true, // Email from Bluesky OAuth is confirmed
-                freeTrialEnd: new Date(
-                  Date.now() + 1000 * 60 * 60 * 24 * 14
-                ).toISOString(),
-              });
-
-              await tx.insert(blueskyAccount).values({
-                id: uuidv7(),
-                did: oauthSession.did,
-                handle: profile.data.handle,
-                userId: newUserId,
-                service: oauthSession.serverMetadata.issuer,
-                authErrorNotificationSent: false,
-              });
-
-              // Agree to latest terms
-              const latestTerms = await tx.query.termsUpdate.findFirst({
-                orderBy: desc(termsUpdate.termsDate),
-              });
-
-              if (latestTerms) {
-                await tx.insert(termsAgreement).values({
-                  id: uuidv7(),
-                  userId: newUserId,
-                  termsUpdateId: latestTerms.id,
-                });
-              }
-            });
-
-            userId = newUserId;
+          if (!existingAccount) {
+            // No account found - reject login
+            return c.json(
+              {
+                error: "No account found with this Bluesky account.",
+                code: "account_not_found",
+              },
+              404
+            );
           }
+
+          // User exists, log them in
+          userId = existingAccount.userId;
 
           // Create session for login
           const newSession = await db
@@ -339,48 +333,18 @@ const bluesky = new Hono()
             where: eq(blueskyAccount.did, oauthSession.did),
           });
 
-          if (existingAccount) {
-            userId = existingAccount.userId;
-          } else {
-            const newUserId = uuidv7();
-            // Get email from OAuth session (com.atproto.server.getSession)
-            const atprotoSession = await agent.com.atproto.server.getSession();
-            const email = atprotoSession.data.email;
-
-            await db.transaction(async (tx) => {
-              await tx.insert(user).values({
-                id: newUserId,
-                email: email!,
-                name: profile.data.displayName || profile.data.handle,
-                emailConfirmed: true,
-                freeTrialEnd: new Date(
-                  Date.now() + 1000 * 60 * 60 * 24 * 14
-                ).toISOString(),
-              });
-
-              await tx.insert(blueskyAccount).values({
-                id: uuidv7(),
-                did: oauthSession.did,
-                handle: profile.data.handle,
-                userId: newUserId,
-                service: oauthSession.serverMetadata.issuer,
-                authErrorNotificationSent: false,
-              });
-
-              const latestTerms = await tx.query.termsUpdate.findFirst({
-                orderBy: desc(termsUpdate.termsDate),
-              });
-
-              if (latestTerms) {
-                await tx.insert(termsAgreement).values({
-                  id: uuidv7(),
-                  userId: newUserId,
-                  termsUpdateId: latestTerms.id,
-                });
-              }
-            });
-            userId = newUserId;
+          if (!existingAccount) {
+            // No account found - reject login
+            return c.json(
+              {
+                error: "No account found with this Bluesky account.",
+                code: "account_not_found",
+              },
+              404
+            );
           }
+
+          userId = existingAccount.userId;
 
           const newSession = await db
             .insert(session)
