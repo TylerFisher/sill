@@ -28,8 +28,7 @@ const newsletter = new Hono()
     }
 
     try {
-      const requestUrl = new URL(c.req.url);
-      const baseUrl = `${requestUrl.origin}/digest`;
+      const baseUrl = "https://sill.social/digest";
       const scheduledDigests = await db.query.digestSettings.findMany();
       const hour = c.req.query("hour");
 
