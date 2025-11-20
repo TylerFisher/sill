@@ -1,7 +1,18 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Heading, Link as RLink, Text } from "@radix-ui/themes";
-import { Form, Link, data, redirect } from "react-router";
+import {
+	Box,
+	Button,
+	Callout,
+	Flex,
+	Heading,
+	Link as RLink,
+	Separator,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
+import { CircleAlert } from "lucide-react";
+import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
 import ErrorList from "~/components/forms/ErrorList";
@@ -72,6 +83,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 };
 
 const UserSetup = ({ actionData }: Route.ComponentProps) => {
+	const [searchParams] = useSearchParams();
 	const [form, fields] = useForm({
 		// Sync the result of last submission
 		lastResult: actionData?.result,
@@ -92,6 +104,42 @@ const UserSetup = ({ actionData }: Route.ComponentProps) => {
 				<Heading size="8">Sign up</Heading>
 			</Box>
 
+			{/* Bluesky Signup */}
+			<Form action="/bluesky/auth" method="GET">
+				<Box mb="4">
+					<Text htmlFor="handle" size="2" as="label" mb="2" style={{ display: "block" }}>
+						Sign up with Bluesky
+					</Text>
+					<TextField.Root
+						name="handle"
+						placeholder="username.bsky.social (optional)"
+						mb="3"
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					<Button type="submit" style={{ width: "100%" }}>
+						Continue with Bluesky
+					</Button>
+				</Box>
+				{searchParams.get("error") === "bluesky" && (
+					<Callout.Root mb="4" color="red">
+						<Callout.Icon>
+							<CircleAlert width="18" height="18" />
+						</Callout.Icon>
+						<Callout.Text>
+							We had trouble signing you up with Bluesky. Please try again.
+						</Callout.Text>
+					</Callout.Root>
+				)}
+			</Form>
+
+			<Flex align="center" gap="3" mb="4">
+				<Separator style={{ flex: 1 }} />
+				<Text size="2" color="gray">or</Text>
+				<Separator style={{ flex: 1 }} />
+			</Flex>
+
+			{/* Email Signup */}
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
 				<ErrorList errors={form.errors} id={form.errorId} />

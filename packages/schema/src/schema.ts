@@ -182,6 +182,7 @@ export const blueskyAccount = pgTable(
     did: text().notNull().unique(),
     mostRecentPostDate: timestamp({ precision: 3, mode: "string" }),
     mostRecentBookmarkDate: timestamp({ precision: 3, mode: "string" }),
+    authErrorNotificationSent: boolean().notNull().default(false),
     userId: uuid()
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),

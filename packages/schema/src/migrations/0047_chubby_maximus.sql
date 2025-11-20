@@ -1,0 +1,1 @@
+ALTER TABLE "bluesky_account" ADD COLUMN "authErrorNotificationSent" boolean DEFAULT false NOT NULL;

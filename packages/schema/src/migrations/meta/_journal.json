@@ -330,6 +330,13 @@
       "when": 1761830813780,
       "tag": "0046_next_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1763641377060,
+      "tag": "0047_chubby_maximus",
+      "breakpoints": true
     }
   ]
 }

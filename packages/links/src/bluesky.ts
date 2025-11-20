@@ -25,9 +25,11 @@ import {
   link,
   list,
   postType,
+  user,
   type ListOption,
 } from "@sill/schema";
 import { createOAuthClient } from "@sill/auth";
+import { sendBlueskyAuthErrorEmail } from "@sill/emails";
 import type { ProcessedResult } from "./links.js";
 import {
   getFullUrl,
@@ -60,12 +62,15 @@ const CACHE_TTL = 60000; // 1 minute cache
  * Restores Bluesky OAuth session based on account did.
  * Handles OAuthResponseError (for DPoP nonce) by attempting to restore session again.
  * Uses caching to prevent duplicate restore attempts within a short time window.
- * @param account Account object with did
+ * Sends email notification to user if authentication fails (only once until re-auth succeeds).
+ * @param account Account object with did, handle, userId, and authErrorNotificationSent flag
  * @returns Bluesky OAuth session
  */
 export const handleBlueskyOAuth = async (account: {
   did: string;
   handle: string;
+  userId?: string;
+  authErrorNotificationSent?: boolean;
 }) => {
   // Check cache first
   const cached = oauthSessionCache.get(account.did);
@@ -74,6 +79,8 @@ export const handleBlueskyOAuth = async (account: {
   }
 
   let oauthSession: OAuthSession | null = null;
+  let shouldSendEmail = false;
+
   try {
     const client = await createOAuthClient();
     oauthSession = await client.restore(account.did);
@@ -81,12 +88,14 @@ export const handleBlueskyOAuth = async (account: {
     if (error instanceof OAuthResponseError) {
       const client = await createOAuthClient();
       oauthSession = await client.restore(account.did);
-    } else if (error instanceof TokenRefreshError) {
+    } else if (error instanceof TokenRefreshError || (error instanceof Error && error.constructor.name === "TokenRefreshError")) {
       console.error(`Token refresh error for ${account.handle}`);
+      shouldSendEmail = true;
     } else if (error instanceof OAuthCallbackError) {
       // Check if this is an issuer mismatch error by examining the error message
       if (error.message === "Issuer mismatch") {
         console.error(`Issuer mismatch error for ${account.handle}`);
+        shouldSendEmail = true;
       } else {
         console.error(
           `OAuth callback error for ${account.handle}: ${error.message}`
@@ -96,6 +105,40 @@ export const handleBlueskyOAuth = async (account: {
       console.error(
         `Error restoring OAuth session for ${account.handle}`,
         error
+      );
+    }
+  }
+
+  // Send email notification if auth failed and we haven't sent one yet
+  if (shouldSendEmail && account.userId && !account.authErrorNotificationSent) {
+    try {
+      // Get user email
+      const userRecord = await db.query.user.findFirst({
+        where: eq(user.id, account.userId),
+      });
+
+      if (userRecord?.email) {
+        const settingsUrl = "https://sill.social/settings?tab=connect";
+        await sendBlueskyAuthErrorEmail({
+          to: userRecord.email,
+          handle: account.handle,
+          settingsUrl,
+        });
+
+        // Update the flag to prevent duplicate emails
+        await db
+          .update(blueskyAccount)
+          .set({ authErrorNotificationSent: true })
+          .where(eq(blueskyAccount.did, account.did));
+
+        console.log(
+          `Sent auth error email to ${userRecord.email} for ${account.handle}`
+        );
+      }
+    } catch (emailError) {
+      console.error(
+        `Failed to send auth error email for ${account.handle}:`,
+        emailError
       );
     }
   }

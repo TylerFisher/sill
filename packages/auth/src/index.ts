@@ -1,6 +1,7 @@
 export {
   isSubscribed,
   getUserIdFromSession,
+  getSessionExpirationDate,
   validateSession,
   deleteSession,
   login,
