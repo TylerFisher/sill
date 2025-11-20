@@ -1,6 +1,6 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box } from "@radix-ui/themes";
-import { Await, useSearchParams } from "react-router";
+import { Await, redirect, useSearchParams } from "react-router";
 import { Suspense } from "react";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -10,8 +10,11 @@ import PageHeading from "~/components/nav/PageHeading";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import type { Route } from "./+types/connections";
 import { requireUserFromContext } from "~/utils/context.server";
-import { apiGetBlueskyLists, apiGetMastodonLists } from "~/utils/api-client.server";
-
+import {
+	apiGetBlueskyLists,
+	apiGetMastodonLists,
+	apiCheckBlueskyStatus,
+} from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [
 	{ title: "Sill | Connection Settings" },
@@ -21,6 +24,34 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	const existingUser = await requireUserFromContext(context);
 	invariantResponse(existingUser, "User not found", { status: 404 });
 	const subscribed = existingUser.subscriptionStatus;
+
+	if (existingUser.blueskyAccounts.length > 0) {
+		try {
+			const statusResult = await apiCheckBlueskyStatus(request);
+
+			if (
+				statusResult.needsAuth &&
+				"redirectUrl" in statusResult &&
+				statusResult.redirectUrl
+			) {
+				return redirect(statusResult.redirectUrl);
+			}
+
+			if (
+				statusResult.status === "error" &&
+				"error" in statusResult &&
+				statusResult.error === "resolver"
+			) {
+				const url = new URL(request.url);
+				if (!url.searchParams.has("error")) {
+					url.searchParams.set("error", "resolver");
+					return redirect(url.toString());
+				}
+			}
+		} catch (error) {
+			console.error("Bluesky status check error:", error);
+		}
+	}
 
 	const bskyPromise =
 		existingUser.blueskyAccounts.length > 0 && subscribed
@@ -56,13 +87,17 @@ export default function ConnectionSettings({
 					dek="Sill connects to your Bluesky and Mastodon accounts and gathers all of the links posted to your timeline. Then, Sill aggregates those links to show you the most popular links in your network. You can connect to one or both of these services."
 				/>
 			</Box>
-			<Suspense fallback={<BlueskyConnectForm
-				account={user.blueskyAccounts[0]}
-				subscribed={subscribed}
-				searchParams={searchParams}
-				listOptions={[]}
-				loading={true}
-			/>}>
+			<Suspense
+				fallback={
+					<BlueskyConnectForm
+						account={user.blueskyAccounts[0]}
+						subscribed={subscribed}
+						searchParams={searchParams}
+						listOptions={[]}
+						loading={true}
+					/>
+				}
+			>
 				<Await resolve={bskyPromise}>
 					{(bskyData) => (
 						<BlueskyConnectForm
@@ -75,20 +110,26 @@ export default function ConnectionSettings({
 					)}
 				</Await>
 			</Suspense>
-			<Suspense fallback={<MastodonConnectForm
-				account={user.mastodonAccounts[0]}
-				subscribed={subscribed}
-				searchParams={searchParams}
-				listOptions={[]}
-				loading={true}
-			/>}>
+			<Suspense
+				fallback={
+					<MastodonConnectForm
+						account={user.mastodonAccounts[0]}
+						subscribed={subscribed}
+						searchParams={searchParams}
+						listOptions={[]}
+						loading={true}
+					/>
+				}
+			>
 				<Await resolve={mastodonPromise}>
 					{(mastodonData) => (
 						<MastodonConnectForm
 							account={user.mastodonAccounts[0]}
 							subscribed={subscribed}
 							searchParams={searchParams}
-							listOptions={mastodonData.lists.filter((l) => l.type === "mastodon")}
+							listOptions={mastodonData.lists.filter(
+								(l) => l.type === "mastodon",
+							)}
 							loading={false}
 						/>
 					)}

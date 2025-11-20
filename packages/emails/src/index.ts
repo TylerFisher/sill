@@ -6,6 +6,7 @@ import WelcomeEmail from "./emails/WelcomeEmail.js";
 import TopLinksEmail from "./emails/TopLinksEmail.js";
 import EmailChangeEmail from "./emails/EmailChangeEmail.js";
 import EmailChangeNoticeEmail from "./emails/EmailChangeNoticeEmail.js";
+import BlueskyAuthErrorEmail from "./emails/BlueskyAuthErrorEmail.js";
 import Notification from "./emails/Notification.js";
 import RSSLinks from "./components/RSSLinks.js";
 
@@ -17,6 +18,7 @@ export { default as WelcomeEmail } from "./emails/WelcomeEmail.js";
 export { default as TopLinksEmail } from "./emails/TopLinksEmail.js";
 export { default as EmailChangeEmail } from "./emails/EmailChangeEmail.js";
 export { default as EmailChangeNoticeEmail } from "./emails/EmailChangeNoticeEmail.js";
+export { default as BlueskyAuthErrorEmail } from "./emails/BlueskyAuthErrorEmail.js";
 
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 import RSSNotificationItem from "./components/RSSNotificationItem.js";
@@ -202,4 +204,21 @@ export async function renderNotificationRSS({
       subscribed,
     })
   );
+}
+
+export async function sendBlueskyAuthErrorEmail({
+  to,
+  handle,
+  settingsUrl,
+}: {
+  to: string;
+  handle: string;
+  settingsUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to,
+    subject: "Reconnect your Bluesky account",
+    react: BlueskyAuthErrorEmail({ handle, settingsUrl }),
+    "o:tag": "bluesky-auth-error",
+  });
 }

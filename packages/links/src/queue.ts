@@ -68,7 +68,7 @@ export async function processJob(
   try {
     const links = await fetchLinks(job.userId);
     // get new bookmarks from ATProto repo
-    await addNewBookmarks(job.userId);
+    // await addNewBookmarks(job.userId);
 
     const groups = await db.query.notificationGroup.findMany({
       where: eq(notificationGroup.userId, job.userId),

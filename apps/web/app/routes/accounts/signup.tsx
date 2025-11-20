@@ -72,6 +72,7 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 };
 
 const UserSetup = ({ actionData }: Route.ComponentProps) => {
+	const [searchParams] = useSearchParams();
 	const [form, fields] = useForm({
 		// Sync the result of last submission
 		lastResult: actionData?.result,
@@ -92,6 +93,7 @@ const UserSetup = ({ actionData }: Route.ComponentProps) => {
 				<Heading size="8">Sign up</Heading>
 			</Box>
 
+			{/* Email Signup */}
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
 				<ErrorList errors={form.errors} id={form.errorId} />

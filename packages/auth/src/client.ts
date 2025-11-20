@@ -45,7 +45,9 @@ export const createOAuthClient = async (request?: Request) => {
       client_name: "Sill",
       client_id: isProduction
         ? `${process.env.PUBLIC_URL}/client-metadata.json`
-        : `http://localhost?redirect_uri=${enc(`${baseUrl}/bluesky/auth/callback`)}&scope=${enc("atproto transition:generic")}`,
+        : `http://localhost?redirect_uri=${enc(
+            `${baseUrl}/bluesky/auth/callback`
+          )}&scope=${enc("atproto transition:generic")}`,
       client_uri: process.env.PUBLIC_URL,
       jwks_uri: `${baseUrl}/jwks.json`,
       redirect_uris: [`${baseUrl}/bluesky/auth/callback`],

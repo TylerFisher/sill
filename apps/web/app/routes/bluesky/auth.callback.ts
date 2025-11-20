@@ -32,7 +32,20 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 
 		if (data.success) {
-			return redirect("/download?service=Bluesky");
+			// Forward the Set-Cookie header from the API response
+			const headers = new Headers();
+			const apiSetCookie = result.headers.get("set-cookie");
+			if (apiSetCookie) {
+				headers.append("set-cookie", apiSetCookie);
+			}
+
+			// Check if this was a login flow
+			if ("isLogin" in data && data.isLogin) {
+				// Redirect to main page for login with session cookie
+				return redirect("/links", { headers });
+			}
+			// Otherwise it's a connect flow
+			return redirect("/download?service=Bluesky", { headers });
 		}
 
 		// Handle other errors
@@ -43,14 +56,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 		// Handle specific error codes from API
 		if (error instanceof Error) {
 			if (error.message.includes("denied")) {
-				return redirect("/accounts/onboarding/social?error=denied");
+				return redirect("/accounts/login?error=bluesky");
 			}
 			if (error.message.includes("login_required")) {
-				return redirect("/accounts/onboarding/social?error=oauth");
+				return redirect("/accounts/login?error=bluesky");
 			}
 		}
 
-		// Fallback - still redirect to success as the account might have been created
-		return redirect("/download?service=Bluesky");
+		// Fallback - redirect to login with error
+		return redirect("/accounts/login?error=bluesky");
 	}
 }
