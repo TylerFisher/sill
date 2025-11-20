@@ -25,8 +25,6 @@ const JOB_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 const CLOUDFLARE_RATE_LIMIT_MS = 1000; // 1 second between URL scrapes (Cloudflare requirement)
 const QUEUE_POLL_INTERVAL_MS = 1000; // Poll queue every 1 second
 const SLOW_QUEUE_DELAY_MS = 10 * 1000; // 10 seconds delay when few users
-const MAX_CONCURRENT_NOTIFICATIONS = 10; // Process max 10 notifications concurrently
-const MAX_CONCURRENT_BOOKMARKS = 10; // Process max 10 bookmarks concurrently
 
 type JobResult =
 	| { status: "success"; duration: number }
@@ -44,30 +42,6 @@ process.on("SIGINT", () => {
 	console.log("[Queue] Received SIGINT, shutting down gracefully...");
 	isShuttingDown = true;
 });
-
-/**
- * Processes items in batches with controlled concurrency to prevent connection pool exhaustion
- * and database deadlocks.
- * @param items - Array of items to process
- * @param processFn - Async function to process each item
- * @param concurrency - Maximum number of items to process concurrently
- */
-async function processConcurrently<T>(
-	items: T[],
-	processFn: (item: T) => Promise<void>,
-	concurrency: number,
-): Promise<void> {
-	for (let i = 0; i < items.length; i += concurrency) {
-		const batch = items.slice(i, i + concurrency);
-		const batchPromises = batch.map((item) =>
-			processFn(item).catch((error) => {
-				console.error("[Queue] Error processing item:", error);
-				// Continue processing other items even if one fails
-			}),
-		);
-		await Promise.all(batchPromises);
-	}
-}
 
 /**
  * Processes a single job with timeout protection
@@ -140,19 +114,23 @@ async function processBatch(
 	// Insert all new links
 	await insertNewLinks(allLinks);
 
-	// Process notifications with controlled concurrency to prevent connection pool exhaustion
-	await processConcurrently(
-		notificationGroups,
-		processNotificationGroup,
-		MAX_CONCURRENT_NOTIFICATIONS,
-	);
+	// Process notifications sequentially
+	for (const group of notificationGroups) {
+		try {
+			await processNotificationGroup(group);
+		} catch (error) {
+			console.error("[Queue] Error processing notification group:", error);
+		}
+	}
 
-	// Update bookmarks with controlled concurrency to prevent deadlocks
-	await processConcurrently(
-		bookmarks,
-		updateBookmarkPosts,
-		MAX_CONCURRENT_BOOKMARKS,
-	);
+	// Update bookmarks sequentially
+	for (const bookmark of bookmarks) {
+		try {
+			await updateBookmarkPosts(bookmark);
+		} catch (error) {
+			console.error("[Queue] Error updating bookmark:", error);
+		}
+	}
 
 	// Log batch results
 	const errorCount = results.filter((r) => r.status === "error").length;
