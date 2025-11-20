@@ -11,6 +11,7 @@ import {
 } from "@atproto/api";
 import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import {
+  OAuthCallbackError,
   OAuthResponseError,
   type OAuthSession,
   TokenRefreshError,
@@ -82,6 +83,15 @@ export const handleBlueskyOAuth = async (account: {
       oauthSession = await client.restore(account.did);
     } else if (error instanceof TokenRefreshError) {
       console.error(`Token refresh error for ${account.handle}`);
+    } else if (error instanceof OAuthCallbackError) {
+      // Check if this is an issuer mismatch error by examining the error message
+      if (error.message === "Issuer mismatch") {
+        console.error(`Issuer mismatch error for ${account.handle}`);
+      } else {
+        console.error(
+          `OAuth callback error for ${account.handle}: ${error.message}`
+        );
+      }
     } else {
       console.error(
         `Error restoring OAuth session for ${account.handle}`,
