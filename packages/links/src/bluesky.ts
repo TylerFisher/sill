@@ -88,7 +88,10 @@ export const handleBlueskyOAuth = async (account: {
     if (error instanceof OAuthResponseError) {
       const client = await createOAuthClient();
       oauthSession = await client.restore(account.did);
-    } else if (error instanceof TokenRefreshError || (error instanceof Error && error.constructor.name === "TokenRefreshError")) {
+    } else if (
+      error instanceof TokenRefreshError ||
+      (error instanceof Error && error.constructor.name === "TokenRefreshError")
+    ) {
       console.error(`Token refresh error for ${account.handle}`);
       shouldSendEmail = true;
     } else if (error instanceof OAuthCallbackError) {
@@ -110,38 +113,38 @@ export const handleBlueskyOAuth = async (account: {
   }
 
   // Send email notification if auth failed and we haven't sent one yet
-  if (shouldSendEmail && account.userId && !account.authErrorNotificationSent) {
-    try {
-      // Get user email
-      const userRecord = await db.query.user.findFirst({
-        where: eq(user.id, account.userId),
-      });
+  // if (shouldSendEmail && account.userId && !account.authErrorNotificationSent) {
+  //   try {
+  //     // Get user email
+  //     const userRecord = await db.query.user.findFirst({
+  //       where: eq(user.id, account.userId),
+  //     });
 
-      if (userRecord?.email) {
-        const settingsUrl = "https://sill.social/settings?tab=connect";
-        await sendBlueskyAuthErrorEmail({
-          to: userRecord.email,
-          handle: account.handle,
-          settingsUrl,
-        });
+  //     if (userRecord?.email) {
+  //       const settingsUrl = "https://sill.social/settings?tab=connect";
+  //       await sendBlueskyAuthErrorEmail({
+  //         to: userRecord.email,
+  //         handle: account.handle,
+  //         settingsUrl,
+  //       });
 
-        // Update the flag to prevent duplicate emails
-        await db
-          .update(blueskyAccount)
-          .set({ authErrorNotificationSent: true })
-          .where(eq(blueskyAccount.did, account.did));
+  //       // Update the flag to prevent duplicate emails
+  //       await db
+  //         .update(blueskyAccount)
+  //         .set({ authErrorNotificationSent: true })
+  //         .where(eq(blueskyAccount.did, account.did));
 
-        console.log(
-          `Sent auth error email to ${userRecord.email} for ${account.handle}`
-        );
-      }
-    } catch (emailError) {
-      console.error(
-        `Failed to send auth error email for ${account.handle}:`,
-        emailError
-      );
-    }
-  }
+  //       console.log(
+  //         `Sent auth error email to ${userRecord.email} for ${account.handle}`
+  //       );
+  //     }
+  //   } catch (emailError) {
+  //     console.error(
+  //       `Failed to send auth error email for ${account.handle}:`,
+  //       emailError
+  //     );
+  //   }
+  // }
 
   // Cache the result (even if null)
   oauthSessionCache.set(account.did, {
