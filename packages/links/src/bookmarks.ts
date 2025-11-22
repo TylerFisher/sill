@@ -174,6 +174,10 @@ export const getUserBookmarks = async (userId: string) => {
 
   if (!bsky) return [];
 
+  const existingBookmarks = await db.query.bookmark.findMany({
+    where: eq(bookmark.userId, userId),
+  });
+
   const session = await handleBlueskyOAuth(bsky);
   if (!session) return [];
   const agent = new Agent(session);
@@ -211,9 +215,16 @@ export const getUserBookmarks = async (userId: string) => {
         }
       }
 
-      if (checkDate && new Date(bookmark.value.createdAt).toISOString() === checkDate) {
+      if (
+        checkDate &&
+        new Date(bookmark.value.createdAt).toISOString() === checkDate
+      ) {
         reachedPreviousBookmark = true;
         break;
+      }
+
+      if (existingBookmarks.find((b) => b.linkUrl === bookmark.value.subject)) {
+        continue;
       }
 
       allBookmarks.push(bookmark);

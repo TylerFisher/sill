@@ -9,7 +9,6 @@ import {
   type MostRecentLinkPosts,
   bookmark,
   bookmarkTag,
-  digestItem,
   tag,
   blueskyAccount,
   link,
@@ -17,6 +16,7 @@ import {
 import { filterLinkOccurrences } from "@sill/links";
 import { Agent } from "@atproto/api";
 import { TID } from "@atproto/common";
+import { addNewBookmarks } from "@sill/links";
 
 /**
  * Get an ATProto agent for a user's Bluesky account
@@ -157,6 +157,8 @@ const bookmarks = new Hono()
     }
 
     const { query, tag: tagFilter, page, limit } = c.req.valid("query");
+
+    await addNewBookmarks(userId);
 
     try {
       // Build where conditions

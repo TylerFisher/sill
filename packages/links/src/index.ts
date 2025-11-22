@@ -25,5 +25,7 @@ export {
   formatBookmark,
   evaluateBookmark,
   updateBookmarkPosts,
+  getUserBookmarks,
+  addNewBookmarks,
 } from "./bookmarks.js";
 export { processNotificationGroup } from "./notifications.js";
