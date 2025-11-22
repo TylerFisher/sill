@@ -142,6 +142,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - PROCESS_TYPE=worker
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
     depends_on:
       - pgbouncer

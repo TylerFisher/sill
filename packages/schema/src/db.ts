@@ -13,11 +13,12 @@ const __dirname = dirname(__filename);
 // Multiple Node.js processes (web app + API + worker) will each create their own pool instance
 const defaultPoolSize = 20;
 
-// Determine if this is the worker process by checking if it's running process-queue
+// Determine if this is the worker process
 // Worker needs more connections to handle parallel job processing
-const isWorker = process.argv.some((arg) =>
-	arg.includes("process-queue"),
-);
+// Check both env var (set in docker-compose) and argv (for local dev with tsx)
+const isWorker =
+	process.env.PROCESS_TYPE === "worker" ||
+	process.argv.some((arg) => arg.includes("process-queue"));
 
 const batchSize = Number.parseInt(process.env.UPDATE_BATCH_SIZE || "50");
 let calculatedPoolSize = defaultPoolSize;
