@@ -89,7 +89,7 @@ export function useClientMetadata({
 
           const extractedMetadata = await extractHtmlMetadata(html);
 
-          if (extractedMetadata) {
+          if (extractedMetadata?.title) {
             setClientMetadata(extractedMetadata);
 
             try {
@@ -101,7 +101,10 @@ export function useClientMetadata({
                 method: "POST",
                 body: formData,
               }).catch((apiError) => {
-                console.error("Failed to update metadata in database:", apiError);
+                console.error(
+                  "Failed to update metadata in database:",
+                  apiError
+                );
               });
             } catch (apiError) {
               console.error("Failed to update metadata in database:", apiError);
