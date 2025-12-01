@@ -11,6 +11,11 @@ import {
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import Post from "./Post.js";
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en";
+
+TimeAgo.addDefaultLocale(en);
+const timeAgo = new TimeAgo("en-US");
 
 interface LinkPostProps {
 	linkPost: MostRecentLinkPosts;
@@ -137,6 +142,14 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 										</span>
 									)}
 									{link.authors && link.publishedDate && <span> • </span>}
+									{link.publishedDate && (
+										<span>
+											{timeAgo.format(
+												new Date(link.publishedDate),
+												"round-minute",
+											)}
+										</span>
+									)}
 								</Text>
 							)}
 						</Column>
