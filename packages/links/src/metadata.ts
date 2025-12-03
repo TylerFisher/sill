@@ -159,9 +159,15 @@ function getTopics(
 export async function extractHtmlMetadata(
   html: string
 ): Promise<null | Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">> {
-  const metadata = await ogs({
-    html,
-  });
+  let metadata: Awaited<ReturnType<typeof ogs>>;
+  try {
+    metadata = await ogs({
+      html,
+    });
+  } catch (error) {
+    console.error("[METADATA] Failed to parse HTML metadata:", error);
+    return null;
+  }
 
   if (metadata.error) {
     console.error("ERROR", metadata.result);
