@@ -68,7 +68,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
 	const { apiResponse, type, target } = submission.value;
 	const responseData = await apiResponse.json();
 	if ("error" in responseData) {
-		throw new Error(responseData.error);
+		return data(
+			{
+				result: submission.reply({
+					formErrors: [responseData.error],
+					fieldErrors: { code: [responseData.error] },
+				}),
+			},
+			{ status: 400 },
+		);
 	}
 	const { redirectTo } = responseData;
 
