@@ -3,10 +3,8 @@ import Features from "~/components/marketing/Features";
 import HeroAnimation from "~/components/marketing/HeroAnimation";
 import MainHero from "~/components/marketing/MainHero";
 import MarketingFooter from "~/components/marketing/MarketingFooter";
-import Pricing from "~/components/marketing/Pricing";
 import { requireAnonymousFromContext } from "~/utils/context.server";
 import { TestimonialSection } from "../components/marketing/Testimonial";
-// app/routes/_index.tsx
 import type { Route } from "./+types/_index";
 
 export const meta: Route.MetaFunction = () => [
@@ -35,7 +33,6 @@ const Index = () => {
 				<HeroAnimation />
 				<Features />
 				<TestimonialSection />
-				{/* <Pricing /> */}
 			</Container>
 			<MarketingFooter />
 		</Box>

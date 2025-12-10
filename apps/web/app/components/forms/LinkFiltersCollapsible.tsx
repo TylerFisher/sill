@@ -27,10 +27,8 @@ const LinkFiltersCollapsible = ({
 					customFilterCount > 0
 						? "var(--yellow-9)"
 						: theme === "dark"
-							? "rgba(25,25,24,0.8)"
-							: "rgba(249,249,248,0.8)",
-				backdropFilter:
-					customFilterCount > 0 ? "none" : "saturate(1.8) blur(20px)",
+							? "rgba(25,25,24)"
+							: "rgba(249,249,248)",
 			}}
 			className={styles["filter-wrapper"]}
 		>

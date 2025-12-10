@@ -8,7 +8,6 @@
 .header-wrapper {
 	border-bottom: 1px solid var(--gray-a6);
 	z-index: 10;
-	backdrop-filter: saturate(1.8) blur(20px);
 }
 
 .desktop-logo {
