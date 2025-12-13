@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { setCookie } from "hono/cookie";
 import { z } from "zod";
 import {
   deleteSession,
@@ -99,20 +100,18 @@ const auth = new Hono()
       }
 
       // Set session cookie
-      const cookieOptions = {
+      // If remember is false, still set a reasonable expiration (7 days) to persist across PWA restarts
+      const expirationDate = remember
+        ? new Date(session.expirationDate)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      setCookie(c, "sessionId", session.id, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
+        sameSite: "lax",
         path: "/",
-        ...(remember ? { expires: session.expirationDate } : {}),
-      };
-
-      c.header(
-        "Set-Cookie",
-        `sessionId=${session.id}; ${Object.entries(cookieOptions)
-          .map(([k, v]) => `${k}=${v}`)
-          .join("; ")}`
-      );
+        expires: expirationDate,
+      });
 
       return c.json({
         success: true,
@@ -149,20 +148,13 @@ const auth = new Hono()
       }
 
       // Set session cookie
-      const cookieOptions = {
+      setCookie(c, "sessionId", session.id, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
+        sameSite: "lax",
         path: "/",
-        expires: session.expirationDate,
-      };
-
-      c.header(
-        "Set-Cookie",
-        `sessionId=${session.id}; ${Object.entries(cookieOptions)
-          .map(([k, v]) => `${k}=${v}`)
-          .join("; ")}`
-      );
+        expires: new Date(session.expirationDate),
+      });
 
       // Send verification email
       await sendWelcomeEmail({

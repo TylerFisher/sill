@@ -95,7 +95,6 @@ export async function action({ request, context }: Route.ActionArgs) {
 	// Forward the Set-Cookie headers from the API response
 	const headers = new Headers();
 	const apiSetCookie = apiResponseHeaders?.get("set-cookie");
-	console.log("API Set-Cookie header:", apiSetCookie);
 
 	if (apiSetCookie) {
 		headers.append("set-cookie", apiSetCookie);
@@ -108,7 +107,6 @@ export async function action({ request, context }: Route.ActionArgs) {
 			: undefined) ||
 		redirectTo ||
 		"/links";
-	console.log("Redirecting to:", finalRedirectTo);
 
 	return redirect(finalRedirectTo, { headers });
 }
