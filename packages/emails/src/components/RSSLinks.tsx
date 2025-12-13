@@ -1,6 +1,7 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
 import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
 import { renderToString } from "react-dom/server";
+import { getUniqueAvatarUrls } from "./LinkPost.js";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
@@ -48,14 +49,23 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				authors = `${link.authors[0]} and ${link.authors[1]}`;
 			}
 
+			const urlHost = new URL(link.url).host;
+			const displayHost = link.siteName || urlHost;
+
+			const uniqueAvatars = getUniqueAvatarUrls(linkPost.posts);
+
+			const displayTitle = link.title.endsWith(".pdf")
+				? `PDF from ${displayHost}`
+				: link.title;
+
 			return `
 			<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
-        ${link.siteName ? `<h5 style="color: #999;">${link.siteName}</h5>` : ""}
-				<h2><a href="${link.url}">${link.title || link.url}</a></h2>
+       <h5 style="color: #999;">${displayHost}</h5>
+				<h2><a href="${link.url}">${displayTitle}</a></h2>
 				${link.description ? `<p style="color: #666;">${link.description}</p>` : ""}
         ${authors ? `<p style="font-size: 12px; color: #999;">by ${authors}</p>` : ""}
 				<p style="font-size: 12px; color: #999;">
-					Shared by ${linkPost.posts?.length || 0} ${(linkPost.posts?.length || 0) === 1 ? "person" : "people"}
+					Shared by ${uniqueAvatars?.length || 0} ${(uniqueAvatars?.length || 0) === 1 ? "person" : "people"}
 				</p>
         <hr />
 			</div>

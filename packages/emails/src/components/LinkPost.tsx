@@ -88,6 +88,12 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 	const link = linkPost.link;
 	const uniqueActors = getUniqueAvatarUrls(linkPost.posts);
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
+	const urlHost = new URL(link.url).host;
+	const displayHost = link.siteName || urlHost;
+
+	const displayTitle = link.title.endsWith(".pdf")
+		? `PDF from ${displayHost}`
+		: link.title;
 
 	return (
 		<div style={container}>
@@ -103,7 +109,7 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 					<Row style={row}>
 						<Column>
 							<Text style={host}>
-								{new URL(link.url).host}{" "}
+								{displayHost}{" "}
 								{link.giftUrl && (
 									<Link style={giftLink} href={link.giftUrl}>
 										(gift link)
@@ -111,7 +117,7 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 								)}
 							</Text>
 							<Heading style={heading} as="h2">
-								{link.title || link.url}
+								{displayTitle || link.url}
 							</Heading>
 							<Text style={text}>{link.description}</Text>
 							{(link.authors || link.publishedDate) && (
@@ -244,7 +250,7 @@ const heading = {
 	lineHeight: 1.2,
 	marginTop: "0.33em",
 	marginBottom: "0.33em",
-	wordBreak: "break-all" as const,
+	wordBreak: "break-word" as const,
 };
 
 const text = {
