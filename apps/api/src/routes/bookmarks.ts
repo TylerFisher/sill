@@ -168,11 +168,9 @@ const bookmarks = new Hono()
       if (query) {
         conditions.push(
           or(
-            ilike(bookmark.linkUrl, query),
-            sql`${bookmark.posts}::jsonb->>'link.title' ILIKE ${`%${query}%`}`,
-            sql`${
-              bookmark.posts
-            }::jsonb->>'link.description' ILIKE ${`%${query}%`}`
+            ilike(bookmark.linkUrl, `%${query}%`),
+            sql`${bookmark.posts}::jsonb->'link'->>'title' ILIKE ${`%${query}%`}`,
+            sql`${bookmark.posts}::jsonb->'link'->>'description' ILIKE ${`%${query}%`}`
           )!
         );
       }

@@ -7,7 +7,7 @@ import { useFilterStorage } from "~/hooks/useFilterStorage";
 const SearchField = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [query, setQuery] = useState(searchParams.get("query") || "");
-	useFilterStorage();
+	const { saveFiltersToStorage } = useFilterStorage();
 
 	// Sync local state when URL parameters change
 	useEffect(() => {
@@ -21,6 +21,25 @@ const SearchField = () => {
 			value ? prev.set(param, value) : prev.delete(param);
 			return prev;
 		});
+
+		// Update local storage when query is cleared
+		if (!value) {
+			const currentFilters = {
+				time: searchParams.get("time") || undefined,
+				reposts: searchParams.get("reposts") || undefined,
+				sort: searchParams.get("sort") || undefined,
+				service: searchParams.get("service") || undefined,
+				list: searchParams.get("list") || undefined,
+				query: undefined,
+				minShares: searchParams.get("minShares") || undefined,
+			};
+			saveFiltersToStorage(currentFilters);
+		}
+	}
+
+	function handleSubmit(event: React.FormEvent) {
+		event.preventDefault();
+		setSearchParam("query", query);
 	}
 
 	return (
@@ -31,6 +50,11 @@ const SearchField = () => {
 			aria-label="Search"
 			size="3"
 			onChange={(event) => setQuery(event.target.value)}
+			onKeyDown={(event) => {
+				if (event.key === "Enter") {
+					handleSubmit(event);
+				}
+			}}
 		>
 			<TextField.Slot>
 				<Search height="16" width="16" />
@@ -47,11 +71,12 @@ const SearchField = () => {
 			)}
 			<TextField.Slot>
 				<Button
-					type="submit"
+					type="button"
 					variant="ghost"
 					style={{
 						marginRight: "1px",
 					}}
+					onClick={handleSubmit}
 				>
 					Search
 				</Button>

@@ -158,7 +158,7 @@ const LinkFilters = ({
 		<div className={styles["filter-container"]}>
 			<Flex direction={reverse ? "column-reverse" : "column"}>
 				<Box mt={reverse ? "3" : "6"} mb={reverse ? "6" : "0"}>
-					<Form method="GET">
+					<Form method="GET" onSubmit={(e) => e.preventDefault()}>
 						<SearchField />
 					</Form>
 				</Box>
