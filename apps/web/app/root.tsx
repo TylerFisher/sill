@@ -26,11 +26,29 @@ import { type Theme, getTheme } from "./utils/theme";
 import { userContext } from "./context/user-context";
 import type { SubscriptionStatus } from "@sill/schema";
 
+// Routes that don't require authentication
+const UNAUTHENTICATED_ROUTES = ["/client-metadata.json", "/jwks.json"] as const;
+
 // Middleware to fetch user profile and set in context
 const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
 	request,
 	context,
 }) => {
+	const url = new URL(request.url);
+	const pathname = url.pathname;
+
+	// Skip authentication for unauthenticated routes
+	if (
+		UNAUTHENTICATED_ROUTES.includes(
+			pathname as (typeof UNAUTHENTICATED_ROUTES)[number],
+		) ||
+		pathname.match(/^\/digest\/[^/]+\.rss$/) ||
+		pathname.match(/^\/notifications\/[^/]+\.rss$/)
+	) {
+		context.set(userContext, null);
+		return;
+	}
+
 	try {
 		const userProfile = await apiGetUserProfileOptional(request);
 		context.set(userContext, userProfile);
