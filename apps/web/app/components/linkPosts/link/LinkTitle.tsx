@@ -15,8 +15,9 @@ const LinkTitle = ({
 	host,
 	siteName,
 }: LinkTitleProps) => {
-	const displayHost = siteName || host;
-	const nb = displayHost.replaceAll(" ", "\u00A0");
+	const displayTitle = title.endsWith(".pdf")
+		? `PDF from ${siteName || host}`
+		: title;
 
 	return (
 		<Heading
@@ -30,7 +31,7 @@ const LinkTitle = ({
 			}}
 		>
 			<Link target="_blank" rel="noreferrer" href={href} weight="bold">
-				{title}
+				{displayTitle}
 			</Link>
 		</Heading>
 	);
