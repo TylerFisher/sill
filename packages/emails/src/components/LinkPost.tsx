@@ -244,6 +244,7 @@ const heading = {
 	lineHeight: 1.2,
 	marginTop: "0.33em",
 	marginBottom: "0.33em",
+	wordBreak: "break-all" as const,
 };
 
 const text = {
