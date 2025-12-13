@@ -167,7 +167,13 @@ async function handleIdleQueue(batchSize: number): Promise<void> {
 			(url, index) =>
 				new Promise((resolve) =>
 					setTimeout(
-						() => resolve(processUrl(url)),
+						() =>
+							resolve(
+								processUrl(url).catch((error) => {
+									console.error(`[BROWSER RENDER] Failed to process ${url}:`, error);
+									return null;
+								}),
+							),
 						index * CLOUDFLARE_RATE_LIMIT_MS,
 					),
 				),
