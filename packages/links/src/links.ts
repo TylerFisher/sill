@@ -180,7 +180,7 @@ export function conflictUpdateSetAllColumns<TTable extends PgTable>(
 interface FilterArgs {
   userId: string;
   time?: number;
-  hideReposts?: boolean;
+  hideReposts?: "include" | "exclude" | "only";
   sort?: string;
   query?: string | undefined;
   service?: "mastodon" | "bluesky" | "all";
@@ -192,7 +192,7 @@ interface FilterArgs {
   minShares?: number;
 }
 
-const DEFAULT_HIDE_REPOSTS = false;
+const DEFAULT_HIDE_REPOSTS = "include";
 const DEFAULT_SORT = "popularity";
 const DEFAULT_QUERY = undefined;
 const DEFAULT_FETCH = false;
@@ -281,9 +281,11 @@ export const filterLinkOccurrences = async ({
         service !== "all"
           ? eq(linkPostDenormalized.postType, service)
           : undefined,
-        hideReposts
+        hideReposts === "exclude"
           ? isNull(linkPostDenormalized.repostActorHandle)
-          : undefined,
+          : hideReposts === "only"
+            ? isNotNull(linkPostDenormalized.repostActorHandle)
+            : undefined,
         query
           ? or(
               ilike(link.title, `%${query}%`),
@@ -335,9 +337,11 @@ export const filterLinkOccurrences = async ({
               service !== "all"
                 ? eq(linkPostDenormalized.postType, service)
                 : undefined,
-              hideReposts
+              hideReposts === "exclude"
                 ? isNull(linkPostDenormalized.repostActorHandle)
-                : undefined,
+                : hideReposts === "only"
+                  ? isNotNull(linkPostDenormalized.repostActorHandle)
+                  : undefined,
               query
                 ? or(
                     ilike(linkPostDenormalized.postText, `%${query}%`),

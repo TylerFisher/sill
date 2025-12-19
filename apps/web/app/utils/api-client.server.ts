@@ -272,7 +272,7 @@ export async function apiFilterLinkOccurrences(
   request: Request,
   params: {
     time: number;
-    hideReposts: boolean;
+    hideReposts: string;
     sort?: string;
     query?: string;
     service?: "mastodon" | "bluesky" | "all";
@@ -450,7 +450,7 @@ export async function apiCreateUpdateDigestSettings(
   request: Request,
   data: {
     time: string;
-    hideReposts: boolean;
+    hideReposts: "include" | "exclude" | "only";
     splitServices: boolean;
     topAmount: number;
     layout: string;

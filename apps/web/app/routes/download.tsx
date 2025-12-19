@@ -19,7 +19,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 	const promise = apiFilterLinkOccurrences(request, {
 		time: 86400000, // 24 hours
-		hideReposts: false,
+		hideReposts: "include",
 		fetch: true,
 	})
 		.then(() => ({ promise: "success" }))

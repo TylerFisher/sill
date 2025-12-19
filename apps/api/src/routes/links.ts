@@ -17,10 +17,7 @@ import {
 // Schema for filtering links
 const FilterLinksSchema = z.object({
   time: z.coerce.number().default(86400000), // 24 hours default
-  hideReposts: z
-    .string()
-    .transform((val) => val === "true")
-    .default("false"),
+  hideReposts: z.enum(["include", "exclude", "only"]).default("include"),
   sort: z.string().default("popularity"),
   query: z.string().optional(),
   service: z.enum(["mastodon", "bluesky", "all"]).default("all"),

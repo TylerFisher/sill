@@ -337,6 +337,13 @@
       "when": 1763641377060,
       "tag": "0047_chubby_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1766157410640,
+      "tag": "0048_faulty_toro",
+      "breakpoints": true
     }
   ]
 }

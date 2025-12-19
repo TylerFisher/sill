@@ -13,7 +13,10 @@ import { requireUserFromContext } from "~/utils/context.server";
 import { getCustomizedFilters } from "~/utils/filterUtils";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
-import { apiFilterLinkOccurrences, apiCheckBlueskyStatus } from "~/utils/api-client.server";
+import {
+	apiFilterLinkOccurrences,
+	apiCheckBlueskyStatus,
+} from "~/utils/api-client.server";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
 import { redirect } from "react-router";
 
@@ -36,12 +39,20 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 			const statusResult = await apiCheckBlueskyStatus(request);
 
 			// If re-authorization is needed, redirect to the OAuth URL
-			if (statusResult.needsAuth && "redirectUrl" in statusResult && statusResult.redirectUrl) {
+			if (
+				statusResult.needsAuth &&
+				"redirectUrl" in statusResult &&
+				statusResult.redirectUrl
+			) {
 				return redirect(statusResult.redirectUrl);
 			}
 
 			// If there's an error with resolver, redirect to settings
-			if (statusResult.status === "error" && "error" in statusResult && statusResult.error === "resolver") {
+			if (
+				statusResult.status === "error" &&
+				"error" in statusResult &&
+				statusResult.error === "resolver"
+			) {
 				return redirect("/settings?tab=connect&error=resolver");
 			}
 		} catch (error) {
@@ -61,8 +72,30 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		? Number.parseInt(minSharesParam)
 		: undefined;
 
+	// Backwards compatibility: translate old boolean values to new string values
+	const repostsParam = url.searchParams.get("reposts");
+	let hideReposts: "include" | "exclude" | "only" = "include";
+	let needsRedirect = false;
+
+	if (repostsParam === "false") {
+		hideReposts = "include";
+		needsRedirect = true;
+	} else if (repostsParam === "true") {
+		hideReposts = "exclude";
+		needsRedirect = true;
+	} else if (repostsParam && ["include", "exclude", "only"].includes(repostsParam)) {
+		hideReposts = repostsParam as "include" | "exclude" | "only";
+	}
+
+	// Redirect to update the URL with the new parameter value
+	if (needsRedirect) {
+		const newUrl = new URL(request.url);
+		newUrl.searchParams.set("reposts", hideReposts);
+		throw redirect(newUrl.toString());
+	}
+
 	const options = {
-		hideReposts: url.searchParams.get("reposts") === "true",
+		hideReposts,
 		sort: url.searchParams.get("sort") || "popularity",
 		query: url.searchParams.get("query") || undefined,
 		// eugh, clean this up

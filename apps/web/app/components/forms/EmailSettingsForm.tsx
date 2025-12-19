@@ -16,7 +16,6 @@ import { Form, Link, useFetcher } from "react-router";
 import type { digestSettings } from "@sill/schema";
 import { EmailSettingsSchema, type action } from "~/routes/email/add";
 import CopyLink from "../linkPosts/CopyLink";
-import CheckboxField from "./CheckboxField";
 import ErrorCallout from "./ErrorCallout";
 import SubmitButton from "./SubmitButton";
 
@@ -206,20 +205,21 @@ const EmailSettingForm = ({
 						)}
 					</Box>
 					<Box my="5">
-						<CheckboxField
-							inputProps={{
-								name: fields.hideReposts.name,
-								id: fields.hideReposts.id,
-								defaultChecked: currentSettings?.hideReposts,
-								size: 3,
-							}}
-							labelProps={{
-								children: "Exclude reposts from top links calculation",
-								htmlFor: fields.hideReposts.id,
-								size: "3",
-							}}
-							errors={fields.hideReposts.errors}
-						/>
+						<Text size="3" weight="bold" mb="2" as="div">
+							Reposts
+						</Text>
+						<RadioGroup.Root
+							defaultValue={currentSettings?.hideReposts || "include"}
+							name={fields.hideReposts.name}
+							size="3"
+						>
+							<RadioGroup.Item value="include">Include</RadioGroup.Item>
+							<RadioGroup.Item value="exclude">Exclude</RadioGroup.Item>
+							<RadioGroup.Item value="only">Only reposts</RadioGroup.Item>
+						</RadioGroup.Root>
+						{fields.hideReposts.errors && (
+							<ErrorCallout error={fields.hideReposts.errors[0]} />
+						)}
 					</Box>
 					{fetcher.data?.result?.status === "success" && (
 						<Box my="5">

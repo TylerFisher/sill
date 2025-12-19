@@ -28,7 +28,18 @@ export const useFilterStorage = () => {
 	const loadFiltersFromStorage = useCallback((): FilterState | null => {
 		try {
 			const stored = localStorage.getItem(STORAGE_KEY);
-			return stored ? JSON.parse(stored) : null;
+			if (!stored) return null;
+
+			const filters = JSON.parse(stored);
+
+			// Backwards compatibility: translate old boolean values to new string values
+			if (filters.reposts === "false") {
+				filters.reposts = "include";
+			} else if (filters.reposts === "true") {
+				filters.reposts = "exclude";
+			}
+
+			return filters;
 		} catch (error) {
 			console.warn("Failed to load filters from localStorage:", error);
 			return null;

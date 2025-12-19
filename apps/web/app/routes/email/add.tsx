@@ -7,7 +7,7 @@ import type { Route } from "./+types/add";
 
 export const EmailSettingsSchema = z.object({
 	time: z.string(),
-	hideReposts: z.boolean().default(false),
+	hideReposts: z.enum(["include", "exclude", "only"]).default("include"),
 	splitServices: z.boolean().default(false),
 	topAmount: z.number().default(10),
 	layout: z.string().default("default"),

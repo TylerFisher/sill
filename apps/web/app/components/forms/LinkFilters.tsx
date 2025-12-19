@@ -97,16 +97,20 @@ const LinkFilters = ({
 		},
 		{
 			heading: "Reposts",
-			defaultValue: searchParams.get("reposts") || "false",
+			defaultValue: searchParams.get("reposts") || "include",
 			param: "reposts",
 			buttons: [
 				{
-					value: "false",
+					value: "include",
 					label: "Include",
 				},
 				{
-					value: "true",
+					value: "exclude",
 					label: "Exclude",
+				},
+				{
+					value: "only",
+					label: "Only",
 				},
 			],
 		},

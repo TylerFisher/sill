@@ -25,6 +25,7 @@ export const postType = pgEnum("post_type", [
 
 export const digestType = pgEnum("digest_type", ["email", "rss"]);
 export const digestLayout = pgEnum("digest_layout", ["default", "dense"]);
+export const repostFilter = pgEnum("repost_filter", ["include", "exclude", "only"]);
 
 export const verification = pgTable(
   "verification",
@@ -86,7 +87,7 @@ export const digestSettings = pgTable("digest_settings", {
   scheduledTime: time().notNull(),
   topAmount: integer().notNull().default(10),
   splitServices: boolean().notNull().default(false),
-  hideReposts: boolean().notNull().default(false),
+  hideReposts: repostFilter().notNull().default("include"),
   layout: digestLayout().notNull().default("default"),
   digestType: digestType().notNull().default("email"),
 });
