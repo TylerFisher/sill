@@ -38,6 +38,7 @@ export default [
     route("add", "routes/bookmarks/add.ts"),
     route("delete", "routes/bookmarks/delete.ts"),
     route("delete-tag", "routes/bookmarks/delete-tag.ts"),
+    route("popup", "routes/bookmarks/popup.tsx"),
     index("routes/bookmarks/index.tsx"),
   ]),
   route("client-metadata.json", "routes/client-metadata.ts"),

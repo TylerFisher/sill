@@ -135,3 +135,5 @@ rsrc
 cid
 ab_channel
 link_source
+utm_social_handle_id
+utm_social_post_id
