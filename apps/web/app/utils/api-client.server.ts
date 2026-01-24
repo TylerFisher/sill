@@ -176,17 +176,30 @@ export async function apiVerifyCode(
  */
 export async function apiBlueskyAuthStart(
   request: Request,
-  handle: string | undefined
+  handle: string | undefined,
+  mode?: "login" | "signup"
 ) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.authorize.$get({
     query: {
       handle,
+      mode,
     },
   });
 
   if (!response.ok) {
-    throw new Error("Failed to start Bluesky authorization");
+    const errorData = await response.json();
+    const errorCode =
+      "code" in errorData && typeof errorData.code === "string"
+        ? errorData.code
+        : undefined;
+    const errorMessage =
+      "error" in errorData && typeof errorData.error === "string"
+        ? errorData.error
+        : "Failed to start Bluesky authorization";
+    const error = new Error(errorMessage);
+    (error as Error & { code?: string }).code = errorCode;
+    throw error;
   }
 
   return await response.json();
@@ -197,7 +210,7 @@ export async function apiBlueskyAuthStart(
  */
 export async function apiBlueskyAuthCallback(
   request: Request,
-  data: { searchParams: string }
+  data: { searchParams: string; mode?: "login" | "signup" }
 ) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.callback.$post({
@@ -226,7 +239,7 @@ export async function apiBlueskyAuthRevoke(request: Request) {
  */
 export async function apiMastodonAuthStart(
   request: Request,
-  data: { instance: string }
+  data: { instance: string; mode?: "login" | "signup" }
 ) {
   const client = createApiClient(request);
   const response = await client.api.mastodon.auth.authorize.$get({
@@ -245,7 +258,7 @@ export async function apiMastodonAuthStart(
  */
 export async function apiMastodonAuthCallback(
   request: Request,
-  data: { code: string; instance: string }
+  data: { code: string; instance: string; mode?: "login" | "signup" }
 ) {
   const client = createApiClient(request);
   const response = await client.api.mastodon.auth.callback.$post({
@@ -1199,6 +1212,44 @@ export async function apiUpdateEmail(
     const errorData = await response.json();
     if ("error" in errorData) {
       throw new Error(errorData.error || "Email change failed");
+    }
+  }
+
+  return await response.json();
+}
+
+/**
+ * Add email address for users who signed up via OAuth without email
+ */
+export async function apiAddEmail(request: Request, data: { email: string }) {
+  const client = createApiClient(request);
+  const response = await client.api.auth["add-email"].$post({
+    json: data,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    if ("error" in errorData) {
+      throw new Error(errorData.error || "Failed to add email");
+    }
+  }
+
+  return await response.json();
+}
+
+/**
+ * Set email address after verification (for users without existing email)
+ */
+export async function apiSetEmail(request: Request, data: { email: string }) {
+  const client = createApiClient(request);
+  const response = await client.api.auth["set-email"].$put({
+    json: data,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    if ("error" in errorData) {
+      throw new Error(errorData.error || "Failed to set email");
     }
   }
 

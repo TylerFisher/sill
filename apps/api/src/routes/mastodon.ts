@@ -1,19 +1,30 @@
 import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
-import { getUserIdFromSession } from "@sill/auth";
-import { db, mastodonAccount, mastodonInstance, user } from "@sill/schema";
+import { getUserIdFromSession, getSessionExpirationDate } from "@sill/auth";
+import {
+  db,
+  mastodonAccount,
+  mastodonInstance,
+  session,
+  user,
+  termsAgreement,
+  termsUpdate,
+} from "@sill/schema";
 import { getMastodonLists } from "@sill/links";
+import { setSessionCookie } from "../utils/session.server.js";
 
 const AuthorizeSchema = z.object({
   instance: z.string().min(1),
+  mode: z.enum(["login", "signup"]).optional(),
 });
 
 const CallbackSchema = z.object({
   code: z.string().min(1),
   instance: z.string().min(1),
+  mode: z.enum(["login", "signup"]).optional(),
 });
 
 /**
@@ -61,11 +72,35 @@ async function getAccessToken(
   return await response.json();
 }
 
+/**
+ * Get account info from Mastodon instance using access token
+ */
+async function getMastodonAccountInfo(
+  instance: string,
+  accessToken: string
+): Promise<{ id: string; username: string; display_name: string }> {
+  const response = await fetch(
+    `https://${instance}/api/v1/accounts/verify_credentials`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to get account info: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
 const mastodon = new Hono()
   // GET /api/mastodon/auth/authorize - Start Mastodon OAuth flow
   .get("/auth/authorize", zValidator("query", AuthorizeSchema), async (c) => {
     try {
-      let { instance } = c.req.valid("query");
+      let { instance, mode } = c.req.valid("query");
+      const isSignup = mode === "signup";
 
       // Clean up instance input
       instance = instance.toLowerCase().trim();
@@ -156,6 +191,7 @@ const mastodon = new Hono()
         success: true,
         redirectUrl: authorizationUrl,
         instance: instance,
+        mode: mode,
       });
     } catch (error) {
       console.error("Mastodon authorize error:", error);
@@ -165,12 +201,12 @@ const mastodon = new Hono()
   // POST /api/mastodon/auth/callback - Handle Mastodon OAuth callback
   .post("/auth/callback", zValidator("json", CallbackSchema), async (c) => {
     try {
+      // Check if user is already authenticated (connecting account vs login/signup)
       const userId = await getUserIdFromSession(c.req.raw);
-      if (!userId) {
-        return c.json({ error: "Not authenticated" }, 401);
-      }
+      const isLogin = !userId; // If no userId, this is a login/signup flow
 
-      const { code, instance } = c.req.valid("json");
+      const { code, instance, mode } = c.req.valid("json");
+      const isSignup = mode === "signup";
 
       const dbInstance = await db.query.mastodonInstance.findFirst({
         where: eq(mastodonInstance.instance, instance),
@@ -194,12 +230,188 @@ const mastodon = new Hono()
         dbInstance.clientSecret
       );
 
-      // Save account to database
+      // Get account info from Mastodon
+      const accountInfo = await getMastodonAccountInfo(
+        dbInstance.instance,
+        tokenData.access_token
+      );
+
+      // Handle login/signup flow (no existing user session)
+      if (isLogin) {
+        // Check if account already exists by mastodonId and instanceId
+        let existingAccount = await db.query.mastodonAccount.findFirst({
+          where: and(
+            eq(mastodonAccount.instanceId, dbInstance.id),
+            eq(mastodonAccount.mastodonId, accountInfo.id)
+          ),
+        });
+
+        // If not found, check for legacy accounts without mastodonId
+        // These are accounts created before we stored mastodonId
+        if (!existingAccount) {
+          const legacyAccounts = await db.query.mastodonAccount.findMany({
+            where: and(
+              eq(mastodonAccount.instanceId, dbInstance.id),
+              sql`${mastodonAccount.mastodonId} IS NULL`
+            ),
+          });
+
+          // For each legacy account, verify if it belongs to the same Mastodon user
+          for (const legacyAccount of legacyAccounts) {
+            try {
+              const legacyAccountInfo = await getMastodonAccountInfo(
+                dbInstance.instance,
+                legacyAccount.accessToken
+              );
+              if (legacyAccountInfo.id === accountInfo.id) {
+                // Found the matching legacy account - update it with mastodonId
+                await db
+                  .update(mastodonAccount)
+                  .set({
+                    mastodonId: accountInfo.id,
+                    username: accountInfo.username,
+                  })
+                  .where(eq(mastodonAccount.id, legacyAccount.id));
+                existingAccount = legacyAccount;
+                break;
+              }
+            } catch {
+              // Token might be expired/invalid, continue to next
+            }
+          }
+        }
+
+        if (!existingAccount) {
+          // No existing account
+          if (isSignup) {
+            // Signup flow: Create new user
+            const transaction = await db.transaction(async (tx) => {
+              // Create user without email
+              const newUser = await tx
+                .insert(user)
+                .values({
+                  id: uuidv7(),
+                  email: null,
+                  name: accountInfo.display_name || accountInfo.username,
+                  emailConfirmed: false,
+                  freeTrialEnd: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24 * 14
+                  ).toISOString(),
+                })
+                .returning({ id: user.id });
+
+              // Create mastodon account
+              await tx.insert(mastodonAccount).values({
+                id: uuidv7(),
+                instanceId: dbInstance.id,
+                mastodonId: accountInfo.id,
+                username: accountInfo.username,
+                accessToken: tokenData.access_token,
+                tokenType: tokenData.token_type,
+                userId: newUser[0].id,
+              });
+
+              // Create terms agreement
+              const latestTerms = await tx.query.termsUpdate.findFirst({
+                orderBy: desc(termsUpdate.termsDate),
+              });
+              if (latestTerms) {
+                await tx.insert(termsAgreement).values({
+                  id: uuidv7(),
+                  userId: newUser[0].id,
+                  termsUpdateId: latestTerms.id,
+                });
+              }
+
+              // Create session
+              const newSession = await tx
+                .insert(session)
+                .values({
+                  id: uuidv7(),
+                  expirationDate: getSessionExpirationDate(),
+                  userId: newUser[0].id,
+                })
+                .returning({
+                  id: session.id,
+                  expirationDate: session.expirationDate,
+                });
+
+              return { user: newUser[0], session: newSession[0] };
+            });
+
+            // Set session cookie
+            setSessionCookie(
+              c,
+              transaction.session.id,
+              transaction.session.expirationDate
+            );
+
+            return c.json({
+              success: true,
+              isSignup: true,
+              account: {
+                instance: dbInstance.instance,
+                username: accountInfo.username,
+              },
+            });
+          }
+
+          // Login flow but no account found - reject
+          return c.json(
+            {
+              error: "No account found with this Mastodon account.",
+              code: "account_not_found",
+            },
+            404
+          );
+        }
+
+        // Account exists - log them in
+        // Update the access token
+        await db
+          .update(mastodonAccount)
+          .set({
+            accessToken: tokenData.access_token,
+            tokenType: tokenData.token_type,
+            username: accountInfo.username,
+          })
+          .where(eq(mastodonAccount.id, existingAccount.id));
+
+        // Create a session for the user
+        const newSession = await db
+          .insert(session)
+          .values({
+            id: uuidv7(),
+            expirationDate: getSessionExpirationDate(),
+            userId: existingAccount.userId,
+          })
+          .returning({
+            id: session.id,
+            expirationDate: session.expirationDate,
+          });
+
+        // Set session cookie
+        setSessionCookie(c, newSession[0].id, newSession[0].expirationDate);
+
+        return c.json({
+          success: true,
+          isLogin: true,
+          account: {
+            instance: dbInstance.instance,
+            username: accountInfo.username,
+          },
+        });
+      }
+
+      // User is already logged in - connecting account
+      // Save account to database with mastodonId and username
       await db.insert(mastodonAccount).values({
         id: uuidv7(),
+        instanceId: dbInstance.id,
+        mastodonId: accountInfo.id,
+        username: accountInfo.username,
         accessToken: tokenData.access_token,
         tokenType: tokenData.token_type,
-        instanceId: dbInstance.id,
         userId: userId,
       });
 
@@ -207,11 +419,20 @@ const mastodon = new Hono()
         success: true,
         account: {
           instance: dbInstance.instance,
-          tokenType: tokenData.token_type,
+          username: accountInfo.username,
         },
       });
     } catch (error) {
       console.error("Mastodon callback error:", error);
+      // Return more specific error information
+      if (error instanceof Error) {
+        if (error.message.includes("access token")) {
+          return c.json({ error: "Failed to authenticate with Mastodon. Please try again.", code: "token_error" }, 400);
+        }
+        if (error.message.includes("account info")) {
+          return c.json({ error: "Failed to get account information from Mastodon.", code: "account_error" }, 400);
+        }
+      }
       return c.json({ error: "Internal server error" }, 500);
     }
   })

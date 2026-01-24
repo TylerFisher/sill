@@ -260,9 +260,9 @@ export async function verifyUserPassword(
 }
 
 /**
- * Resets a user's password by updating the stored hash
+ * Resets a user's password by updating the stored hash, or creates one if none exists
  * @param param0 Object with user ID and new password
- * @returns Updated password object
+ * @returns Updated or created password object
  */
 export async function resetUserPassword({
   userId,
@@ -272,12 +272,20 @@ export async function resetUserPassword({
   newPassword: string;
 }): Promise<unknown> {
   const hashedPassword = await getPasswordHash(newPassword);
+
+  // Use upsert to handle both existing passwords and new passwords for Bluesky-only users
   return await db
-    .update(password)
-    .set({
+    .insert(password)
+    .values({
       hash: hashedPassword,
+      userId: userId,
     })
-    .where(eq(password.userId, userId));
+    .onConflictDoUpdate({
+      target: password.userId,
+      set: {
+        hash: hashedPassword,
+      },
+    });
 }
 
 export type SubscriptionStatus = "free" | "plus" | "trial";
@@ -369,6 +377,13 @@ export const getUserProfile = async (userId: string) => {
     return null;
   }
 
+  // Check if user has a password set
+  const passwordRecord = await db.query.password.findFirst({
+    where: eq(password.userId, userId),
+    columns: { userId: true },
+  });
+  const hasPassword = !!passwordRecord;
+
   // Calculate subscription status
   const subscribed = userWithAccounts.subscriptions.length > 0;
   const subscriptionStatus: SubscriptionStatus = "plus";
@@ -386,5 +401,6 @@ export const getUserProfile = async (userId: string) => {
   return {
     ...userWithAccounts,
     subscriptionStatus,
+    hasPassword,
   };
 };

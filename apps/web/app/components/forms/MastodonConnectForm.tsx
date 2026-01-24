@@ -1,17 +1,10 @@
-import {
-	Badge,
-	Callout,
-	Card,
-	Heading,
-	Link,
-	Text,
-	TextField,
-} from "@radix-ui/themes";
+import { Badge, Callout, Card, Heading, Link, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { Form } from "react-router";
 import type { SubscriptionStatus, AccountWithInstance } from "@sill/schema";
 import type { ListOption } from "./ListSwitch";
 import Lists from "./Lists";
+import MastodonAuthForm from "./MastodonAuthForm";
 import SubmitButton from "./SubmitButton";
 
 interface MastodonConnectFormProps {
@@ -70,34 +63,7 @@ const MastodonConnectForm = ({
 				</>
 			) : (
 				<>
-					<Form action="/mastodon/auth" method="GET">
-						<Text htmlFor="instance" size="2" as="label">
-							Enter your Mastodon handle (e.g. @username@mastodon.social)
-						</Text>
-						<TextField.Root
-							type="text"
-							name="instance"
-							placeholder="@username@mastodon.social"
-							required
-							mb="3"
-							list="instances"
-							autoComplete="off"
-						>
-							<TextField.Slot />
-						</TextField.Root>
-						<SubmitButton label="Connect" size="2" />
-						{searchParams.get("error") === "instance" && (
-							<Callout.Root mt="4" color="red">
-								<Callout.Icon>
-									<CircleAlert width="18" height="18" />
-								</Callout.Icon>
-								<Callout.Text>
-									We couldn't connect to that Mastodon instance. Please try
-									again.
-								</Callout.Text>
-							</Callout.Root>
-						)}
-					</Form>
+					<MastodonAuthForm mode="connect" searchParams={searchParams} />
 					<Callout.Root mt="4">
 						<Callout.Icon>
 							<CircleAlert width="18" height="18" />

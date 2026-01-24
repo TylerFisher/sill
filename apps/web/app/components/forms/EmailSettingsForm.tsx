@@ -2,6 +2,7 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
 	Box,
+	Callout,
 	Card,
 	Flex,
 	Link as RLink,
@@ -11,6 +12,7 @@ import {
 	Text,
 	TextField,
 } from "@radix-ui/themes";
+import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Form, Link, useFetcher } from "react-router";
 import type { digestSettings } from "@sill/schema";
@@ -21,7 +23,7 @@ import SubmitButton from "./SubmitButton";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
-	email: string;
+	email: string | null;
 }
 
 const EmailSettingForm = ({
@@ -79,10 +81,18 @@ const EmailSettingForm = ({
 								const localHour = utcTime.getHours();
 								return hours[localHour];
 							})()}{" "}
-						to {email}.
+						to {email || "your email address"}.
 					</Text>
 					<RLink asChild size="3">
-						<Link to="/accounts/change-email">Change email address →</Link>
+						<Link
+							to={
+								email
+									? "/accounts/change-email"
+									: "/accounts/add-email?redirectTo=/digest"
+							}
+						>
+							{email ? "Change email address" : "Add email address"} →
+						</Link>
 					</RLink>
 				</Card>
 			)}
@@ -183,6 +193,21 @@ const EmailSettingForm = ({
 					{fields.digestType.errors && (
 						<ErrorCallout error={fields.digestType.errors[0]} />
 					)}
+					{format === "email" && !email && (
+						<Callout.Root color="amber" mt="3">
+							<Callout.Icon>
+								<TriangleAlert size={16} />
+							</Callout.Icon>
+							<Callout.Text>
+								You need to add an email address to receive email digests.{" "}
+								<RLink asChild>
+									<Link to="/accounts/add-email?redirectTo=/digest">
+										Add your email address
+									</Link>
+								</RLink>
+							</Callout.Text>
+						</Callout.Root>
+					)}
 					<Box my="5">
 						<Text as="label" size="3" htmlFor="digestType">
 							<strong>Layout (email only)</strong>
@@ -229,7 +254,11 @@ const EmailSettingForm = ({
 						</Box>
 					)}
 					<Flex gap="2" mt="4">
-						<SubmitButton label="Save" size="3" />
+						<SubmitButton
+							label="Save"
+							size="3"
+							disabled={format === "email" && !email}
+						/>
 					</Flex>
 				</Box>
 			</fetcher.Form>

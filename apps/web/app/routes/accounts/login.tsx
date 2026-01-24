@@ -2,21 +2,19 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
 	Box,
-	Button,
-	Callout,
 	Flex,
 	Heading,
 	Link as RLink,
 	Separator,
 	Text,
-	TextField,
 } from "@radix-ui/themes";
-import { CircleAlert } from "lucide-react";
 import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
+import BlueskyAuthForm from "~/components/forms/BlueskyAuthForm";
 import CheckboxField from "~/components/forms/CheckboxField";
 import ErrorList from "~/components/forms/ErrorList";
+import MastodonAuthForm from "~/components/forms/MastodonAuthForm";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
@@ -133,60 +131,26 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 			</Box>
 
 			{/* Bluesky Login */}
-			{/* <Form action="/bluesky/auth" method="GET">
-				<Box mb="4">
-					<Text htmlFor="handle" size="2" as="label" mb="2" style={{ display: "block" }}>
-						Log in with Bluesky
-					</Text>
-					<TextField.Root
-						name="handle"
-						placeholder="username.bsky.social"
-						mb="3"
-						required
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					<Button type="submit" style={{ width: "100%" }}>
-						Continue with Bluesky
-					</Button>
-				</Box>
-				{searchParams.get("error") === "bluesky" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							We had trouble logging you in with Bluesky. Please try again.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-				{searchParams.get("error") === "account_not_found" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							No account found with this Bluesky handle. Please sign up with email first.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-				{searchParams.get("error") === "handle_required" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							Please enter your Bluesky handle to log in.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-			</Form>
+			<BlueskyAuthForm mode="login" searchParams={searchParams} />
 
-			<Flex align="center" gap="3" mb="4">
+			<Flex align="center" gap="3" mb="4" mt="4">
 				<Separator style={{ flex: 1 }} />
-				<Text size="2" color="gray">or</Text>
+				<Text size="2" color="gray">
+					or
+				</Text>
 				<Separator style={{ flex: 1 }} />
-			</Flex> */}
+			</Flex>
+
+			{/* Mastodon Login */}
+			<MastodonAuthForm mode="login" searchParams={searchParams} />
+
+			<Flex align="center" gap="3" mb="4" mt="4">
+				<Separator style={{ flex: 1 }} />
+				<Text size="2" color="gray">
+					or log in with email
+				</Text>
+				<Separator style={{ flex: 1 }} />
+			</Flex>
 
 			{/* Email/Password Login */}
 			<Form method="post" {...getFormProps(form)}>

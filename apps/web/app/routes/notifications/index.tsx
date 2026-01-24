@@ -143,7 +143,11 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		notificationGroups,
 	};
 
-	return { user: userWithNotificationGroups, subscribed };
+	return {
+		user: userWithNotificationGroups,
+		subscribed,
+		email: existingUser.email,
+	};
 };
 
 export const meta: Route.MetaFunction = () => [
@@ -182,10 +186,11 @@ export default function Notifications({
 					notifications: initial,
 				}}
 			>
-				{/* {loaderData.subscribed === "trial" && ( */}
-				<SubscriptionCallout featureName="Notifications" />
-				{/* )} */}
-				<NotificationForm lastResult={actionData?.result} allLists={allLists} />
+				<NotificationForm
+					lastResult={actionData?.result}
+					allLists={allLists}
+					email={loaderData.email}
+				/>
 			</NotificationsProvider>
 		</Layout>
 	);

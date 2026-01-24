@@ -1,10 +1,19 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Heading, Link as RLink, Text } from "@radix-ui/themes";
-import { Form, Link, data, redirect } from "react-router";
+import {
+	Box,
+	Flex,
+	Heading,
+	Link as RLink,
+	Separator,
+	Text,
+} from "@radix-ui/themes";
+import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
+import BlueskyAuthForm from "~/components/forms/BlueskyAuthForm";
 import ErrorList from "~/components/forms/ErrorList";
+import MastodonAuthForm from "~/components/forms/MastodonAuthForm";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
@@ -72,6 +81,8 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 };
 
 const UserSetup = ({ actionData }: Route.ComponentProps) => {
+	const [searchParams] = useSearchParams();
+
 	const [form, fields] = useForm({
 		// Sync the result of last submission
 		lastResult: actionData?.result,
@@ -92,6 +103,28 @@ const UserSetup = ({ actionData }: Route.ComponentProps) => {
 				<Heading size="8">Sign up</Heading>
 			</Box>
 
+			{/* Bluesky Signup */}
+			<BlueskyAuthForm mode="signup" searchParams={searchParams} />
+
+			<Flex align="center" gap="3" mb="4" mt="4">
+				<Separator style={{ flex: 1 }} />
+				<Text size="2" color="gray">
+					or
+				</Text>
+				<Separator style={{ flex: 1 }} />
+			</Flex>
+
+			{/* Mastodon Signup */}
+			<MastodonAuthForm mode="signup" searchParams={searchParams} />
+
+			<Flex align="center" gap="3" mb="4" mt="4">
+				<Separator style={{ flex: 1 }} />
+				<Text size="2" color="gray">
+					or sign up with email
+				</Text>
+				<Separator style={{ flex: 1 }} />
+			</Flex>
+
 			{/* Email Signup */}
 			<Form method="post" {...getFormProps(form)}>
 				<HoneypotInputs />
@@ -107,7 +140,7 @@ const UserSetup = ({ actionData }: Route.ComponentProps) => {
 					}}
 					errors={fields.email.errors}
 				/>
-				<SubmitButton label="Sign up" />
+				<SubmitButton label="Sign up with email" />
 			</Form>
 			<Box mt="5">
 				<Text size="2">Already have an account? </Text>

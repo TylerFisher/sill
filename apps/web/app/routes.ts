@@ -8,6 +8,7 @@ import {
 export default [
   index("routes/_index.tsx"),
   ...prefix("accounts", [
+    route("add-email", "routes/accounts/add-email.tsx"),
     route("change-email", "routes/accounts/change-email.tsx"),
     route("forgot-password", "routes/accounts/forgot-password.tsx"),
     route("login", "routes/accounts/login.tsx"),

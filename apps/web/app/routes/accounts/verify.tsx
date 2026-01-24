@@ -10,6 +10,7 @@ import Layout from "~/components/nav/Layout";
 import { apiVerifyCode } from "~/utils/api-client.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import type { Route } from "./+types/verify";
+import { handleVerification as handleAddEmailVerification } from "~/utils/add-email.server";
 import { handleVerification as handleChangeEmailVerification } from "~/utils/change-email.server";
 import { handleVerification as handleOnboardingVerification } from "~/utils/onboarding.server";
 import { handleVerification as handleResetPasswordVerification } from "~/utils/reset-password.server";
@@ -18,7 +19,7 @@ export const codeQueryParam = "code";
 export const targetQueryParam = "target";
 export const typeQueryParam = "type";
 export const redirectToQueryParam = "redirectTo";
-const types = ["onboarding", "reset-password", "change-email", "2fa"] as const;
+const types = ["onboarding", "reset-password", "change-email", "add-email", "2fa"] as const;
 const VerificationTypeSchema = z.enum(types);
 export type VerificationTypes = z.infer<typeof VerificationTypeSchema>;
 
@@ -98,6 +99,13 @@ export const action = async ({ request }: Route.ActionArgs) => {
 		}
 		case "change-email": {
 			return handleChangeEmailVerification({
+				request,
+				body: formData,
+				submission,
+			});
+		}
+		case "add-email": {
+			return handleAddEmailVerification({
 				request,
 				body: formData,
 				submission,

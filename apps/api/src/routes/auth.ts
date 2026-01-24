@@ -46,7 +46,7 @@ const SignupInitiateSchema = z.object({
 
 const VerifySchema = z.object({
   code: z.string().min(6).max(6),
-  type: z.enum(["onboarding", "reset-password", "change-email", "2fa"]),
+  type: z.enum(["onboarding", "reset-password", "change-email", "add-email", "2fa"]),
   target: z.string(),
   redirectTo: z.string().optional(),
 });
@@ -544,6 +544,13 @@ const auth = new Hono()
         return c.json({ error: "User not found" }, 404);
       }
 
+      if (!currentUser.email) {
+        return c.json(
+          { error: "Cannot change email - no current email set" },
+          400
+        );
+      }
+
       // Generate verification code and prepare verification
       const { otp, verifyUrl } = await prepareVerification({
         period: 10 * 60,
@@ -600,6 +607,104 @@ const auth = new Hono()
       });
     } catch (error) {
       console.error("Update email error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // POST /api/auth/add-email - Add email for users who signed up via OAuth without email
+  .post("/add-email", zValidator("json", ChangeEmailSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { email } = c.req.valid("json");
+
+    try {
+      // Check if the email is already in use
+      const existingUser = await db.query.user.findFirst({
+        where: eq(user.email, email.toLowerCase()),
+      });
+
+      if (existingUser) {
+        return c.json(
+          {
+            error: "This email is already in use",
+            field: "email",
+          },
+          409
+        );
+      }
+
+      // Get current user to check they don't already have an email
+      const currentUser = await db.query.user.findFirst({
+        where: eq(user.id, userId),
+        columns: { email: true },
+      });
+
+      if (!currentUser) {
+        return c.json({ error: "User not found" }, 404);
+      }
+
+      if (currentUser.email) {
+        return c.json(
+          { error: "You already have an email set. Use change-email instead." },
+          400
+        );
+      }
+
+      // Generate verification code and prepare verification
+      const { otp, verifyUrl } = await prepareVerification({
+        period: 10 * 60,
+        type: "add-email",
+        target: email.toLowerCase(),
+        request: c.req.raw,
+      });
+
+      // Send verification email
+      await sendEmailChangeEmail({
+        to: email,
+        otp,
+      });
+
+      return c.json({
+        success: true,
+        verifyUrl: verifyUrl.toString(),
+        newEmail: email,
+        message: "Verification code sent to email address",
+      });
+    } catch (error) {
+      console.error("Add email error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // PUT /api/auth/set-email - Set email after verification (for users without existing email)
+  .put("/set-email", zValidator("json", ChangeEmailSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { email } = c.req.valid("json");
+
+    try {
+      await db
+        .update(user)
+        .set({
+          email: email.toLowerCase(),
+        })
+        .where(eq(user.id, userId))
+        .returning({
+          id: user.id,
+          email: user.email,
+        });
+
+      return c.json({
+        success: true,
+        email: email.toLowerCase(),
+      });
+    } catch (error) {
+      console.error("Set email error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   })

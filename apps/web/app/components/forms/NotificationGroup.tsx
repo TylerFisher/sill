@@ -8,16 +8,18 @@ import { parseWithZod } from "@conform-to/zod";
 import {
 	Box,
 	Button,
+	Callout,
 	Card,
 	Flex,
+	Link as RLink,
 	RadioGroup,
 	Separator,
 	Text,
 	TextField,
 } from "@radix-ui/themes";
-import { Plus } from "lucide-react";
+import { Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
-import { Form, useFetcher } from "react-router";
+import { Form, Link, useFetcher } from "react-router";
 import type { list } from "@sill/schema";
 import { NotificationSchema } from "~/routes/notifications";
 import { useNotificationsDispatch } from "../contexts/NotificationsContext";
@@ -45,11 +47,13 @@ const NotificationGroup = ({
 	group,
 	lastResult,
 	allLists,
+	email,
 }: {
 	index: number;
 	group: NotificationGroupInit;
 	lastResult?: SubmissionResult<string[]>;
 	allLists: (typeof list.$inferSelect)[];
+	email: string | null;
 }) => {
 	const [format, setFormat] = useState<string | undefined>(
 		group.notificationType || "email",
@@ -189,6 +193,19 @@ const NotificationGroup = ({
 					<RadioGroup.Item value="email">Email</RadioGroup.Item>
 					<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
 				</RadioGroup.Root>
+				{format === "email" && !email && (
+					<Callout.Root color="amber" mb="4">
+						<Callout.Icon>
+							<TriangleAlert size={16} />
+						</Callout.Icon>
+						<Callout.Text>
+							You need to add an email address to receive email notifications.{" "}
+							<RLink asChild>
+								<Link to="/accounts/add-email?redirectTo=/notifications">Add your email address</Link>
+							</RLink>
+						</Callout.Text>
+					</Callout.Root>
+				)}
 				<Box my="4">
 					<Text as="label" size="3">
 						<strong>Filters</strong>
@@ -246,6 +263,7 @@ const NotificationGroup = ({
 				<Flex direction="row" gap="2">
 					<Button
 						type="submit"
+						disabled={format === "email" && !email}
 						onClick={() => {
 							dispatch({
 								type: "submitted",

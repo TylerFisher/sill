@@ -1,5 +1,9 @@
 import { redirect } from "react-router";
 import { apiBlueskyAuthCallback } from "~/utils/api-client.server";
+import {
+	getBlueskyModeCookie,
+	clearBlueskyModeCookie,
+} from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -14,8 +18,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 		return redirect("/accounts/onboarding/social?error=oauth");
 	}
 
+	// Read auth mode from session cookie (set during auth start)
+	const authMode = await getBlueskyModeCookie(request);
+
 	const callbackData = {
 		searchParams: url.searchParams.toString(),
+		mode: authMode,
 	};
 
 	try {
@@ -32,20 +40,27 @@ export async function loader({ request }: Route.LoaderArgs) {
 		}
 
 		if (data.success) {
-			// Forward the Set-Cookie header from the API response
-			const headers = new Headers();
+			// Clear the bluesky mode cookie and forward the Set-Cookie header from API
+			const clearModeHeaders = await clearBlueskyModeCookie(request);
 			const apiSetCookie = result.headers.get("set-cookie");
 			if (apiSetCookie) {
-				headers.append("set-cookie", apiSetCookie);
+				clearModeHeaders.append("set-cookie", apiSetCookie);
 			}
 
 			// Check if this was a login flow
 			if ("isLogin" in data && data.isLogin) {
 				// Redirect to main page for login with session cookie
-				return redirect("/links", { headers });
+				return redirect("/links", { headers: clearModeHeaders });
 			}
+
+			// Check if this was a signup flow
+			if ("isSignup" in data && data.isSignup) {
+				// Redirect to download page for new signups (Bluesky is already connected)
+				return redirect("/download?service=Bluesky", { headers: clearModeHeaders });
+			}
+
 			// Otherwise it's a connect flow
-			return redirect("/download?service=Bluesky", { headers });
+			return redirect("/download?service=Bluesky", { headers: clearModeHeaders });
 		}
 
 		// Handle other errors

@@ -25,7 +25,11 @@ export const postType = pgEnum("post_type", [
 
 export const digestType = pgEnum("digest_type", ["email", "rss"]);
 export const digestLayout = pgEnum("digest_layout", ["default", "dense"]);
-export const repostFilter = pgEnum("repost_filter", ["include", "exclude", "only"]);
+export const repostFilter = pgEnum("repost_filter", [
+  "include",
+  "exclude",
+  "only",
+]);
 
 export const verification = pgTable(
   "verification",
@@ -48,9 +52,9 @@ export const verification = pgTable(
     uniqueIndex("verification_target_type_key").using(
       "btree",
       table.target.asc().nullsLast(),
-      table.type.asc().nullsLast()
+      table.type.asc().nullsLast(),
     ),
-  ]
+  ],
 );
 
 export const password = pgTable("password", {
@@ -75,7 +79,7 @@ export const session = pgTable(
   },
   (table) => [
     index("session_user_id_idx").using("btree", table.userId.asc().nullsLast()),
-  ]
+  ],
 );
 
 export const digestSettings = pgTable("digest_settings", {
@@ -156,23 +160,37 @@ export const mastodonInstance = pgTable("mastodon_instance", {
     .notNull(),
 });
 
-export const mastodonAccount = pgTable("mastodon_account", {
-  id: uuid().primaryKey().notNull(),
-  instanceId: uuid()
-    .notNull()
-    .references(() => mastodonInstance.id),
-  accessToken: text().notNull(),
-  tokenType: text().notNull(),
-  expiresIn: integer(),
-  refreshToken: text(),
-  createdAt: timestamp({ precision: 3, mode: "string" })
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
-  mostRecentPostId: text(),
-  userId: uuid()
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+export const mastodonAccount = pgTable(
+  "mastodon_account",
+  {
+    id: uuid().primaryKey().notNull(),
+    instanceId: uuid()
+      .notNull()
+      .references(() => mastodonInstance.id),
+    mastodonId: text(),
+    username: text(),
+    accessToken: text().notNull(),
+    tokenType: text().notNull(),
+    expiresIn: integer(),
+    refreshToken: text(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    mostRecentPostId: text(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("mastodon_account_instance_mastodon_id_key")
+      .using(
+        "btree",
+        table.instanceId.asc().nullsLast(),
+        table.mastodonId.asc().nullsLast(),
+      )
+      .where(sql`${table.mastodonId} IS NOT NULL`),
+  ],
+);
 
 export const blueskyAccount = pgTable(
   "bluesky_account",
@@ -191,13 +209,13 @@ export const blueskyAccount = pgTable(
   (table) => [
     uniqueIndex("bluesky_account_did_key").using(
       "btree",
-      table.did.asc().nullsLast()
+      table.did.asc().nullsLast(),
     ),
     uniqueIndex("bluesky_account_handle_key").using(
       "btree",
-      table.handle.asc().nullsLast()
+      table.handle.asc().nullsLast(),
     ),
-  ]
+  ],
 );
 
 export const list = pgTable("list", {
@@ -236,10 +254,10 @@ export const link = pgTable(
       sql`(
           setweight(to_tsvector('english', ${table.title}), 'A') ||
           setweight(to_tsvector('english', ${table.description}), 'B')
-        )`
+        )`,
     ),
     uniqueIndex().using("btree", table.url),
-  ]
+  ],
 );
 
 export const emailToken = pgTable(
@@ -257,16 +275,16 @@ export const emailToken = pgTable(
   (table) => [
     uniqueIndex("email_token_user_id_key").using(
       "btree",
-      table.userId.asc().nullsLast()
+      table.userId.asc().nullsLast(),
     ),
-  ]
+  ],
 );
 
 export const user = pgTable(
   "user",
   {
     id: uuid().primaryKey().notNull(),
-    email: text().notNull().unique(),
+    email: text(),
     name: text(),
     customerId: text().unique(),
     freeTrialEnd: timestamp({ precision: 3, mode: "string" }),
@@ -276,8 +294,10 @@ export const user = pgTable(
     emailConfirmed: boolean("email_confirmed").default(false).notNull(),
   },
   (table) => [
-    uniqueIndex("user_email_key").using("btree", table.email.asc().nullsLast()),
-  ]
+    uniqueIndex("user_email_key")
+      .using("btree", table.email.asc().nullsLast())
+      .where(sql`${table.email} IS NOT NULL`),
+  ],
 );
 
 export const atprotoAuthSession = pgTable("atproto_auth_session", {
@@ -308,9 +328,9 @@ export const mutePhrase = pgTable(
     uniqueIndex("mute_phrase_user_id_phrase_key").using(
       "btree",
       table.userId.asc().nullsLast(),
-      table.phrase.asc().nullsLast()
+      table.phrase.asc().nullsLast(),
     ),
-  ]
+  ],
 );
 
 export const linkPostDenormalized = pgTable(
@@ -351,22 +371,22 @@ export const linkPostDenormalized = pgTable(
     return {
       userIdIdx: index("link_post_denormalized_userId_idx").using(
         "btree",
-        table.userId.asc().nullsLast()
+        table.userId.asc().nullsLast(),
       ),
       linkUrlIdx: index("link_post_denormalized_linkUrl_idx").using(
         "btree",
-        table.linkUrl.asc().nullsLast()
+        table.linkUrl.asc().nullsLast(),
       ),
       listIdIdx: index("link_post_denormalized_listId_idx").using(
         "btree",
-        table.listId.asc().nullsLast()
+        table.listId.asc().nullsLast(),
       ),
       postDateIdx: index("link_post_denormalized_postDate_idx").using(
         "btree",
-        table.postDate.asc().nullsLast()
+        table.postDate.asc().nullsLast(),
       ),
     };
-  }
+  },
 );
 
 export const accountUpdateQueue = pgTable("account_update_queue", {
@@ -388,7 +408,7 @@ export const accountUpdateRelations = relations(
       fields: [accountUpdateQueue.userId],
       references: [user.id],
     }),
-  })
+  }),
 );
 
 export const polarProduct = pgTable("polar_product", {
@@ -467,9 +487,9 @@ export const tag = pgTable(
     uniqueIndex("tag_user_id_name_key").using(
       "btree",
       table.userId.asc().nullsLast(),
-      table.name.asc().nullsLast()
+      table.name.asc().nullsLast(),
     ),
-  ]
+  ],
 );
 
 export const bookmarkTag = pgTable(
@@ -492,10 +512,10 @@ export const bookmarkTag = pgTable(
       uniqueIndex("bookmark_tag_bookmark_id_tag_id_key").using(
         "btree",
         table.bookmarkId.asc().nullsLast(),
-        table.tagId.asc().nullsLast()
+        table.tagId.asc().nullsLast(),
       ),
     ];
-  }
+  },
 );
 
 export const linkPostDenormalizedRelations = relations(
@@ -513,7 +533,7 @@ export const linkPostDenormalizedRelations = relations(
       fields: [linkPostDenormalized.linkUrl],
       references: [link.url],
     }),
-  })
+  }),
 );
 
 export const userRelations = relations(user, ({ one, many }) => ({
@@ -549,7 +569,7 @@ export const mastodonInstanceRelations = relations(
   mastodonInstance,
   ({ many }) => ({
     mastodonAccounts: many(mastodonAccount),
-  })
+  }),
 );
 
 export const mastodonAccountRelations = relations(
@@ -564,7 +584,7 @@ export const mastodonAccountRelations = relations(
       references: [mastodonInstance.id],
     }),
     lists: many(list),
-  })
+  }),
 );
 
 export const blueskyAccountRelations = relations(
@@ -575,7 +595,7 @@ export const blueskyAccountRelations = relations(
       references: [user.id],
     }),
     lists: many(list),
-  })
+  }),
 );
 
 export const listRelations = relations(list, ({ one }) => ({
@@ -622,7 +642,7 @@ export const digestRssFeedRelations = relations(
       references: [user.id],
     }),
     items: many(digestItem),
-  })
+  }),
 );
 
 export const digestItemRelations = relations(digestItem, ({ one }) => ({
@@ -644,7 +664,7 @@ export const notificationGroupRelations = relations(
       references: [user.id],
     }),
     items: many(notificationItem),
-  })
+  }),
 );
 
 export const notificationItemRelations = relations(
@@ -654,7 +674,7 @@ export const notificationItemRelations = relations(
       fields: [notificationItem.notificationGroupId],
       references: [notificationGroup.id],
     }),
-  })
+  }),
 );
 
 export const polarProductRelations = relations(polarProduct, ({ many }) => ({
@@ -719,7 +739,7 @@ export const bookmarkTagRelations = relations(bookmarkTag, ({ one }) => ({
 }));
 
 export const getUniqueActorsCountSql = (
-  postMuteCondition: unknown
+  postMuteCondition: unknown,
 ) => sql<number>`
   CAST(LEAST(
     -- Count by normalized names
@@ -761,10 +781,10 @@ export const networkTopTenView = pgMaterializedView("network_top_ten").as(
           ...getTableColumns(link),
         },
         mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-          "mostRecentPostDate"
+          "mostRecentPostDate",
         ),
         uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-          "uniqueActorsCount"
+          "uniqueActorsCount",
         ),
       })
       .from(linkPostDenormalized)
@@ -772,11 +792,11 @@ export const networkTopTenView = pgMaterializedView("network_top_ten").as(
       .where(
         gte(
           linkPostDenormalized.postDate,
-          sql<Date>`now() - interval '3 hours'`
-        )
+          sql<Date>`now() - interval '3 hours'`,
+        ),
       )
       .groupBy(linkPostDenormalized.linkUrl, link.id)
       .having(sql`count(*) > 0`)
       .orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
-      .limit(10)
+      .limit(10),
 );

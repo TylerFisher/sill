@@ -95,9 +95,6 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 							title="Daily Digest Archive"
 							dek="View past editions of your Daily Digest. Click on a month to view the editions for that month."
 						/>
-						{subscribed === "trial" && (
-							<SubscriptionCallout featureName="Daily Digests" />
-						)}
 					</Box>
 
 					<Box>
@@ -123,9 +120,6 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 							title="Daily Digest Settings"
 							dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest using the form below."
 						/>
-						{/* {subscribed === "trial" && ( */}
-						<SubscriptionCallout featureName="Daily Digests" />
-						{/* )} */}
 					</Box>
 
 					<EmailSettingForm currentSettings={currentSettings} email={email} />
