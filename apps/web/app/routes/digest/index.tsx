@@ -4,7 +4,6 @@ import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import type { Route } from "./+types/index";
 import {
 	apiGetDigestItemsByMonth,
