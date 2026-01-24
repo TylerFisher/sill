@@ -250,7 +250,7 @@ export default function AppWithProviders() {
   const data = useLoaderData<typeof loader>();
   return (
     <HoneypotProvider {...data.honeyProps}>
-      <SyncProvider>
+      <SyncProvider initialSyncs={data.dbUser?.activeSyncs}>
         <App />
       </SyncProvider>
     </HoneypotProvider>

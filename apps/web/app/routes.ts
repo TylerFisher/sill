@@ -29,6 +29,7 @@ export default [
     route("mute/add", "routes/api/mute.add.ts"),
     route("mute/delete", "routes/api/mute.delete.ts"),
     route("polar/webhook", "routes/api/polar.webhook.ts"),
+    route("sync/status", "routes/api/sync.status.ts"),
   ]),
   ...prefix("bluesky", [
     route("auth", "routes/bluesky/auth.ts"),

@@ -1426,3 +1426,73 @@ export async function apiUpdateLinkMetadata(
 
   return json;
 }
+
+/**
+ * Start a sync job via API
+ */
+export async function apiStartSync(
+  request: Request,
+  data: { syncId: string; label: string }
+) {
+  const client = createApiClient(request);
+  const response = await client.api.sync.start.$post({
+    json: data,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to start sync: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Complete a sync job via API
+ */
+export async function apiCompleteSync(
+  request: Request,
+  data: { syncId: string; status: "success" | "error"; error?: string }
+) {
+  const client = createApiClient(request);
+  const response = await client.api.sync.complete.$post({
+    json: data,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to complete sync: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Get all active and recently completed sync jobs via API
+ */
+export async function apiGetAllSyncs(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.sync.all.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get syncs: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}

@@ -19,6 +19,7 @@ import {
   createOAuthClient,
 } from "@sill/auth";
 import { db, password, termsAgreement, termsUpdate, user } from "@sill/schema";
+import { getActiveSyncs } from "./sync.js";
 import {
   sendVerificationEmail,
   sendWelcomeEmail,
@@ -359,9 +360,23 @@ const auth = new Hono()
         // Don't fail the entire request if terms check fails
       }
 
+      // Get active and recently completed syncs
+      let activeSyncs: Array<{
+        syncId: string;
+        label: string;
+        status: string;
+      }> = [];
+      try {
+        activeSyncs = await getActiveSyncs(userId);
+      } catch (error) {
+        console.error("Error fetching active syncs:", error);
+        // Don't fail if sync fetch fails
+      }
+
       return c.json({
         ...userProfile,
         agreedToLatestTerms,
+        activeSyncs,
       });
     } catch (error) {
       console.error("Get profile error:", error);

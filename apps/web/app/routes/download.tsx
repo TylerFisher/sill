@@ -3,7 +3,11 @@ import { Await, useSearchParams } from "react-router";
 import WelcomeContent from "~/components/download/WelcomeContent";
 import { useSyncStatus } from "~/components/contexts/SyncContext";
 import Layout from "~/components/nav/Layout";
-import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
+import {
+	apiCompleteSync,
+	apiFilterLinkOccurrences,
+	apiStartSync,
+} from "~/utils/api-client.server";
 import type { Route } from "./+types/download";
 import { requireUserFromContext } from "~/utils/context.server";
 
@@ -17,6 +21,13 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 	const params = new URL(request.url).searchParams;
 	const service = params.get("service");
+	const syncId = service || "initial-sync";
+	const label = service || "social media";
+
+	// Register the sync with the server
+	await apiStartSync(request, { syncId, label }).catch(() => {
+		// Don't fail if sync registration fails
+	});
 
 	// Start the download but don't block - pass promise to client for status tracking
 	const syncPromise = apiFilterLinkOccurrences(request, {
@@ -24,14 +35,26 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		hideReposts: "include",
 		fetch: true,
 	})
-		.then(() => "success" as const)
-		.catch(() => "error" as const);
+		.then(async () => {
+			// Mark sync as complete on server
+			await apiCompleteSync(request, { syncId, status: "success" }).catch(
+				() => {},
+			);
+			return "success" as const;
+		})
+		.catch(async () => {
+			// Mark sync as failed on server
+			await apiCompleteSync(request, { syncId, status: "error" }).catch(
+				() => {},
+			);
+			return "error" as const;
+		});
 
-	return { service, subscribed, syncPromise, hasBluesky, hasMastodon };
+	return { service, syncId, subscribed, syncPromise, hasBluesky, hasMastodon };
 };
 
 const Download = ({ loaderData }: Route.ComponentProps) => {
-	const { service, subscribed, syncPromise, hasBluesky, hasMastodon } =
+	const { service, syncId, subscribed, syncPromise, hasBluesky, hasMastodon } =
 		loaderData;
 	const [searchParams] = useSearchParams();
 	const { startSync } = useSyncStatus();
@@ -41,9 +64,10 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 	useEffect(() => {
 		if (!syncStarted.current) {
 			syncStarted.current = true;
-			startSync(syncPromise, service);
+			const label = service || "social media";
+			startSync(syncPromise, { id: syncId, label });
 		}
-	}, [syncPromise, service, startSync]);
+	}, [syncPromise, syncId, service, startSync]);
 
 	return (
 		<Layout hideNav>

@@ -800,3 +800,38 @@ export const networkTopTenView = pgMaterializedView("network_top_ten").as(
       .orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
       .limit(10),
 );
+
+export const syncJob = pgTable(
+  "sync_job",
+  {
+    id: uuid().primaryKey().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    syncId: text().notNull(),
+    label: text().notNull(),
+    status: text().notNull().default("syncing"),
+    createdAt: timestamp().defaultNow().notNull(),
+    completedAt: timestamp(),
+    error: text(),
+  },
+  (table) => [
+    index("sync_job_user_sync_id_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.syncId.asc().nullsLast(),
+    ),
+    index("sync_job_user_status_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.status.asc().nullsLast(),
+    ),
+  ],
+);
+
+export const syncJobRelations = relations(syncJob, ({ one }) => ({
+  user: one(user, {
+    fields: [syncJob.userId],
+    references: [user.id],
+  }),
+}));
