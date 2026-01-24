@@ -1,5 +1,4 @@
-import { Badge, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
-import type { ReactNode } from "react";
+import { Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { NavLink } from "react-router";
 
 interface ActionCardProps {
@@ -7,7 +6,6 @@ interface ActionCardProps {
 	description: string;
 	buttonText: string;
 	buttonTo: string;
-	isPremium?: boolean;
 	buttonVariant?: "solid" | "outline";
 }
 
@@ -16,24 +14,14 @@ export default function ActionCard({
 	description,
 	buttonText,
 	buttonTo,
-	isPremium = false,
 	buttonVariant = "outline",
 }: ActionCardProps) {
 	return (
 		<Card size="3" style={{ height: "100%" }}>
 			<Flex direction="column" gap="3" style={{ height: "100%" }}>
-				<Flex align="center" justify="between">
-					<Heading as="h3" size="5">
-						{title}
-					</Heading>
-					{isPremium && (
-						<Badge color="yellow" variant="soft">
-							<Text style={{ fontWeight: 900, fontStyle: "italic" }}>
-								sill+
-							</Text>
-						</Badge>
-					)}
-				</Flex>
+				<Heading as="h3" size="5">
+					{title}
+				</Heading>
 				<Text color="gray" size="3" style={{ flexGrow: 1 }}>
 					{description}
 				</Text>

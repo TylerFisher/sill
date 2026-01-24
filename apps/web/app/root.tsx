@@ -15,6 +15,7 @@ import "@radix-ui/themes/styles.css";
 import "~/styles/override.css";
 import { Theme as RadixTheme } from "@radix-ui/themes";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
+import { SyncProvider } from "~/components/contexts/SyncContext";
 import { honeypot } from "~/utils/honeypot.server";
 import { useTheme } from "./routes/resources/theme-switch";
 import { apiGetUserProfileOptional } from "./utils/api-client.server";
@@ -249,7 +250,9 @@ export default function AppWithProviders() {
   const data = useLoaderData<typeof loader>();
   return (
     <HoneypotProvider {...data.honeyProps}>
-      <App />
+      <SyncProvider>
+        <App />
+      </SyncProvider>
     </HoneypotProvider>
   );
 }
