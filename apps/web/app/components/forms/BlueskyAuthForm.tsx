@@ -19,17 +19,20 @@ interface BlueskyActor {
 	avatar?: string;
 }
 
-const modeLabels: Record<AuthMode, { label: string; button: string }> = {
-	login: { label: "Log in with Bluesky", button: "Continue with Bluesky" },
-	signup: { label: "Sign up with Bluesky", button: "Continue with Bluesky" },
+const modeLabels: Record<AuthMode, { button: string }> = {
+	login: {
+		button: "Continue with Atmosphere",
+	},
+	signup: {
+		button: "Continue with Atmosphere",
+	},
 	connect: {
-		label: "Enter your Bluesky handle (e.g. username.bsky.social)",
-		button: "Connect",
+		button: "Connect Atmosphere account",
 	},
 };
 
 const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
-	const { label, button } = modeLabels[mode];
+	const { button } = modeLabels[mode];
 	const isConnect = mode === "connect";
 
 	const [inputValue, setInputValue] = useState("");
@@ -124,20 +127,22 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 			{mode !== "connect" && <input type="hidden" name="mode" value={mode} />}
 			<Box mb={isConnect ? "0" : "4"}>
 				<Text
-					htmlFor="handle"
-					size="2"
 					as="label"
-					mb="2"
+					size="2"
+					weight="medium"
+					mb="1"
 					style={{ display: "block" }}
 				>
-					{label}
+					Atmosphere handle
+				</Text>
+				<Text size="1" color="gray" mb="2" style={{ display: "block" }}>
+					Your Bluesky, Blacksky, Northsky, or other compatible handle
 				</Text>
 				<Box className={styles.autocompleteContainer}>
 					<TextField.Root
 						ref={inputRef}
 						name="handle"
 						placeholder="username.bsky.social"
-						mb="3"
 						required
 						value={inputValue}
 						onChange={handleInputChange}
@@ -145,6 +150,7 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 						onBlur={handleBlur}
 						onFocus={() => inputValue.length >= 2 && setShowSuggestions(true)}
 						autoComplete="off"
+						mb="3"
 					>
 						<TextField.Slot />
 					</TextField.Root>

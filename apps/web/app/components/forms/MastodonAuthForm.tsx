@@ -9,34 +9,22 @@ interface MastodonAuthFormProps {
 	searchParams: URLSearchParams;
 }
 
-const modeLabels: Record<AuthMode, { label: string; button: string }> = {
-	login: { label: "Log in with Mastodon", button: "Continue with Mastodon" },
-	signup: {
-		label: "Sign up with Mastodon",
-		button: "Continue with Mastodon",
-	},
-	connect: {
-		label: "Enter your Mastodon handle (e.g. @username@mastodon.social)",
-		button: "Connect",
-	},
+const modeLabels: Record<AuthMode, { button: string }> = {
+	login: { button: "Continue with Mastodon" },
+	signup: { button: "Continue with Mastodon" },
+	connect: { button: "Connect Mastodon account" },
 };
 
 const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
-	const { label, button } = modeLabels[mode];
+	const { button } = modeLabels[mode];
 	const isConnect = mode === "connect";
 
 	return (
 		<Form action="/mastodon/auth" method="GET">
 			{mode !== "connect" && <input type="hidden" name="mode" value={mode} />}
 			<Box mb={isConnect ? "0" : "4"}>
-				<Text
-					htmlFor="instance"
-					size="2"
-					as="label"
-					mb="2"
-					style={{ display: "block" }}
-				>
-					{label}
+				<Text as="label" size="2" weight="medium" mb="2" style={{ display: "block" }}>
+					Mastodon instance
 				</Text>
 				<TextField.Root
 					type="text"
