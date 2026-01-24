@@ -1,22 +1,13 @@
-import { Box, Button, Callout, Text, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Form } from "react-router";
-import { debounce } from "ts-debounce";
-import styles from "./BlueskyAuthForm.module.css";
+import BlueskyHandleAutocomplete from "./BlueskyHandleAutocomplete";
 
 type AuthMode = "login" | "signup" | "connect";
 
 interface BlueskyAuthFormProps {
 	mode: AuthMode;
 	searchParams: URLSearchParams;
-}
-
-interface BlueskyActor {
-	did: string;
-	handle: string;
-	displayName?: string;
-	avatar?: string;
 }
 
 const modeLabels: Record<AuthMode, { button: string }> = {
@@ -35,93 +26,6 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 	const { button } = modeLabels[mode];
 	const isConnect = mode === "connect";
 
-	const [inputValue, setInputValue] = useState("");
-	const [suggestions, setSuggestions] = useState<BlueskyActor[]>([]);
-	const [showSuggestions, setShowSuggestions] = useState(false);
-	const [selectedIndex, setSelectedIndex] = useState(-1);
-	const inputRef = useRef<HTMLInputElement>(null);
-	const suggestionsRef = useRef<HTMLDivElement>(null);
-
-	const searchActors = useCallback(async (query: string) => {
-		if (!query || query.length < 2) {
-			setSuggestions([]);
-			return;
-		}
-
-		try {
-			const response = await fetch(
-				`https://public.api.bsky.app/xrpc/app.bsky.actor.searchActorsTypeahead?q=${encodeURIComponent(query)}&limit=5`,
-			);
-			if (response.ok) {
-				const data = await response.json();
-				setSuggestions(data.actors || []);
-			}
-		} catch (error) {
-			console.error("Failed to fetch suggestions:", error);
-			setSuggestions([]);
-		}
-	}, []);
-
-	const debouncedSearch = useCallback(
-		debounce((query: string) => searchActors(query), 200),
-		[],
-	);
-
-	useEffect(() => {
-		debouncedSearch(inputValue);
-	}, [inputValue, debouncedSearch]);
-
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value;
-		setInputValue(value);
-		setShowSuggestions(true);
-		setSelectedIndex(-1);
-	};
-
-	const handleSelectSuggestion = (actor: BlueskyActor) => {
-		setInputValue(actor.handle);
-		setSuggestions([]);
-		setShowSuggestions(false);
-		setSelectedIndex(-1);
-	};
-
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (!showSuggestions || suggestions.length === 0) return;
-
-		switch (e.key) {
-			case "ArrowDown":
-				e.preventDefault();
-				setSelectedIndex((prev) =>
-					prev < suggestions.length - 1 ? prev + 1 : prev,
-				);
-				break;
-			case "ArrowUp":
-				e.preventDefault();
-				setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-				break;
-			case "Enter":
-				if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-					e.preventDefault();
-					handleSelectSuggestion(suggestions[selectedIndex]);
-				}
-				break;
-			case "Escape":
-				setShowSuggestions(false);
-				setSelectedIndex(-1);
-				break;
-		}
-	};
-
-	const handleBlur = () => {
-		// Delay hiding suggestions to allow click events to fire
-		setTimeout(() => {
-			if (!suggestionsRef.current?.contains(document.activeElement)) {
-				setShowSuggestions(false);
-				setSelectedIndex(-1);
-			}
-		}, 150);
-	};
-
 	return (
 		<Form action="/bluesky/auth" method="GET">
 			{mode !== "connect" && <input type="hidden" name="mode" value={mode} />}
@@ -138,48 +42,7 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 				<Text size="2" color="gray" mb="2" style={{ display: "block" }}>
 					Your Bluesky, Blacksky, Northsky, or other compatible handle
 				</Text>
-				<Box className={styles.autocompleteContainer}>
-					<TextField.Root
-						ref={inputRef}
-						name="handle"
-						placeholder="username.bsky.social"
-						required
-						size="3"
-						value={inputValue}
-						onChange={handleInputChange}
-						onKeyDown={handleKeyDown}
-						onBlur={handleBlur}
-						onFocus={() => inputValue.length >= 2 && setShowSuggestions(true)}
-						autoComplete="off"
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					{showSuggestions && suggestions.length > 0 && (
-						<div ref={suggestionsRef} className={styles.suggestionsDropdown}>
-							{suggestions.map((actor, index) => (
-								<button
-									type="button"
-									key={actor.did}
-									className={`${styles.suggestionItem} ${index === selectedIndex ? styles.selected : ""}`}
-									onClick={() => handleSelectSuggestion(actor)}
-									onMouseEnter={() => setSelectedIndex(index)}
-								>
-									{actor.avatar && (
-										<img src={actor.avatar} alt="" className={styles.avatar} />
-									)}
-									<div className={styles.actorInfo}>
-										{actor.displayName && (
-											<span className={styles.displayName}>
-												{actor.displayName}
-											</span>
-										)}
-										<span className={styles.handle}>@{actor.handle}</span>
-									</div>
-								</button>
-							))}
-						</div>
-					)}
-				</Box>
+				<BlueskyHandleAutocomplete name="handle" required />
 				<Button
 					type="submit"
 					size="3"
