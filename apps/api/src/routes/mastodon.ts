@@ -66,7 +66,9 @@ async function getAccessToken(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get access token: ${response.statusText}`);
+    const errorBody = await response.text();
+    console.error("Mastodon token error:", errorBody);
+    throw new Error(`Failed to get access token: ${response.statusText} - ${errorBody}`);
   }
 
   return await response.json();

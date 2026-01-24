@@ -246,11 +246,21 @@ export async function apiMastodonAuthStart(
     query: data,
   });
 
+  const json = await response.json();
+
   if (!response.ok) {
-    throw new Error("Failed to start Mastodon authorization");
+    let errorMessage = "Failed to start Mastodon authorization";
+    if ("error" in json) {
+      errorMessage = typeof json.error === "string" ? json.error : JSON.stringify(json.error);
+    } else if ("issues" in json) {
+      // Zod validation error
+      errorMessage = JSON.stringify(json.issues);
+    }
+    console.error("Mastodon auth API error:", json);
+    throw new Error(errorMessage);
   }
 
-  return await response.json();
+  return json;
 }
 
 /**

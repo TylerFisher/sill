@@ -8,10 +8,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const referrer =
 		request.headers.get("referer") || "/accounts/onboarding/social";
 	const instance = requestUrl.searchParams.get("instance");
-	const mode = requestUrl.searchParams.get("mode") as
-		| "login"
-		| "signup"
-		| undefined;
+	const modeParam = requestUrl.searchParams.get("mode");
+	const mode = modeParam === "login" || modeParam === "signup" ? modeParam : undefined;
 
 	if (!instance) {
 		return null;
@@ -19,6 +17,10 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	try {
 		const result = await apiMastodonAuthStart(request, { instance, mode });
+
+		if ("error" in result) {
+			throw new Error(result.error);
+		}
 
 		// Create instance cookie and redirect to authorization URL
 		return await createInstanceCookie(
