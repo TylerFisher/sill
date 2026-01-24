@@ -284,88 +284,76 @@ const mastodon = new Hono()
         }
 
         if (!existingAccount) {
-          // No existing account
-          if (isSignup) {
-            // Signup flow: Create new user
-            const transaction = await db.transaction(async (tx) => {
-              // Create user without email
-              const newUser = await tx
-                .insert(user)
-                .values({
-                  id: uuidv7(),
-                  email: null,
-                  name: accountInfo.display_name || accountInfo.username,
-                  emailConfirmed: false,
-                  freeTrialEnd: new Date(
-                    Date.now() + 1000 * 60 * 60 * 24 * 14
-                  ).toISOString(),
-                })
-                .returning({ id: user.id });
-
-              // Create mastodon account
-              await tx.insert(mastodonAccount).values({
+          // No existing account - create new user
+          const transaction = await db.transaction(async (tx) => {
+            // Create user without email
+            const newUser = await tx
+              .insert(user)
+              .values({
                 id: uuidv7(),
-                instanceId: dbInstance.id,
-                mastodonId: accountInfo.id,
-                username: accountInfo.username,
-                accessToken: tokenData.access_token,
-                tokenType: tokenData.token_type,
+                email: null,
+                name: accountInfo.display_name || accountInfo.username,
+                emailConfirmed: false,
+                freeTrialEnd: new Date(
+                  Date.now() + 1000 * 60 * 60 * 24 * 14
+                ).toISOString(),
+              })
+              .returning({ id: user.id });
+
+            // Create mastodon account
+            await tx.insert(mastodonAccount).values({
+              id: uuidv7(),
+              instanceId: dbInstance.id,
+              mastodonId: accountInfo.id,
+              username: accountInfo.username,
+              accessToken: tokenData.access_token,
+              tokenType: tokenData.token_type,
+              userId: newUser[0].id,
+            });
+
+            // Create terms agreement
+            const latestTerms = await tx.query.termsUpdate.findFirst({
+              orderBy: desc(termsUpdate.termsDate),
+            });
+            if (latestTerms) {
+              await tx.insert(termsAgreement).values({
+                id: uuidv7(),
                 userId: newUser[0].id,
+                termsUpdateId: latestTerms.id,
+              });
+            }
+
+            // Create session
+            const newSession = await tx
+              .insert(session)
+              .values({
+                id: uuidv7(),
+                expirationDate: getSessionExpirationDate(),
+                userId: newUser[0].id,
+              })
+              .returning({
+                id: session.id,
+                expirationDate: session.expirationDate,
               });
 
-              // Create terms agreement
-              const latestTerms = await tx.query.termsUpdate.findFirst({
-                orderBy: desc(termsUpdate.termsDate),
-              });
-              if (latestTerms) {
-                await tx.insert(termsAgreement).values({
-                  id: uuidv7(),
-                  userId: newUser[0].id,
-                  termsUpdateId: latestTerms.id,
-                });
-              }
+            return { user: newUser[0], session: newSession[0] };
+          });
 
-              // Create session
-              const newSession = await tx
-                .insert(session)
-                .values({
-                  id: uuidv7(),
-                  expirationDate: getSessionExpirationDate(),
-                  userId: newUser[0].id,
-                })
-                .returning({
-                  id: session.id,
-                  expirationDate: session.expirationDate,
-                });
-
-              return { user: newUser[0], session: newSession[0] };
-            });
-
-            // Set session cookie
-            setSessionCookie(
-              c,
-              transaction.session.id,
-              transaction.session.expirationDate
-            );
-
-            return c.json({
-              success: true,
-              isSignup: true,
-              account: {
-                instance: dbInstance.instance,
-                username: accountInfo.username,
-              },
-            });
-          }
-
-          // Login flow but no account found - reject
-          return c.json(
-            {
-              error: "No account found with this Mastodon account.",
-              code: "account_not_found",
-            },
-            404
+          // Set session cookie
+          setSessionCookie(
+            c,
+            transaction.session.id,
+            transaction.session.expirationDate
           );
+
+          return c.json({
+            success: true,
+            isSignup: true,
+            account: {
+              instance: dbInstance.instance,
+              username: accountInfo.username,
+            },
+          });
         }
 
         // Account exists - log them in

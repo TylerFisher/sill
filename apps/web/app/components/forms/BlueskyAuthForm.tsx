@@ -21,13 +21,13 @@ interface BlueskyActor {
 
 const modeLabels: Record<AuthMode, { button: string }> = {
 	login: {
-		button: "Continue with Atmosphere",
+		button: "Continue",
 	},
 	signup: {
-		button: "Continue with Atmosphere",
+		button: "Continue",
 	},
 	connect: {
-		button: "Connect Atmosphere account",
+		button: "Connect",
 	},
 };
 
@@ -128,14 +128,14 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 			<Box mb={isConnect ? "0" : "4"}>
 				<Text
 					as="label"
-					size="2"
-					weight="medium"
+					size="3"
+					weight="bold"
 					mb="1"
 					style={{ display: "block" }}
 				>
 					Atmosphere handle
 				</Text>
-				<Text size="1" color="gray" mb="2" style={{ display: "block" }}>
+				<Text size="2" color="gray" mb="2" style={{ display: "block" }}>
 					Your Bluesky, Blacksky, Northsky, or other compatible handle
 				</Text>
 				<Box className={styles.autocompleteContainer}>
@@ -144,13 +144,13 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 						name="handle"
 						placeholder="username.bsky.social"
 						required
+						size="3"
 						value={inputValue}
 						onChange={handleInputChange}
 						onKeyDown={handleKeyDown}
 						onBlur={handleBlur}
 						onFocus={() => inputValue.length >= 2 && setShowSuggestions(true)}
 						autoComplete="off"
-						mb="3"
 					>
 						<TextField.Slot />
 					</TextField.Root>
@@ -182,7 +182,8 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 				</Box>
 				<Button
 					type="submit"
-					size="2"
+					size="3"
+					mt="3"
 					style={isConnect ? undefined : { width: "100%" }}
 				>
 					{button}
@@ -213,16 +214,6 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 					<Callout.Text>
 						We couldn't find that Bluesky handle. Please check and try again.
 						Make sure you use the full handle (e.g. myusername.bsky.social).
-					</Callout.Text>
-				</Callout.Root>
-			)}
-			{searchParams.get("error") === "account_not_found" && (
-				<Callout.Root mt="4" mb="4" color="red">
-					<Callout.Icon>
-						<CircleAlert width="18" height="18" />
-					</Callout.Icon>
-					<Callout.Text>
-						No account found with this Bluesky handle. Please sign up first.
 					</Callout.Text>
 				</Callout.Root>
 			)}

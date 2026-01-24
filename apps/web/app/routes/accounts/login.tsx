@@ -1,5 +1,6 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import * as Collapsible from "@radix-ui/react-collapsible";
 import {
 	Box,
 	Flex,
@@ -8,6 +9,8 @@ import {
 	Separator,
 	Text,
 } from "@radix-ui/themes";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
@@ -112,6 +115,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 const Login = ({ actionData }: Route.ComponentProps) => {
 	const [searchParams] = useSearchParams();
 	const redirectTo = searchParams.get("redirectTo");
+	const [emailLoginOpen, setEmailLoginOpen] = useState(false);
 
 	const [form, fields] = useForm({
 		id: "login-form",
@@ -127,7 +131,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Log in</Heading>
+				<Heading size="8">Continue to Sill</Heading>
 			</Box>
 
 			{/* Bluesky Login */}
@@ -144,78 +148,92 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 			{/* Mastodon Login */}
 			<MastodonAuthForm mode="login" searchParams={searchParams} />
 
-			<Flex align="center" gap="3" mb="4" mt="4">
-				<Separator style={{ flex: 1 }} />
-				<Text size="2" color="gray">
-					or log in with email
-				</Text>
-				<Separator style={{ flex: 1 }} />
-			</Flex>
-
-			{/* Email/Password Login */}
-			<Form method="post" {...getFormProps(form)}>
-				<HoneypotInputs />
-				<ErrorList errors={form.errors} id={form.errorId} />
-				<TextInput
-					labelProps={{
-						htmlFor: fields.email.name,
-						children: "Email address",
-					}}
-					inputProps={{ ...getInputProps(fields.email, { type: "email" }) }}
-					errors={fields.email.errors}
-				/>
-				<TextInput
-					labelProps={{
-						htmlFor: fields.password.name,
-						children: "Password",
-					}}
-					inputProps={{
-						...getInputProps(fields.password, { type: "password" }),
-					}}
-					errors={fields.password.errors}
-				/>
-				<Box width="100%">
-					<Flex mb="5" align="center" justify="between" gap="3" width="100%">
-						<CheckboxField
-							labelProps={{
-								htmlFor: fields.remember.id,
-								children: "Remember me?",
-							}}
-							inputProps={{
-								name: fields.remember.name,
-								id: fields.remember.id,
-							}}
-							errors={fields.remember.errors}
-						/>
-						<Box>
-							<RLink asChild>
-								<Link to="/accounts/forgot-password">
-									<Text size="2">Forgot password?</Text>
-								</Link>
-							</RLink>
-						</Box>
+			{/* Email/Password Login (Legacy) */}
+			<Collapsible.Root open={emailLoginOpen} onOpenChange={setEmailLoginOpen}>
+				<Collapsible.Trigger asChild>
+					<Flex
+						align="center"
+						gap="1"
+						mt="4"
+						style={{ cursor: "pointer" }}
+					>
+						{emailLoginOpen ? (
+							<ChevronDown size={16} color="var(--gray-11)" />
+						) : (
+							<ChevronRight size={16} color="var(--gray-11)" />
+						)}
+						<Text size="2" color="gray">
+							Log in with email
+						</Text>
 					</Flex>
-				</Box>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<Box pt="4">
+						<Form method="post" {...getFormProps(form)}>
+							<HoneypotInputs />
+							<ErrorList errors={form.errors} id={form.errorId} />
+							<TextInput
+								labelProps={{
+									htmlFor: fields.email.name,
+									children: "Email address",
+								}}
+								inputProps={{
+									...getInputProps(fields.email, { type: "email" }),
+								}}
+								errors={fields.email.errors}
+							/>
+							<TextInput
+								labelProps={{
+									htmlFor: fields.password.name,
+									children: "Password",
+								}}
+								inputProps={{
+									...getInputProps(fields.password, { type: "password" }),
+								}}
+								errors={fields.password.errors}
+							/>
+							<Box width="100%">
+								<Flex
+									mb="5"
+									align="center"
+									justify="between"
+									gap="3"
+									width="100%"
+								>
+									<CheckboxField
+										labelProps={{
+											htmlFor: fields.remember.id,
+											children: "Remember me?",
+										}}
+										inputProps={{
+											name: fields.remember.name,
+											id: fields.remember.id,
+										}}
+										errors={fields.remember.errors}
+									/>
+									<Box>
+										<RLink asChild>
+											<Link to="/accounts/forgot-password">
+												<Text size="2">Forgot password?</Text>
+											</Link>
+										</RLink>
+									</Box>
+								</Flex>
+							</Box>
 
-				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
+							<input
+								{...getInputProps(fields.redirectTo, { type: "hidden" })}
+							/>
 
-				<SubmitButton label="Log in" />
-
-				<Box mt="5">
-					<Text size="2">New here? </Text>
-					<RLink asChild>
-						<Link
-							to={
-								redirectTo
-									? `/accounts/signup?${encodeURIComponent(redirectTo)}`
-									: "/accounts/signup"
-							}
-						>
-							<Text size="2">Create an account</Text>.
-						</Link>
-					</RLink>
-				</Box>
-			</Form>
+							<SubmitButton
+								label="Log in"
+								size="3"
+								style={{ width: "100%" }}
+							/>
+						</Form>
+					</Box>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		</Layout>
 	);
 };

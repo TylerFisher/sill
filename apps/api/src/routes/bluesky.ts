@@ -96,23 +96,6 @@ const bluesky = new Hono()
         handle = `${handle}.bsky.social`;
       }
 
-      // For login flow (not signup), check if account exists
-      if (isLogin && !isSignup) {
-        const existingAccount = await db.query.blueskyAccount.findFirst({
-          where: eq(blueskyAccount.handle, handle),
-        });
-
-        if (!existingAccount) {
-          return c.json(
-            {
-              error: "No account found with this Bluesky handle.",
-              code: "account_not_found",
-            },
-            404
-          );
-        }
-      }
-
       const resolver = new CompositeHandleResolver({
         strategy: "race",
         methods: {
@@ -229,88 +212,76 @@ const bluesky = new Hono()
           });
 
           if (!existingAccount) {
-            // No existing account
-            if (isSignup) {
-              // Signup flow: Create new user
-              const transaction = await db.transaction(async (tx) => {
-                // Create user without email
-                const newUser = await tx
-                  .insert(user)
-                  .values({
-                    id: uuidv7(),
-                    email: null,
-                    name: profile.data.displayName || profile.data.handle,
-                    emailConfirmed: false,
-                    freeTrialEnd: new Date(
-                      Date.now() + 1000 * 60 * 60 * 24 * 14
-                    ).toISOString(),
-                  })
-                  .returning({ id: user.id });
-
-                // Create bluesky account
-                await tx.insert(blueskyAccount).values({
+            // No existing account - create new user
+            const transaction = await db.transaction(async (tx) => {
+              // Create user without email
+              const newUser = await tx
+                .insert(user)
+                .values({
                   id: uuidv7(),
-                  did: oauthSession.did,
-                  handle: profile.data.handle,
+                  email: null,
+                  name: profile.data.displayName || profile.data.handle,
+                  emailConfirmed: false,
+                  freeTrialEnd: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24 * 14
+                  ).toISOString(),
+                })
+                .returning({ id: user.id });
+
+              // Create bluesky account
+              await tx.insert(blueskyAccount).values({
+                id: uuidv7(),
+                did: oauthSession.did,
+                handle: profile.data.handle,
+                userId: newUser[0].id,
+                service: oauthSession.serverMetadata.issuer,
+                authErrorNotificationSent: false,
+              });
+
+              // Create terms agreement
+              const latestTerms = await tx.query.termsUpdate.findFirst({
+                orderBy: desc(termsUpdate.termsDate),
+              });
+              if (latestTerms) {
+                await tx.insert(termsAgreement).values({
+                  id: uuidv7(),
                   userId: newUser[0].id,
-                  service: oauthSession.serverMetadata.issuer,
-                  authErrorNotificationSent: false,
+                  termsUpdateId: latestTerms.id,
+                });
+              }
+
+              // Create session
+              const newSession = await tx
+                .insert(session)
+                .values({
+                  id: uuidv7(),
+                  expirationDate: getSessionExpirationDate(),
+                  userId: newUser[0].id,
+                })
+                .returning({
+                  id: session.id,
+                  expirationDate: session.expirationDate,
                 });
 
-                // Create terms agreement
-                const latestTerms = await tx.query.termsUpdate.findFirst({
-                  orderBy: desc(termsUpdate.termsDate),
-                });
-                if (latestTerms) {
-                  await tx.insert(termsAgreement).values({
-                    id: uuidv7(),
-                    userId: newUser[0].id,
-                    termsUpdateId: latestTerms.id,
-                  });
-                }
+              return { user: newUser[0], session: newSession[0] };
+            });
 
-                // Create session
-                const newSession = await tx
-                  .insert(session)
-                  .values({
-                    id: uuidv7(),
-                    expirationDate: getSessionExpirationDate(),
-                    userId: newUser[0].id,
-                  })
-                  .returning({
-                    id: session.id,
-                    expirationDate: session.expirationDate,
-                  });
-
-                return { user: newUser[0], session: newSession[0] };
-              });
-
-              // Set session cookie
-              setSessionCookie(
-                c,
-                transaction.session.id,
-                transaction.session.expirationDate
-              );
-
-              return c.json({
-                success: true,
-                isSignup: true,
-                account: {
-                  did: oauthSession.did,
-                  handle: profile.data.handle,
-                  service: oauthSession.serverMetadata.issuer,
-                },
-              });
-            }
-
-            // Login flow but no account found - reject
-            return c.json(
-              {
-                error: "No account found with this Bluesky account.",
-                code: "account_not_found",
-              },
-              404
+            // Set session cookie
+            setSessionCookie(
+              c,
+              transaction.session.id,
+              transaction.session.expirationDate
             );
+
+            return c.json({
+              success: true,
+              isSignup: true,
+              account: {
+                did: oauthSession.did,
+                handle: profile.data.handle,
+                service: oauthSession.serverMetadata.issuer,
+              },
+            });
           }
 
           // User exists, log them in

@@ -10,9 +10,9 @@ interface MastodonAuthFormProps {
 }
 
 const modeLabels: Record<AuthMode, { button: string }> = {
-	login: { button: "Continue with Mastodon" },
-	signup: { button: "Continue with Mastodon" },
-	connect: { button: "Connect Mastodon account" },
+	login: { button: "Continue" },
+	signup: { button: "Continue" },
+	connect: { button: "Connect" },
 };
 
 const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
@@ -23,7 +23,13 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 		<Form action="/mastodon/auth" method="GET">
 			{mode !== "connect" && <input type="hidden" name="mode" value={mode} />}
 			<Box mb={isConnect ? "0" : "4"}>
-				<Text as="label" size="2" weight="medium" mb="2" style={{ display: "block" }}>
+				<Text
+					as="label"
+					size="3"
+					weight="bold"
+					mb="1"
+					style={{ display: "block" }}
+				>
 					Mastodon instance
 				</Text>
 				<TextField.Root
@@ -31,14 +37,15 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 					name="instance"
 					placeholder="mastodon.social"
 					required
-					mb="3"
+					size="3"
 					autoComplete="off"
 				>
 					<TextField.Slot />
 				</TextField.Root>
 				<Button
 					type="submit"
-					size="2"
+					size="3"
+					mt="3"
 					style={isConnect ? undefined : { width: "100%" }}
 				>
 					{button}
@@ -69,16 +76,6 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 					<Callout.Text>
 						We couldn't connect to that Mastodon instance. Please check and try
 						again.
-					</Callout.Text>
-				</Callout.Root>
-			)}
-			{searchParams.get("error") === "account_not_found" && (
-				<Callout.Root mt="4" mb="4" color="red">
-					<Callout.Icon>
-						<CircleAlert width="18" height="18" />
-					</Callout.Icon>
-					<Callout.Text>
-						No account found with this Mastodon account. Please sign up first.
 					</Callout.Text>
 				</Callout.Root>
 			)}
