@@ -58,8 +58,14 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 };
 
 const Download = ({ loaderData }: Route.ComponentProps) => {
-	const { service, syncId, subscribed, syncPromise, user, digestSettingsPromise } =
-		loaderData;
+	const {
+		service,
+		syncId,
+		subscribed,
+		syncPromise,
+		user,
+		digestSettingsPromise,
+	} = loaderData;
 	const [searchParams] = useSearchParams();
 	const { startSync } = useSyncStatus();
 	const syncStarted = useRef(false);
@@ -77,7 +83,6 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 			<WelcomeContent
 				subscribed={subscribed}
 				searchParams={searchParams}
-				syncPromise={syncPromise}
 				user={user}
 				digestSettingsPromise={digestSettingsPromise}
 			/>

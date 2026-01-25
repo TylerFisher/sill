@@ -25,13 +25,16 @@ import {
   link,
   linkPostDenormalized,
   list,
+  blueskyAccount,
+  mastodonAccount,
   mutePhrase,
   networkTopTenView,
   postType,
   type NotificationQuery,
 } from "@sill/schema";
-import { getLinksFromBluesky } from "./bluesky.js";
-import { getLinksFromMastodon } from "./mastodon.js";
+import { Agent } from "@atproto/api";
+import { getLinksFromBluesky, getBlueskyList, processBlueskyLink, handleBlueskyOAuth } from "./bluesky.js";
+import { getLinksFromMastodon, getMastodonList, processMastodonLink, isQuote } from "./mastodon.js";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {
@@ -62,6 +65,98 @@ export const fetchLinks = async (
     getLinksFromBluesky(userId),
   ]);
   return results[1].concat(results[0]);
+};
+
+/**
+ * Fetches links from a single list only
+ * @param userId ID for logged in user
+ * @param listId ID of the list to fetch
+ * @returns Processed links from the specified list
+ */
+export const fetchSingleList = async (
+  userId: string,
+  listId: string
+): Promise<ProcessedResult[]> => {
+  // Find the list and determine its type
+  const dbList = await db.query.list.findFirst({
+    where: eq(list.id, listId),
+  });
+
+  if (!dbList) {
+    throw new Error(`List not found: ${listId}`);
+  }
+
+  // Determine if this is a Bluesky or Mastodon list
+  if (dbList.blueskyAccountId) {
+    // Fetch Bluesky list
+    const account = await db.query.blueskyAccount.findFirst({
+      where: eq(blueskyAccount.id, dbList.blueskyAccountId),
+    });
+
+    if (!account) {
+      throw new Error(`Bluesky account not found for list: ${listId}`);
+    }
+
+    // Verify the account belongs to this user
+    if (account.userId !== userId) {
+      throw new Error("Unauthorized: list does not belong to this user");
+    }
+
+    const oauthSession = await handleBlueskyOAuth(account);
+    if (!oauthSession) {
+      throw new Error("Failed to authenticate with Bluesky");
+    }
+
+    const agent = new Agent(oauthSession);
+    const listPosts = await getBlueskyList(agent, dbList, account.handle);
+
+    const processedResults = (
+      await Promise.all(
+        listPosts.map(async (post) => processBlueskyLink(userId, post, dbList.id))
+      )
+    ).filter((p) => p !== null);
+
+    return processedResults;
+  }
+
+  if (dbList.mastodonAccountId) {
+    // Fetch Mastodon list
+    const account = await db.query.mastodonAccount.findFirst({
+      where: eq(mastodonAccount.id, dbList.mastodonAccountId),
+      with: {
+        mastodonInstance: true,
+      },
+    });
+
+    if (!account) {
+      throw new Error(`Mastodon account not found for list: ${listId}`);
+    }
+
+    // Verify the account belongs to this user
+    if (account.userId !== userId) {
+      throw new Error("Unauthorized: list does not belong to this user");
+    }
+
+    const listPosts = await getMastodonList(dbList.uri, account);
+
+    // Filter for posts with cards (links)
+    const linksOnly = listPosts.filter(
+      (t) =>
+        t.card ||
+        t.reblog?.card ||
+        (isQuote(t.quote) && t.quote.quotedStatus?.card)
+    );
+
+    const processedResults = (
+      await Promise.all(
+        linksOnly.map(async (post) => processMastodonLink(userId, post, dbList.id))
+      )
+    ).filter((p) => p !== null);
+
+    return processedResults;
+  }
+
+  throw new Error(`List ${listId} has no associated account`);
 };
 
 /**

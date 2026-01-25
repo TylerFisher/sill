@@ -1,5 +1,5 @@
 import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { useFetcher } from "react-router";
 import type { blueskyAccount, mastodonAccount } from "@sill/schema";
 import { useSyncStatus } from "~/components/contexts/SyncContext";
@@ -21,30 +21,17 @@ interface ListSwitchProps {
 
 const ListSwitch = ({ item, account, fetcher }: ListSwitchProps) => {
 	const [checked, setChecked] = useState(item.subscribed);
-	const { startSync } = useSyncStatus();
-	const pendingSyncRef = useRef<{
-		resolve: (result: "success" | "error") => void;
-	} | null>(null);
-
-	// Track fetcher state changes to resolve the sync promise
-	useEffect(() => {
-		if (pendingSyncRef.current && fetcher.state === "idle") {
-			const data = fetcher.data as { error?: string } | undefined;
-			const hasError = data?.error;
-			pendingSyncRef.current.resolve(hasError ? "error" : "success");
-			pendingSyncRef.current = null;
-		}
-	}, [fetcher.state, fetcher.data]);
+	const { startServerSync } = useSyncStatus();
 
 	const onCheckedChange = (e: boolean) => {
+		const syncId = `list-${item.uri}`;
+
 		// Only start a sync when subscribing (not unsubscribing)
 		if (e) {
-			const syncPromise = new Promise<"success" | "error">((resolve) => {
-				pendingSyncRef.current = { resolve };
-			});
-
-			startSync(syncPromise, {
-				id: `list-${item.uri}`,
+			// Use server-side sync tracking - the server will update the sync status
+			// and the SyncContext will poll for updates
+			startServerSync({
+				id: syncId,
 				label: item.name,
 			});
 		}
@@ -56,6 +43,7 @@ const ListSwitch = ({ item, account, fetcher }: ListSwitchProps) => {
 				subscribe: e,
 				accountId: account?.id,
 				type: item.type,
+				syncId: e ? syncId : "",
 			},
 			{
 				method: "post",

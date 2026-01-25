@@ -1087,6 +1087,28 @@ export async function apiProcessLinks(
 }
 
 /**
+ * Sync a single list via API
+ */
+export async function apiSyncList(request: Request, listId: string) {
+  const client = createApiClient(request);
+  const response = await client.api.lists.sync.$post({
+    json: { listId },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to sync list: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
  * Get current (non-canceled) subscription for user via API
  */
 export async function apiGetCurrentSubscription(request: Request) {

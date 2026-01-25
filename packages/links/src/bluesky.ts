@@ -480,7 +480,7 @@ const handleLinkTitle = async (title: string) => {
  * @param t Post object from Bluesky timeline
  * @returns Actors, quoted post, images, post, link, and new link post to insert into database
  */
-const processBlueskyLink = async (
+export const processBlueskyLink = async (
   userId: string,
   t: AppBskyFeedDefs.FeedViewPost,
   listId?: string

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
 import { getUserIdFromSession } from "@sill/auth";
 import { db, list } from "@sill/schema";
+import { fetchSingleList, insertNewLinks } from "@sill/links";
 
 // Schema for creating a list
 const CreateListSchema = z.object({
@@ -18,6 +19,11 @@ const CreateListSchema = z.object({
 const DeleteListSchema = z.object({
   uri: z.string().min(1, "URI is required"),
   accountId: z.string().min(1, "Account ID is required"),
+});
+
+// Schema for syncing a single list
+const SyncListSchema = z.object({
+  listId: z.string().min(1, "List ID is required"),
 });
 
 const lists = new Hono()
@@ -117,6 +123,38 @@ const lists = new Hono()
       return c.json({ success: true, deleted: result[0] });
     } catch (error) {
       console.error("Delete list error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // POST /api/lists/sync - Sync a single list
+  .post("/sync", zValidator("json", SyncListSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    const { listId } = c.req.valid("json");
+
+    try {
+      const results = await fetchSingleList(userId, listId);
+      await insertNewLinks(results);
+
+      return c.json({
+        success: true,
+        processed: results.length,
+        listId,
+      });
+    } catch (error) {
+      console.error("Sync list error:", error);
+      if (error instanceof Error) {
+        if (error.message.includes("not found")) {
+          return c.json({ error: error.message }, 404);
+        }
+        if (error.message.includes("Unauthorized")) {
+          return c.json({ error: error.message }, 403);
+        }
+      }
       return c.json({ error: "Internal server error" }, 500);
     }
   });

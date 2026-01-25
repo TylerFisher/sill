@@ -1,9 +1,21 @@
-export { getBlueskyLists, clearOAuthSessionCache } from "./bluesky.js";
-export { getMastodonLists } from "./mastodon.js";
+export {
+  getBlueskyLists,
+  getBlueskyList,
+  processBlueskyLink,
+  handleBlueskyOAuth,
+  clearOAuthSessionCache,
+} from "./bluesky.js";
+export {
+  getMastodonLists,
+  getMastodonList,
+  processMastodonLink,
+  isQuote,
+} from "./mastodon.js";
 export {
   type ProcessedResult,
   evaluateNotifications,
   fetchLinks,
+  fetchSingleList,
   filterLinkOccurrences,
   insertNewLinks,
   findLinksByAuthor,

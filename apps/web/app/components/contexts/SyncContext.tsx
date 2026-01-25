@@ -22,6 +22,7 @@ interface SyncEntry {
 interface SyncContextValue {
 	syncs: Map<string, SyncEntry>;
 	startSync: (promise: Promise<"success" | "error">, info: SyncInfo) => void;
+	startServerSync: (info: SyncInfo) => void;
 }
 
 const SyncContext = createContext<SyncContextValue | null>(null);
@@ -124,8 +125,18 @@ export function SyncProvider({ children, initialSyncs }: SyncProviderProps) {
 		});
 	};
 
+	// Start a server-tracked sync (no client-side promise, relies on polling)
+	const startServerSync = (info: SyncInfo) => {
+		// Don't add to clientTrackedSyncs - polling will handle status updates
+		setSyncs((prev) => {
+			const next = new Map(prev);
+			next.set(info.id, { label: info.label, status: "syncing" });
+			return next;
+		});
+	};
+
 	return (
-		<SyncContext.Provider value={{ syncs, startSync }}>
+		<SyncContext.Provider value={{ syncs, startSync, startServerSync }}>
 			{children}
 		</SyncContext.Provider>
 	);

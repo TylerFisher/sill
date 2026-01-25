@@ -224,7 +224,7 @@ function hasProp<K extends PropertyKey>(
   return prop in data;
 }
 
-const isQuote = (
+export const isQuote = (
   quote: mastodon.v1.Quote | mastodon.v1.ShallowQuote | null | undefined
 ): quote is mastodon.v1.Quote => {
   return (
@@ -238,7 +238,7 @@ const isQuote = (
  * @param t Status object from Mastodon timeline
  * @returns Actors, post, link, and new link post to insert into database
  */
-const processMastodonLink = async (
+export const processMastodonLink = async (
   userId: string,
   t: mastodon.v1.Status,
   listId?: string
