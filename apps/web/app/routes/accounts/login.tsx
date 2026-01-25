@@ -133,7 +133,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Login to Sill</Heading>
+				<Heading size="6">Login to Sill</Heading>
 			</Box>
 
 			{/* Bluesky Login */}
