@@ -1,5 +1,4 @@
 import { Box, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
-import { useFetcher } from "react-router";
 import type { blueskyAccount, SubscriptionStatus, AccountWithInstance } from "@sill/schema";
 import ListSwitch, { type ListOption } from "./ListSwitch";
 
@@ -13,7 +12,6 @@ const Lists = ({
 	subscribed?: SubscriptionStatus;
 	loading?: boolean;
 }) => {
-	const fetcher = useFetcher();
 	return (
 		<Box mt="4">
 			<Heading size="3" mb="2">
@@ -33,12 +31,7 @@ const Lists = ({
 				listOptions.length > 0 && (
 					<Flex direction="column" gap="4">
 						{listOptions.map((list) => (
-							<ListSwitch
-								key={list.uri}
-								item={list}
-								account={account}
-								fetcher={fetcher}
-							/>
+							<ListSwitch key={list.uri} item={list} account={account} />
 						))}
 					</Flex>
 				)

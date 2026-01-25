@@ -1,6 +1,6 @@
 import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import type { useFetcher } from "react-router";
+import { useFetcher } from "react-router";
 import type { blueskyAccount, mastodonAccount } from "@sill/schema";
 import { useSyncStatus } from "~/components/contexts/SyncContext";
 
@@ -16,12 +16,12 @@ interface ListSwitchProps {
 	account:
 		| typeof blueskyAccount.$inferSelect
 		| typeof mastodonAccount.$inferSelect;
-	fetcher: ReturnType<typeof useFetcher>;
 }
 
-const ListSwitch = ({ item, account, fetcher }: ListSwitchProps) => {
+const ListSwitch = ({ item, account }: ListSwitchProps) => {
 	const [checked, setChecked] = useState(item.subscribed);
 	const { startServerSync } = useSyncStatus();
+	const fetcher = useFetcher();
 
 	const onCheckedChange = (e: boolean) => {
 		const syncId = `list-${item.uri}`;
