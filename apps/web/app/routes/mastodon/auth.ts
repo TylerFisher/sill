@@ -5,8 +5,25 @@ import type { Route } from "./+types/auth";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
-	const referrer =
-		request.headers.get("referer") || "/accounts/onboarding/social";
+	const refererHeader = request.headers.get("referer");
+
+	// Extract pathname from referrer, defaulting to settings if not available or just root
+	let referrer = "/settings?tabs=connect";
+	if (refererHeader) {
+		try {
+			const refererUrl = new URL(refererHeader);
+			// Only use the referrer if it has a meaningful path (not just root)
+			if (refererUrl.pathname && refererUrl.pathname !== "/") {
+				referrer = refererUrl.pathname + refererUrl.search;
+			}
+		} catch {
+			// If it's already a path, use it directly
+			if (refererHeader.startsWith("/") && refererHeader !== "/") {
+				referrer = refererHeader;
+			}
+		}
+	}
+
 	const instance = requestUrl.searchParams.get("instance");
 	const modeParam = requestUrl.searchParams.get("mode");
 	const mode = modeParam === "login" || modeParam === "signup" ? modeParam : undefined;
@@ -23,25 +40,30 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		}
 
 		// Create instance cookie and redirect to authorization URL
+		// Store the referrer so we can redirect back after OAuth
 		return await createInstanceCookie(
 			request,
 			result.instance,
 			result.redirectUrl,
 			mode || undefined,
+			referrer,
 		);
 	} catch (error) {
 		console.error("Mastodon auth error:", error);
 
+		// Build error redirect URL
+		const buildErrorUrl = (errorCode: string) => {
+			const errorUrl = new URL(referrer, requestUrl.origin);
+			errorUrl.searchParams.set("error", errorCode);
+			return errorUrl.pathname + errorUrl.search;
+		};
+
 		// Handle specific error codes
 		if (error instanceof Error && error.message.includes("instance")) {
-			const errorUrl = new URL(referrer);
-			errorUrl.searchParams.set("error", "instance");
-			return redirect(errorUrl.toString());
+			return redirect(buildErrorUrl("instance"));
 		}
 
 		// Generic error fallback
-		const errorUrl = new URL(referrer);
-		errorUrl.searchParams.set("error", "oauth");
-		return redirect(errorUrl.toString());
+		return redirect(buildErrorUrl("oauth"));
 	}
 };

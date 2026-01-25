@@ -1,4 +1,4 @@
-import { Box, Button, Callout, Text, TextField } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Text, TextField } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { Form } from "react-router";
 
@@ -30,26 +30,35 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 					mb="1"
 					style={{ display: "block" }}
 				>
-					Mastodon instance
+					Mastodon handle
 				</Text>
-				<TextField.Root
-					type="text"
-					name="instance"
-					placeholder="mastodon.social"
-					required
-					size="3"
-					autoComplete="off"
-				>
-					<TextField.Slot />
-				</TextField.Root>
-				<Button
-					type="submit"
-					size="3"
-					mt="3"
-					style={isConnect ? undefined : { width: "100%" }}
-				>
-					{button}
-				</Button>
+				<Flex gap="0">
+					<TextField.Root
+						type="text"
+						name="instance"
+						placeholder="@sillapp@mastodon.social"
+						required
+						size="3"
+						autoComplete="off"
+						style={{
+							flex: 1,
+							borderTopRightRadius: 0,
+							borderBottomRightRadius: 0,
+						}}
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					<Button
+						type="submit"
+						size="3"
+						style={{
+							borderTopLeftRadius: 0,
+							borderBottomLeftRadius: 0,
+						}}
+					>
+						{button}
+					</Button>
+				</Flex>
 			</Box>
 
 			{searchParams.get("error") === "mastodon_oauth" && (
@@ -96,6 +105,16 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 					</Callout.Icon>
 					<Callout.Text>
 						Failed to get account information from Mastodon. Please try again.
+					</Callout.Text>
+				</Callout.Root>
+			)}
+			{searchParams.get("error") === "account_exists" && (
+				<Callout.Root mt="4" mb="4" color="red">
+					<Callout.Icon>
+						<CircleAlert width="18" height="18" />
+					</Callout.Icon>
+					<Callout.Text>
+						This Mastodon account is already linked to another user.
 					</Callout.Text>
 				</Callout.Root>
 			)}

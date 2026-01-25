@@ -25,16 +25,19 @@ export const STEPS: Step[] = [
   {
     id: "accounts",
     title: "Connect Accounts",
-    description: "Connect additional social media accounts",
+    description:
+      "Sill looks at Bluesky and Mastodon timelines. You can connect both to your account here.",
   },
   {
     id: "lists",
     title: "Subscribe to Lists",
-    description: "Track links from specific groups in your network",
+    description:
+      "Sill can also watch your custom lists and feeds for additional links.",
   },
   {
     id: "email",
-    title: "Email & Digest",
-    description: "Add an email and set up your daily digest",
+    title: "Set up Daily Digest",
+    description:
+      "Sill can send you a daily email at a time of your choosing with your top ten links. Add an email address to get started.",
   },
 ];

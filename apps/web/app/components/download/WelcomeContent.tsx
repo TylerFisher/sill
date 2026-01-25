@@ -1,7 +1,6 @@
 import { Box, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Await } from "react-router";
-import PageHeading from "~/components/nav/PageHeading";
 import AccountsStep from "./AccountsStep";
 import EmailStep from "./EmailStep";
 import ListsStep from "./ListsStep";
@@ -20,17 +19,19 @@ export default function WelcomeContent({
 	const mastodonAccount = user.mastodonAccounts[0] || null;
 	const currentStepData = STEPS[currentStep];
 
+	// Auto-advance to step 2 when both accounts are connected
+	useEffect(() => {
+		if (currentStep === 0 && blueskyAccount && mastodonAccount) {
+			setCurrentStep(1);
+		}
+	}, [currentStep, blueskyAccount, mastodonAccount]);
+
 	return (
 		<Box maxWidth="600px">
-			<PageHeading
-				title="You're all set!"
-				dek="Your account is ready. While your timeline syncs, set up additional features below."
-			/>
-
 			<StepIndicator currentStep={currentStep} steps={STEPS} />
 
 			<Box mb="4">
-				<Heading as="h3" size="5" mb="1">
+				<Heading as="h2" size="6" mb="1">
 					{currentStepData.title}
 				</Heading>
 				<Text color="gray" size="2">

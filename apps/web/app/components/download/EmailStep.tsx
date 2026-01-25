@@ -1,13 +1,20 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
-import { Box, Button, Callout, Flex, Spinner, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Callout,
+	Flex,
+	Spinner,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
 import { CheckCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type FetcherWithComponents, useFetcher } from "react-router";
 import { z } from "zod";
 import { OTPField } from "~/components/forms/OTPField";
 import SubmitButton from "~/components/forms/SubmitButton";
-import TextInput from "~/components/forms/TextInput";
 import TimeSelect, {
 	formatUtcTimeAsLocal,
 } from "~/components/forms/TimeSelect";
@@ -203,33 +210,56 @@ function AddEmailForm({
 		},
 	});
 
+	const isSubmitting = fetcher.state === "submitting";
+
 	return (
 		<Box>
-			<Text as="p" mb="4">
-				Add your email to receive daily digests and notifications about popular
-				links.
-			</Text>
 			<fetcher.Form
 				method="POST"
 				action="/api/email/send-verification"
 				{...getFormProps(form)}
 			>
-				<TextInput
-					labelProps={{ children: "Email address" }}
-					inputProps={{
-						...getInputProps(fields.email, { type: "email" }),
-						autoComplete: "email",
-						placeholder: "you@example.com",
-					}}
-					errors={fields.email.errors}
-				/>
-				<SubmitButton
-					label={
-						fetcher.state === "submitting"
-							? "Sending..."
-							: "Send verification code"
-					}
-				/>
+				<Text
+					as="label"
+					size="3"
+					weight="bold"
+					mb="1"
+					style={{ display: "block" }}
+				>
+					Email address
+				</Text>
+				<Flex gap="0">
+					<TextField.Root
+						{...getInputProps(fields.email, { type: "email" })}
+						autoComplete="email"
+						placeholder="you@example.com"
+						size="3"
+						style={{
+							flex: 1,
+							borderTopRightRadius: 0,
+							borderBottomRightRadius: 0,
+						}}
+					>
+						<TextField.Slot />
+					</TextField.Root>
+					<Button
+						type="submit"
+						size="3"
+						disabled={isSubmitting}
+						style={{
+							borderTopLeftRadius: 0,
+							borderBottomLeftRadius: 0,
+						}}
+					>
+						{isSubmitting ? <Spinner size="1" /> : null}
+						{isSubmitting ? "Sending..." : "Verify"}
+					</Button>
+				</Flex>
+				{fields.email.errors?.[0] && (
+					<Text color="red" size="2" mt="2" style={{ display: "block" }}>
+						{fields.email.errors[0]}
+					</Text>
+				)}
 			</fetcher.Form>
 		</Box>
 	);
@@ -245,20 +275,25 @@ export default function EmailStep({ email, currentSettings }: EmailStepProps) {
 	const [verificationTarget, setVerificationTarget] = useState<string | null>(
 		null,
 	);
+	const [processedRedirect, setProcessedRedirect] = useState<string | null>(
+		null,
+	);
 	const addEmailFetcher = useFetcher<{
 		redirectTo?: string;
 		result?: unknown;
 	}>();
 
 	useEffect(() => {
-		if (addEmailFetcher.data?.redirectTo && !verificationTarget) {
-			const url = new URL(addEmailFetcher.data.redirectTo, "http://localhost");
+		const redirectTo = addEmailFetcher.data?.redirectTo;
+		if (redirectTo && redirectTo !== processedRedirect) {
+			const url = new URL(redirectTo, "http://localhost");
 			const target = url.searchParams.get("target");
 			if (target) {
 				setVerificationTarget(target);
+				setProcessedRedirect(redirectTo);
 			}
 		}
-	}, [addEmailFetcher.data?.redirectTo, verificationTarget]);
+	}, [addEmailFetcher.data?.redirectTo, processedRedirect]);
 
 	if (verifiedEmail) {
 		return (

@@ -64,7 +64,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 						// Add form-level error (no path) for credential errors
 						ctx.addIssue({
 							code: z.ZodIssueCode.custom,
-							message: ("error" in apiResponse ? apiResponse.error : undefined) || "Invalid email or password",
+							message:
+								("error" in apiResponse ? apiResponse.error : undefined) ||
+								"Invalid email or password",
 						});
 						return z.NEVER;
 					}
@@ -131,7 +133,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Continue to Sill</Heading>
+				<Heading size="8">Login to Sill</Heading>
 			</Box>
 
 			{/* Bluesky Login */}
@@ -151,12 +153,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 			{/* Email/Password Login (Legacy) */}
 			<Collapsible.Root open={emailLoginOpen} onOpenChange={setEmailLoginOpen}>
 				<Collapsible.Trigger asChild>
-					<Flex
-						align="center"
-						gap="1"
-						mt="4"
-						style={{ cursor: "pointer" }}
-					>
+					<Flex align="center" gap="1" mt="4" style={{ cursor: "pointer" }}>
 						{emailLoginOpen ? (
 							<ChevronDown size={16} color="var(--gray-11)" />
 						) : (
@@ -225,11 +222,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 								{...getInputProps(fields.redirectTo, { type: "hidden" })}
 							/>
 
-							<SubmitButton
-								label="Log in"
-								size="3"
-								style={{ width: "100%" }}
-							/>
+							<SubmitButton label="Log in" size="3" style={{ width: "100%" }} />
 						</Form>
 					</Box>
 				</Collapsible.Content>

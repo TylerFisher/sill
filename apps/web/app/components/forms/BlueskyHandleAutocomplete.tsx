@@ -16,12 +16,14 @@ interface BlueskyHandleAutocompleteProps {
 	name: string;
 	placeholder?: string;
 	required?: boolean;
+	style?: React.CSSProperties;
 }
 
 const BlueskyHandleAutocomplete = ({
 	name,
 	placeholder = "username.bsky.social",
 	required = false,
+	style,
 }: BlueskyHandleAutocompleteProps) => {
 	const theme = useTheme();
 	const [inputValue, setInputValue] = useState("");
@@ -159,6 +161,7 @@ const BlueskyHandleAutocomplete = ({
 					}
 				}}
 				autoComplete="off"
+				style={style}
 			>
 				<TextField.Slot />
 			</TextField.Root>

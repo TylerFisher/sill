@@ -27,8 +27,7 @@ import {
   termsAgreement,
   termsUpdate,
 } from "@sill/schema";
-import { desc } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getBlueskyLists } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
@@ -103,6 +102,33 @@ const bluesky = new Hono()
           http: new WellKnownHandleResolver(),
         },
       });
+
+      // For connect flow, check if account is already linked to another user
+      if (!isLogin && userId) {
+        try {
+          const did = await resolver.resolve(handle as `${string}.${string}`);
+          if (did) {
+            const existingAccount = await db.query.blueskyAccount.findFirst({
+              where: and(
+                eq(blueskyAccount.did, did),
+                ne(blueskyAccount.userId, userId)
+              ),
+            });
+
+            if (existingAccount) {
+              return c.json(
+                {
+                  error: "This Bluesky account is already linked to another user.",
+                  code: "account_exists",
+                },
+                400
+              );
+            }
+          }
+        } catch {
+          // If we can't resolve the DID, let the OAuth flow handle it
+        }
+      }
 
       // Build OAuth options
       const oauthOptions = {

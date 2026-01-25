@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { uuidv7 } from "uuidv7-js";
 import { z } from "zod";
@@ -394,6 +394,25 @@ const mastodon = new Hono()
       }
 
       // User is already logged in - connecting account
+      // Check if this Mastodon account is already linked to another user
+      const existingAccount = await db.query.mastodonAccount.findFirst({
+        where: and(
+          eq(mastodonAccount.instanceId, dbInstance.id),
+          eq(mastodonAccount.mastodonId, accountInfo.id),
+          ne(mastodonAccount.userId, userId)
+        ),
+      });
+
+      if (existingAccount) {
+        return c.json(
+          {
+            error: "This Mastodon account is already linked to another user.",
+            code: "account_exists",
+          },
+          400
+        );
+      }
+
       // Save account to database with mastodonId and username
       await db.insert(mastodonAccount).values({
         id: uuidv7(),

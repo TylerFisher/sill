@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
 import { apiBlueskyAuthStart } from "~/utils/api-client.server";
-import { setBlueskyModeCookie } from "~/utils/session.server";
+import { setBlueskyModeCookie, setBlueskyOriginCookie } from "~/utils/session.server";
 import type { Route } from "./+types/auth";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -12,19 +12,28 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     | "signup"
     | undefined;
 
-  // Determine where to redirect on error based on mode and referer
+  // Extract pathname from referrer, defaulting to settings if not available or just root
+  let origin = "/settings?tabs=connect";
+  if (refererHeader) {
+    try {
+      const refererUrl = new URL(refererHeader);
+      // Only use the referrer if it has a meaningful path (not just root)
+      if (refererUrl.pathname && refererUrl.pathname !== "/") {
+        origin = refererUrl.pathname + refererUrl.search;
+      }
+    } catch {
+      // If it's already a path, use it directly
+      if (refererHeader.startsWith("/") && refererHeader !== "/") {
+        origin = refererHeader;
+      }
+    }
+  }
+
+  // Determine where to redirect on error based on mode and origin
   const getErrorRedirectPath = () => {
     if (mode === "login") return "/accounts/login";
     if (mode === "signup") return "/accounts/signup";
-    if (refererHeader) {
-      try {
-        const refererUrl = new URL(refererHeader);
-        return refererUrl.pathname;
-      } catch {
-        return refererHeader;
-      }
-    }
-    return "/accounts/onboarding/social";
+    return origin;
   };
 
   try {
@@ -34,10 +43,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       mode || undefined
     );
 
-    // Set cookie on web app side to persist mode across OAuth redirect
+    // Set cookie on web app side to persist mode and origin across OAuth redirect
     let headers: Headers | undefined;
     if (mode) {
-      headers = await setBlueskyModeCookie(request, mode);
+      headers = await setBlueskyModeCookie(request, mode, origin);
+    } else {
+      // Connect flow - just store the origin
+      headers = await setBlueskyOriginCookie(request, origin);
     }
 
     return redirect(result.redirectUrl, { headers });
@@ -51,6 +63,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         ? "resolver"
         : "oauth");
 
-    return redirect(`${errorPath}?error=${errorCode}`);
+    const errorUrl = new URL(errorPath, requestUrl.origin);
+    errorUrl.searchParams.set("error", errorCode);
+    return redirect(errorUrl.pathname + errorUrl.search);
   }
 };

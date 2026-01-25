@@ -1,4 +1,4 @@
-import { Box, Button, Callout, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Text } from "@radix-ui/themes";
 import { CircleAlert } from "lucide-react";
 import { Form } from "react-router";
 import BlueskyHandleAutocomplete from "./BlueskyHandleAutocomplete";
@@ -39,18 +39,30 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 				>
 					Atmosphere handle
 				</Text>
-				<Text size="2" color="gray" mb="2" style={{ display: "block" }}>
+				<Text size="1" color="gray" mb="2" style={{ display: "block" }}>
 					Your Bluesky, Blacksky, Northsky, or other compatible handle
 				</Text>
-				<BlueskyHandleAutocomplete name="handle" required />
-				<Button
-					type="submit"
-					size="3"
-					mt="3"
-					style={isConnect ? undefined : { width: "100%" }}
-				>
-					{button}
-				</Button>
+				<Flex gap="0">
+					<BlueskyHandleAutocomplete
+						name="handle"
+						required
+						style={{
+							flex: 1,
+							borderTopRightRadius: 0,
+							borderBottomRightRadius: 0,
+						}}
+					/>
+					<Button
+						type="submit"
+						size="3"
+						style={{
+							borderTopLeftRadius: 0,
+							borderBottomLeftRadius: 0,
+						}}
+					>
+						{button}
+					</Button>
+				</Flex>
 			</Box>
 
 			{searchParams.get("error") === "oauth" && (
@@ -98,6 +110,16 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 					</Callout.Icon>
 					<Callout.Text>
 						Please enter your Bluesky handle to continue.
+					</Callout.Text>
+				</Callout.Root>
+			)}
+			{searchParams.get("error") === "account_exists" && (
+				<Callout.Root mt="4" mb="4" color="red">
+					<Callout.Icon>
+						<CircleAlert width="18" height="18" />
+					</Callout.Icon>
+					<Callout.Text>
+						This Bluesky account is already linked to another user.
 					</Callout.Text>
 				</Callout.Root>
 			)}

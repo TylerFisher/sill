@@ -1,18 +1,29 @@
 import { redirect } from "react-router";
 import { apiMastodonAuthCallback } from "~/utils/api-client.server";
-import { getInstanceCookie, getMastodonModeCookie } from "~/utils/session.server";
+import {
+	getInstanceCookie,
+	getMastodonModeCookie,
+	getMastodonOriginCookie,
+} from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
 	const url = new URL(request.url);
 	const instance = await getInstanceCookie(request);
 	const mode = await getMastodonModeCookie(request);
+	const origin = await getMastodonOriginCookie(request);
 	const code = url.searchParams.get("code");
 
-	// Determine where to redirect on error based on mode
+	// Determine where to redirect on error based on mode and origin
 	const getErrorRedirectPath = (errorCode: string) => {
 		if (mode === "login") return `/accounts/login?error=${errorCode}`;
 		if (mode === "signup") return `/accounts/signup?error=${errorCode}`;
+		// For connect flow, redirect back to where the user came from
+		if (origin) {
+			const originUrl = new URL(origin, url.origin);
+			originUrl.searchParams.set("error", errorCode);
+			return originUrl.pathname + originUrl.search;
+		}
 		return `/settings?tabs=connect&error=${errorCode}`;
 	};
 
@@ -57,7 +68,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 				return redirect("/download?service=Mastodon", { headers });
 			}
 
-			// Otherwise it's a connect flow
+			// Otherwise it's a connect flow - redirect back to origin
+			if (origin) {
+				const originUrl = new URL(origin, url.origin);
+				originUrl.searchParams.set("service", "Mastodon");
+				return redirect(originUrl.pathname + originUrl.search, { headers });
+			}
 			return redirect("/download?service=Mastodon", { headers });
 		}
 

@@ -1,5 +1,9 @@
 import { Box, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
-import type { blueskyAccount, SubscriptionStatus, AccountWithInstance } from "@sill/schema";
+import type {
+	blueskyAccount,
+	SubscriptionStatus,
+	AccountWithInstance,
+} from "@sill/schema";
 import ListSwitch, { type ListOption } from "./ListSwitch";
 
 const Lists = ({
@@ -18,10 +22,6 @@ const Lists = ({
 				Lists
 			</Heading>
 
-			<Text as="p" size="2" mb="4">
-				Sill will track any enabled lists for new links. Sill works best with
-				chronological lists rather than algorithmic ones.
-			</Text>
 			{loading ? (
 				<Flex align="center" gap="2">
 					<Spinner />
