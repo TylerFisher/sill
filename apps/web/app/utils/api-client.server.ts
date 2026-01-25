@@ -66,7 +66,7 @@ export async function apiGetUserProfile(request: Request, redirectTo?: string) {
  */
 export async function requireUserId(
   request: Request,
-  redirectTo?: string
+  redirectTo?: string,
 ): Promise<string> {
   const userProfile = await apiGetUserProfile(request, redirectTo);
   return userProfile.id;
@@ -96,7 +96,7 @@ export async function requireAnonymous(request: Request): Promise<void> {
  */
 export async function apiSignupInitiate(
   request: Request,
-  data: { email: string }
+  data: { email: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth.signup.initiate.$post({
@@ -118,7 +118,7 @@ export async function apiSignupInitiate(
  */
 export async function apiSignupComplete(
   request: Request,
-  data: { email: string; name: string; password: string }
+  data: { email: string; name: string; password: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth.signup.$post({
@@ -133,7 +133,7 @@ export async function apiSignupComplete(
  */
 export async function apiLogin(
   request: Request,
-  data: { email: string; password: string }
+  data: { email: string; password: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth.login.$post({
@@ -159,11 +159,17 @@ export async function apiVerifyCode(
   request: Request,
   data: {
     code: string;
-    type: "onboarding" | "reset-password" | "change-email" | "2fa";
+    type:
+      | "onboarding"
+      | "reset-password"
+      | "change-email"
+      | "add-email"
+      | "2fa";
     target: string;
-  }
+  },
 ) {
   const client = createApiClient(request);
+  // Cast to handle stale client types - add-email is valid on the API
   const response = await client.api.auth.verify.$post({
     json: data,
   });
@@ -177,7 +183,7 @@ export async function apiVerifyCode(
 export async function apiBlueskyAuthStart(
   request: Request,
   handle: string | undefined,
-  mode?: "login" | "signup"
+  mode?: "login" | "signup",
 ) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.authorize.$get({
@@ -210,7 +216,7 @@ export async function apiBlueskyAuthStart(
  */
 export async function apiBlueskyAuthCallback(
   request: Request,
-  data: { searchParams: string; mode?: "login" | "signup" }
+  data: { searchParams: string; mode?: "login" | "signup" },
 ) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.callback.$post({
@@ -239,7 +245,7 @@ export async function apiBlueskyAuthRevoke(request: Request) {
  */
 export async function apiMastodonAuthStart(
   request: Request,
-  data: { instance: string; mode?: "login" | "signup" }
+  data: { instance: string; mode?: "login" | "signup" },
 ) {
   const client = createApiClient(request);
   const response = await client.api.mastodon.auth.authorize.$get({
@@ -251,7 +257,10 @@ export async function apiMastodonAuthStart(
   if (!response.ok) {
     let errorMessage = "Failed to start Mastodon authorization";
     if ("error" in json) {
-      errorMessage = typeof json.error === "string" ? json.error : JSON.stringify(json.error);
+      errorMessage =
+        typeof json.error === "string"
+          ? json.error
+          : JSON.stringify(json.error);
     } else if ("issues" in json) {
       // Zod validation error
       errorMessage = JSON.stringify(json.issues);
@@ -268,7 +277,7 @@ export async function apiMastodonAuthStart(
  */
 export async function apiMastodonAuthCallback(
   request: Request,
-  data: { code: string; instance: string; mode?: "login" | "signup" }
+  data: { code: string; instance: string; mode?: "login" | "signup" },
 ) {
   const client = createApiClient(request);
   const response = await client.api.mastodon.auth.callback.$post({
@@ -305,13 +314,13 @@ export async function apiFilterLinkOccurrences(
     limit?: number;
     url?: string;
     minShares?: number;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const queryParams = Object.fromEntries(
     Object.entries(params)
       .filter(([_, value]) => value !== undefined)
-      .map(([key, value]) => [key, String(value)])
+      .map(([key, value]) => [key, String(value)]),
   );
 
   const response = await client.api.links.filter.$get({
@@ -337,14 +346,14 @@ export async function apiListBookmarks(
     tag?: string;
     page?: number;
     limit?: number;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const queryParams = params
     ? Object.fromEntries(
         Object.entries(params)
           .filter(([_, value]) => value !== undefined)
-          .map(([key, value]) => [key, String(value)])
+          .map(([key, value]) => [key, String(value)]),
       )
     : {};
 
@@ -366,7 +375,7 @@ export async function apiListBookmarks(
  */
 export async function apiAddBookmark(
   request: Request,
-  data: { url: string; tags?: string; publishToAtproto?: boolean }
+  data: { url: string; tags?: string; publishToAtproto?: boolean },
 ) {
   const client = createApiClient(request);
   const response = await client.api.bookmarks.$post({
@@ -381,7 +390,7 @@ export async function apiAddBookmark(
  */
 export async function apiDeleteBookmark(
   request: Request,
-  data: { url: string }
+  data: { url: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.bookmarks.$delete({
@@ -416,7 +425,7 @@ export async function apiGetBookmarkTags(request: Request) {
  */
 export async function apiDeleteBookmarkTag(
   request: Request,
-  data: { url: string; tagName: string }
+  data: { url: string; tagName: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.bookmarks.tag.$delete({
@@ -478,7 +487,7 @@ export async function apiCreateUpdateDigestSettings(
     topAmount: number;
     layout: string;
     digestType: string;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const response = await client.api.digest.settings.$post({
@@ -507,7 +516,7 @@ export async function apiFindLinksByAuthor(
     author: string;
     page?: number;
     pageSize?: number;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const queryParams = {
@@ -542,7 +551,7 @@ export async function apiFindLinksByDomain(
     domain: string;
     page?: number;
     pageSize?: number;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const queryParams = {
@@ -577,7 +586,7 @@ export async function apiFindLinksByTopic(
     topic: string;
     page?: number;
     pageSize?: number;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const queryParams = {
@@ -608,7 +617,7 @@ export async function apiFindLinksByTopic(
  */
 export async function apiDeleteNotificationGroup(
   request: Request,
-  groupId: string
+  groupId: string,
 ) {
   const client = createApiClient(request);
   const response = await client.api.notifications.groups[":groupId"].$delete({
@@ -645,7 +654,7 @@ export async function apiTestNotifications(
     };
     operator: string;
     value: string | number;
-  }>
+  }>,
 ) {
   const client = createApiClient(request);
   const response = await client.api.notifications.test.$post({
@@ -670,7 +679,7 @@ export async function apiTestNotifications(
  */
 export async function apiGetNotificationGroupFeed(
   request: Request,
-  notificationGroupId: string
+  notificationGroupId: string,
 ) {
   const client = createApiClient(request);
   const response = await client.api.notifications.groups[
@@ -681,7 +690,7 @@ export async function apiGetNotificationGroupFeed(
 
   if (!response.ok) {
     throw new Error(
-      `Failed to get notification group feed: ${response.status}`
+      `Failed to get notification group feed: ${response.status}`,
     );
   }
 
@@ -732,7 +741,7 @@ export async function apiCreateNotificationGroup(
       value: string | number;
     }>;
     name: string;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const response = await client.api.notifications.groups.$post({
@@ -777,7 +786,7 @@ export async function apiGetLatestTermsUpdate(request: Request) {
  */
 export async function apiGetTermsAgreement(
   request: Request,
-  termsUpdateId: string
+  termsUpdateId: string,
 ) {
   const client = createApiClient(request);
   const response = await client.api.terms.agreement.$get({
@@ -802,7 +811,7 @@ export async function apiGetTermsAgreement(
  */
 export async function apiInsertTermsAgreement(
   request: Request,
-  termsUpdateId: string
+  termsUpdateId: string,
 ) {
   const client = createApiClient(request);
   const response = await client.api.terms.agreement.$post({
@@ -1004,7 +1013,7 @@ export async function apiCreateList(
     name: string;
     accountId: string;
     type: "bluesky" | "mastodon";
-  }
+  },
 ) {
   const client = createApiClient(request);
   const response = await client.api.lists.$post({
@@ -1032,7 +1041,7 @@ export async function apiDeleteList(
   data: {
     uri: string;
     accountId: string;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const response = await client.api.lists.$delete({
@@ -1057,7 +1066,7 @@ export async function apiDeleteList(
  */
 export async function apiProcessLinks(
   request: Request,
-  type?: "bluesky" | "mastodon"
+  type?: "bluesky" | "mastodon",
 ) {
   const client = createApiClient(request);
   const response = await client.api.links.process.$post({
@@ -1164,7 +1173,7 @@ export async function apiSearchUser(request: Request, email: string) {
  */
 export async function apiResetPassword(
   request: Request,
-  data: { email: string; newPassword: string }
+  data: { email: string; newPassword: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth["reset-password"].$post({
@@ -1189,7 +1198,7 @@ export async function apiResetPassword(
  */
 export async function apiChangeEmail(
   request: Request,
-  data: { email: string }
+  data: { email: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth["change-email"].$post({
@@ -1211,7 +1220,7 @@ export async function apiChangeEmail(
  */
 export async function apiUpdateEmail(
   request: Request,
-  data: { oldEmail: string; newEmail: string }
+  data: { oldEmail: string; newEmail: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth["update-email"].$put({
@@ -1271,7 +1280,7 @@ export async function apiSetEmail(request: Request, data: { email: string }) {
  */
 export async function apiForgotPassword(
   request: Request,
-  data: { email: string }
+  data: { email: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.auth["forgot-password"].$post({
@@ -1407,7 +1416,7 @@ export async function apiUpdateLinkMetadata(
   data: {
     url: string;
     metadata: Partial<Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">>;
-  }
+  },
 ) {
   const client = createApiClient(request);
   const response = await client.api.links.metadata.$post({
@@ -1432,7 +1441,7 @@ export async function apiUpdateLinkMetadata(
  */
 export async function apiStartSync(
   request: Request,
-  data: { syncId: string; label: string }
+  data: { syncId: string; label: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.sync.start.$post({
@@ -1457,7 +1466,7 @@ export async function apiStartSync(
  */
 export async function apiCompleteSync(
   request: Request,
-  data: { syncId: string; status: "success" | "error"; error?: string }
+  data: { syncId: string; status: "success" | "error"; error?: string },
 ) {
   const client = createApiClient(request);
   const response = await client.api.sync.complete.$post({

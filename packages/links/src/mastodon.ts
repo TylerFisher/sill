@@ -139,7 +139,7 @@ export const getMastodonTimeline = async (
     };
   }
 ): Promise<mastodon.v1.Status[]> => {
-  const yesterday = new Date(Date.now() - 10800000);
+  const yesterday = new Date(Date.now() - 86400000); // 24 hours
 
   let client: mastodon.rest.Client | null = null;
 
@@ -157,10 +157,14 @@ export const getMastodonTimeline = async (
 
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
-  for await (const statuses of client.v1.timelines.home.list({
-    sinceId: account.mostRecentPostId,
-    limit: 40,
-  })) {
+
+  // Only pass sinceId if it's set - otherwise fetch all recent posts
+  const listParams: { limit: number; sinceId?: string } = { limit: 40 };
+  if (account.mostRecentPostId) {
+    listParams.sinceId = account.mostRecentPostId;
+  }
+
+  for await (const statuses of client.v1.timelines.home.list(listParams)) {
     if (ended) break;
     for await (const status of statuses) {
       if (status.account.username === profile.username) continue;

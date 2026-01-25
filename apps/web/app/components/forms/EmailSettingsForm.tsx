@@ -1,4 +1,4 @@
-import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
 	Box,
@@ -7,7 +7,6 @@ import {
 	Flex,
 	Link as RLink,
 	RadioGroup,
-	Select,
 	Slider,
 	Text,
 	TextField,
@@ -20,6 +19,7 @@ import { EmailSettingsSchema, type action } from "~/routes/email/add";
 import CopyLink from "../linkPosts/CopyLink";
 import ErrorCallout from "./ErrorCallout";
 import SubmitButton from "./SubmitButton";
+import TimeSelect, { formatUtcTimeAsLocal } from "./TimeSelect";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
@@ -51,37 +51,14 @@ const EmailSettingForm = ({
 		shouldRevalidate: "onSubmit",
 	});
 
-	const dateFormatter = new Intl.DateTimeFormat("en-US", {
-		timeZoneName: "short",
-	});
-
-	const dateParts = dateFormatter.formatToParts(new Date());
-	const timeZone = dateParts.find(
-		(part) => part.type === "timeZoneName",
-	)?.value;
-
-	const hours = Array.from({ length: 24 }, (_, i) => {
-		const hour = i % 12 || 12;
-		const period = i < 12 ? "a.m." : "p.m.";
-		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
-	});
-
 	return (
 		<Box>
 			{currentSettings?.digestType === "email" && (
 				<Card mb="6">
 					<Text as="p" size="3" mb="4">
 						Your Daily Digest will be delivered at{" "}
-						{selectedHour &&
-							(() => {
-								// Convert UTC time from DB to local time
-								const utcTime = new Date(
-									`2000-01-01T${currentSettings.scheduledTime}Z`,
-								);
-								const localHour = utcTime.getHours();
-								return hours[localHour];
-							})()}{" "}
-						to {email || "your email address"}.
+						{formatUtcTimeAsLocal(currentSettings.scheduledTime)} to{" "}
+						{email || "your email address"}.
 					</Text>
 					<RLink asChild size="3">
 						<Link
@@ -131,30 +108,11 @@ const EmailSettingForm = ({
 			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				<Box my="5">
-					<Text as="label" size="3" htmlFor="time">
-						<strong>Delivery time</strong>
-					</Text>
-					<br />
-					<Select.Root
-						{...getInputProps(fields.time, { type: "time" })}
+					<TimeSelect
 						value={selectedHour}
-						onValueChange={(value) => setSelectedHour(value)}
-						size="3"
-					>
-						<Select.Trigger placeholder="Select a time" />
-						<Select.Content position="popper">
-							{hours.map((hour, index) => {
-								const localDate = new Date();
-								localDate.setHours(index, 0, 0, 0);
-								const utcHour = localDate.toISOString().substring(11, 16);
-								return (
-									<Select.Item key={hour} value={utcHour}>
-										{hour}
-									</Select.Item>
-								);
-							})}
-						</Select.Content>
-					</Select.Root>
+						onChange={setSelectedHour}
+						label="Delivery time"
+					/>
 					{fields.time.errors && <ErrorCallout error={fields.time.errors[0]} />}
 				</Box>
 				<Box

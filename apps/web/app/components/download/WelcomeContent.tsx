@@ -1,27 +1,24 @@
-import { Box, Card, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
+import { Suspense, useState } from "react";
+import { Await } from "react-router";
 import PageHeading from "~/components/nav/PageHeading";
-import type { SubscriptionStatus } from "@sill/schema";
-import ActionCard from "./ActionCard";
-import BlueskyAuthForm from "~/components/forms/BlueskyAuthForm";
-import MastodonAuthForm from "~/components/forms/MastodonAuthForm";
-
-interface WelcomeContentProps {
-	subscribed: SubscriptionStatus;
-	hasBluesky: boolean;
-	hasMastodon: boolean;
-	searchParams: URLSearchParams;
-	syncComplete: boolean;
-}
+import AccountsStep from "./AccountsStep";
+import EmailStep from "./EmailStep";
+import ListsStep from "./ListsStep";
+import StepIndicator from "./StepIndicator";
+import StepNavigation from "./StepNavigation";
+import { STEPS, type WelcomeContentProps } from "./types";
 
 export default function WelcomeContent({
-	subscribed,
-	hasBluesky,
-	hasMastodon,
 	searchParams,
-	syncComplete,
+	user,
+	digestSettingsPromise,
+	subscribed,
 }: WelcomeContentProps) {
-	const showConnectBluesky = !hasBluesky;
-	const showConnectMastodon = !hasMastodon;
+	const [currentStep, setCurrentStep] = useState(0);
+	const blueskyAccount = user.blueskyAccounts[0] || null;
+	const mastodonAccount = user.mastodonAccounts[0] || null;
+	const currentStepData = STEPS[currentStep];
 
 	return (
 		<Box maxWidth="600px">
@@ -30,78 +27,69 @@ export default function WelcomeContent({
 				dek="Your account is ready. While your timeline syncs, set up additional features below."
 			/>
 
-			<Grid
-				columns={{
-					initial: "1",
-					sm: "2",
+			<StepIndicator currentStep={currentStep} steps={STEPS} />
+
+			<Box mb="4">
+				<Heading as="h3" size="5" mb="1">
+					{currentStepData.title}
+				</Heading>
+				<Text color="gray" size="2">
+					{currentStepData.description}
+				</Text>
+			</Box>
+
+			<Box
+				py="4"
+				style={{
+					borderTop: "1px solid var(--gray-6)",
+					borderBottom: "1px solid var(--gray-6)",
+					minHeight: "250px",
 				}}
-				gap="4"
 			>
-				{syncComplete && (
-					<ActionCard
-						title="View Your Links"
-						description="See what's trending across your network in real-time. Your personalized link feed is ready to explore."
-						buttonText="View popular links"
-						buttonTo="/links"
-						buttonVariant="solid"
+				{currentStep === 0 && (
+					<AccountsStep
+						blueskyAccount={blueskyAccount}
+						mastodonAccount={mastodonAccount}
+						searchParams={searchParams}
 					/>
 				)}
-
-				{showConnectBluesky && (
-					<Card size="3" style={{ height: "100%" }}>
-						<Flex direction="column" gap="3" style={{ height: "100%" }}>
-							<Heading as="h3" size="5">
-								Connect Bluesky
-							</Heading>
-							<Text color="gray" size="3">
-								Add a Bluesky account to see links from your network.
-							</Text>
-							<BlueskyAuthForm mode="connect" searchParams={searchParams} />
-						</Flex>
-					</Card>
-				)}
-
-				{showConnectMastodon && (
-					<Card size="3" style={{ height: "100%" }}>
-						<Flex direction="column" gap="3" style={{ height: "100%" }}>
-							<Heading as="h3" size="5">
-								Connect Mastodon
-							</Heading>
-							<Text color="gray" size="3">
-								Add a Mastodon account to see links from your network.
-							</Text>
-							<MastodonAuthForm mode="connect" searchParams={searchParams} />
-						</Flex>
-					</Card>
-				)}
-
-				{subscribed !== "free" && (
-					<ActionCard
-						title="Daily Digest"
-						description="Get a curated email or RSS feed of the most popular links from your network, delivered daily."
-						buttonText="Set up Daily Digest"
-						buttonTo="/email"
+				{currentStep === 1 && (
+					<ListsStep
+						blueskyAccount={blueskyAccount}
+						mastodonAccount={mastodonAccount}
+						subscribed={subscribed}
 					/>
 				)}
-
-				{subscribed !== "free" && (
-					<ActionCard
-						title="Notifications"
-						description="Create personalized alerts for trending topics, keywords, or popularity thresholds."
-						buttonText="Create notifications"
-						buttonTo="/notifications"
-					/>
+				{currentStep === 2 && (
+					<Suspense
+						fallback={
+							<Flex align="center" gap="2">
+								<Spinner />
+								<Text size="2">Loading...</Text>
+							</Flex>
+						}
+					>
+						<Await resolve={digestSettingsPromise}>
+							{(digestData) => (
+								<EmailStep
+									email={user.email}
+									currentSettings={digestData.settings}
+								/>
+							)}
+						</Await>
+					</Suspense>
 				)}
+			</Box>
 
-				{!syncComplete && (hasBluesky || hasMastodon) && (
-					<ActionCard
-						title="Manage Connections"
-						description="View and manage your connected accounts, or subscribe to additional lists and feeds."
-						buttonText="Manage connections"
-						buttonTo="/settings/connections"
-					/>
-				)}
-			</Grid>
+			<StepNavigation
+				currentStep={currentStep}
+				totalSteps={STEPS.length}
+				showSkip={currentStep === 2 && !user.email}
+				onBack={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
+				onNext={() =>
+					setCurrentStep((prev) => Math.min(STEPS.length - 1, prev + 1))
+				}
+			/>
 		</Box>
 	);
 }

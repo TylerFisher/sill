@@ -11,8 +11,17 @@ type ProfileResponse = InferResponseType<
   200
 >;
 
-export interface UserProfile extends ProfileResponse {
+// Extend ProfileResponse with additional fields that the API returns
+// Some fields are optional to handle stale type inference from Hono client
+export interface UserProfile
+  extends Omit<ProfileResponse, "subscriptionStatus"> {
   subscriptionStatus: SubscriptionStatus;
+  hasPassword: boolean;
+  activeSyncs: Array<{
+    syncId: string;
+    label: string;
+    status: string;
+  }>;
 }
 
 export const userContext = unstable_createContext<UserProfile | null>(null);
