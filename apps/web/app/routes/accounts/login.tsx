@@ -3,13 +3,14 @@ import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import {
 	Box,
+	Callout,
 	Flex,
 	Heading,
 	Link as RLink,
 	Separator,
 	Text,
 } from "@radix-ui/themes";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Info } from "lucide-react";
 import { useState } from "react";
 import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
@@ -135,6 +136,17 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 			<Box mb="5">
 				<Heading size="6">Login to Sill</Heading>
 			</Box>
+
+			<Callout.Root mb="5">
+				<Callout.Icon>
+					<Info size={16} />
+				</Callout.Icon>
+				<Callout.Text>
+					Sill now uses your Atmosphere (e.g. Bluesky) or Mastodon account to
+					log in. If you previously signed up with email and password, you can
+					use the "Log in with email" option below.
+				</Callout.Text>
+			</Callout.Root>
 
 			{/* Bluesky Login */}
 			<BlueskyAuthForm mode="login" searchParams={searchParams} />
