@@ -36,7 +36,7 @@ export const createOAuthClient = async (request?: Request) => {
 
   const privateKeyPKCS8 = Buffer.from(
     process.env.PRIVATE_KEY_ES256_B64 as string,
-    "base64"
+    "base64",
   ).toString();
   const privateKey = await JoseKey.fromImportable(privateKeyPKCS8, "key1");
   const enc = encodeURIComponent;
@@ -46,7 +46,7 @@ export const createOAuthClient = async (request?: Request) => {
       client_id: isProduction
         ? `${process.env.PUBLIC_URL}/client-metadata.json`
         : `http://localhost?redirect_uri=${enc(
-            `${baseUrl}/bluesky/auth/callback`
+            `${baseUrl}/bluesky/auth/callback`,
           )}&scope=${enc("atproto transition:generic")}`,
       client_uri: process.env.PUBLIC_URL,
       jwks_uri: `${baseUrl}/jwks.json`,
@@ -59,7 +59,6 @@ export const createOAuthClient = async (request?: Request) => {
       token_endpoint_auth_signing_alg: "ES256",
       dpop_bound_access_tokens: true,
     },
-    // @ts-expect-error - JoseKey type compatibility issue with NodeOAuthClient
     keyset: [privateKey],
     stateStore: new StateStore(),
     sessionStore: new SessionStore(),
