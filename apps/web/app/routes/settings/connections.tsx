@@ -1,19 +1,22 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box } from "@radix-ui/themes";
 import { Await, redirect, useSearchParams } from "react-router";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import BlueskyConnectForm from "~/components/forms/BlueskyConnectForm";
-import type { ListOption } from "~/components/forms/ListSwitch";
 import MastodonConnectForm from "~/components/forms/MastodonConnectForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
+import { useSyncStatus } from "~/components/contexts/SyncContext";
 import type { Route } from "./+types/connections";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
 	apiGetBlueskyLists,
 	apiGetMastodonLists,
 	apiCheckBlueskyStatus,
+	apiFilterLinkOccurrences,
+	apiStartSync,
+	apiCompleteSync,
 } from "~/utils/api-client.server";
 
 export const meta: Route.MetaFunction = () => [
@@ -69,14 +72,64 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 				})
 			: Promise.resolve({ lists: [] });
 
-	return { user: existingUser, subscribed, bskyPromise, mastodonPromise };
+	// If a service was just connected, kick off a sync
+	const params = new URL(request.url).searchParams;
+	const service = params.get("service");
+	let syncPromise: Promise<"success" | "error"> | null = null;
+	let syncId: string | null = null;
+
+	if (service) {
+		syncId = `account-${service.toLowerCase()}`;
+		await apiStartSync(request, { syncId, label: service }).catch(() => {});
+
+		syncPromise = apiFilterLinkOccurrences(request, {
+			time: 86400000,
+			hideReposts: "include",
+			fetch: true,
+			service: service.toLowerCase() as "bluesky" | "mastodon",
+		})
+			.then(async () => {
+				await apiCompleteSync(request, {
+					syncId: syncId as string,
+					status: "success",
+				}).catch(() => {});
+				return "success" as const;
+			})
+			.catch(async () => {
+				await apiCompleteSync(request, {
+					syncId: syncId as string,
+					status: "error",
+				}).catch(() => {});
+				return "error" as const;
+			});
+	}
+
+	return {
+		user: existingUser,
+		subscribed,
+		bskyPromise,
+		mastodonPromise,
+		syncPromise,
+		syncId,
+		service,
+	};
 }
 
 export default function ConnectionSettings({
 	loaderData,
 }: Route.ComponentProps) {
-	const { user, subscribed, bskyPromise, mastodonPromise } = loaderData;
+	const { user, subscribed, bskyPromise, mastodonPromise, syncPromise, syncId, service } =
+		loaderData;
 	const [searchParams] = useSearchParams();
+	const { startSync } = useSyncStatus();
+	const syncStarted = useRef(false);
+
+	useEffect(() => {
+		if (syncPromise && syncId && service && !syncStarted.current) {
+			syncStarted.current = true;
+			startSync(syncPromise, { id: syncId, label: service });
+		}
+	}, [syncPromise, syncId, service, startSync]);
 
 	return (
 		<Layout>

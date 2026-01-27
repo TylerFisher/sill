@@ -1,4 +1,4 @@
-import { Flex, Spinner, Switch, Text } from "@radix-ui/themes";
+import { Flex, Switch, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import type { blueskyAccount, mastodonAccount } from "@sill/schema";
@@ -56,15 +56,11 @@ const ListSwitch = ({ item, account }: ListSwitchProps) => {
 	return (
 		<Text as="label" size="2">
 			<Flex gap="2">
-				{fetcher.state === "submitting" ? (
-					<Spinner size="3" />
-				) : (
-					<Switch
-						size="3"
-						onCheckedChange={onCheckedChange}
-						checked={checked}
-					/>
-				)}
+				<Switch
+					size="3"
+					onCheckedChange={onCheckedChange}
+					checked={checked}
+				/>
 				{item.name}
 			</Flex>
 		</Text>
