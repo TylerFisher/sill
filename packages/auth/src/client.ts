@@ -59,7 +59,6 @@ export const createOAuthClient = async (request?: Request) => {
       token_endpoint_auth_signing_alg: "ES256",
       dpop_bound_access_tokens: true,
     },
-    // @ts-expect-error - JoseKey type compatibility issue with NodeOAuthClient
     keyset: [privateKey],
     stateStore: new StateStore(),
     sessionStore: new SessionStore(),
