@@ -74,6 +74,7 @@ export default function WelcomeContent({
 							{(digestData) => (
 								<EmailStep
 									email={user.email}
+									userId={user.id}
 									currentSettings={digestData.settings}
 								/>
 							)}

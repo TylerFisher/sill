@@ -5,6 +5,7 @@ import {
 	Button,
 	Callout,
 	Flex,
+	RadioGroup,
 	Spinner,
 	Text,
 	TextField,
@@ -18,11 +19,194 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TimeSelect, {
 	formatUtcTimeAsLocal,
 } from "~/components/forms/TimeSelect";
+import CopyLink from "~/components/linkPosts/CopyLink";
 import { EmailSchema } from "~/utils/userValidation";
 import type { DigestSettings } from "./types";
 
 const AddEmailSchema = z.object({ email: EmailSchema });
 const VerifyCodeSchema = z.object({ code: z.string().min(6).max(6) });
+
+type DigestFormat = "email" | "rss" | "none" | null;
+
+function DigestFormatSelector({
+	onSelect,
+}: { onSelect: (format: DigestFormat) => void }) {
+	const [format, setFormat] = useState<DigestFormat>(null);
+
+	return (
+		<Box>
+			<Text as="p" size="2" weight="medium" mb="3">
+				How would you like to receive your daily digest?
+			</Text>
+			<RadioGroup.Root
+				value={format ?? undefined}
+				onValueChange={(value) => setFormat(value as DigestFormat)}
+				size="3"
+			>
+				<RadioGroup.Item value="email">Email</RadioGroup.Item>
+				<RadioGroup.Item value="rss">RSS Feed</RadioGroup.Item>
+				<RadioGroup.Item value="none">No daily digest</RadioGroup.Item>
+			</RadioGroup.Root>
+			<Box mt="4">
+				<Button onClick={() => format && onSelect(format)} disabled={!format}>
+					Continue
+				</Button>
+			</Box>
+		</Box>
+	);
+}
+
+function RssDigestSetup({
+	userId,
+	currentSettings,
+	onChangeFormat,
+}: {
+	userId: string;
+	currentSettings?: DigestSettings;
+	onChangeFormat: () => void;
+}) {
+	const fetcher = useFetcher();
+	const [enabled, setEnabled] = useState(currentSettings?.digestType === "rss");
+	const [time, setTime] = useState<string | undefined>(
+		currentSettings?.scheduledTime?.substring(0, 5) ?? "14:00",
+	);
+	const isSubmitting = fetcher.state === "submitting";
+
+	const rssUrl = `https://sill.social/digest/${userId}.rss`;
+
+	const handleSubmit = () => {
+		if (!time) return;
+		fetcher.submit(
+			{
+				time,
+				topAmount: "10",
+				digestType: "rss",
+				layout: "default",
+				hideReposts: "include",
+			},
+			{ method: "POST", action: "/email/add" },
+		);
+		setEnabled(true);
+	};
+
+	const handleDisable = () => {
+		fetcher.submit(null, { method: "DELETE", action: "/email/delete" });
+		setEnabled(false);
+	};
+
+	if (enabled && time) {
+		return (
+			<Box>
+				<Callout.Root>
+					<Callout.Icon>
+						<CheckCircle size={16} />
+					</Callout.Icon>
+					<Callout.Text>
+						RSS digest enabled for <strong>{formatUtcTimeAsLocal(time)}</strong>
+					</Callout.Text>
+				</Callout.Root>
+				<Box mt="3">
+					<Text
+						as="label"
+						size="2"
+						weight="medium"
+						mb="1"
+						style={{ display: "block" }}
+					>
+						RSS Feed URL
+					</Text>
+					<TextField.Root
+						type="url"
+						value={rssUrl}
+						readOnly
+						size="2"
+						style={{ flex: 1 }}
+					>
+						<TextField.Slot />
+						<TextField.Slot
+							style={{
+								position: "relative",
+								top: "1px",
+								marginRight: "8px",
+							}}
+						>
+							<CopyLink
+								url={rssUrl}
+								textPositioning={{
+									position: "absolute",
+									top: "-28px",
+									left: "-.9em",
+								}}
+								layout="default"
+							/>
+						</TextField.Slot>
+					</TextField.Root>
+				</Box>
+				<Flex mt="3" gap="3">
+					<Button
+						variant="ghost"
+						size="2"
+						onClick={handleDisable}
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? "Disabling..." : "Disable digest"}
+					</Button>
+				</Flex>
+			</Box>
+		);
+	}
+
+	return (
+		<Box>
+			<Text as="p" size="2" color="gray" mb="3">
+				Your top links will be available as an RSS feed, updated daily.
+			</Text>
+			<Flex align="end" gap="3">
+				<TimeSelect
+					value={time}
+					onChange={setTime}
+					label="Delivery time"
+					size="2"
+				/>
+				<Button onClick={handleSubmit} disabled={isSubmitting || !time}>
+					{isSubmitting ? (
+						<Flex align="center" gap="2">
+							<Spinner size="1" />
+							Enabling...
+						</Flex>
+					) : (
+						"Enable RSS digest"
+					)}
+				</Button>
+			</Flex>
+			<Box mt="3">
+				<Button variant="ghost" size="2" onClick={onChangeFormat}>
+					Choose a different format
+				</Button>
+			</Box>
+		</Box>
+	);
+}
+
+function NoneDigestMessage({ onChangeFormat }: { onChangeFormat: () => void }) {
+	return (
+		<Box>
+			<Callout.Root>
+				<Callout.Icon>
+					<CheckCircle size={16} />
+				</Callout.Icon>
+				<Callout.Text>
+					No daily digest set up. You can enable one later from your settings.
+				</Callout.Text>
+			</Callout.Root>
+			<Box mt="3">
+				<Button variant="ghost" size="2" onClick={onChangeFormat}>
+					Choose a different format
+				</Button>
+			</Box>
+		</Box>
+	);
+}
 
 function DigestToggle({
 	currentSettings,
@@ -198,8 +382,10 @@ function VerificationForm({
 
 function AddEmailForm({
 	fetcher,
+	onChangeFormat,
 }: {
 	fetcher: FetcherWithComponents<{ redirectTo?: string; result?: unknown }>;
+	onChangeFormat: () => void;
 }) {
 	const [form, fields] = useForm({
 		id: "add-email-form",
@@ -261,16 +447,31 @@ function AddEmailForm({
 					</Text>
 				)}
 			</fetcher.Form>
+			<Box mt="3">
+				<Button variant="ghost" size="2" onClick={onChangeFormat}>
+					Choose a different format
+				</Button>
+			</Box>
 		</Box>
 	);
 }
 
 interface EmailStepProps {
 	email: string | null;
+	userId: string;
 	currentSettings?: DigestSettings;
 }
 
-export default function EmailStep({ email, currentSettings }: EmailStepProps) {
+export default function EmailStep({
+	email,
+	userId,
+	currentSettings,
+}: EmailStepProps) {
+	const initialFormat: DigestFormat = currentSettings
+		? (currentSettings.digestType as DigestFormat)
+		: null;
+
+	const [digestFormat, setDigestFormat] = useState<DigestFormat>(initialFormat);
 	const [verifiedEmail, setVerifiedEmail] = useState<string | null>(email);
 	const [verificationTarget, setVerificationTarget] = useState<string | null>(
 		null,
@@ -283,6 +484,8 @@ export default function EmailStep({ email, currentSettings }: EmailStepProps) {
 		result?: unknown;
 	}>();
 
+	const resetFormat = () => setDigestFormat(null);
+
 	useEffect(() => {
 		const redirectTo = addEmailFetcher.data?.redirectTo;
 		if (redirectTo && redirectTo !== processedRedirect) {
@@ -294,6 +497,24 @@ export default function EmailStep({ email, currentSettings }: EmailStepProps) {
 			}
 		}
 	}, [addEmailFetcher.data?.redirectTo, processedRedirect]);
+
+	if (!digestFormat) {
+		return <DigestFormatSelector onSelect={setDigestFormat} />;
+	}
+
+	if (digestFormat === "none") {
+		return <NoneDigestMessage onChangeFormat={resetFormat} />;
+	}
+
+	if (digestFormat === "rss") {
+		return (
+			<RssDigestSetup
+				userId={userId}
+				currentSettings={currentSettings}
+				onChangeFormat={resetFormat}
+			/>
+		);
+	}
 
 	if (verifiedEmail) {
 		return (
@@ -314,5 +535,7 @@ export default function EmailStep({ email, currentSettings }: EmailStepProps) {
 		);
 	}
 
-	return <AddEmailForm fetcher={addEmailFetcher} />;
+	return (
+		<AddEmailForm fetcher={addEmailFetcher} onChangeFormat={resetFormat} />
+	);
 }

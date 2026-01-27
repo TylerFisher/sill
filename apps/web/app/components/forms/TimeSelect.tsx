@@ -58,7 +58,14 @@ export default function TimeSelect({
 	return (
 		<Box>
 			{label && (
-				<Text as="label" size={size} htmlFor={name} weight="medium">
+				<Text
+					as="label"
+					size={size}
+					htmlFor={name}
+					weight="medium"
+					mb="1"
+					style={{ display: "block" }}
+				>
 					{label}
 				</Text>
 			)}

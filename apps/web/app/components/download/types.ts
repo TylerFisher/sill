@@ -38,6 +38,6 @@ export const STEPS: Step[] = [
     id: "email",
     title: "Set up Daily Digest",
     description:
-      "Sill can send you a daily email at a time of your choosing with your top ten links. Add an email address to get started.",
+      "Sill can send you a daily digest of your top links. Choose how you'd like to receive it.",
   },
 ];
