@@ -30,7 +30,7 @@
   "dependencies": {
     "@sill/schema": "workspace:*",
     "@atproto/oauth-client-node": "^0.2.5",
-    "@atproto/jwk-jose": "^0.1.9",
+    "@atproto/jwk-jose": "0.1.8",
     "@epic-web/totp": "^1.1.0",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "^0.44.4",

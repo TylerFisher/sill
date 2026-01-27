@@ -313,8 +313,8 @@ importers:
   packages/auth:
     dependencies:
       '@atproto/jwk-jose':
-        specifier: ^0.1.9
-        version: 0.1.11
+        specifier: 0.1.8
+        version: 0.1.8
       '@atproto/oauth-client-node':
         specifier: ^0.2.5
         version: 0.2.24
@@ -526,9 +526,6 @@ packages:
   '@atproto/did@0.1.5':
     resolution: {integrity: sha512-8+1D08QdGE5TF0bB0vV8HLVrVZJeLNITpRTUVEoABNMRaUS7CoYSVb0+JNQDeJIVmqMjOL8dOjvCUDkp3gEaGQ==}
 
-  '@atproto/jwk-jose@0.1.11':
-    resolution: {integrity: sha512-i4Fnr2sTBYmMmHXl7NJh8GrCH+tDQEVWrcDMDnV5DjJfkgT17wIqvojIw9SNbSL4Uf0OtfEv6AgG0A+mgh8b5Q==}
-
   '@atproto/jwk-jose@0.1.8':
     resolution: {integrity: sha512-aoU2Q0GpIl388KhCcv9YvAxNscALUv3xzLq5gjVPdJ+zmqw94nGZNcjiNvpnbfS+VQM9e2DrrTuwmDXnxfrrSA==}
 
@@ -537,9 +534,6 @@ packages:
 
   '@atproto/jwk@0.3.0':
     resolution: {integrity: sha512-MIAXyNMGu1tCNHjqW/8jqfE/wgWCIoK2cJ0mR6UxwhNPvkbe35TcpRYJdtQu/E6MUd7TziyDBa/GO4dKAiePhQ==}
-
-  '@atproto/jwk@0.6.0':
-    resolution: {integrity: sha512-bDoJPvt7TrQVi/rBfBrSSpGykhtIriKxeYCYQTiPRKFfyRhbgpElF0wPXADjIswnbzZdOwbY63az4E/CFVT3Tw==}
 
   '@atproto/lex-cbor@0.0.9':
     resolution: {integrity: sha512-szkS569j1eZsIxZKh2VZHVq7pSpewy1wHh8c6nVYekHfYcJhFkevQq/DjTeatZ7YZKNReGYthQulgaZq2ytfWQ==}
@@ -5435,11 +5429,6 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
-  '@atproto/jwk-jose@0.1.11':
-    dependencies:
-      '@atproto/jwk': 0.6.0
-      jose: 5.10.0
-
   '@atproto/jwk-jose@0.1.8':
     dependencies:
       '@atproto/jwk': 0.3.0
@@ -5452,11 +5441,6 @@ snapshots:
       zod: 3.25.76
 
   '@atproto/jwk@0.3.0':
-    dependencies:
-      multiformats: 9.9.0
-      zod: 3.25.76
-
-  '@atproto/jwk@0.6.0':
     dependencies:
       multiformats: 9.9.0
       zod: 3.25.76
