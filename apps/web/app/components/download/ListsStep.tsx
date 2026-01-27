@@ -1,5 +1,5 @@
 import { Box, Flex, Heading, Spinner, Text } from "@radix-ui/themes";
-import { useEffect } from "react";
+import { memo, useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
 import type { SubscriptionStatus, AccountWithInstance } from "@sill/schema";
 import type { ListOption } from "~/components/forms/ListSwitch";
@@ -24,9 +24,15 @@ function AccountLists({
 	subscribed: SubscriptionStatus;
 }) {
 	const fetcher = useFetcher<{ lists: ListOption[] }>();
-	const lists = fetcher.data?.lists?.filter((l) => l.type === type) || [];
-	const isLoading = fetcher.state === "loading";
-	const hasLoaded = fetcher.data !== undefined;
+	const cachedLists = useRef<ListOption[] | null>(null);
+
+	// Cache fetched lists so revalidation never flashes a spinner
+	if (fetcher.data?.lists) {
+		cachedLists.current = fetcher.data.lists.filter((l) => l.type === type);
+	}
+
+	const lists = cachedLists.current;
+	const hasLoaded = lists !== null;
 
 	useEffect(() => {
 		if (fetcher.state === "idle" && !hasLoaded) {
@@ -34,7 +40,7 @@ function AccountLists({
 		}
 	}, [fetcher, apiUrl, hasLoaded]);
 
-	if (!hasLoaded || isLoading) {
+	if (!hasLoaded) {
 		return (
 			<Flex align="center" gap="2">
 				<Spinner size="1" />
@@ -51,10 +57,12 @@ function AccountLists({
 		);
 	}
 
-	return <Lists listOptions={lists} account={account} subscribed={subscribed} />;
+	return (
+		<Lists listOptions={lists} account={account} subscribed={subscribed} />
+	);
 }
 
-export default function ListsStep({
+function ListsStep({
 	blueskyAccount,
 	mastodonAccount,
 	subscribed,
@@ -101,3 +109,5 @@ export default function ListsStep({
 		</Flex>
 	);
 }
+
+export default memo(ListsStep);

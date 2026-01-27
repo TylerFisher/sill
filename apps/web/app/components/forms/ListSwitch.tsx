@@ -56,11 +56,7 @@ const ListSwitch = ({ item, account }: ListSwitchProps) => {
 	return (
 		<Text as="label" size="2">
 			<Flex gap="2">
-				<Switch
-					size="3"
-					onCheckedChange={onCheckedChange}
-					checked={checked}
-				/>
+				<Switch size="3" onCheckedChange={onCheckedChange} checked={checked} />
 				{item.name}
 			</Flex>
 		</Text>
