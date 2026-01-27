@@ -1,22 +1,23 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import * as Collapsible from "@radix-ui/react-collapsible";
 import {
 	Box,
-	Button,
-	Callout,
 	Flex,
 	Heading,
 	Link as RLink,
 	Separator,
 	Text,
-	TextField,
 } from "@radix-ui/themes";
-import { CircleAlert } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { Form, Link, data, redirect, useSearchParams } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 import { z } from "zod";
+import BlueskyAuthForm from "~/components/forms/BlueskyAuthForm";
 import CheckboxField from "~/components/forms/CheckboxField";
 import ErrorList from "~/components/forms/ErrorList";
+import MastodonAuthForm from "~/components/forms/MastodonAuthForm";
 import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
@@ -63,7 +64,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 						// Add form-level error (no path) for credential errors
 						ctx.addIssue({
 							code: z.ZodIssueCode.custom,
-							message: ("error" in apiResponse ? apiResponse.error : undefined) || "Invalid email or password",
+							message:
+								("error" in apiResponse ? apiResponse.error : undefined) ||
+								"Invalid email or password",
 						});
 						return z.NEVER;
 					}
@@ -114,6 +117,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 const Login = ({ actionData }: Route.ComponentProps) => {
 	const [searchParams] = useSearchParams();
 	const redirectTo = searchParams.get("redirectTo");
+	const [emailLoginOpen, setEmailLoginOpen] = useState(false);
 
 	const [form, fields] = useForm({
 		id: "login-form",
@@ -129,129 +133,100 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 	return (
 		<Layout hideNav>
 			<Box mb="5">
-				<Heading size="8">Log in</Heading>
+				<Heading size="6">Login to Sill</Heading>
 			</Box>
 
 			{/* Bluesky Login */}
-			{/* <Form action="/bluesky/auth" method="GET">
-				<Box mb="4">
-					<Text htmlFor="handle" size="2" as="label" mb="2" style={{ display: "block" }}>
-						Log in with Bluesky
-					</Text>
-					<TextField.Root
-						name="handle"
-						placeholder="username.bsky.social"
-						mb="3"
-						required
-					>
-						<TextField.Slot />
-					</TextField.Root>
-					<Button type="submit" style={{ width: "100%" }}>
-						Continue with Bluesky
-					</Button>
-				</Box>
-				{searchParams.get("error") === "bluesky" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							We had trouble logging you in with Bluesky. Please try again.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-				{searchParams.get("error") === "account_not_found" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							No account found with this Bluesky handle. Please sign up with email first.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-				{searchParams.get("error") === "handle_required" && (
-					<Callout.Root mb="4" color="red">
-						<Callout.Icon>
-							<CircleAlert width="18" height="18" />
-						</Callout.Icon>
-						<Callout.Text>
-							Please enter your Bluesky handle to log in.
-						</Callout.Text>
-					</Callout.Root>
-				)}
-			</Form>
+			<BlueskyAuthForm mode="login" searchParams={searchParams} />
 
-			<Flex align="center" gap="3" mb="4">
+			<Flex align="center" gap="3" mb="4" mt="4">
 				<Separator style={{ flex: 1 }} />
-				<Text size="2" color="gray">or</Text>
+				<Text size="2" color="gray">
+					or
+				</Text>
 				<Separator style={{ flex: 1 }} />
-			</Flex> */}
+			</Flex>
 
-			{/* Email/Password Login */}
-			<Form method="post" {...getFormProps(form)}>
-				<HoneypotInputs />
-				<ErrorList errors={form.errors} id={form.errorId} />
-				<TextInput
-					labelProps={{
-						htmlFor: fields.email.name,
-						children: "Email address",
-					}}
-					inputProps={{ ...getInputProps(fields.email, { type: "email" }) }}
-					errors={fields.email.errors}
-				/>
-				<TextInput
-					labelProps={{
-						htmlFor: fields.password.name,
-						children: "Password",
-					}}
-					inputProps={{
-						...getInputProps(fields.password, { type: "password" }),
-					}}
-					errors={fields.password.errors}
-				/>
-				<Box width="100%">
-					<Flex mb="5" align="center" justify="between" gap="3" width="100%">
-						<CheckboxField
-							labelProps={{
-								htmlFor: fields.remember.id,
-								children: "Remember me?",
-							}}
-							inputProps={{
-								name: fields.remember.name,
-								id: fields.remember.id,
-							}}
-							errors={fields.remember.errors}
-						/>
-						<Box>
-							<RLink asChild>
-								<Link to="/accounts/forgot-password">
-									<Text size="2">Forgot password?</Text>
-								</Link>
-							</RLink>
-						</Box>
+			{/* Mastodon Login */}
+			<MastodonAuthForm mode="login" searchParams={searchParams} />
+
+			{/* Email/Password Login (Legacy) */}
+			<Collapsible.Root open={emailLoginOpen} onOpenChange={setEmailLoginOpen}>
+				<Collapsible.Trigger asChild>
+					<Flex align="center" gap="1" mt="4" style={{ cursor: "pointer" }}>
+						{emailLoginOpen ? (
+							<ChevronDown size={16} color="var(--gray-11)" />
+						) : (
+							<ChevronRight size={16} color="var(--gray-11)" />
+						)}
+						<Text size="2" color="gray">
+							Log in with email
+						</Text>
 					</Flex>
-				</Box>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<Box pt="4">
+						<Form method="post" {...getFormProps(form)}>
+							<HoneypotInputs />
+							<ErrorList errors={form.errors} id={form.errorId} />
+							<TextInput
+								labelProps={{
+									htmlFor: fields.email.name,
+									children: "Email address",
+								}}
+								inputProps={{
+									...getInputProps(fields.email, { type: "email" }),
+								}}
+								errors={fields.email.errors}
+							/>
+							<TextInput
+								labelProps={{
+									htmlFor: fields.password.name,
+									children: "Password",
+								}}
+								inputProps={{
+									...getInputProps(fields.password, { type: "password" }),
+								}}
+								errors={fields.password.errors}
+							/>
+							<Box width="100%">
+								<Flex
+									mb="5"
+									align="center"
+									justify="between"
+									gap="3"
+									width="100%"
+								>
+									<CheckboxField
+										labelProps={{
+											htmlFor: fields.remember.id,
+											children: "Remember me?",
+										}}
+										inputProps={{
+											name: fields.remember.name,
+											id: fields.remember.id,
+										}}
+										errors={fields.remember.errors}
+									/>
+									<Box>
+										<RLink asChild>
+											<Link to="/accounts/forgot-password">
+												<Text size="2">Forgot password?</Text>
+											</Link>
+										</RLink>
+									</Box>
+								</Flex>
+							</Box>
 
-				<input {...getInputProps(fields.redirectTo, { type: "hidden" })} />
+							<input
+								{...getInputProps(fields.redirectTo, { type: "hidden" })}
+							/>
 
-				<SubmitButton label="Log in" />
-
-				<Box mt="5">
-					<Text size="2">New here? </Text>
-					<RLink asChild>
-						<Link
-							to={
-								redirectTo
-									? `/accounts/signup?${encodeURIComponent(redirectTo)}`
-									: "/accounts/signup"
-							}
-						>
-							<Text size="2">Create an account</Text>.
-						</Link>
-					</RLink>
-				</Box>
-			</Form>
+							<SubmitButton label="Log in" size="3" style={{ width: "100%" }} />
+						</Form>
+					</Box>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		</Layout>
 	);
 };

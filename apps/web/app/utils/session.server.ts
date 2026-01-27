@@ -38,21 +38,34 @@ Object.defineProperty(authSessionStorage, "commitSession", {
 });
 
 /**
- * Sets the instance in a cookie so we can access it later in OAuth handshake and redirects to a URL
+ * Sets the instance, mode, and origin in a cookie so we can access it later in OAuth handshake and redirects to a URL
  * @param request Request object
  * @param instance Mastodon instance URL
  * @param redirectTo URL to redirect to after setting the instance
+ * @param mode Optional mode (login or signup)
+ * @param origin Optional origin URL to redirect back to after OAuth
  * @returns Redirect response with instance cookie set
  */
 export async function createInstanceCookie(
 	request: Request,
 	instance: string,
 	redirectTo: string,
+	mode?: "login" | "signup",
+	origin?: string,
 ) {
 	const session = await authSessionStorage.getSession(
 		request.headers.get("cookie"),
 	);
 	session.set("instance", instance);
+	// Always set mode (or unset if undefined) to clear stale values from previous flows
+	if (mode) {
+		session.set("mastodonMode", mode);
+	} else {
+		session.unset("mastodonMode");
+	}
+	if (origin) {
+		session.set("mastodonOrigin", origin);
+	}
 	return redirect(redirectTo, {
 		headers: {
 			"Set-Cookie": await authSessionStorage.commitSession(session),
@@ -71,4 +84,130 @@ export async function getInstanceCookie(request: Request) {
 	);
 	const instance: string = session.get("instance");
 	return instance;
+}
+
+/**
+ * Gets the Mastodon mode from the session cookie
+ * @param request Request object
+ * @returns Mode from session (login or signup)
+ */
+export async function getMastodonModeCookie(
+	request: Request,
+): Promise<"login" | "signup" | undefined> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	return session.get("mastodonMode");
+}
+
+/**
+ * Gets the Mastodon origin from the session cookie
+ * @param request Request object
+ * @returns Origin URL from session
+ */
+export async function getMastodonOriginCookie(
+	request: Request,
+): Promise<string | undefined> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	return session.get("mastodonOrigin");
+}
+
+/**
+ * Sets the Bluesky mode and origin in the session cookie
+ * @param request Request object
+ * @param mode Mode (login or signup)
+ * @param origin Optional origin URL to redirect back to after OAuth
+ * @returns Headers with cookie set
+ */
+export async function setBlueskyModeCookie(
+	request: Request,
+	mode: "login" | "signup",
+	origin?: string,
+): Promise<Headers> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	session.set("blueskyMode", mode);
+	if (origin) {
+		session.set("blueskyOrigin", origin);
+	}
+	const headers = new Headers();
+	headers.append(
+		"Set-Cookie",
+		await authSessionStorage.commitSession(session),
+	);
+	return headers;
+}
+
+/**
+ * Sets only the Bluesky origin in the session cookie (for connect flow without mode)
+ * @param request Request object
+ * @param origin Origin URL to redirect back to after OAuth
+ * @returns Headers with cookie set
+ */
+export async function setBlueskyOriginCookie(
+	request: Request,
+	origin: string,
+): Promise<Headers> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	session.set("blueskyOrigin", origin);
+	// Clear any stale mode from previous login/signup flows
+	session.unset("blueskyMode");
+	const headers = new Headers();
+	headers.append(
+		"Set-Cookie",
+		await authSessionStorage.commitSession(session),
+	);
+	return headers;
+}
+
+/**
+ * Gets the Bluesky mode from the session cookie
+ * @param request Request object
+ * @returns Mode from session (login or signup)
+ */
+export async function getBlueskyModeCookie(
+	request: Request,
+): Promise<"login" | "signup" | undefined> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	return session.get("blueskyMode");
+}
+
+/**
+ * Gets the Bluesky origin from the session cookie
+ * @param request Request object
+ * @returns Origin URL from session
+ */
+export async function getBlueskyOriginCookie(
+	request: Request,
+): Promise<string | undefined> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	return session.get("blueskyOrigin");
+}
+
+/**
+ * Clears the Bluesky mode and origin from the session cookie
+ * @param request Request object
+ * @returns Headers with cookie updated
+ */
+export async function clearBlueskyModeCookie(request: Request): Promise<Headers> {
+	const session = await authSessionStorage.getSession(
+		request.headers.get("cookie"),
+	);
+	session.unset("blueskyMode");
+	session.unset("blueskyOrigin");
+	const headers = new Headers();
+	headers.append(
+		"Set-Cookie",
+		await authSessionStorage.commitSession(session),
+	);
+	return headers;
 }

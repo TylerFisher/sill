@@ -8,6 +8,7 @@ import {
 export default [
   index("routes/_index.tsx"),
   ...prefix("accounts", [
+    route("add-email", "routes/accounts/add-email.tsx"),
     route("change-email", "routes/accounts/change-email.tsx"),
     route("forgot-password", "routes/accounts/forgot-password.tsx"),
     route("login", "routes/accounts/login.tsx"),
@@ -23,11 +24,16 @@ export default [
   ...prefix("api", [
     route("agree-to-terms", "routes/api/agree-to-terms.ts"),
     route("bluesky/status", "routes/api/bluesky.status.ts"),
+    route("email/send-verification", "routes/api/email.send-verification.ts"),
+    route("email/verify", "routes/api/email.verify.ts"),
     route("link/update-metadata", "routes/api/link.update-metadata.ts"),
     route("list/subscribe", "routes/api/list.subscribe.ts"),
+    route("lists/bluesky", "routes/api/lists.bluesky.ts"),
+    route("lists/mastodon", "routes/api/lists.mastodon.ts"),
     route("mute/add", "routes/api/mute.add.ts"),
     route("mute/delete", "routes/api/mute.delete.ts"),
     route("polar/webhook", "routes/api/polar.webhook.ts"),
+    route("sync/status", "routes/api/sync.status.ts"),
   ]),
   ...prefix("bluesky", [
     route("auth", "routes/bluesky/auth.ts"),

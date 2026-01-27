@@ -1,16 +1,17 @@
-import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import {
 	Box,
+	Callout,
 	Card,
 	Flex,
 	Link as RLink,
 	RadioGroup,
-	Select,
 	Slider,
 	Text,
 	TextField,
 } from "@radix-ui/themes";
+import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Form, Link, useFetcher } from "react-router";
 import type { digestSettings } from "@sill/schema";
@@ -18,10 +19,11 @@ import { EmailSettingsSchema, type action } from "~/routes/email/add";
 import CopyLink from "../linkPosts/CopyLink";
 import ErrorCallout from "./ErrorCallout";
 import SubmitButton from "./SubmitButton";
+import TimeSelect, { formatUtcTimeAsLocal } from "./TimeSelect";
 
 interface EmailSettingsFormProps {
 	currentSettings: typeof digestSettings.$inferSelect | undefined;
-	email: string;
+	email: string | null;
 }
 
 const EmailSettingForm = ({
@@ -49,40 +51,25 @@ const EmailSettingForm = ({
 		shouldRevalidate: "onSubmit",
 	});
 
-	const dateFormatter = new Intl.DateTimeFormat("en-US", {
-		timeZoneName: "short",
-	});
-
-	const dateParts = dateFormatter.formatToParts(new Date());
-	const timeZone = dateParts.find(
-		(part) => part.type === "timeZoneName",
-	)?.value;
-
-	const hours = Array.from({ length: 24 }, (_, i) => {
-		const hour = i % 12 || 12;
-		const period = i < 12 ? "a.m." : "p.m.";
-		return `${hour.toString().padStart(2, "0")}:00 ${period} ${timeZone}`;
-	});
-
 	return (
 		<Box>
 			{currentSettings?.digestType === "email" && (
 				<Card mb="6">
 					<Text as="p" size="3" mb="4">
 						Your Daily Digest will be delivered at{" "}
-						{selectedHour &&
-							(() => {
-								// Convert UTC time from DB to local time
-								const utcTime = new Date(
-									`2000-01-01T${currentSettings.scheduledTime}Z`,
-								);
-								const localHour = utcTime.getHours();
-								return hours[localHour];
-							})()}{" "}
-						to {email}.
+						{formatUtcTimeAsLocal(currentSettings.scheduledTime)} to{" "}
+						{email || "your email address"}.
 					</Text>
 					<RLink asChild size="3">
-						<Link to="/accounts/change-email">Change email address →</Link>
+						<Link
+							to={
+								email
+									? "/accounts/change-email"
+									: "/accounts/add-email?redirectTo=/digest"
+							}
+						>
+							{email ? "Change email address" : "Add email address"} →
+						</Link>
 					</RLink>
 				</Card>
 			)}
@@ -121,30 +108,11 @@ const EmailSettingForm = ({
 			)}
 			<fetcher.Form method="POST" action="/email/add" {...getFormProps(form)}>
 				<Box my="5">
-					<Text as="label" size="3" htmlFor="time">
-						<strong>Delivery time</strong>
-					</Text>
-					<br />
-					<Select.Root
-						{...getInputProps(fields.time, { type: "time" })}
+					<TimeSelect
 						value={selectedHour}
-						onValueChange={(value) => setSelectedHour(value)}
-						size="3"
-					>
-						<Select.Trigger placeholder="Select a time" />
-						<Select.Content position="popper">
-							{hours.map((hour, index) => {
-								const localDate = new Date();
-								localDate.setHours(index, 0, 0, 0);
-								const utcHour = localDate.toISOString().substring(11, 16);
-								return (
-									<Select.Item key={hour} value={utcHour}>
-										{hour}
-									</Select.Item>
-								);
-							})}
-						</Select.Content>
-					</Select.Root>
+						onChange={setSelectedHour}
+						label="Delivery time"
+					/>
 					{fields.time.errors && <ErrorCallout error={fields.time.errors[0]} />}
 				</Box>
 				<Box
@@ -182,6 +150,21 @@ const EmailSettingForm = ({
 					</RadioGroup.Root>
 					{fields.digestType.errors && (
 						<ErrorCallout error={fields.digestType.errors[0]} />
+					)}
+					{format === "email" && !email && (
+						<Callout.Root color="amber" mt="3">
+							<Callout.Icon>
+								<TriangleAlert size={16} />
+							</Callout.Icon>
+							<Callout.Text>
+								You need to add an email address to receive email digests.{" "}
+								<RLink asChild>
+									<Link to="/accounts/add-email?redirectTo=/digest">
+										Add your email address
+									</Link>
+								</RLink>
+							</Callout.Text>
+						</Callout.Root>
 					)}
 					<Box my="5">
 						<Text as="label" size="3" htmlFor="digestType">
@@ -229,7 +212,11 @@ const EmailSettingForm = ({
 						</Box>
 					)}
 					<Flex gap="2" mt="4">
-						<SubmitButton label="Save" size="3" />
+						<SubmitButton
+							label="Save"
+							size="3"
+							disabled={format === "email" && !email}
+						/>
 					</Flex>
 				</Box>
 			</fetcher.Form>

@@ -170,7 +170,10 @@ async function handleIdleQueue(batchSize: number): Promise<void> {
 						() =>
 							resolve(
 								processUrl(url).catch((error) => {
-									console.error(`[BROWSER RENDER] Failed to process ${url}:`, error);
+									console.error(
+										`[BROWSER RENDER] Failed to process ${url}:`,
+										error,
+									);
 									return null;
 								}),
 							),
@@ -182,10 +185,19 @@ async function handleIdleQueue(batchSize: number): Promise<void> {
 		await Promise.all(promises);
 	}
 
-	// Enqueue all users
-	const users = await db.query.user.findMany({
+	const usersWithAccounts = await db.query.user.findMany({
+		with: {
+			blueskyAccounts: true,
+			mastodonAccounts: true,
+		},
 		orderBy: asc(user.createdAt),
 	});
+
+	const users = usersWithAccounts.filter(
+		(u) =>
+			u.blueskyAccounts.some((a) => a.mostRecentPostDate !== null) ||
+			u.mastodonAccounts.some((a) => a.mostRecentPostId !== null),
+	);
 
 	// Delete completed jobs
 	await db

@@ -19,13 +19,21 @@ import {
   createOAuthClient,
   getSessionExpirationDate,
 } from "@sill/auth";
-import { db, blueskyAccount, session } from "@sill/schema";
-import { eq } from "drizzle-orm";
+import {
+  db,
+  blueskyAccount,
+  session,
+  user,
+  termsAgreement,
+  termsUpdate,
+} from "@sill/schema";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getBlueskyLists } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
 const AuthorizeSchema = z.object({
   handle: z.string().optional(),
+  mode: z.enum(["login", "signup"]).optional(),
 });
 
 const bluesky = new Hono()
@@ -33,19 +41,20 @@ const bluesky = new Hono()
   .get("/auth/authorize", zValidator("query", AuthorizeSchema), async (c) => {
     try {
       const oauthClient = await createOAuthClient(c.req.raw);
-      let { handle } = c.req.valid("query");
+      let { handle, mode } = c.req.valid("query");
+      const isSignup = mode === "signup";
 
       // Check if user is already authenticated
       const userId = await getUserIdFromSession(c.req.raw);
       const isLogin = !userId;
 
-      // If this is a login attempt (no user session), we need to verify the account exists
+      // If this is a login/signup attempt (no user session), we need a handle
       if (isLogin) {
-        // If no handle provided, return error (we can't check for existing account)
+        // If no handle provided, return error
         if (!handle) {
           return c.json(
             {
-              error: "Handle is required for login",
+              error: "Handle is required",
               code: "handle_required",
             },
             400
@@ -86,23 +95,6 @@ const bluesky = new Hono()
         handle = `${handle}.bsky.social`;
       }
 
-      // For login flow, check if account exists
-      if (isLogin) {
-        const existingAccount = await db.query.blueskyAccount.findFirst({
-          where: eq(blueskyAccount.handle, handle),
-        });
-
-        if (!existingAccount) {
-          return c.json(
-            {
-              error: "No account found with this Bluesky handle.",
-              code: "account_not_found",
-            },
-            404
-          );
-        }
-      }
-
       const resolver = new CompositeHandleResolver({
         strategy: "race",
         methods: {
@@ -111,11 +103,41 @@ const bluesky = new Hono()
         },
       });
 
+      // For connect flow, check if account is already linked to another user
+      if (!isLogin && userId) {
+        try {
+          const did = await resolver.resolve(handle as `${string}.${string}`);
+          if (did) {
+            const existingAccount = await db.query.blueskyAccount.findFirst({
+              where: and(
+                eq(blueskyAccount.did, did),
+                ne(blueskyAccount.userId, userId)
+              ),
+            });
+
+            if (existingAccount) {
+              return c.json(
+                {
+                  error: "This Bluesky account is already linked to another user.",
+                  code: "account_exists",
+                },
+                400
+              );
+            }
+          }
+        } catch {
+          // If we can't resolve the DID, let the OAuth flow handle it
+        }
+      }
+
+      // Build OAuth options
+      const oauthOptions = {
+        scope: "atproto transition:generic",
+      };
+
       try {
         console.log("trying authorize");
-        const url = await oauthClient.authorize(handle, {
-          scope: "atproto transition:generic",
-        });
+        const url = await oauthClient.authorize(handle, oauthOptions);
         return c.json({
           success: true,
           redirectUrl: url.toString(),
@@ -123,9 +145,7 @@ const bluesky = new Hono()
       } catch (error) {
         console.error("caught error", error);
         if (error instanceof OAuthResponseError) {
-          const url = await oauthClient.authorize(handle, {
-            scope: "atproto transition:generic",
-          });
+          const url = await oauthClient.authorize(handle, oauthOptions);
           return c.json({
             success: true,
             redirectUrl: url.toString(),
@@ -136,9 +156,7 @@ const bluesky = new Hono()
           const did = await resolver.resolve(handle as `${string}.${string}`);
           if (did) {
             try {
-              const url = await oauthClient.authorize(did, {
-                scope: "atproto transition:generic",
-              });
+              const url = await oauthClient.authorize(did, oauthOptions);
               return c.json({
                 success: true,
                 redirectUrl: url.toString(),
@@ -178,6 +196,9 @@ const bluesky = new Hono()
       const body = await c.req.json();
       const searchParams = new URLSearchParams(body.searchParams);
 
+      // Get mode from request body (passed from web app which stored it in session)
+      const isSignup = body.mode === "signup";
+
       if (searchParams.get("error_description") === "Access denied") {
         return c.json(
           {
@@ -209,7 +230,7 @@ const bluesky = new Hono()
           actor: oauthSession.did,
         });
 
-        // Handle login flow (no existing user session)
+        // Handle login/signup flow (no existing user session)
         if (isLogin) {
           // Check if account already exists
           const existingAccount = await db.query.blueskyAccount.findFirst({
@@ -217,14 +238,76 @@ const bluesky = new Hono()
           });
 
           if (!existingAccount) {
-            // No account found - reject login
-            return c.json(
-              {
-                error: "No account found with this Bluesky account.",
-                code: "account_not_found",
-              },
-              404
+            // No existing account - create new user
+            const transaction = await db.transaction(async (tx) => {
+              // Create user without email
+              const newUser = await tx
+                .insert(user)
+                .values({
+                  id: uuidv7(),
+                  email: null,
+                  name: profile.data.displayName || profile.data.handle,
+                  emailConfirmed: false,
+                  freeTrialEnd: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24 * 14
+                  ).toISOString(),
+                })
+                .returning({ id: user.id });
+
+              // Create bluesky account
+              await tx.insert(blueskyAccount).values({
+                id: uuidv7(),
+                did: oauthSession.did,
+                handle: profile.data.handle,
+                userId: newUser[0].id,
+                service: oauthSession.serverMetadata.issuer,
+                authErrorNotificationSent: false,
+              });
+
+              // Create terms agreement
+              const latestTerms = await tx.query.termsUpdate.findFirst({
+                orderBy: desc(termsUpdate.termsDate),
+              });
+              if (latestTerms) {
+                await tx.insert(termsAgreement).values({
+                  id: uuidv7(),
+                  userId: newUser[0].id,
+                  termsUpdateId: latestTerms.id,
+                });
+              }
+
+              // Create session
+              const newSession = await tx
+                .insert(session)
+                .values({
+                  id: uuidv7(),
+                  expirationDate: getSessionExpirationDate(),
+                  userId: newUser[0].id,
+                })
+                .returning({
+                  id: session.id,
+                  expirationDate: session.expirationDate,
+                });
+
+              return { user: newUser[0], session: newSession[0] };
+            });
+
+            // Set session cookie
+            setSessionCookie(
+              c,
+              transaction.session.id,
+              transaction.session.expirationDate
             );
+
+            return c.json({
+              success: true,
+              isSignup: true,
+              account: {
+                did: oauthSession.did,
+                handle: profile.data.handle,
+                service: oauthSession.serverMetadata.issuer,
+              },
+            });
           }
 
           // User exists, log them in
@@ -327,13 +410,81 @@ const bluesky = new Hono()
           error: String(error),
         });
 
-        // Handle login flow in retry
+        // Handle login/signup flow in retry
         if (isLogin) {
           const existingAccount = await db.query.blueskyAccount.findFirst({
             where: eq(blueskyAccount.did, oauthSession.did),
           });
 
           if (!existingAccount) {
+            if (isSignup) {
+              // Signup flow in retry: Create new user
+              const transaction = await db.transaction(async (tx) => {
+                const newUser = await tx
+                  .insert(user)
+                  .values({
+                    id: uuidv7(),
+                    email: null,
+                    name: profile.data.displayName || profile.data.handle,
+                    emailConfirmed: false,
+                    freeTrialEnd: new Date(
+                      Date.now() + 1000 * 60 * 60 * 24 * 14
+                    ).toISOString(),
+                  })
+                  .returning({ id: user.id });
+
+                await tx.insert(blueskyAccount).values({
+                  id: uuidv7(),
+                  did: oauthSession.did,
+                  handle: profile.data.handle,
+                  userId: newUser[0].id,
+                  service: oauthSession.serverMetadata.issuer,
+                  authErrorNotificationSent: false,
+                });
+
+                const latestTerms = await tx.query.termsUpdate.findFirst({
+                  orderBy: desc(termsUpdate.termsDate),
+                });
+                if (latestTerms) {
+                  await tx.insert(termsAgreement).values({
+                    id: uuidv7(),
+                    userId: newUser[0].id,
+                    termsUpdateId: latestTerms.id,
+                  });
+                }
+
+                const newSession = await tx
+                  .insert(session)
+                  .values({
+                    id: uuidv7(),
+                    expirationDate: getSessionExpirationDate(),
+                    userId: newUser[0].id,
+                  })
+                  .returning({
+                    id: session.id,
+                    expirationDate: session.expirationDate,
+                  });
+
+                return { user: newUser[0], session: newSession[0] };
+              });
+
+              setSessionCookie(
+                c,
+                transaction.session.id,
+                transaction.session.expirationDate
+              );
+
+              return c.json({
+                success: true,
+                isSignup: true,
+                account: {
+                  did: oauthSession.did,
+                  handle: profile.data.handle,
+                  service: oauthSession.serverMetadata.issuer,
+                },
+              });
+            }
+
             // No account found - reject login
             return c.json(
               {

@@ -39,6 +39,14 @@ export async function processNotificationGroup(
     );
 
     if (group.notificationType === "email") {
+      // Skip email notification for users without email
+      if (!groupUser.email) {
+        console.log(
+          `Skipping email notification for user ${groupUser.id} - no email address`
+        );
+        return;
+      }
+
       await sendNotificationEmail({
         to: groupUser.email,
         subject:

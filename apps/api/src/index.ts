@@ -17,6 +17,7 @@ import mute from "./routes/mute.js";
 import newsletter from "./routes/newsletter.js";
 import notifications from "./routes/notifications.js";
 import subscription from "./routes/subscription.js";
+import sync from "./routes/sync.js";
 import terms from "./routes/terms.js";
 import updateAccounts from "./routes/update-accounts.js";
 
@@ -45,6 +46,7 @@ const routes = app
   .route("/api/newsletter", newsletter)
   .route("/api/notifications", notifications)
   .route("/api/subscription", subscription)
+  .route("/api/sync", sync)
   .route("/api/terms", terms)
   .route("/api/update-accounts", updateAccounts);
 

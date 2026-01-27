@@ -2,7 +2,7 @@ import { Card, Inset, Text } from "@radix-ui/themes";
 import styles from "./PostContent.module.css";
 interface Post {
 	postText: string;
-	postType: "bluesky" | "mastodon";
+	postType: "bluesky" | "mastodon" | "atbookmark";
 	postImages:
 		| {
 				url: string;

@@ -4,7 +4,6 @@ import MonthCollapsible from "~/components/archive/MonthCollapsible";
 import EmailSettingForm from "~/components/forms/EmailSettingsForm";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import type { Route } from "./+types/index";
 import {
 	apiGetDigestItemsByMonth,
@@ -62,7 +61,7 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		subscribed,
 		itemsByMonth,
 		userId,
-		hasSettings: !!currentSettings,
+		hasItems: Object.keys(itemsByMonth).length > 0,
 	};
 };
 
@@ -73,13 +72,13 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 		subscribed,
 		itemsByMonth,
 		userId,
-		hasSettings,
+		hasItems,
 	} = loaderData;
 	const [searchParams] = useSearchParams();
 
-	// Default to archive if settings exist, otherwise default to settings
+	// Default to archive if there are items, otherwise default to settings
 	const defaultValue =
-		searchParams.get("tab") || (hasSettings ? "archive" : "settings");
+		searchParams.get("tab") || (hasItems ? "archive" : "settings");
 
 	return (
 		<Layout>
@@ -95,9 +94,6 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 							title="Daily Digest Archive"
 							dek="View past editions of your Daily Digest. Click on a month to view the editions for that month."
 						/>
-						{subscribed === "trial" && (
-							<SubscriptionCallout featureName="Daily Digests" />
-						)}
 					</Box>
 
 					<Box>
@@ -123,9 +119,6 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 							title="Daily Digest Settings"
 							dek="Sill can send you a Daily Digest at a time of your choosing. Configure your Daily Digest using the form below."
 						/>
-						{/* {subscribed === "trial" && ( */}
-						<SubscriptionCallout featureName="Daily Digests" />
-						{/* )} */}
 					</Box>
 
 					<EmailSettingForm currentSettings={currentSettings} email={email} />

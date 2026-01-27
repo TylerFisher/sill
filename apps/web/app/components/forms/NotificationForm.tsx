@@ -13,6 +13,7 @@ import NotificationGroup, {
 interface NotificationFormProps {
 	lastResult?: SubmissionResult<string[]> | undefined;
 	allLists: (typeof list.$inferSelect)[];
+	email: string | null;
 }
 const defaultCategory = {
 	id: "url",
@@ -93,7 +94,7 @@ const popularLinksFromDomainGroup = (id: string): NotificationGroupInit => ({
 	saved: false,
 });
 
-const NotificationForm = ({ lastResult, allLists }: NotificationFormProps) => {
+const NotificationForm = ({ lastResult, allLists, email }: NotificationFormProps) => {
 	const groups = useNotifications();
 	const { dispatch } = useNotificationsDispatch();
 
@@ -106,6 +107,7 @@ const NotificationForm = ({ lastResult, allLists }: NotificationFormProps) => {
 					group={group}
 					lastResult={lastResult}
 					allLists={allLists}
+					email={email}
 				/>
 			))}
 			{groups.notifications.length === 0 ? (

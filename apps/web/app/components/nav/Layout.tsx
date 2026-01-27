@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 import { useRouteLoaderData } from "react-router";
 import type { loader } from "~/root";
 import AgreeToTerms from "./AgreeToTerms";
+import GlobalSyncIndicator from "~/components/download/GlobalSyncIndicator";
 import Header from "./Header";
 import styles from "./Layout.module.css";
 import Nav from "./Nav";
@@ -48,6 +49,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 						</aside>
 					)}
 					<main className={`${styles.content} ${sidebar && styles.grid}`}>
+						<GlobalSyncIndicator />
 						{children}
 					</main>
 					{sidebar && <aside className={styles.right}>{sidebar}</aside>}

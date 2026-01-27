@@ -7,12 +7,12 @@ const polar = new Polar({
 
 export const createCheckout = async (
   productId: string,
-  email: string,
+  email: string | null | undefined,
   userId: string
 ) => {
   const session = await polar.checkouts.create({
     products: [productId],
-    customerEmail: email,
+    ...(email && { customerEmail: email }),
     externalCustomerId: userId,
     embedOrigin: process.env.VITE_PUBLIC_DOMAIN,
     successUrl: `${process.env.VITE_PUBLIC_DOMAIN}/settings/checkout`,

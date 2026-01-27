@@ -7,7 +7,6 @@ import NotificationForm from "~/components/forms/NotificationForm";
 import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import SubscriptionCallout from "~/components/subscription/SubscriptionCallout";
 import type { Route } from "./+types/index";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
@@ -143,7 +142,11 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		notificationGroups,
 	};
 
-	return { user: userWithNotificationGroups, subscribed };
+	return {
+		user: userWithNotificationGroups,
+		subscribed,
+		email: existingUser.email,
+	};
 };
 
 export const meta: Route.MetaFunction = () => [
@@ -182,10 +185,11 @@ export default function Notifications({
 					notifications: initial,
 				}}
 			>
-				{/* {loaderData.subscribed === "trial" && ( */}
-				<SubscriptionCallout featureName="Notifications" />
-				{/* )} */}
-				<NotificationForm lastResult={actionData?.result} allLists={allLists} />
+				<NotificationForm
+					lastResult={actionData?.result}
+					allLists={allLists}
+					email={loaderData.email}
+				/>
 			</NotificationsProvider>
 		</Layout>
 	);

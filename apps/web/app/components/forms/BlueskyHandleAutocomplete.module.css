@@ -1,0 +1,63 @@
+.container {
+	flex: 1;
+}
+
+.dropdown {
+	background: var(--color-panel-solid);
+	border: 1px solid var(--gray-6);
+	border-radius: var(--radius-2);
+	box-shadow: var(--shadow-3);
+	z-index: 9999;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	width: 100%;
+	padding: var(--space-2) var(--space-3);
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	text-align: left;
+	font-family: inherit;
+	font-size: var(--font-size-2);
+}
+
+.item:hover,
+.item.selected {
+	background: var(--gray-3);
+}
+
+.avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.actorInfo {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.displayName {
+	font-weight: 500;
+	color: var(--gray-12);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.handle {
+	color: var(--gray-11);
+	font-size: var(--font-size-1);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

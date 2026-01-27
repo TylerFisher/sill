@@ -101,6 +101,14 @@ const newsletter = new Hono()
         };
 
         if (digest.digestType === "email") {
+          // Skip email digest for users without email
+          if (!dbUser.email) {
+            console.log(
+              `Skipping email digest for user ${dbUser.id} - no email address`
+            );
+            continue;
+          }
+
           const emailSubject = links.length === 0 ? "No links found" : subject;
 
           try {

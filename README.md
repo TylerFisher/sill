@@ -6,27 +6,38 @@ Sill collects links posted by the people you follow on [Bluesky](https://bsky.so
 
 You can find the official production version of Sill at [sill.social](https://sill.social)
 
-## How it works
+## Architecture
 
-Sill is a [React Router](https://reactrouter.com) application with a [Postgres](https://www.postgresql.org) database. 
+Sill is a monorepo built with [pnpm workspaces](https://pnpm.io/workspaces) and [Turborepo](https://turbo.build/repo). It uses [React Router](https://reactrouter.com) for the web app, [Hono](https://hono.dev) for the API, and [Postgres](https://www.postgresql.org) for the database.
+
+### Apps
+
+- **`apps/web/`** - React Router v7 web application (port 3000)
+- **`apps/api/`** - Hono API server (port 3001)
+- **`apps/worker/`** - Background job processor for social media data
+
+### Packages
+
+- **`@sill/schema`** - Shared database schema and types (Drizzle ORM)
+- **`@sill/auth`** - Authentication utilities and OAuth
+- **`@sill/links`** - Link processing and social media integration
+- **`@sill/emails`** - Email templates (React Email) and Mailgun service
 
 ## Prerequisites
 
 - Node.js >= 22
-- pnpm >= 9.15.0
+- pnpm >= 10.17.1
 - Docker
 
-Sill uses [Mailgun](https://mailgun.com) to send transactional emails. Sign up for an account and get your API key. For reasonable solo usage, it should be free.
+You'll also need a [Mailgun](https://mailgun.com) account for transactional emails.
 
 ## Development Setup
 
-Sill is a monorepo with multiple packages. We support two development modes:
-
 ### Local Development (Recommended)
 
-Run only the database in Docker, everything else locally with hot-reload:
+Run the database in Docker and everything else locally with hot-reload:
 
-1. Create your environment file:
+1. Create your environment file and generate secrets:
 ```bash
 cp .env.example .env
 pnpm generate-secrets
@@ -34,7 +45,7 @@ pnpm generate-secrets
 
 2. Start the database:
 ```bash
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose up -d
 ```
 
 3. Install dependencies and start all packages:
@@ -43,32 +54,31 @@ pnpm install
 pnpm dev:local
 ```
 
-4. Visit `http://localhost:3000` in your browser.
-
-This gives you:
-- ✅ Fast hot-reloading across all packages
-- ✅ Native Node.js debugging
-- ✅ Instant TypeScript type updates
-- ✅ Full pnpm workspace benefits
+4. Visit `http://localhost:3000` (web) and `http://localhost:3001` (API).
 
 ### Docker Development
 
-Run everything in containers (slower but matches production):
+Run everything in containers (matches production environment):
 
 ```bash
 pnpm dev:docker
 ```
 
-## Architecture
+## Commands
 
-The monorepo contains:
+| Command | Description |
+|---------|-------------|
+| `pnpm dev:local` | Start all packages in development mode |
+| `pnpm dev:docker` | Start everything in Docker containers |
+| `pnpm build` | Build all packages for production |
+| `pnpm lint` | Run Biome linter/formatter |
+| `pnpm typecheck` | Run TypeScript checks |
+| `pnpm test` | Run Vitest tests |
 
-- **`packages/web/`** - React Router app (port 3000)
-- **`packages/api/`** - Hono API server (port 3001)  
-- **`packages/emails/`** - Shared email templates
+## Database
 
-### Key Features
+Sill uses [Drizzle ORM](https://orm.drizzle.team) with Postgres:
 
-- **Hot-reload types**: API type changes automatically update web package without rebuilding
-- **Workspace linking**: Packages import from each other's TypeScript source
-- **Turbo orchestration**: Parallel development and building across packages
+- Schema: `packages/schema/src/schema.ts`
+- Migrations: `packages/schema/src/migrations/`
+- Config: `drizzle.config.ts`
