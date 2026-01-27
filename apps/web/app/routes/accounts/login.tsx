@@ -144,7 +144,7 @@ const Login = ({ actionData }: Route.ComponentProps) => {
 				<Callout.Text>
 					Sill now uses your Atmosphere (e.g. Bluesky) or Mastodon account to
 					log in. If you previously signed up with email and password, you can
-					use the "Log in with email" option below.
+					still use the "Log in with email" option below.
 				</Callout.Text>
 			</Callout.Root>
 
