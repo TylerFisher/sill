@@ -61,7 +61,7 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		subscribed,
 		itemsByMonth,
 		userId,
-		hasSettings: !!currentSettings,
+		hasItems: Object.keys(itemsByMonth).length > 0,
 	};
 };
 
@@ -72,13 +72,13 @@ export default function Digest({ loaderData }: Route.ComponentProps) {
 		subscribed,
 		itemsByMonth,
 		userId,
-		hasSettings,
+		hasItems,
 	} = loaderData;
 	const [searchParams] = useSearchParams();
 
-	// Default to archive if settings exist, otherwise default to settings
+	// Default to archive if there are items, otherwise default to settings
 	const defaultValue =
-		searchParams.get("tab") || (hasSettings ? "archive" : "settings");
+		searchParams.get("tab") || (hasItems ? "archive" : "settings");
 
 	return (
 		<Layout>
