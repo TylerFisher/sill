@@ -7,7 +7,6 @@ export interface FilterState {
 	sort?: string;
 	service?: string;
 	list?: string;
-	query?: string;
 	minShares?: string;
 }
 
@@ -22,6 +21,23 @@ export const useFilterStorage = () => {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
 		} catch (error) {
 			console.warn("Failed to save filters to localStorage:", error);
+		}
+	}, []);
+
+	const clearFilterFromStorage = useCallback((key: keyof FilterState) => {
+		try {
+			const stored = localStorage.getItem(STORAGE_KEY);
+			if (stored) {
+				const filters = JSON.parse(stored);
+				delete filters[key];
+				if (Object.keys(filters).length === 0) {
+					localStorage.removeItem(STORAGE_KEY);
+				} else {
+					localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+				}
+			}
+		} catch (error) {
+			console.warn("Failed to update filter preferences:", error);
 		}
 	}, []);
 
@@ -53,7 +69,6 @@ export const useFilterStorage = () => {
 			sort: searchParams.get("sort") || undefined,
 			service: searchParams.get("service") || undefined,
 			list: searchParams.get("list") || undefined,
-			query: searchParams.get("query") || undefined,
 			minShares: searchParams.get("minShares") || undefined,
 		};
 	}, [searchParams]);
@@ -108,5 +123,6 @@ export const useFilterStorage = () => {
 		loadFiltersFromStorage,
 		getCurrentFilters,
 		applyFiltersToUrl,
+		clearFilterFromStorage,
 	};
 };
