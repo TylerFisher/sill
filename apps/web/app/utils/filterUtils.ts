@@ -3,7 +3,7 @@ export const getCustomizedFilters = (searchParams: URLSearchParams) => {
 	const defaults = {
 		sort: "popularity",
 		time: "24h",
-		reposts: "false",
+		reposts: "include",
 		service: "all",
 		list: "all",
 	};

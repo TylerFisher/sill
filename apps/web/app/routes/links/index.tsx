@@ -10,7 +10,6 @@ import Layout from "~/components/nav/Layout";
 import { useLayout } from "~/routes/resources/layout-switch";
 import type { SubscriptionStatus } from "@sill/schema";
 import { requireUserFromContext } from "~/utils/context.server";
-import { getCustomizedFilters } from "~/utils/filterUtils";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
 import {
@@ -150,7 +149,6 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
 const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [searchParams] = useSearchParams();
-	const customFilterCount = getCustomizedFilters(searchParams).length;
 	const page = Number.parseInt(searchParams.get("page") || "1");
 	const [nextPage, setNextPage] = useState(page + 1);
 	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
@@ -227,7 +225,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 				/>
 			}
 		>
-			<LinkFiltersCollapsible customFilterCount={customFilterCount}>
+			<LinkFiltersCollapsible>
 				<LinkFilters
 					showService={!!(loaderData.bsky && loaderData.instance)}
 					lists={loaderData.lists}

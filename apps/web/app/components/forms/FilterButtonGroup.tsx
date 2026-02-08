@@ -1,8 +1,7 @@
-import { Flex, Select, Spinner } from "@radix-ui/themes";
+import { Select, Spinner } from "@radix-ui/themes";
 import { Box, Heading } from "@radix-ui/themes";
 import { useLocation, useNavigation, useSearchParams } from "react-router";
 import styles from "./FilterButtonGroup.module.css";
-import FilterCustomIndicator from "./FilterCustomIndicator";
 
 export interface ButtonGroup {
 	heading: string;
@@ -22,7 +21,6 @@ interface FilterButtonGroupProps {
 	param: string;
 	defaultValue: string;
 	heading: string;
-	isCustomized?: boolean;
 }
 
 const FilterButtonGroup = ({
@@ -31,7 +29,6 @@ const FilterButtonGroup = ({
 	param,
 	defaultValue,
 	heading,
-	isCustomized = false,
 }: FilterButtonGroupProps) => {
 	const [searchParams] = useSearchParams();
 	const searchParam = searchParams.get(param);
@@ -51,12 +48,9 @@ const FilterButtonGroup = ({
 
 	return (
 		<Box mb="4">
-			<Flex align="center" gap="1" mb="1">
-				<Heading size="1" as="h5" className={styles["filter-heading"]}>
-					{heading}
-				</Heading>
-				<FilterCustomIndicator isVisible={isCustomized} />
-			</Flex>
+			<Heading size="1" as="h5" mb="1" className={styles["filter-heading"]}>
+				{heading}
+			</Heading>
 
 			<Select.Root
 				value={searchParam || defaultValue}

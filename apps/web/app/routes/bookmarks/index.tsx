@@ -175,14 +175,10 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
   const bookmarksByDate = Object.entries(groupedBookmarks);
 
   const hasActiveFilters = searchParams.get("query") || searchParams.get("tag");
-  const filterCount = [
-    searchParams.get("query"),
-    searchParams.get("tag") && searchParams.get("tag") !== "all",
-  ].filter(Boolean).length;
 
   return (
     <Layout sidebar={<BookmarkFilters tags={tags} />}>
-      <LinkFiltersCollapsible customFilterCount={filterCount}>
+      <LinkFiltersCollapsible>
         <BookmarkFilters tags={tags} reverse={true} />
       </LinkFiltersCollapsible>
       <PageHeading
