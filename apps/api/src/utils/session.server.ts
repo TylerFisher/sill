@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { setCookie } from "hono/cookie";
 
 /**
  * Sets the session cookie with standard options
@@ -9,18 +10,16 @@ export function setSessionCookie(
   expirationDate: string,
   remember = true
 ) {
-  const cookieOptions = {
+  // Default to 30 days for PWA persistence even when "remember" is false
+  const expires = remember
+    ? new Date(expirationDate)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  setCookie(c, "sessionId", sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
+    sameSite: "Lax",
     path: "/",
-    ...(remember ? { expires: expirationDate } : {}),
-  };
-
-  c.header(
-    "Set-Cookie",
-    `sessionId=${sessionId}; ${Object.entries(cookieOptions)
-      .map(([k, v]) => `${k}=${v}`)
-      .join("; ")}`
-  );
+    expires,
+  });
 }
