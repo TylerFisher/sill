@@ -4,6 +4,19 @@
 	gap: 0.25rem;
 }
 
+.mobileOnly {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.mobileOnly {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.25rem;
+		margin-bottom: var(--space-2);
+	}
+}
+
 .label {
 	grid-column: 1 / -1;
 	font-size: var(--font-size-1);

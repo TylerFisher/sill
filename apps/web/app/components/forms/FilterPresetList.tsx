@@ -8,6 +8,7 @@ import styles from "./PresetFilterItem.module.css";
 interface FilterPresetListProps {
 	showService: boolean;
 	lists: (typeof list.$inferSelect)[];
+	hideSort?: boolean;
 }
 
 const timeOptions = [
@@ -31,7 +32,11 @@ const sharesOptions = [
 	{ value: "10", label: "10+" },
 ];
 
-const FilterPresetList = ({ showService, lists }: FilterPresetListProps) => {
+const FilterPresetList = ({
+	showService,
+	lists,
+	hideSort = false,
+}: FilterPresetListProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { clearFilterFromStorage } = useFilterStorage();
 
@@ -153,21 +158,25 @@ const FilterPresetList = ({ showService, lists }: FilterPresetListProps) => {
 
 	return (
 		<div className={styles.list}>
-			<span className={styles.label}>Sort</span>
-			<button
-				type="button"
-				onClick={() => handleSelectSort("")}
-				className={`${styles.item} ${sort !== "newest" ? styles.active : ""}`}
-			>
-				Most popular
-			</button>
-			<button
-				type="button"
-				onClick={() => handleSelectSort("newest")}
-				className={`${styles.item} ${sort === "newest" ? styles.active : ""}`}
-			>
-				Newest
-			</button>
+			{!hideSort && (
+				<>
+					<span className={styles.label}>Sort</span>
+					<button
+						type="button"
+						onClick={() => handleSelectSort("")}
+						className={`${styles.item} ${sort !== "newest" ? styles.active : ""}`}
+					>
+						Most popular
+					</button>
+					<button
+						type="button"
+						onClick={() => handleSelectSort("newest")}
+						className={`${styles.item} ${sort === "newest" ? styles.active : ""}`}
+					>
+						Newest
+					</button>
+				</>
+			)}
 
 			<span className={styles.label}>Filter</span>
 			<DropdownMenu.Root>

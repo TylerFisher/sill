@@ -5,6 +5,7 @@ import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
+import SortPresetList from "~/components/forms/SortPresetList";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
 import { useLayout } from "~/routes/resources/layout-switch";
@@ -225,11 +226,13 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 				/>
 			}
 		>
+			<SortPresetList />
 			<LinkFiltersCollapsible>
 				<LinkFilters
 					showService={!!(loaderData.bsky && loaderData.instance)}
 					lists={loaderData.lists}
 					reverse={true}
+					hideSort={true}
 				/>
 			</LinkFiltersCollapsible>
 			<Suspense

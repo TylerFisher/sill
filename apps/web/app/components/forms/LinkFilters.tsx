@@ -10,10 +10,12 @@ const LinkFilters = ({
 	showService,
 	lists,
 	reverse = false,
+	hideSort = false,
 }: {
 	showService: boolean;
 	lists: (typeof list.$inferSelect)[];
 	reverse?: boolean;
+	hideSort?: boolean;
 }) => {
 	useFilterStorage();
 
@@ -26,7 +28,11 @@ const LinkFilters = ({
 					</Form>
 				</Box>
 				<Box mt={reverse ? "3" : "6"}>
-					<FilterPresetList showService={showService} lists={lists} />
+					<FilterPresetList
+						showService={showService}
+						lists={lists}
+						hideSort={hideSort}
+					/>
 				</Box>
 			</Flex>
 		</div>
