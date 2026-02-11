@@ -34,21 +34,22 @@ const PostAuthor = ({ actor, postDate, postUrl, layout }: PostAuthorProps) => {
 				whiteSpace: "pre-wrap",
 			}}
 		>
-			<Link
-				href={actor.actorUrl}
-				target="_blank"
-				rel="noreferrer"
-				underline="hover"
-			>
-				{actor.actorName}{" "}
-			</Link>
+			{actor.actorName && (
+				<Link
+					href={actor.actorUrl}
+					target="_blank"
+					rel="noreferrer"
+					underline="hover"
+				>
+					{actor.actorName}{" "}
+				</Link>
+			)}
 			<Link
 				href={actor.actorUrl}
 				target="_blank"
 				rel="noreferrer"
 				underline="none"
 			>
-				{" "}
 				<Text color="gray" weight="regular">
 					@{actor.actorHandle}
 				</Text>

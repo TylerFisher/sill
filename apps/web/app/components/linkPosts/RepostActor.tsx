@@ -20,7 +20,7 @@ const SingleActor = ({ post }: SingleActorProps) => (
 			underline="hover"
 			color="gray"
 		>
-			{post.repostActorName}
+			{post.repostActorName || post.repostActorHandle}
 		</Link>
 	</Text>
 );
