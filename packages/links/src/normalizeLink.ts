@@ -52,7 +52,18 @@ export const isShortenedLink = async (url: string): Promise<boolean> => {
   }
 };
 
+const urlExpansionCache = new Map<string, string>();
+
+export const clearUrlExpansionCache = () => {
+  urlExpansionCache.clear();
+};
+
 export const getFullUrl = async (url: string): Promise<string> => {
+  const cached = urlExpansionCache.get(url);
+  if (cached) {
+    return cached;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -70,10 +81,12 @@ export const getFullUrl = async (url: string): Promise<string> => {
       },
     });
     clearTimeout(timeout);
+    urlExpansionCache.set(url, response.url);
     return response.url;
   } catch (e) {
     clearTimeout(timeout);
     console.log("timed out expanding", url, e?.constructor?.name);
+    urlExpansionCache.set(url, url);
     return url;
   }
 };

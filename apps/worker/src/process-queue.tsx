@@ -17,6 +17,7 @@ import {
 	processJob,
 	processNotificationGroup,
 	getHighActivityUrls,
+	clearUrlExpansionCache,
 } from "@sill/links";
 
 // Constants
@@ -131,6 +132,8 @@ async function processBatch(
 			console.error("[Queue] Error updating bookmark:", error);
 		}
 	}
+
+	clearUrlExpansionCache();
 
 	// Log batch results
 	const errorCount = results.filter((r) => r.status === "error").length;
