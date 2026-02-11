@@ -351,6 +351,45 @@ export async function extractHtmlMetadata(
 }
 
 /**
+ * Updates link metadata in the database, preserving existing non-null values
+ * when the new value is null or empty.
+ */
+async function updateLinkMetadata(
+  url: string,
+  metadata: Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">
+): Promise<void> {
+  // Build update object conditionally to preserve existing non-null values
+  const updateData: Record<string, unknown> = {
+    scraped: true,
+    metadata: metadata.metadata,
+  };
+
+  if (metadata.title && metadata.title !== "") {
+    updateData.title = metadata.title;
+  }
+  if (metadata.description !== null) {
+    updateData.description = metadata.description;
+  }
+  if (metadata.imageUrl !== null) {
+    updateData.imageUrl = metadata.imageUrl;
+  }
+  if (metadata.authors && metadata.authors.length > 0) {
+    updateData.authors = metadata.authors;
+  }
+  if (metadata.publishedDate !== null) {
+    updateData.publishedDate = metadata.publishedDate;
+  }
+  if (metadata.topics && metadata.topics.length > 0) {
+    updateData.topics = metadata.topics;
+  }
+  if (metadata.siteName !== null) {
+    updateData.siteName = metadata.siteName;
+  }
+
+  await db.update(link).set(updateData).where(eq(link.url, url));
+}
+
+/**
  * Processes a URL to fetch and store metadata.
  * First tries Cloudflare browser rendering, falls back to direct fetch if that fails.
  * Updates the link record in the database with extracted metadata.
@@ -360,7 +399,7 @@ export async function processUrl(url: string): Promise<void> {
   if (result.success) {
     const metadata = await extractHtmlMetadata(result.html);
     if (metadata) {
-      await db.update(link).set(metadata).where(eq(link.url, url));
+      await updateLinkMetadata(url, metadata);
       console.log(
         `[BROWSER RENDER] updated metadata from cloudflare for ${url}`,
       );
@@ -369,7 +408,7 @@ export async function processUrl(url: string): Promise<void> {
       if (html) {
         const metadata = await extractHtmlMetadata(result.html);
         if (metadata) {
-          await db.update(link).set(metadata).where(eq(link.url, url));
+          await updateLinkMetadata(url, metadata);
           console.log(
             `[BROWSER RENDER] updated metadata from proxy for ${url}`,
           );
