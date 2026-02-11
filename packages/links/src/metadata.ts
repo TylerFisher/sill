@@ -30,6 +30,8 @@ const NewsArticleSchema = z.object({
       z.object({ name: z.string() }),
       z.array(z.object({ name: z.string() })),
       z.array(z.object({ mainEntity: z.object({ name: z.string() }) })),
+      // Graph-style @id references
+      z.array(z.object({ "@id": z.string() })),
     ])
     .optional(),
   datePublished: z.string().optional(),
@@ -49,8 +51,17 @@ const NewsArticleSchema = z.object({
     ])
     .optional(),
   keywords: z.union([z.string(), z.array(z.string()).optional()]),
-  publisher: z.object({ name: z.string() }).optional(),
+  publisher: z
+    .union([
+      z.object({ name: z.string() }),
+      // Graph-style @id reference
+      z.object({ "@id": z.string() }),
+    ])
+    .optional(),
 });
+
+// Type for entities in @graph that may be referenced by @id
+type GraphEntity = { "@id"?: string; "@type"?: string; name?: string };
 
 const VideoObjectSchema = z.object({
   "@type": z.literal("VideoObject"),
@@ -73,15 +84,31 @@ type ParsedVideoObject = z.SafeParseReturnType<
 >;
 
 function parseNewsArticleAuthors(
-  parsedNewsArticle: ParsedNewsArticle | null
+  parsedNewsArticle: ParsedNewsArticle | null,
+  graphEntities: Map<string, GraphEntity>
 ): string[] | null {
   if (!parsedNewsArticle?.success) return null;
 
   if (Array.isArray(parsedNewsArticle.data.author)) {
-    const authors = parsedNewsArticle.data.author?.map((author) =>
-      "name" in author ? author.name : author.mainEntity.name
-    );
-    return authors;
+    const authors = parsedNewsArticle.data.author
+      .map((author) => {
+        if ("name" in author) {
+          return author.name;
+        }
+        if ("mainEntity" in author) {
+          return author.mainEntity.name;
+        }
+        // Handle @id reference - resolve from graph
+        if ("@id" in author) {
+          const resolved = graphEntities.get(author["@id"]);
+          if (resolved?.name) {
+            return resolved.name;
+          }
+        }
+        return null;
+      })
+      .filter((name): name is string => name !== null);
+    return authors.length > 0 ? authors : null;
   }
 
   return parsedNewsArticle.data.author?.name
@@ -100,13 +127,14 @@ function parseVideoObjectAuthors(
 function getAuthors(
   isYouTubeUrl: boolean,
   parsedNewsArticle: ParsedNewsArticle | null,
-  parsedVideoObject: ParsedVideoObject | null
+  parsedVideoObject: ParsedVideoObject | null,
+  graphEntities: Map<string, GraphEntity>
 ): string[] | null {
   if (isYouTubeUrl) {
     const videoAuthors = parseVideoObjectAuthors(parsedVideoObject);
     if (videoAuthors) return videoAuthors;
   }
-  return parseNewsArticleAuthors(parsedNewsArticle);
+  return parseNewsArticleAuthors(parsedNewsArticle, graphEntities);
 }
 
 function getPublishedDate(
@@ -225,6 +253,33 @@ export async function extractHtmlMetadata(
     return null;
   };
 
+  // Build a map of @id -> entity for resolving graph references
+  const buildGraphEntities = (items: unknown[]): Map<string, GraphEntity> => {
+    const entities = new Map<string, GraphEntity>();
+    for (const item of items) {
+      if (Array.isArray(item)) {
+        for (const [key, value] of buildGraphEntities(item)) {
+          entities.set(key, value);
+        }
+      } else if (typeof item === "object" && item !== null) {
+        if ("@graph" in item && Array.isArray(item["@graph"])) {
+          for (const [key, value] of buildGraphEntities(item["@graph"])) {
+            entities.set(key, value);
+          }
+        }
+        // Add any entity with an @id to the map
+        if ("@id" in item && typeof item["@id"] === "string") {
+          entities.set(item["@id"], item as GraphEntity);
+        }
+      }
+    }
+    return entities;
+  };
+
+  const graphEntities = result.jsonLD
+    ? buildGraphEntities(result.jsonLD)
+    : new Map<string, GraphEntity>();
+
   const newsArticleJsonLd = result.jsonLD
     ? findNewsArticle(result.jsonLD)
     : null;
@@ -249,7 +304,8 @@ export async function extractHtmlMetadata(
   const finalAuthors = getAuthors(
     isYouTubeUrl,
     parsedNewsArticle,
-    parsedVideoObject
+    parsedVideoObject,
+    graphEntities
   );
   const foundDate = getPublishedDate(
     isYouTubeUrl,
@@ -264,8 +320,22 @@ export async function extractHtmlMetadata(
     result
   );
 
-  const siteName =
-    parsedNewsArticle?.data?.publisher?.name || result.ogSiteName || null;
+  // Resolve publisher name - either inline or via @id reference
+  let siteName: string | null = null;
+  const publisher = parsedNewsArticle?.data?.publisher;
+  if (publisher) {
+    if ("name" in publisher) {
+      siteName = publisher.name;
+    } else if ("@id" in publisher) {
+      const resolved = graphEntities.get(publisher["@id"]);
+      if (resolved?.name) {
+        siteName = resolved.name;
+      }
+    }
+  }
+  if (!siteName) {
+    siteName = result.ogSiteName || null;
+  }
 
   return {
     title: result.ogTitle || result.twitterTitle || "",
