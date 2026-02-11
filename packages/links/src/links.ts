@@ -33,8 +33,18 @@ import {
   type NotificationQuery,
 } from "@sill/schema";
 import { Agent } from "@atproto/api";
-import { getLinksFromBluesky, getBlueskyList, processBlueskyLink, handleBlueskyOAuth } from "./bluesky.js";
-import { getLinksFromMastodon, getMastodonList, processMastodonLink, isQuote } from "./mastodon.js";
+import {
+  getLinksFromBluesky,
+  getBlueskyList,
+  processBlueskyLink,
+  handleBlueskyOAuth,
+} from "./bluesky.js";
+import {
+  getLinksFromMastodon,
+  getMastodonList,
+  processMastodonLink,
+  isQuote,
+} from "./mastodon.js";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {
@@ -50,7 +60,7 @@ export interface ProcessedResult {
  */
 export const fetchLinks = async (
   userId: string,
-  type?: "mastodon" | "bluesky"
+  type?: "mastodon" | "bluesky",
 ): Promise<ProcessedResult[]> => {
   if (type === "mastodon") {
     return await getLinksFromMastodon(userId);
@@ -75,7 +85,7 @@ export const fetchLinks = async (
  */
 export const fetchSingleList = async (
   userId: string,
-  listId: string
+  listId: string,
 ): Promise<ProcessedResult[]> => {
   // Find the list and determine its type
   const dbList = await db.query.list.findFirst({
@@ -112,7 +122,9 @@ export const fetchSingleList = async (
 
     const processedResults = (
       await Promise.all(
-        listPosts.map(async (post) => processBlueskyLink(userId, post, dbList.id))
+        listPosts.map(async (post) =>
+          processBlueskyLink(userId, post, dbList.id),
+        ),
       )
     ).filter((p) => p !== null);
 
@@ -144,12 +156,14 @@ export const fetchSingleList = async (
       (t) =>
         t.card ||
         t.reblog?.card ||
-        (isQuote(t.quote) && t.quote.quotedStatus?.card)
+        (isQuote(t.quote) && t.quote.quotedStatus?.card),
     );
 
     const processedResults = (
       await Promise.all(
-        linksOnly.map(async (post) => processMastodonLink(userId, post, dbList.id))
+        linksOnly.map(async (post) =>
+          processMastodonLink(userId, post, dbList.id),
+        ),
       )
     ).filter((p) => p !== null);
 
@@ -195,7 +209,7 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
         // Check if URL is too long and warn
         if (p.link.url.length > MAX_URL_LENGTH) {
           console.warn(
-            `URL too long for index (${p.link.url.length} bytes): ${p.link.url}`
+            `URL too long for index (${p.link.url.length} bytes): ${p.link.url}`,
           );
           delete acc[p.link.url]; // Remove the link from accumulator if it exists
           return acc;
@@ -212,11 +226,14 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
         ) {
           acc[p.link.url] = {
             ...p.link,
+            title: p.link.title ?? existing?.title,
+            description: p.link.description ?? existing?.description,
+            imageUrl: p.link.imageUrl ?? existing?.imageUrl,
             giftUrl: existing?.giftUrl || p.link.giftUrl,
           };
         }
         return acc;
-      }, {} as Record<string, (typeof processedResults)[0]["link"]>)
+      }, {} as Record<string, (typeof processedResults)[0]["link"]>),
     );
 
     const denormalized = chunk
@@ -254,7 +271,7 @@ export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
 };
 
 export function conflictUpdateSetAllColumns<TTable extends PgTable>(
-  table: TTable
+  table: TTable,
 ): PgUpdateSetSource<TTable> {
   const columns = getTableColumns(table);
   const { name: tableName } = getTableConfig(table);
@@ -263,12 +280,12 @@ export function conflictUpdateSetAllColumns<TTable extends PgTable>(
       if (!columnInfo.default && columnInfo.name !== "id") {
         // @ts-ignore
         acc[columnName] = sql.raw(
-          `COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`
+          `COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`,
         );
       }
       return acc;
     },
-    {}
+    {},
   ) as PgUpdateSetSource<TTable>;
   return conflictUpdateSet;
 }
@@ -350,7 +367,7 @@ export const filterLinkOccurrences = async ({
             ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
             ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
             ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-          ])
+          ]),
         )} THEN NULL ELSE 1 END`
       : sql`1`;
 
@@ -361,7 +378,7 @@ export const filterLinkOccurrences = async ({
       uniqueActorsCount:
         getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
       mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate"
+        "mostRecentPostDate",
       ),
     })
     .from(linkPostDenormalized)
@@ -379,8 +396,8 @@ export const filterLinkOccurrences = async ({
         hideReposts === "exclude"
           ? isNull(linkPostDenormalized.repostActorHandle)
           : hideReposts === "only"
-            ? isNotNull(linkPostDenormalized.repostActorHandle)
-            : undefined,
+          ? isNotNull(linkPostDenormalized.repostActorHandle)
+          : undefined,
         query
           ? or(
               ilike(link.title, `%${query}%`),
@@ -393,10 +410,10 @@ export const filterLinkOccurrences = async ({
               ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
               ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
               ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-              ilike(linkPostDenormalized.repostActorHandle, `%${query}%`)
+              ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
             )
-          : undefined
-      )
+          : undefined,
+      ),
     )
     .groupBy(linkPostDenormalized.linkUrl, link.id)
     .having(
@@ -404,14 +421,14 @@ export const filterLinkOccurrences = async ({
         sql`count(*) > 0`,
         minShares
           ? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}`
-          : undefined
-      )
+          : undefined,
+      ),
     )
     .orderBy(
       sort === "popularity"
         ? desc(sql`"uniqueActorsCount"`)
         : desc(sql`"mostRecentPostDate"`),
-      desc(sql`"mostRecentPostDate"`)
+      desc(sql`"mostRecentPostDate"`),
     )
     .limit(limit)
     .offset(offset)
@@ -435,8 +452,8 @@ export const filterLinkOccurrences = async ({
               hideReposts === "exclude"
                 ? isNull(linkPostDenormalized.repostActorHandle)
                 : hideReposts === "only"
-                  ? isNotNull(linkPostDenormalized.repostActorHandle)
-                  : undefined,
+                ? isNotNull(linkPostDenormalized.repostActorHandle)
+                : undefined,
               query
                 ? or(
                     ilike(linkPostDenormalized.postText, `%${query}%`),
@@ -446,10 +463,10 @@ export const filterLinkOccurrences = async ({
                     ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
                     ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
                     ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-                    ilike(linkPostDenormalized.repostActorHandle, `%${query}%`)
+                    ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
                   )
-                : undefined
-            )
+                : undefined,
+            ),
           )
           .orderBy(desc(linkPostDenormalized.postDate));
         return {
@@ -465,7 +482,7 @@ export const evaluateNotifications = async (
   userId: string,
   queries: NotificationQuery[],
   seenLinks: string[] = [],
-  createdAt?: Date
+  createdAt?: Date,
 ) => {
   const start = createdAt
     ? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
@@ -489,7 +506,7 @@ export const evaluateNotifications = async (
             ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
             ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
             ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-          ])
+          ]),
         )} THEN NULL ELSE 1 END`
       : sql`1`;
 
@@ -511,23 +528,23 @@ export const evaluateNotifications = async (
     if (query.category.id === "link" && typeof query.value === "string") {
       if (query.operator === "equals") {
         linkSQLQueries.push(
-          or(eq(link.title, query.value), eq(link.description, query.value))
+          or(eq(link.title, query.value), eq(link.description, query.value)),
         );
       }
       if (query.operator === "contains") {
         linkSQLQueries.push(
           or(
             ilike(link.title, `%${query.value}%`),
-            ilike(link.description, `%${query.value}%`)
-          )
+            ilike(link.description, `%${query.value}%`),
+          ),
         );
       }
       if (query.operator === "excludes") {
         linkSQLQueries.push(
           and(
             notIlike(link.title, `%${query.value}%`),
-            notIlike(link.description, `%${query.value}%`)
-          )
+            notIlike(link.description, `%${query.value}%`),
+          ),
         );
       }
     }
@@ -538,12 +555,12 @@ export const evaluateNotifications = async (
       }
       if (query.operator === "contains") {
         postSQLQueries.push(
-          ilike(linkPostDenormalized.postText, `%${query.value}%`)
+          ilike(linkPostDenormalized.postText, `%${query.value}%`),
         );
       }
       if (query.operator === "excludes") {
         postSQLQueries.push(
-          notIlike(linkPostDenormalized.postText, `%${query.value}%`)
+          notIlike(linkPostDenormalized.postText, `%${query.value}%`),
         );
       }
     }
@@ -553,24 +570,24 @@ export const evaluateNotifications = async (
         postSQLQueries.push(
           or(
             eq(linkPostDenormalized.actorName, query.value),
-            eq(linkPostDenormalized.actorHandle, query.value)
-          )
+            eq(linkPostDenormalized.actorHandle, query.value),
+          ),
         );
       }
       if (query.operator === "contains") {
         postSQLQueries.push(
           or(
             ilike(linkPostDenormalized.actorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${query.value}%`)
-          )
+            ilike(linkPostDenormalized.actorHandle, `%${query.value}%`),
+          ),
         );
       }
       if (query.operator === "excludes") {
         postSQLQueries.push(
           or(
             notIlike(linkPostDenormalized.actorName, `%${query.value}%`),
-            notIlike(linkPostDenormalized.actorHandle, `%${query.value}%`)
-          )
+            notIlike(linkPostDenormalized.actorHandle, `%${query.value}%`),
+          ),
         );
       }
     }
@@ -583,8 +600,8 @@ export const evaluateNotifications = async (
         postSQLQueries.push(
           or(
             ne(linkPostDenormalized.listId, query.value),
-            isNull(linkPostDenormalized.listId)
-          )
+            isNull(linkPostDenormalized.listId),
+          ),
         );
       }
     }
@@ -593,24 +610,27 @@ export const evaluateNotifications = async (
         postSQLQueries.push(
           or(
             eq(linkPostDenormalized.repostActorName, query.value),
-            eq(linkPostDenormalized.repostActorHandle, query.value)
-          )
+            eq(linkPostDenormalized.repostActorHandle, query.value),
+          ),
         );
       }
       if (query.operator === "contains") {
         postSQLQueries.push(
           or(
             ilike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${query.value}%`)
-          )
+            ilike(linkPostDenormalized.repostActorHandle, `%${query.value}%`),
+          ),
         );
       }
       if (query.operator === "excludes") {
         postSQLQueries.push(
           and(
             notIlike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            notIlike(linkPostDenormalized.repostActorHandle, `%${query.value}%`)
-          )
+            notIlike(
+              linkPostDenormalized.repostActorHandle,
+              `%${query.value}%`,
+            ),
+          ),
         );
       }
     }
@@ -631,7 +651,8 @@ export const evaluateNotifications = async (
   }
 
   const sharesQuery = queries.find(
-    (query) => query.category.id === "shares" && typeof query.value === "number"
+    (query) =>
+      query.category.id === "shares" && typeof query.value === "number",
   );
 
   return await db
@@ -640,7 +661,7 @@ export const evaluateNotifications = async (
       uniqueActorsCount:
         getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
       mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate"
+        "mostRecentPostDate",
       ),
     })
     .from(linkPostDenormalized)
@@ -652,14 +673,14 @@ export const evaluateNotifications = async (
         notInArray(link.url, seenLinks),
         ...urlMuteClauses,
         ...linkSQLQueries,
-        ...postSQLQueries
-      )
+        ...postSQLQueries,
+      ),
     )
     .groupBy(linkPostDenormalized.linkUrl, link.id)
     .having(
       sharesQuery
         ? gte(getUniqueActorsCountSql(postMuteCondition), sharesQuery.value)
-        : sql`count(*) > 0`
+        : sql`count(*) > 0`,
     )
     .orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
     .then(async (results) => {
@@ -672,8 +693,8 @@ export const evaluateNotifications = async (
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
               eq(linkPostDenormalized.userId, userId),
               gte(linkPostDenormalized.postDate, start.toISOString()),
-              sql`${postMuteCondition} = 1`
-            )
+              sql`${postMuteCondition} = 1`,
+            ),
           )
           .orderBy(desc(linkPostDenormalized.postDate));
         return {
@@ -705,15 +726,15 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
             ...getTableColumns(linkPostDenormalized),
             count:
               sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
-                "count"
+                "count",
               ),
           })
           .from(linkPostDenormalized)
           .where(
             and(
               eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              gte(linkPostDenormalized.postDate, start.toISOString())
-            )
+              gte(linkPostDenormalized.postDate, start.toISOString()),
+            ),
           )
           .orderBy(desc(sql`count`))
           .limit(1)
@@ -738,7 +759,7 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
 export const findLinksByDomain = async (
   domain: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
 ) => {
   const offset = (page - 1) * pageSize;
 
@@ -746,10 +767,10 @@ export const findLinksByDomain = async (
     .select({
       link,
       uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount"
+        "uniqueActorsCount",
       ),
       mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate"
+        "mostRecentPostDate",
       ),
     })
     .from(linkPostDenormalized)
@@ -786,7 +807,7 @@ export const findLinksByDomain = async (
 export const findLinksByAuthor = async (
   author: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
 ) => {
   const offset = (page - 1) * pageSize;
 
@@ -794,10 +815,10 @@ export const findLinksByAuthor = async (
     .select({
       link,
       uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount"
+        "uniqueActorsCount",
       ),
       mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate"
+        "mostRecentPostDate",
       ),
     })
     .from(linkPostDenormalized)
@@ -805,8 +826,8 @@ export const findLinksByAuthor = async (
     .where(
       and(
         sql`${link.authors}::text ILIKE ${`%${author}%`}`,
-        isNotNull(link.publishedDate)
-      )
+        isNotNull(link.publishedDate),
+      ),
     )
     .groupBy(linkPostDenormalized.linkUrl, link.id)
     .having(sql`count(*) > 0`)
@@ -839,7 +860,7 @@ export const findLinksByAuthor = async (
 export const findLinksByTopic = async (
   topic: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
 ) => {
   const offset = (page - 1) * pageSize;
 
@@ -847,10 +868,10 @@ export const findLinksByTopic = async (
     .select({
       link,
       uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount"
+        "uniqueActorsCount",
       ),
       mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate"
+        "mostRecentPostDate",
       ),
     })
     .from(linkPostDenormalized)
@@ -858,8 +879,8 @@ export const findLinksByTopic = async (
     .where(
       and(
         sql`${link.topics}::text ILIKE ${`%${topic}%`}`,
-        isNotNull(link.publishedDate)
-      )
+        isNotNull(link.publishedDate),
+      ),
     )
     .groupBy(linkPostDenormalized.linkUrl, link.id)
     .having(sql`count(*) > 0`)
