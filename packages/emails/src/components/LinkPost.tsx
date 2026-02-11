@@ -14,6 +14,8 @@ import Post from "./Post.js";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 
+import { truncateDescription } from "../utils/misc.js";
+
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
 
@@ -119,7 +121,9 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 							<Heading style={heading} as="h2">
 								{displayTitle || link.url}
 							</Heading>
-							<Text style={text}>{link.description}</Text>
+							{link.description && (
+								<Text style={text}>{truncateDescription(link.description)}</Text>
+							)}
 							{(link.authors || link.publishedDate) && (
 								<Text style={metadata}>
 									{link.authors && (

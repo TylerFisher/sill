@@ -1,5 +1,14 @@
 import { Text } from "@radix-ui/themes";
 
+const truncateDescription = (text: string, maxLength = 300): string => {
+	if (text.length <= maxLength) return text;
+	const sentenceEnd = text.slice(maxLength).search(/[.!?]/);
+	if (sentenceEnd !== -1) {
+		return text.slice(0, maxLength + sentenceEnd + 1);
+	}
+	return text;
+};
+
 const LinkDescription = ({
 	description,
 	layout,
@@ -11,7 +20,7 @@ const LinkDescription = ({
 			mt={layout === "dense" ? "2" : "3"}
 			mb={layout === "dense" ? "2" : "3"}
 		>
-			{description}
+			{truncateDescription(description)}
 		</Text>
 	);
 };

@@ -1,6 +1,7 @@
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 import { notificationOutro } from "../utils/digestText.js";
+import { truncateDescription } from "../utils/misc.js";
 import RSSPost from "./RSSPost.js";
 
 const RSSNotificationItem = ({
@@ -27,7 +28,9 @@ const RSSNotificationItem = ({
 					) : null}
 				</small>
 			</p>
-			<p>{linkPost.link.description}</p>
+			{linkPost.link.description && (
+				<p>{truncateDescription(linkPost.link.description)}</p>
+			)}
 			{subscribed === "trial" && (
 				<p>
 					You are on a free trial of Sill+.{" "}

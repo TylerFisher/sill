@@ -1,5 +1,6 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
 import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
+import { truncateDescription } from "../utils/misc.js";
 import { renderToString } from "react-dom/server";
 import { getUniqueAvatarUrls } from "./LinkPost.js";
 
@@ -62,7 +63,7 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 			<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
        <h5 style="color: #999;">${displayHost}</h5>
 				<h2><a href="${link.url}">${displayTitle}</a></h2>
-				${link.description ? `<p style="color: #666;">${link.description}</p>` : ""}
+				${link.description ? `<p style="color: #666;">${truncateDescription(link.description)}</p>` : ""}
         ${authors ? `<p style="font-size: 12px; color: #999;">by ${authors}</p>` : ""}
 				<p style="font-size: 12px; color: #999;">
 					Shared by ${uniqueAvatars?.length || 0} ${(uniqueAvatars?.length || 0) === 1 ? "person" : "people"}
