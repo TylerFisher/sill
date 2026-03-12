@@ -19,7 +19,7 @@ function getProvider(): apn.Provider | null {
 	if (!provider) {
 		provider = new apn.Provider({
 			token: {
-				key: Buffer.from(key, "utf8"),
+				key,
 				keyId,
 				teamId,
 			},
@@ -81,8 +81,7 @@ export async function sendPushNotification(
 		for (const failure of result.failed) {
 			if (
 				failure.response?.reason === "Unregistered" ||
-				failure.response?.reason === "BadDeviceToken" ||
-				failure.response?.reason === "ExpiredProviderToken"
+				failure.response?.reason === "BadDeviceToken"
 			) {
 				const staleToken = failure.device;
 				console.log(`Removing stale device token: ${staleToken}`);

@@ -75,7 +75,7 @@ const devices = new Hono()
 			}
 		},
 	)
-	// GET /api/devices - List registered devices for the current user
+	// GET /api/devices - Check if user has registered devices
 	.get("/", async (c) => {
 		const userId = await getUserIdFromSession(c.req.raw);
 
@@ -86,6 +86,11 @@ const devices = new Hono()
 		try {
 			const tokens = await db.query.deviceToken.findMany({
 				where: eq(deviceToken.userId, userId),
+				columns: {
+					id: true,
+					platform: true,
+					createdAt: true,
+				},
 			});
 
 			return c.json(tokens);
