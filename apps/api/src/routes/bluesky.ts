@@ -57,7 +57,7 @@ const bluesky = new Hono()
               error: "Handle is required",
               code: "handle_required",
             },
-            400
+            400,
           );
         }
       }
@@ -111,17 +111,18 @@ const bluesky = new Hono()
             const existingAccount = await db.query.blueskyAccount.findFirst({
               where: and(
                 eq(blueskyAccount.did, did),
-                ne(blueskyAccount.userId, userId)
+                ne(blueskyAccount.userId, userId),
               ),
             });
 
             if (existingAccount) {
               return c.json(
                 {
-                  error: "This Bluesky account is already linked to another user.",
+                  error:
+                    "This Bluesky account is already linked to another user.",
                   code: "account_exists",
                 },
-                400
+                400,
               );
             }
           }
@@ -167,7 +168,7 @@ const bluesky = new Hono()
                   error: "Failed to resolve handle",
                   code: "resolver",
                 },
-                400
+                400,
               );
             }
           }
@@ -176,7 +177,7 @@ const bluesky = new Hono()
               error: "Failed to resolve handle",
               code: "resolver",
             },
-            400
+            400,
           );
         }
         throw error;
@@ -205,7 +206,7 @@ const bluesky = new Hono()
             error: "Access denied by user",
             code: "denied",
           },
-          400
+          400,
         );
       }
 
@@ -215,7 +216,7 @@ const bluesky = new Hono()
             error: "OAuth error",
             code: "oauth",
           },
-          400
+          400,
         );
       }
 
@@ -223,7 +224,7 @@ const bluesky = new Hono()
 
       try {
         const { session: oauthSession } = await oauthClient.callback(
-          searchParams
+          searchParams,
         );
         const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({
@@ -249,7 +250,7 @@ const bluesky = new Hono()
                   name: profile.data.displayName || profile.data.handle,
                   emailConfirmed: false,
                   freeTrialEnd: new Date(
-                    Date.now() + 1000 * 60 * 60 * 24 * 14
+                    Date.now() + 1000 * 60 * 60 * 24 * 14,
                   ).toISOString(),
                 })
                 .returning({ id: user.id });
@@ -296,7 +297,7 @@ const bluesky = new Hono()
             setSessionCookie(
               c,
               transaction.session.id,
-              transaction.session.expirationDate
+              transaction.session.expirationDate,
             );
 
             return c.json({
@@ -374,7 +375,7 @@ const bluesky = new Hono()
         if (
           error instanceof OAuthCallbackError &&
           ["login_required", "consent_required"].includes(
-            error.params.get("error") || ""
+            error.params.get("error") || "",
           )
         ) {
           if (error.state) {
@@ -392,14 +393,14 @@ const bluesky = new Hono()
                 code: "login_required",
                 redirectUrl: url.toString(),
               },
-              400
+              400,
             );
           }
         }
 
         // Fallback - try callback again
         const { session: oauthSession } = await oauthClient.callback(
-          searchParams
+          searchParams,
         );
         const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({
@@ -428,7 +429,7 @@ const bluesky = new Hono()
                     name: profile.data.displayName || profile.data.handle,
                     emailConfirmed: false,
                     freeTrialEnd: new Date(
-                      Date.now() + 1000 * 60 * 60 * 24 * 14
+                      Date.now() + 1000 * 60 * 60 * 24 * 14,
                     ).toISOString(),
                   })
                   .returning({ id: user.id });
@@ -471,7 +472,7 @@ const bluesky = new Hono()
               setSessionCookie(
                 c,
                 transaction.session.id,
-                transaction.session.expirationDate
+                transaction.session.expirationDate,
               );
 
               return c.json({
@@ -491,7 +492,7 @@ const bluesky = new Hono()
                 error: "No account found with this Bluesky account.",
                 code: "account_not_found",
               },
-              404
+              404,
             );
           }
 
@@ -667,7 +668,7 @@ const bluesky = new Hono()
                   needsAuth: true,
                   error: "Failed to initiate re-authorization",
                 },
-                500
+                500,
               );
             }
           }
@@ -723,7 +724,7 @@ const bluesky = new Hono()
                       needsAuth: true,
                       error: "Failed to initiate re-authorization",
                     },
-                    500
+                    500,
                   );
                 }
               }
@@ -738,7 +739,7 @@ const bluesky = new Hono()
               needsAuth: true,
               error: "resolver",
             },
-            400
+            400,
           );
         }
 
@@ -752,7 +753,7 @@ const bluesky = new Hono()
           needsAuth: false,
           error: "Internal server error",
         },
-        500
+        500,
       );
     }
   });

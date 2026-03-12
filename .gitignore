@@ -17,3 +17,7 @@ CLAUDE.md
 build
 dist
 tsconfig.tsbuildinfo
+
+apps/ios/Sill/Sill.xcodeproj/xcuserdata/
+apps/ios/Sill/Sill.xcodeproj/project.xcworkspace/xcuserdata/
+apps/ios/Sill/Sill.xcodeproj/project.xcworkspace/xcshareddata/

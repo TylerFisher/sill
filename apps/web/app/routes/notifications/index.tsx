@@ -12,13 +12,14 @@ import { requireUserFromContext } from "~/utils/context.server";
 import {
 	apiGetNotificationGroups,
 	apiCreateNotificationGroup,
+	apiGetDevices,
 } from "~/utils/api-client.server";
 
 type NotificationGroups = Awaited<ReturnType<typeof apiGetNotificationGroups>>;
 
 export const NotificationSchema = z.object({
 	id: z.string().optional(),
-	format: z.enum(["email", "rss"]),
+	format: z.enum(["email", "rss", "push"]),
 	queries: z.preprocess(
 		(value) => JSON.parse(value as string),
 		z.array(
@@ -136,6 +137,15 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		notificationGroups = [];
 	}
 
+	// Check if user has any registered devices (for push notification option)
+	let hasDevices = false;
+	try {
+		const devices = await apiGetDevices(request);
+		hasDevices = Array.isArray(devices) && devices.length > 0;
+	} catch {
+		hasDevices = false;
+	}
+
 	// Combine existing user data with notification groups to match expected loader signature
 	const userWithNotificationGroups = {
 		...existingUser,
@@ -146,6 +156,7 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		user: userWithNotificationGroups,
 		subscribed,
 		email: existingUser.email,
+		hasDevices,
 	};
 };
 
@@ -189,6 +200,7 @@ export default function Notifications({
 					lastResult={actionData?.result}
 					allLists={allLists}
 					email={loaderData.email}
+					hasDevices={loaderData.hasDevices}
 				/>
 			</NotificationsProvider>
 		</Layout>

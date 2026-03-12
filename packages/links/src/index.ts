@@ -41,4 +41,5 @@ export {
   addNewBookmarks,
 } from "./bookmarks.js";
 export { processNotificationGroup } from "./notifications.js";
+export { sendPushNotification } from "./push.js";
 export { clearUrlExpansionCache } from "./normalizeLink.js";

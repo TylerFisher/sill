@@ -8,6 +8,7 @@ import { runMigrations } from "@sill/schema";
 import auth from "./routes/auth.js";
 import bluesky from "./routes/bluesky.js";
 import bookmarks from "./routes/bookmarks.js";
+import devices from "./routes/devices.js";
 import digest from "./routes/digest.js";
 import links from "./routes/links.js";
 import lists from "./routes/lists.js";
@@ -37,6 +38,7 @@ const routes = app
   .route("/api/auth", auth)
   .route("/api/bluesky", bluesky)
   .route("/api/bookmarks", bookmarks)
+  .route("/api/devices", devices)
   .route("/api/digest", digest)
   .route("/api/links", links)
   .route("/api/lists", lists)

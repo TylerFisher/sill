@@ -351,6 +351,13 @@
       "when": 1769267805109,
       "tag": "0049_silky_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1773267226420,
+      "tag": "0050_omniscient_stingray",
+      "breakpoints": true
     }
   ]
 }

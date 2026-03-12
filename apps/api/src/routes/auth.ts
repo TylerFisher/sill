@@ -604,6 +604,7 @@ const auth = new Hono()
         .update(user)
         .set({
           email: newEmail,
+          emailConfirmed: true,
         })
         .where(eq(user.id, userId))
         .returning({
@@ -707,6 +708,7 @@ const auth = new Hono()
         .update(user)
         .set({
           email: email.toLowerCase(),
+          emailConfirmed: true,
         })
         .where(eq(user.id, userId))
         .returning({

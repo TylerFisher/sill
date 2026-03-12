@@ -724,13 +724,33 @@ export async function apiGetNotificationGroups(request: Request) {
 }
 
 /**
+ * Get registered devices for the current user via API
+ */
+export async function apiGetDevices(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.devices.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get devices: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
  * Create or update notification group via API
  */
 export async function apiCreateNotificationGroup(
   request: Request,
   data: {
     id?: string;
-    format: "email" | "rss";
+    format: "email" | "rss" | "push";
     queries: Array<{
       category: {
         id: string;

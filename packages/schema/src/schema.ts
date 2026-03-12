@@ -23,7 +23,7 @@ export const postType = pgEnum("post_type", [
   "atbookmark",
 ]);
 
-export const digestType = pgEnum("digest_type", ["email", "rss"]);
+export const digestType = pgEnum("digest_type", ["email", "rss", "push"]);
 export const digestLayout = pgEnum("digest_layout", ["default", "dense"]);
 export const repostFilter = pgEnum("repost_filter", [
   "include",
@@ -549,6 +549,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   subscriptions: many(subscription),
   bookmarks: many(bookmark),
   tags: many(tag),
+  deviceTokens: many(deviceToken),
 }));
 
 export const passwordRelations = relations(password, ({ one }) => ({
@@ -832,6 +833,36 @@ export const syncJob = pgTable(
 export const syncJobRelations = relations(syncJob, ({ one }) => ({
   user: one(user, {
     fields: [syncJob.userId],
+    references: [user.id],
+  }),
+}));
+
+export const deviceToken = pgTable(
+  "device_token",
+  {
+    id: uuid().primaryKey().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    token: text().notNull(),
+    platform: text().notNull().default("ios"),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    unique().on(table.userId, table.token),
+    uniqueIndex("device_token_user_id_token_key").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.token.asc().nullsLast(),
+    ),
+  ],
+);
+
+export const deviceTokenRelations = relations(deviceToken, ({ one }) => ({
+  user: one(user, {
+    fields: [deviceToken.userId],
     references: [user.id],
   }),
 }));

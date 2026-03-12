@@ -9,7 +9,7 @@ export async function fetchHtmlViaProxy(url: string): Promise<string | null> {
     if (!response.ok) {
       const text = await response.text();
       console.warn(
-        `[BROWSER RENDER] Failed to fetch ${url}: ${response.status}`
+        `[BROWSER RENDER] Failed to fetch ${url}: ${response.status}`,
       );
       return null;
     }
@@ -71,13 +71,13 @@ type ParsedVideoObject = z.SafeParseReturnType<
 >;
 
 function parseNewsArticleAuthors(
-  parsedNewsArticle: ParsedNewsArticle | null
+  parsedNewsArticle: ParsedNewsArticle | null,
 ): string[] | null {
   if (!parsedNewsArticle?.success) return null;
 
   if (Array.isArray(parsedNewsArticle.data.author)) {
     const authors = parsedNewsArticle.data.author?.map((author) =>
-      "name" in author ? author.name : author.mainEntity.name
+      "name" in author ? author.name : author.mainEntity.name,
     );
     return authors;
   }
@@ -88,7 +88,7 @@ function parseNewsArticleAuthors(
 }
 
 function parseVideoObjectAuthors(
-  parsedVideoObject: ParsedVideoObject | null
+  parsedVideoObject: ParsedVideoObject | null,
 ): string[] | null {
   return parsedVideoObject?.success && parsedVideoObject.data.author
     ? [parsedVideoObject.data.author]
@@ -98,7 +98,7 @@ function parseVideoObjectAuthors(
 function getAuthors(
   isYouTubeUrl: boolean,
   parsedNewsArticle: ParsedNewsArticle | null,
-  parsedVideoObject: ParsedVideoObject | null
+  parsedVideoObject: ParsedVideoObject | null,
 ): string[] | null {
   if (isYouTubeUrl) {
     const videoAuthors = parseVideoObjectAuthors(parsedVideoObject);
@@ -111,7 +111,7 @@ function getPublishedDate(
   isYouTubeUrl: boolean,
   parsedNewsArticle: ParsedNewsArticle | null,
   parsedVideoObject: ParsedVideoObject | null,
-  result: SuccessResult["result"]
+  result: SuccessResult["result"],
 ): string | null {
   if (
     isYouTubeUrl &&
@@ -133,7 +133,7 @@ function getTopics(
   isYouTubeUrl: boolean,
   parsedNewsArticle: ParsedNewsArticle | null,
   parsedVideoObject: ParsedVideoObject | null,
-  result: SuccessResult["result"]
+  result: SuccessResult["result"],
 ): string[] {
   // For YouTube videos, prioritize VideoObject genre
   if (
@@ -155,7 +155,7 @@ function getTopics(
 }
 
 export async function extractHtmlMetadata(
-  html: string
+  html: string,
 ): Promise<null | Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">> {
   const metadata = await ogs({
     html,
@@ -241,26 +241,30 @@ export async function extractHtmlMetadata(
   const finalAuthors = getAuthors(
     isYouTubeUrl,
     parsedNewsArticle,
-    parsedVideoObject
+    parsedVideoObject,
   );
   const foundDate = getPublishedDate(
     isYouTubeUrl,
     parsedNewsArticle,
     parsedVideoObject,
-    result
+    result,
   );
   const articleTags = getTopics(
     isYouTubeUrl,
     parsedNewsArticle,
     parsedVideoObject,
-    result
+    result,
   );
 
   const siteName =
     parsedNewsArticle?.data?.publisher?.name || result.ogSiteName || null;
 
   return {
-    title: result.ogTitle || result.twitterTitle || "",
+    title:
+      result.ogTitle ||
+      result.twitterTitle ||
+      parsedNewsArticle?.data?.headline ||
+      "",
     description: result.ogDescription || result.twitterDescription || null,
     imageUrl: (Array.isArray(result.ogImage) && result.ogImage[0].url) || null,
     metadata: result,

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { isSubscribed } from "@sill/auth";
 import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
 import { evaluateNotifications } from "./links.js";
+import { sendPushNotification } from "./push.js";
 
 /**
  * Processes notifications for a notification group.
@@ -71,6 +72,12 @@ export async function processNotificationGroup(
           itemData: item,
         });
       }
+    } else if (group.notificationType === "push") {
+      await sendPushNotification(group.userId, {
+        title: group.name,
+        body: `${newItems.length} new link${newItems.length !== 1 ? "s" : ""} match your "${group.name}" alert`,
+        data: { groupId: group.id },
+      });
     }
   }
 
