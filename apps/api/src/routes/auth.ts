@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, lt, or, isNotNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { z } from "zod";
@@ -18,7 +18,14 @@ import {
   prepareVerification,
   createOAuthClient,
 } from "@sill/auth";
-import { db, password, termsAgreement, termsUpdate, user } from "@sill/schema";
+import {
+  db,
+  mobileTokenExchange,
+  password,
+  termsAgreement,
+  termsUpdate,
+  user,
+} from "@sill/schema";
 import { getActiveSyncs } from "./sync.js";
 import {
   sendVerificationEmail,
@@ -797,7 +804,110 @@ const auth = new Hono()
         500
       );
     }
-  });
+  })
+  // POST /api/auth/exchange - Exchange a mobile auth code for a session
+  .post(
+    "/exchange",
+    zValidator("json", z.object({ code: z.string().uuid() })),
+    async (c) => {
+      const { code } = c.req.valid("json");
+
+      try {
+        const records = await db
+          .select()
+          .from(mobileTokenExchange)
+          .where(eq(mobileTokenExchange.code, code))
+          .limit(1);
+        const record = records[0];
+
+        if (!record) {
+          return c.json({ error: "Invalid code" }, 401);
+        }
+
+        if (new Date(`${record.expiresAt}Z`) < new Date()) {
+          await db
+            .delete(mobileTokenExchange)
+            .where(eq(mobileTokenExchange.code, code));
+          return c.json({ error: "Code expired" }, 401);
+        }
+
+        if (record.usedAt) {
+          return c.json({ error: "Code already used" }, 401);
+        }
+
+        // Delete the used code and clean up any expired/used rows
+        await db
+          .delete(mobileTokenExchange)
+          .where(
+            or(
+              eq(mobileTokenExchange.code, code),
+              lt(mobileTokenExchange.expiresAt, new Date().toISOString()),
+              isNotNull(mobileTokenExchange.usedAt),
+            ),
+          );
+
+        // Set the session cookie and return the sessionId
+        setCookie(c, "sessionId", record.sessionId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        });
+
+        return c.json({ success: true, sessionId: record.sessionId });
+      } catch (error) {
+        console.error("Token exchange error:", error);
+        return c.json({ error: "Internal server error" }, 500);
+      }
+    },
+  )
+  // POST /api/auth/create-mobile-code - Create a short-lived code for a session
+  .post(
+    "/create-mobile-code",
+    zValidator(
+      "json",
+      z.object({ sessionId: z.string().min(1).optional() }),
+    ),
+    async (c) => {
+      const { sessionId: bodySessionId } = c.req.valid("json");
+
+      // Use sessionId from body if provided (web callback flow),
+      // otherwise read from cookie (iOS app flow)
+      const sessionId =
+        bodySessionId ??
+        getSessionIdFromCookie(c.req.raw.headers.get("cookie") ?? undefined);
+
+      if (!sessionId) {
+        return c.json({ error: "No session provided" }, 401);
+      }
+
+      // If using cookie auth, verify the session is valid
+      if (!bodySessionId) {
+        const userId = await getUserIdFromSession(c.req.raw);
+        if (!userId) {
+          return c.json({ error: "Not authenticated" }, 401);
+        }
+      }
+
+      try {
+        const { randomUUID } = await import("node:crypto");
+        const code = randomUUID();
+        const expiresAt = new Date(Date.now() + 60 * 1000).toISOString();
+
+        await db.insert(mobileTokenExchange).values({
+          code,
+          sessionId,
+          expiresAt,
+        });
+
+        return c.json({ code });
+      } catch (error) {
+        console.error("Create mobile code error:", error);
+        return c.json({ error: "Internal server error" }, 500);
+      }
+    },
+  );
 
 /**
  * Extracts session ID from cookie header

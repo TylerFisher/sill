@@ -1,13 +1,17 @@
 import { redirect } from "react-router";
-import { apiBlueskyAuthStart } from "~/utils/api-client.server";
+import {
+	apiBlueskyAuthStart,
+	apiExchangeMobileCode,
+} from "~/utils/api-client.server";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth";
 
 /**
  * When the mobile app needs to connect an additional account, the
  * ASWebAuthenticationSession browser doesn't carry the iOS app's session
- * cookie.  The mobile app passes its API sessionId as a query parameter so
- * we can inject it into the cookie header before calling the API.
+ * cookie.  The mobile app passes a short-lived code (obtained via
+ * POST /api/auth/create-mobile-code) that we exchange server-side for the
+ * real sessionId, then inject it into the cookie header before calling the API.
  */
 function injectSessionId(request: Request, sessionId: string): Request {
 	const headers = new Headers(request.headers);
@@ -33,7 +37,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		| "signup"
 		| undefined;
 	const mobile = requestUrl.searchParams.get("mobile") === "1";
-	const mobileSessionId = requestUrl.searchParams.get("sessionId");
+	const mobileCode = requestUrl.searchParams.get("code");
 
 	// Extract pathname from referrer, defaulting to settings if not available or just root
 	let origin = "/settings?tabs=connect";
@@ -54,18 +58,25 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 	// Determine where to redirect on error based on mode and origin
 	const getErrorRedirectPath = () => {
-		if (mobile && mobileSessionId) return "sill://callback";
+		if (mobile && mobileCode) return "sill://callback";
 		if (mode === "login") return "/accounts/login";
 		if (mode === "signup") return "/accounts/signup";
 		return origin;
 	};
 
 	try {
-		// For mobile connect flow, inject the iOS session cookie
-		const apiRequest =
-			mobile && mobileSessionId
-				? injectSessionId(request, mobileSessionId)
-				: request;
+		// For mobile connect flow, exchange the code for the real sessionId
+		// and inject it into the cookie header before calling the API
+		let apiRequest = request;
+		let mobileSessionId: string | undefined;
+		if (mobile && mobileCode) {
+			const { sessionId } = await apiExchangeMobileCode(
+				request,
+				mobileCode,
+			);
+			mobileSessionId = sessionId;
+			apiRequest = injectSessionId(request, sessionId);
+		}
 
 		const result = await apiBlueskyAuthStart(
 			apiRequest,

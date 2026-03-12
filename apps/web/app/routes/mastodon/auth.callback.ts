@@ -1,5 +1,8 @@
 import { redirect } from "react-router";
-import { apiMastodonAuthCallback } from "~/utils/api-client.server";
+import {
+	apiMastodonAuthCallback,
+	apiCreateMobileCode,
+} from "~/utils/api-client.server";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
@@ -114,7 +117,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 				let mobileUrl: string;
 				if (sessionId) {
-					mobileUrl = `sill://callback?sessionId=${encodeURIComponent(sessionId)}&isSignup=${isSignup}`;
+					const { code } = await apiCreateMobileCode(
+						request,
+						sessionId,
+					);
+					mobileUrl = `sill://callback?code=${encodeURIComponent(code)}&isSignup=${isSignup}`;
 				} else if (isConnect) {
 					// Connect flow: no new session cookie — the iOS app already has one
 					mobileUrl = "sill://callback?connected=1";

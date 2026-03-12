@@ -866,3 +866,10 @@ export const deviceTokenRelations = relations(deviceToken, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const mobileTokenExchange = pgTable("mobile_token_exchange", {
+  code: uuid().primaryKey().notNull(),
+  sessionId: text().notNull(),
+  expiresAt: timestamp({ precision: 3, mode: "string" }).notNull(),
+  usedAt: timestamp({ precision: 3, mode: "string" }),
+});

@@ -27,6 +27,7 @@ import type {
   mastodonInstance,
   blueskyAccount,
   deviceToken,
+  mobileTokenExchange,
 } from "./schema.js";
 
 // Database table types
@@ -86,6 +87,9 @@ export type NewBlueskyAccount = typeof blueskyAccount.$inferInsert;
 
 export type DeviceToken = typeof deviceToken.$inferSelect;
 export type NewDeviceToken = typeof deviceToken.$inferInsert;
+
+export type MobileTokenExchange = typeof mobileTokenExchange.$inferSelect;
+export type NewMobileTokenExchange = typeof mobileTokenExchange.$inferInsert;
 
 // Composite types
 export interface MostRecentLinkPosts {

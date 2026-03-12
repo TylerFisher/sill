@@ -1,5 +1,8 @@
 import { redirect } from "react-router";
-import { apiMastodonAuthStart } from "~/utils/api-client.server";
+import {
+	apiMastodonAuthStart,
+	apiExchangeMobileCode,
+} from "~/utils/api-client.server";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth";
 
@@ -25,7 +28,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const requestUrl = new URL(request.url);
 	const refererHeader = request.headers.get("referer");
 	const mobile = requestUrl.searchParams.get("mobile") === "1";
-	const mobileSessionId = requestUrl.searchParams.get("sessionId");
+	const mobileCode = requestUrl.searchParams.get("code");
 
 	// Extract pathname from referrer, defaulting to settings if not available or just root
 	let referrer = "/settings?tabs=connect";
@@ -53,11 +56,18 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	}
 
 	try {
-		// For mobile connect flow, inject the iOS session cookie
-		const apiRequest =
-			mobile && mobileSessionId
-				? injectSessionId(request, mobileSessionId)
-				: request;
+		// For mobile connect flow, exchange the code for the real sessionId
+		// and inject it into the cookie header before calling the API
+		let apiRequest = request;
+		let mobileSessionId: string | undefined;
+		if (mobile && mobileCode) {
+			const { sessionId } = await apiExchangeMobileCode(
+				request,
+				mobileCode,
+			);
+			mobileSessionId = sessionId;
+			apiRequest = injectSessionId(request, sessionId);
+		}
 
 		const result = await apiMastodonAuthStart(apiRequest, { instance, mode });
 
@@ -101,7 +111,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 		// Build error redirect URL
 		const buildErrorUrl = (errorCode: string) => {
-			if (mobile && mobileSessionId) return `sill://callback?error=${errorCode}`;
+			if (mobile && mobileCode) return `sill://callback?error=${errorCode}`;
 			const errorUrl = new URL(referrer, requestUrl.origin);
 			errorUrl.searchParams.set("error", errorCode);
 			return errorUrl.pathname + errorUrl.search;

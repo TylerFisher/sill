@@ -212,23 +212,3 @@ export async function clearBlueskyModeCookie(request: Request): Promise<Headers>
 	return headers;
 }
 
-export async function getMobileCookie(
-	request: Request,
-): Promise<boolean> {
-	const session = await authSessionStorage.getSession(
-		request.headers.get("cookie"),
-	);
-	return session.get("mobile") === true;
-}
-
-export async function setMobileCookie(
-	session: Awaited<ReturnType<typeof authSessionStorage.getSession>>,
-): void {
-	session.set("mobile", true);
-}
-
-export async function clearMobileCookie(
-	session: Awaited<ReturnType<typeof authSessionStorage.getSession>>,
-): void {
-	session.unset("mobile");
-}
