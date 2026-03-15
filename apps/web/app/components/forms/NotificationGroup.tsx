@@ -279,6 +279,11 @@ const NotificationGroup = ({
 						Save notification
 					</Button>
 					{group.id && (
+						<Button asChild variant="soft">
+							<Link to={`/notifications/${group.id}`}>View feed</Link>
+						</Button>
+					)}
+					{group.id && (
 						<Button
 							type="button"
 							color="red"
