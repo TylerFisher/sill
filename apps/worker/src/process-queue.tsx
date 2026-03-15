@@ -25,7 +25,7 @@ const MAX_ERRORS_PER_BATCH = 10;
 const JOB_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 const CLOUDFLARE_RATE_LIMIT_MS = 1000; // 1 second between URL scrapes (Cloudflare requirement)
 const QUEUE_POLL_INTERVAL_MS = 1000; // Poll queue every 1 second
-const SLOW_QUEUE_DELAY_MS = 10 * 1000; // 10 seconds delay when few users
+const SLOW_QUEUE_DELAY_MS = 120 * 1000; // 2 minute delay when few users
 
 type JobResult =
 	| { status: "success"; duration: number }

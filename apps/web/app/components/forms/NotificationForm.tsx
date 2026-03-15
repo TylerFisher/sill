@@ -14,6 +14,7 @@ interface NotificationFormProps {
 	lastResult?: SubmissionResult<string[]> | undefined;
 	allLists: (typeof list.$inferSelect)[];
 	email: string | null;
+	hasDevices: boolean;
 }
 const defaultCategory = {
 	id: "url",
@@ -94,7 +95,7 @@ const popularLinksFromDomainGroup = (id: string): NotificationGroupInit => ({
 	saved: false,
 });
 
-const NotificationForm = ({ lastResult, allLists, email }: NotificationFormProps) => {
+const NotificationForm = ({ lastResult, allLists, email, hasDevices }: NotificationFormProps) => {
 	const groups = useNotifications();
 	const { dispatch } = useNotificationsDispatch();
 
@@ -108,6 +109,7 @@ const NotificationForm = ({ lastResult, allLists, email }: NotificationFormProps
 					lastResult={lastResult}
 					allLists={allLists}
 					email={email}
+					hasDevices={hasDevices}
 				/>
 			))}
 			{groups.notifications.length === 0 ? (

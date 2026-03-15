@@ -724,13 +724,83 @@ export async function apiGetNotificationGroups(request: Request) {
 }
 
 /**
+ * Get registered devices for the current user via API
+ */
+export async function apiGetDevices(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.devices.$get();
+
+  if (!response.ok) {
+    throw new Error(`Failed to get devices: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Exchange a mobile auth code for a session ID
+ */
+export async function apiExchangeMobileCode(
+  request: Request,
+  code: string,
+) {
+  const client = createApiClient(request);
+  const response = await client.api.auth.exchange.$post({
+    json: { code },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to exchange mobile code: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
+ * Create a short-lived mobile exchange code for a session ID
+ */
+export async function apiCreateMobileCode(
+  request: Request,
+  sessionId: string,
+) {
+  const client = createApiClient(request);
+  const response = await client.api.auth["create-mobile-code"].$post({
+    json: { sessionId },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create mobile code: ${response.status}`);
+  }
+
+  const json = await response.json();
+
+  if ("error" in json) {
+    throw new Error(json.error as string);
+  }
+
+  return json;
+}
+
+/**
  * Create or update notification group via API
  */
 export async function apiCreateNotificationGroup(
   request: Request,
   data: {
     id?: string;
-    format: "email" | "rss";
+    format: "email" | "rss" | "push";
     queries: Array<{
       category: {
         id: string;

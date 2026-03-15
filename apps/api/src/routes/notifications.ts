@@ -49,7 +49,7 @@ const GetNotificationGroupFeedSchema = z.object({
 // Schema for creating/updating notification group
 const CreateNotificationGroupSchema = z.object({
   id: z.string().optional(),
-  format: z.enum(["email", "rss"]),
+  format: z.enum(["email", "rss", "push"]),
   queries: z.array(
     z.object({
       category: z.object({

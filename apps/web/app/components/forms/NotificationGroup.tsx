@@ -33,7 +33,7 @@ export interface NotificationGroupInit {
 	id?: string;
 	name: string;
 	query: NotificationQuery[];
-	notificationType: "email" | "rss";
+	notificationType: "email" | "rss" | "push";
 	saved: boolean;
 }
 const defaultCategory = {
@@ -48,12 +48,14 @@ const NotificationGroup = ({
 	lastResult,
 	allLists,
 	email,
+	hasDevices,
 }: {
 	index: number;
 	group: NotificationGroupInit;
 	lastResult?: SubmissionResult<string[]>;
 	allLists: (typeof list.$inferSelect)[];
 	email: string | null;
+	hasDevices: boolean;
 }) => {
 	const [format, setFormat] = useState<string | undefined>(
 		group.notificationType || "email",
@@ -184,7 +186,7 @@ const NotificationGroup = ({
 							type: "changed",
 							notification: {
 								...group,
-								notificationType: value === "rss" ? "rss" : "email",
+								notificationType: value as "email" | "rss" | "push",
 							},
 						});
 					}}
@@ -192,6 +194,9 @@ const NotificationGroup = ({
 				>
 					<RadioGroup.Item value="email">Email</RadioGroup.Item>
 					<RadioGroup.Item value="rss">RSS</RadioGroup.Item>
+					{hasDevices && (
+						<RadioGroup.Item value="push">Push notification</RadioGroup.Item>
+					)}
 				</RadioGroup.Root>
 				{format === "email" && !email && (
 					<Callout.Root color="amber" mb="4">
