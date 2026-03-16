@@ -6,12 +6,17 @@ import { sendNotificationEmail, renderNotificationRSS } from "@sill/emails";
 import { evaluateNotifications } from "./links.js";
 import { sendPushNotification } from "./push.js";
 
+function extractDomain(url: string | undefined) {
+  if (!url) return null;
+  return new URL(url).hostname;
+}
+
 /**
  * Processes notifications for a notification group.
  * Evaluates new items, sends emails or generates RSS items, and updates seen links.
  */
 export async function processNotificationGroup(
-  group: typeof notificationGroup.$inferSelect
+  group: typeof notificationGroup.$inferSelect,
 ): Promise<void> {
   const groupUser = await db.query.user.findFirst({
     where: eq(user.id, group.userId),
@@ -31,19 +36,19 @@ export async function processNotificationGroup(
     group.userId,
     group.query,
     group.seenLinks,
-    new Date(group.createdAt)
+    new Date(group.createdAt),
   );
 
   if (newItems.length > 0) {
     console.log(
-      `sending notification for group ${group.name}, user ${groupUser.email}`
+      `sending notification for group ${group.name}, user ${groupUser.email}`,
     );
 
     if (group.notificationType === "email") {
       // Skip email notification for users without email
       if (!groupUser.email) {
         console.log(
-          `Skipping email notification for user ${groupUser.id} - no email address`
+          `Skipping email notification for user ${groupUser.id} - no email address`,
         );
         return;
       }
@@ -73,9 +78,19 @@ export async function processNotificationGroup(
         });
       }
     } else if (group.notificationType === "push") {
+      const notificationTitle =
+        newItems[0].link?.title || "New link in your network";
+      const notificationBody =
+        newItems[0].link?.description ||
+        `Shared by ${newItems[0].uniqueActorsCount} people`;
+
       await sendPushNotification(group.userId, {
-        title: group.name,
-        body: `${newItems.length} new link${newItems.length !== 1 ? "s" : ""} match your "${group.name}" alert`,
+        title: notificationTitle,
+        subtitle:
+          newItems[0].link?.siteName ||
+          extractDomain(newItems[0].link?.url) ||
+          group.name,
+        body: notificationBody,
         data: { groupId: group.id },
       });
     }

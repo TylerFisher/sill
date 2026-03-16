@@ -32,6 +32,7 @@ function getProvider(): apn.Provider | null {
 
 interface PushPayload {
   title: string;
+  subtitle?: string;
   body: string;
   data?: Record<string, string>;
 }
@@ -64,6 +65,7 @@ export async function sendPushNotification(
   const notification = new apn.Notification();
   notification.alert = {
     title: payload.title,
+    subtitle: payload.subtitle,
     body: payload.body,
   };
   notification.sound = "default";
@@ -75,16 +77,6 @@ export async function sendPushNotification(
 
   const tokenStrings = tokens.map((t) => t.token);
   const result = await apnsProvider.send(notification, tokenStrings);
-
-  console.log(
-    "APNs sent:",
-    result.sent.length,
-    "failed:",
-    result.failed.length,
-  );
-  if (result.failed.length > 0) {
-    console.log("APNs failures:", JSON.stringify(result.failed));
-  }
 
   // Remove stale tokens that APNs rejected as unregistered
   if (result.failed && result.failed.length > 0) {
