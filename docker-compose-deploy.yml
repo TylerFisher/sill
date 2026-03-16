@@ -144,6 +144,9 @@ services:
       - NODE_ENV=production
       - PROCESS_TYPE=worker
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:5432/${POSTGRES_DB:-postgres}
+      - APNS_KEY=/app/apns-key.p8
+    volumes:
+      - ${APNS_KEY_FILE:-/dev/null}:/app/apns-key.p8:ro
     depends_on:
       - pgbouncer
       - api
