@@ -704,6 +704,37 @@ export async function apiGetNotificationGroupFeed(
 }
 
 /**
+ * Get notification group items (paginated) via API
+ */
+export async function apiGetNotificationGroupItems(
+	request: Request,
+	groupId: string,
+	cursor?: string,
+) {
+	const client = createApiClient(request);
+	const response = await client.api.notifications.groups[":groupId"].items.$get(
+		{
+			param: { groupId },
+			query: cursor ? { cursor } : {},
+		},
+	);
+
+	if (!response.ok) {
+		throw new Error(
+			`Failed to get notification group items: ${response.status}`,
+		);
+	}
+
+	const json = await response.json();
+
+	if ("error" in json) {
+		throw new Error(json.error as string);
+	}
+
+	return json;
+}
+
+/**
  * Get all notification groups for logged in user via API
  */
 export async function apiGetNotificationGroups(request: Request) {

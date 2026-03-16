@@ -75,8 +75,9 @@ export default [
   ...prefix("notifications", [
     index("routes/notifications/index.tsx"),
     route("delete", "routes/notifications/delete.ts"),
-    route(":notificationGroupId.rss", "routes/notifications/feed.ts"),
+    route("rss?/:notificationGroupId.rss", "routes/notifications/feed.ts"),
     route("test", "routes/notifications/test.tsx"),
+    route(":groupId", "routes/notifications/groupFeed.tsx"),
   ]),
   ...prefix("resources", [
     route("layout-switch", "routes/resources/layout-switch.tsx"),

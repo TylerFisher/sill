@@ -1,19 +1,24 @@
 import { parseWithZod } from "@conform-to/zod";
-import { Box } from "@radix-ui/themes";
-import { redirect, data } from "react-router";
+import { Box, Flex, Heading, Link as RLink, Tabs, Text } from "@radix-ui/themes";
+import { ChevronRight } from "lucide-react";
+import { redirect, data, Link } from "react-router";
 import { z } from "zod";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import NotificationForm from "~/components/forms/NotificationForm";
 import type { NotificationGroupInit } from "~/components/forms/NotificationGroup";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
+import { LinkPost } from "~/routes/links/index";
+import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
 	apiGetNotificationGroups,
 	apiCreateNotificationGroup,
 	apiGetDevices,
+	apiGetNotificationGroupItems,
 } from "~/utils/api-client.server";
+import { useSearchParams } from "react-router";
 
 type NotificationGroups = Awaited<ReturnType<typeof apiGetNotificationGroups>>;
 
@@ -146,17 +151,56 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		hasDevices = false;
 	}
 
+	// Fetch first page of items for each saved notification group
+	const groupFeeds = await Promise.all(
+		notificationGroups.map(async (group) => {
+			try {
+				const result = await apiGetNotificationGroupItems(
+					request,
+					group.id,
+				);
+				return {
+					groupId: group.id,
+					groupName: group.name,
+					items: result.items,
+					nextCursor: result.nextCursor,
+				};
+			} catch (error) {
+				console.error(
+					`Failed to fetch items for group ${group.id}:`,
+					error,
+				);
+				return {
+					groupId: group.id,
+					groupName: group.name,
+					items: [],
+					nextCursor: null,
+				};
+			}
+		}),
+	);
+
+	const hasItems = groupFeeds.some((feed) => feed.items.length > 0);
+
 	// Combine existing user data with notification groups to match expected loader signature
 	const userWithNotificationGroups = {
 		...existingUser,
 		notificationGroups,
 	};
 
+	const bsky = existingUser.blueskyAccounts[0];
+	const mastodon = existingUser.mastodonAccounts[0];
+
 	return {
 		user: userWithNotificationGroups,
 		subscribed,
 		email: existingUser.email,
 		hasDevices,
+		groupFeeds,
+		hasItems,
+		bsky: bsky?.handle,
+		instance: mastodon?.mastodonInstance.instance,
+		bookmarks: existingUser.bookmarks,
 	};
 };
 
@@ -183,26 +227,93 @@ export default function Notifications({
 		...loaderData.user.mastodonAccounts.flatMap((account) => account.lists),
 	];
 
+	const [searchParams] = useSearchParams();
+	const defaultValue =
+		searchParams.get("tab") || (loaderData.hasItems ? "feed" : "settings");
+
 	return (
 		<Layout>
-			<Box mb="4">
-				<PageHeading
-					title="Notifications"
-					dek="Sill can send you notifications for when links meet certain criteria that you define."
-				/>
-			</Box>
-			<NotificationsProvider
-				initial={{
-					notifications: initial,
-				}}
-			>
-				<NotificationForm
-					lastResult={actionData?.result}
-					allLists={allLists}
-					email={loaderData.email}
-					hasDevices={loaderData.hasDevices}
-				/>
-			</NotificationsProvider>
+			<Tabs.Root defaultValue={defaultValue}>
+				<Tabs.List mb="4">
+					<Tabs.Trigger value="feed">Feed</Tabs.Trigger>
+					<Tabs.Trigger value="settings">Settings</Tabs.Trigger>
+				</Tabs.List>
+
+				<Tabs.Content value="feed">
+					<Box mb="6">
+						<PageHeading
+							title="Your Notifications"
+							dek="View all links from your notification feeds."
+						/>
+					</Box>
+
+					{loaderData.groupFeeds.length === 0 ? (
+						<Text as="p">
+							You haven't set up any notifications yet. Head to the{" "}
+							<Link to="?tab=settings">Settings</Link> tab to create one.
+						</Text>
+					) : loaderData.hasItems ? (
+						<Box>
+							{loaderData.groupFeeds.map((feed) => {
+								if (feed.items.length === 0) return null;
+								return (
+									<Box key={feed.groupId} mb="6">
+										<RLink asChild underline="none">
+											<Link to={`/notifications/${feed.groupId}`}>
+												<Flex align="center" gap="1" mb="4">
+													<Heading as="h3" size="4">
+														{feed.groupName}
+													</Heading>
+													<ChevronRight size={20} style={{ color: "var(--accent-11)" }} />
+												</Flex>
+											</Link>
+										</RLink>
+										{(() => {
+											const firstItem = feed.items[0] as { id: string; itemData: MostRecentLinkPosts };
+											return (
+												<LinkPost
+													linkPost={firstItem.itemData}
+													instance={loaderData.instance}
+													bsky={loaderData.bsky}
+													layout="dense"
+													bookmarks={loaderData.bookmarks}
+													subscribed={loaderData.subscribed}
+												/>
+											);
+										})()}
+									</Box>
+								);
+							})}
+						</Box>
+					) : (
+						<Text as="p">
+							No notification items yet. Your filters haven't matched any
+							links.
+						</Text>
+					)}
+				</Tabs.Content>
+
+				<Tabs.Content value="settings">
+					<Box mb="6">
+						<PageHeading
+							title="Notification Settings"
+							dek="Sill can send you notifications for when links meet certain criteria that you define."
+						/>
+					</Box>
+					<NotificationsProvider
+						initial={{
+							notifications: initial,
+						}}
+					>
+						<NotificationForm
+							lastResult={actionData?.result}
+							allLists={allLists}
+							email={loaderData.email}
+							hasDevices={loaderData.hasDevices}
+						/>
+					</NotificationsProvider>
+				</Tabs.Content>
+			</Tabs.Root>
 		</Layout>
 	);
 }

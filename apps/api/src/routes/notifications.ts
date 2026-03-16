@@ -11,7 +11,7 @@ import {
   type NotificationQuery,
 } from "@sill/schema";
 import { evaluateNotifications } from "@sill/links";
-import { and, desc, isNotNull } from "drizzle-orm";
+import { and, desc, isNotNull, lt } from "drizzle-orm";
 
 // Schema for deleting a notification group
 const DeleteNotificationGroupSchema = z.object({
@@ -44,6 +44,15 @@ const TestNotificationsSchema = z.object({
 // Schema for getting notification group feed data
 const GetNotificationGroupFeedSchema = z.object({
   notificationGroupId: z.string().uuid(),
+});
+
+// Schema for getting notification group items
+const GetNotificationGroupItemsParamSchema = z.object({
+  groupId: z.string().uuid(),
+});
+
+const GetNotificationGroupItemsQuerySchema = z.object({
+  cursor: z.string().optional(),
 });
 
 // Schema for creating/updating notification group
@@ -114,6 +123,63 @@ const notifications = new Hono()
       return c.json({ error: "Internal server error" }, 500);
     }
   })
+  // GET /api/notifications/groups/:groupId/items - Get notification group items (paginated)
+  .get(
+    "/groups/:groupId/items",
+    zValidator("param", GetNotificationGroupItemsParamSchema),
+    zValidator("query", GetNotificationGroupItemsQuerySchema),
+    async (c) => {
+      const userId = await getUserIdFromSession(c.req.raw);
+
+      if (!userId) {
+        return c.json({ error: "Not authenticated" }, 401);
+      }
+
+      const { groupId } = c.req.valid("param");
+      const { cursor } = c.req.valid("query");
+
+      try {
+        const group = await db.query.notificationGroup.findFirst({
+          where: and(
+            eq(notificationGroup.id, groupId),
+            eq(notificationGroup.userId, userId)
+          ),
+        });
+
+        if (!group) {
+          return c.json({ error: "Notification group not found" }, 404);
+        }
+
+        const PAGE_SIZE = 10;
+
+        const conditions = [eq(notificationItem.notificationGroupId, groupId)];
+        if (cursor) {
+          conditions.push(lt(notificationItem.createdAt, cursor));
+        }
+
+        const items = await db.query.notificationItem.findMany({
+          where: and(...conditions),
+          orderBy: desc(notificationItem.createdAt),
+          limit: PAGE_SIZE + 1,
+        });
+
+        const hasMore = items.length > PAGE_SIZE;
+        const pageItems = hasMore ? items.slice(0, PAGE_SIZE) : items;
+        const nextCursor = hasMore
+          ? pageItems[pageItems.length - 1].createdAt
+          : null;
+
+        return c.json({
+          items: pageItems,
+          nextCursor,
+          group: { id: group.id, name: group.name },
+        });
+      } catch (error) {
+        console.error("Get notification group items error:", error);
+        return c.json({ error: "Internal server error" }, 500);
+      }
+    }
+  )
   // GET /api/notifications/groups/:notificationGroupId/feed - Get notification group feed data
   .get(
     "/groups/:notificationGroupId/feed",

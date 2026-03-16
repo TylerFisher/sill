@@ -64,6 +64,14 @@ export async function processNotificationGroup(
           ? new Date(groupUser.freeTrialEnd)
           : null,
       });
+
+      for (const item of newItems) {
+        await db.insert(notificationItem).values({
+          id: uuidv7(),
+          notificationGroupId: group.id,
+          itemData: item,
+        });
+      }
     } else if (group.notificationType === "rss") {
       for (const item of newItems) {
         const html = await renderNotificationRSS({
@@ -93,6 +101,14 @@ export async function processNotificationGroup(
         body: notificationBody,
         data: { groupId: group.id },
       });
+
+      for (const item of newItems) {
+        await db.insert(notificationItem).values({
+          id: uuidv7(),
+          notificationGroupId: group.id,
+          itemData: item,
+        });
+      }
     }
   }
 
