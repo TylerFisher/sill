@@ -5,11 +5,11 @@ import { eq } from "drizzle-orm";
 let provider: apn.Provider | null = null;
 
 function getProvider(): apn.Provider | null {
-	const key = process.env.APNS_KEY;
+	const keyPath = process.env.APNS_KEY;
 	const keyId = process.env.APNS_KEY_ID;
 	const teamId = process.env.APNS_TEAM_ID;
 
-	if (!key || !keyId || !teamId) {
+	if (!keyPath || !keyId || !teamId) {
 		console.warn(
 			"APNs not configured: missing APNS_KEY, APNS_KEY_ID, or APNS_TEAM_ID",
 		);
@@ -19,7 +19,7 @@ function getProvider(): apn.Provider | null {
 	if (!provider) {
 		provider = new apn.Provider({
 			token: {
-				key,
+				key: keyPath,
 				keyId,
 				teamId,
 			},
