@@ -86,29 +86,35 @@ export async function processNotificationGroup(
         });
       }
     } else if (group.notificationType === "push") {
+      const dbItems: { id: string }[] = [];
+      for (const item of newItems) {
+        const [dbItem] = await db
+          .insert(notificationItem)
+          .values({
+            id: uuidv7(),
+            notificationGroupId: group.id,
+            itemData: item,
+          })
+          .returning({ id: notificationItem.id });
+        dbItems.push(dbItem);
+      }
+
       const notificationTitle =
         newItems[0].link?.title || "New link in your network";
+      const notificationSubtitle =
+        newItems[0].link?.siteName ||
+        extractDomain(newItems[0].link?.url) ||
+        group.name;
       const notificationBody =
         newItems[0].link?.description ||
         `Shared by ${newItems[0].uniqueActorsCount} people`;
 
       await sendPushNotification(group.userId, {
         title: notificationTitle,
-        subtitle:
-          newItems[0].link?.siteName ||
-          extractDomain(newItems[0].link?.url) ||
-          group.name,
+        subtitle: notificationSubtitle,
         body: notificationBody,
-        data: { groupId: group.id },
+        data: { groupId: group.id, itemId: dbItems[0].id },
       });
-
-      for (const item of newItems) {
-        await db.insert(notificationItem).values({
-          id: uuidv7(),
-          notificationGroupId: group.id,
-          itemData: item,
-        });
-      }
     }
   }
 
