@@ -30,7 +30,7 @@ importers:
         specifier: ^0.5.14
         version: 0.5.14
       '@atproto/oauth-client-node':
-        specifier: ^0.2.24
+        specifier: ^0.2.5
         version: 0.2.24
       '@aws-sdk/client-s3':
         specifier: ^3.844.0
@@ -316,7 +316,7 @@ importers:
         specifier: 0.1.8
         version: 0.1.8
       '@atproto/oauth-client-node':
-        specifier: ^0.2.24
+        specifier: ^0.2.5
         version: 0.2.24
       '@epic-web/totp':
         specifier: ^1.1.0
@@ -399,7 +399,7 @@ importers:
         specifier: ^0.19.3
         version: 0.19.3
       '@atproto/oauth-client-node':
-        specifier: ^0.2.24
+        specifier: ^0.2.5
         version: 0.2.24
       '@aws-sdk/client-s3':
         specifier: ^3.864.0

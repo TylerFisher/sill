@@ -23,7 +23,7 @@
     "@atcute/identity-resolver-node": "^1.0.2",
     "@atproto/api": "^0.19.3",
     "@atproto/common": "^0.5.14",
-    "@atproto/oauth-client-node": "^0.2.24",
+    "@atproto/oauth-client-node": "^0.2.5",
     "@aws-sdk/client-s3": "^3.844.0",
     "@hono/node-server": "^1.13.5",
     "@hono/zod-validator": "^0.4.1",
