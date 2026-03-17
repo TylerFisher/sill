@@ -29,8 +29,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@atproto/api": "^0.18.17",
-    "@atproto/oauth-client-node": "^0.2.5",
+    "@atproto/api": "^0.19.3",
+    "@atproto/oauth-client-node": "^0.2.24",
     "@aws-sdk/client-s3": "^3.864.0",
     "@parse/node-apn": "^7.1.0",
     "@sill/auth": "workspace:*",
