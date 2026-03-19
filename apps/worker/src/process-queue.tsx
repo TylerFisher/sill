@@ -18,6 +18,7 @@ import {
 	processNotificationGroup,
 	getHighActivityUrls,
 	clearUrlExpansionCache,
+	flushCacheReport,
 } from "@sill/links";
 
 // Constants
@@ -140,8 +141,16 @@ async function processBatch(
 	const successCount = results.filter((r) => r.status === "success").length;
 	const batchDuration = Date.now() - batchStart;
 
+	const cacheReport = flushCacheReport();
+	const cacheHits = cacheReport.filter((r) => r.hits > 0).map((r) => r.handle);
+	const cacheMisses = cacheReport
+		.filter((r) => r.misses > 0)
+		.map((r) => r.handle);
 	console.log(
 		`[Queue] Batch complete: ${successCount} success, ${errorCount} errors, ${batchDuration}ms`,
+	);
+	console.log(
+		`[Queue] Agent cache — ${cacheHits.length} hits, ${cacheMisses.length} misses: hits=[${cacheHits.join(", ")}], misses=[${cacheMisses.join(", ")}]`,
 	);
 
 	// Exit if too many errors

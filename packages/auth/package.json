@@ -28,10 +28,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sill/schema": "workspace:*",
-    "@atproto/oauth-client-node": "^0.2.5",
-    "@atproto/jwk-jose": "0.1.8",
+    "@atproto/jwk-jose": "0.1.7",
+    "@atproto/oauth-client-node": "0.2.23",
     "@epic-web/totp": "^1.1.0",
+    "@sill/schema": "workspace:*",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "^0.44.4",
     "uuidv7-js": "^1.1.4",
