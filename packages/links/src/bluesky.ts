@@ -84,7 +84,11 @@ export const handleBlueskyOAuth = async (account: {
 }) => {
   // Check cache first — reuse if token hasn't expired
   const cached = oauthSessionCache.get(account.did);
-  if (cached && (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())) {
+  if (
+    cached &&
+    (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())
+  ) {
+    console.log("using cache");
     return cached.session;
   }
 
@@ -194,7 +198,11 @@ export const getOrCreateAgent = async (account: {
   authErrorNotificationSent?: boolean;
 }): Promise<Agent | null> => {
   const cached = agentCache.get(account.did);
-  if (cached && (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())) {
+  if (
+    cached &&
+    (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())
+  ) {
+    console.log("using cache");
     return cached.agent;
   }
 
