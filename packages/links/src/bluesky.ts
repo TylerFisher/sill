@@ -37,7 +37,11 @@ import {
   isShortenedLink,
   normalizeLink,
 } from "./normalizeLink.js";
-import { recordCacheHit, recordCacheMiss } from "./cache-report.js";
+import {
+  recordCacheHit,
+  recordCacheMiss,
+  recordCacheError,
+} from "./cache-report.js";
 
 interface BskyDetectedLink {
   uri: string;
@@ -162,11 +166,13 @@ export const handleBlueskyOAuth = async (account: {
   //   }
   // }
 
-  // Cache the result (even if null)
-  oauthSessionCache.set(account.did, {
-    session: oauthSession,
-    expiresAt,
-  });
+  // Only cache successful sessions — failed restores may be transient
+  if (oauthSession) {
+    oauthSessionCache.set(account.did, {
+      session: oauthSession,
+      expiresAt,
+    });
+  }
 
   return oauthSession;
 };
@@ -207,7 +213,10 @@ export const getOrCreateAgent = async (account: {
   }
 
   const oauthSession = await handleBlueskyOAuth(account);
-  if (!oauthSession) return null;
+  if (!oauthSession) {
+    recordCacheError(account.handle);
+    return null;
+  }
 
   recordCacheMiss(account.handle);
   const expiresAt = (await oauthSession.getTokenInfo()).expiresAt;

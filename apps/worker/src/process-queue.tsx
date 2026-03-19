@@ -146,11 +146,14 @@ async function processBatch(
 	const cacheMisses = cacheReport
 		.filter((r) => r.misses > 0)
 		.map((r) => r.handle);
+	const cacheErrors = cacheReport
+		.filter((r) => r.errors > 0)
+		.map((r) => r.handle);
 	console.log(
 		`[Queue] Batch complete: ${successCount} success, ${errorCount} errors, ${batchDuration}ms`,
 	);
 	console.log(
-		`[Queue] Agent cache — ${cacheHits.length} hits, ${cacheMisses.length} misses: hits=[${cacheHits.join(", ")}], misses=[${cacheMisses.join(", ")}]`,
+		`[Queue] Agent cache — ${cacheHits.length} hits, ${cacheMisses.length} misses, ${cacheErrors.length} errors: hits=[${cacheHits.join(", ")}], misses=[${cacheMisses.join(", ")}], errors=[${cacheErrors.join(", ")}]`,
 	);
 
 	// Exit if too many errors
