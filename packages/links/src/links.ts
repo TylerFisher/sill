@@ -32,12 +32,11 @@ import {
   postType,
   type NotificationQuery,
 } from "@sill/schema";
-import { Agent } from "@atproto/api";
 import {
   getLinksFromBluesky,
   getBlueskyList,
   processBlueskyLink,
-  handleBlueskyOAuth,
+  getOrCreateAgent,
 } from "./bluesky.js";
 import {
   getLinksFromMastodon,
@@ -112,12 +111,10 @@ export const fetchSingleList = async (
       throw new Error("Unauthorized: list does not belong to this user");
     }
 
-    const oauthSession = await handleBlueskyOAuth(account);
-    if (!oauthSession) {
+    const agent = await getOrCreateAgent(account);
+    if (!agent) {
       throw new Error("Failed to authenticate with Bluesky");
     }
-
-    const agent = new Agent(oauthSession);
     const listPosts = await getBlueskyList(agent, dbList, account.handle);
 
     const processedResults = (

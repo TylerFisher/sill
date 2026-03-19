@@ -3,6 +3,7 @@ export {
   getBlueskyList,
   processBlueskyLink,
   handleBlueskyOAuth,
+  getOrCreateAgent,
   clearOAuthSessionCache,
 } from "./bluesky.js";
 export {

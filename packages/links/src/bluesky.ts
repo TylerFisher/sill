@@ -59,6 +59,12 @@ const oauthSessionCache = new Map<string, OAuthSessionCacheEntry>();
 const CACHE_TTL = 60000; // 1 minute cache
 
 /**
+ * Agent cache to reuse the same Agent instance for all calls within a single job.
+ * Keyed by account DID.
+ */
+const agentCache = new Map<string, Agent>();
+
+/**
  * Restores Bluesky OAuth session based on account did.
  * Handles OAuthResponseError (for DPoP nonce) by attempting to restore session again.
  * Uses caching to prevent duplicate restore attempts within a short time window.
@@ -156,15 +162,42 @@ export const handleBlueskyOAuth = async (account: {
 };
 
 /**
- * Clears the OAuth session cache for a specific account or all accounts
- * @param did Optional account DID to clear. If not provided, clears all cached sessions.
+ * Clears the OAuth session cache and agent cache for a specific account or all accounts
+ * @param did Optional account DID to clear. If not provided, clears all cached sessions and agents.
  */
 export const clearOAuthSessionCache = (did?: string) => {
   if (did) {
     oauthSessionCache.delete(did);
+    agentCache.delete(did);
   } else {
     oauthSessionCache.clear();
+    agentCache.clear();
   }
+};
+
+/**
+ * Gets or creates a reusable Agent for a Bluesky account.
+ * Reuses the same Agent instance across all calls for the same account within a job.
+ * @param account Account object with did, handle, userId, and authErrorNotificationSent flag
+ * @returns Agent instance or null if OAuth fails
+ */
+export const getOrCreateAgent = async (account: {
+  did: string;
+  handle: string;
+  userId?: string;
+  authErrorNotificationSent?: boolean;
+}): Promise<Agent | null> => {
+  const cached = agentCache.get(account.did);
+  if (cached) {
+    return cached;
+  }
+
+  const oauthSession = await handleBlueskyOAuth(account);
+  if (!oauthSession) return null;
+
+  const agent = new Agent(oauthSession);
+  agentCache.set(account.did, agent);
+  return agent;
 };
 
 export const getBlueskyList = async (
@@ -599,10 +632,9 @@ export const getLinksFromBluesky = async (
   });
   if (!account) return [];
 
-  const oauthSession = await handleBlueskyOAuth(account);
-  if (!oauthSession) return [];
+  const agent = await getOrCreateAgent(account);
+  if (!agent) return [];
 
-  const agent = new Agent(oauthSession);
   const timelinePromise = getBlueskyTimeline(account, agent);
   const timeline = await Promise.race([
     timelinePromise,
@@ -748,9 +780,8 @@ interface AccountWithLists extends BlueskyAccount {
 
 export const getBlueskyLists = async (account: AccountWithLists) => {
   const listOptions: ListOption[] = [];
-  const client = await createOAuthClient();
-  const session = await client.restore(account.did);
-  const agent = new Agent(session);
+  const agent = await getOrCreateAgent(account);
+  if (!agent) return listOptions;
   const prefs = await agent.getPreferences();
   const lists = prefs.savedFeeds;
   for (const list of lists) {

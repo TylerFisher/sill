@@ -8,9 +8,8 @@ import {
   link,
   type linkPostDenormalized,
 } from "@sill/schema";
-import { handleBlueskyOAuth, ONE_DAY_MS } from "./bluesky.js";
+import { getOrCreateAgent, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
-import { Agent } from "@atproto/api";
 import type { ProcessedResult } from "./links.js";
 import { filterLinkOccurrences } from "./links.js";
 
@@ -136,9 +135,8 @@ const getFollows = async (userId: string) => {
 
   if (!bsky) return [];
 
-  const session = await handleBlueskyOAuth(bsky);
-  if (!session) return [];
-  const agent = new Agent(session);
+  const agent = await getOrCreateAgent(bsky);
+  if (!agent) return [];
 
   const allFollows = [];
   let cursor: string | undefined = undefined;
@@ -178,9 +176,8 @@ export const getUserBookmarks = async (userId: string) => {
     where: eq(bookmark.userId, userId),
   });
 
-  const session = await handleBlueskyOAuth(bsky);
-  if (!session) return [];
-  const agent = new Agent(session);
+  const agent = await getOrCreateAgent(bsky);
+  if (!agent) return [];
 
   const allBookmarks: ATBookmark[] = [];
   let cursor: string | undefined = undefined;
