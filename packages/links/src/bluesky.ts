@@ -52,17 +52,21 @@ export const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
  */
 interface OAuthSessionCacheEntry {
   session: OAuthSession | null;
-  timestamp: number;
+  expiresAt: Date | undefined;
 }
 
 const oauthSessionCache = new Map<string, OAuthSessionCacheEntry>();
-const CACHE_TTL = 60000; // 1 minute cache
 
 /**
  * Agent cache to reuse the same Agent instance for all calls within a single job.
- * Keyed by account DID.
+ * Keyed by account DID. Each entry stores the agent and its token expiration time.
  */
-const agentCache = new Map<string, Agent>();
+interface AgentCacheEntry {
+  agent: Agent;
+  expiresAt: Date | undefined;
+}
+
+const agentCache = new Map<string, AgentCacheEntry>();
 
 /**
  * Restores Bluesky OAuth session based on account did.
@@ -78,18 +82,20 @@ export const handleBlueskyOAuth = async (account: {
   userId?: string;
   authErrorNotificationSent?: boolean;
 }) => {
-  // Check cache first
+  // Check cache first — reuse if token hasn't expired
   const cached = oauthSessionCache.get(account.did);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+  if (cached && (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())) {
     return cached.session;
   }
 
   let oauthSession: OAuthSession | null = null;
+  let expiresAt: Date | undefined;
   let shouldSendEmail = false;
 
   try {
     const client = await createOAuthClient();
     oauthSession = await client.restore(account.did);
+    expiresAt = (await oauthSession.getTokenInfo()).expiresAt;
   } catch (error) {
     if (error instanceof OAuthResponseError) {
       const client = await createOAuthClient();
@@ -107,13 +113,13 @@ export const handleBlueskyOAuth = async (account: {
         shouldSendEmail = true;
       } else {
         console.error(
-          `OAuth callback error for ${account.handle}: ${error.message}`
+          `OAuth callback error for ${account.handle}: ${error.message}`,
         );
       }
     } else {
       console.error(
         `Error restoring OAuth session for ${account.handle}`,
-        error
+        error,
       );
     }
   }
@@ -155,7 +161,7 @@ export const handleBlueskyOAuth = async (account: {
   // Cache the result (even if null)
   oauthSessionCache.set(account.did, {
     session: oauthSession,
-    timestamp: Date.now(),
+    expiresAt,
   });
 
   return oauthSession;
@@ -188,22 +194,23 @@ export const getOrCreateAgent = async (account: {
   authErrorNotificationSent?: boolean;
 }): Promise<Agent | null> => {
   const cached = agentCache.get(account.did);
-  if (cached) {
-    return cached;
+  if (cached && (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())) {
+    return cached.agent;
   }
 
   const oauthSession = await handleBlueskyOAuth(account);
   if (!oauthSession) return null;
 
+  const expiresAt = (await oauthSession.getTokenInfo()).expiresAt;
   const agent = new Agent(oauthSession);
-  agentCache.set(account.did, agent);
+  agentCache.set(account.did, { agent, expiresAt });
   return agent;
 };
 
 export const getBlueskyList = async (
   agent: Agent,
   dbList: typeof list.$inferSelect,
-  accountHandle: string
+  accountHandle: string,
 ) => {
   async function getList(cursor: string | undefined = undefined) {
     // biome-ignore lint/suspicious/noImplicitAnyLet:
@@ -229,7 +236,7 @@ export const getBlueskyList = async (
     const list = response.data.feed;
     const checkDate = dbList.mostRecentPostDate
       ? new Date(
-          `${dbList.mostRecentPostDate.replace(" ", "T")}Z`
+          `${dbList.mostRecentPostDate.replace(" ", "T")}Z`,
         ).toISOString()
       : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
@@ -296,7 +303,7 @@ export const getBlueskyList = async (
   } catch (e) {
     console.error(
       `Error fetching Bluesky list ${dbList.name}, ${dbList.uri} for ${accountHandle}`,
-      e?.constructor?.name
+      e?.constructor?.name,
     );
     return [];
   }
@@ -309,7 +316,7 @@ export const getBlueskyList = async (
  */
 export const getBlueskyTimeline = async (
   account: typeof blueskyAccount.$inferSelect,
-  agent: Agent
+  agent: Agent,
 ) => {
   async function getTimeline(cursor: string | undefined = undefined) {
     const response = await agent.getTimeline({
@@ -319,7 +326,7 @@ export const getBlueskyTimeline = async (
     const timeline = response.data.feed;
     const checkDate = account?.mostRecentPostDate
       ? new Date(
-          `${account.mostRecentPostDate.replace(" ", "T")}Z`
+          `${account.mostRecentPostDate.replace(" ", "T")}Z`,
         ).toISOString()
       : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
@@ -368,7 +375,7 @@ export const getBlueskyTimeline = async (
   } catch (e) {
     console.error(
       `Error fetching Bluesky timeline for ${account.handle}`,
-      e?.constructor?.name
+      e?.constructor?.name,
     );
     return [];
   }
@@ -419,22 +426,22 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
       quotedRecord = quoted.record;
       quotedPostUrl = await getPostUrl(
         quotedRecord.author.handle,
-        quotedRecord.uri
+        quotedRecord.uri,
       );
       const embeddedLink = quotedRecord.embeds?.find((e) =>
-        AppBskyEmbedExternal.isView(e)
+        AppBskyEmbedExternal.isView(e),
       );
       if (embeddedLink) {
         externalRecord = embeddedLink;
       }
       const imageGroup = quotedRecord?.embeds?.find((embed) =>
-        AppBskyEmbedImages.isView(embed)
+        AppBskyEmbedImages.isView(embed),
       );
       if (imageGroup) {
         quotedImageGroup = imageGroup.images;
       }
       const quotedRecordWithMedia = quotedRecord?.embeds?.find((embed) =>
-        AppBskyEmbedRecordWithMedia.isView(embed)
+        AppBskyEmbedRecordWithMedia.isView(embed),
       );
       if (quotedRecordWithMedia) {
         if (AppBskyEmbedImages.isView(quotedRecordWithMedia.media)) {
@@ -482,7 +489,7 @@ const handleEmbeds = async (embed: PostView["embed"]) => {
 const getDetectedLink = async (
   record: AppBskyFeedPost.Record,
   externalRecord: AppBskyEmbedExternal.View | null,
-  initialDetectedLink: BskyDetectedLink | null = null
+  initialDetectedLink: BskyDetectedLink | null = null,
 ) => {
   let detectedLink = initialDetectedLink;
   if (!externalRecord) {
@@ -516,7 +523,7 @@ const handleLinkTitle = async (title: string) => {
 export const processBlueskyLink = async (
   userId: string,
   t: AppBskyFeedDefs.FeedViewPost,
-  listId?: string
+  listId?: string,
 ) => {
   if (!AppBskyFeedPost.isRecord(t.post.record)) {
     return null;
@@ -537,7 +544,7 @@ export const processBlueskyLink = async (
   const detectedLink = await getDetectedLink(
     record as AppBskyFeedPost.Record,
     externalRecord,
-    initialDetectedLink
+    initialDetectedLink,
   );
 
   if (!detectedLink) {
@@ -621,7 +628,7 @@ export const processBlueskyLink = async (
  * @returns Processed posts for database insertion
  */
 export const getLinksFromBluesky = async (
-  userId: string
+  userId: string,
 ): Promise<ProcessedResult[]> => {
   const start = new Date();
   const account = await db.query.blueskyAccount.findFirst({
@@ -639,7 +646,7 @@ export const getLinksFromBluesky = async (
   const timeline = await Promise.race([
     timelinePromise,
     new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000)
+      setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000),
     ),
   ]).catch((e) => {
     console.error("Error fetching timeline:", e?.constructor?.name);
@@ -660,11 +667,11 @@ export const getLinksFromBluesky = async (
             () =>
               reject(
                 new Error(
-                  `List timeout: ${list.name}, ${list.uri} for ${account.handle}`
-                )
+                  `List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
+                ),
               ),
-            120000
-          )
+            120000,
+          ),
         ),
       ]).catch((e) => {
         console.error("Error fetching list:", list.name, e?.constructor?.name);
@@ -673,9 +680,9 @@ export const getLinksFromBluesky = async (
       processedResults.push(
         ...(
           await Promise.all(
-            listPosts.map(async (t) => processBlueskyLink(userId, t, list.id))
+            listPosts.map(async (t) => processBlueskyLink(userId, t, list.id)),
           )
-        ).filter((p) => p !== null)
+        ).filter((p) => p !== null),
       );
     }
   }
@@ -742,7 +749,7 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
       segment.facet?.features.find((f) => AppBskyRichtextFacet.isLink(f))
     ) {
       const linkFacet = segment.facet.features.find((f) =>
-        AppBskyRichtextFacet.isLink(f)
+        AppBskyRichtextFacet.isLink(f),
       );
       if (linkFacet) {
         html.push(`<a href=${linkFacet.uri}>${segment.text}</a>`);
@@ -751,20 +758,20 @@ const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
       segment.facet?.features.find((f) => AppBskyRichtextFacet.isMention(f))
     ) {
       const mentionFacet = segment.facet.features.find((f) =>
-        AppBskyRichtextFacet.isMention(f)
+        AppBskyRichtextFacet.isMention(f),
       );
       if (mentionFacet) {
         html.push(
           `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
             segment.text
-          }</a>`
+          }</a>`,
         );
       }
     } else if (segment.isMention()) {
       html.push(
         `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
           segment.text
-        }</a>`
+        }</a>`,
       );
     } else {
       html.push(segment.text);
@@ -795,7 +802,7 @@ export const getBlueskyLists = async (account: AccountWithLists) => {
           uri: listData.data.list.uri,
           type: "bluesky",
           subscribed: account.lists.some(
-            (l) => l.uri === listData.data.list.uri
+            (l) => l.uri === listData.data.list.uri,
           ),
         });
       } catch (error) {
@@ -811,7 +818,7 @@ export const getBlueskyLists = async (account: AccountWithLists) => {
           uri: feedData.data.view.uri,
           type: "bluesky",
           subscribed: account.lists.some(
-            (l) => l.uri === feedData.data.view.uri
+            (l) => l.uri === feedData.data.view.uri,
           ),
         });
       } catch (error) {
