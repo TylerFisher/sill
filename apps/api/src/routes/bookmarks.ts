@@ -33,7 +33,7 @@ async function getAgentForUser(
     return null;
   }
 
-  const oauthClient = await createOAuthClient(request);
+  const oauthClient = await createOAuthClient("v2", request);
   const oauthSession = await oauthClient.restore(account.did);
 
   if (!oauthSession) {

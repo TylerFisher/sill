@@ -20,6 +20,7 @@ import {
   getSessionExpirationDate,
 } from "@sill/auth";
 import {
+  atprotoAuthSession,
   db,
   blueskyAccount,
   session,
@@ -28,6 +29,34 @@ import {
   termsUpdate,
 } from "@sill/schema";
 import { and, desc, eq, ne } from "drizzle-orm";
+
+/**
+ * After a successful v2 OAuth callback, mark the account as migrated and
+ * remove the now-obsolete v1 session row (keyed by the v1 client_id prefix).
+ *
+ * Runs in a single transaction so the authVariant flip and the v1 cleanup
+ * are seen together by the worker. The v2 session row itself is written by
+ * the oauth library through its SessionStore before this function runs, so
+ * it is deliberately NOT part of this transaction — the library and our
+ * bookkeeping are two independent writes by design.
+ *
+ * Safe interleaving: if the worker reads the account row mid-sequence it
+ * either sees authVariant='v1' (reads v1 row, works) or authVariant='v2'
+ * (reads v2 row, works). No state lets the worker pick the wrong row.
+ */
+const completeV2Migration = async (did: string, request: Request) => {
+  const v1Client = await createOAuthClient("v1", request);
+  const v1ClientId = v1Client.clientMetadata.client_id;
+  await db.transaction(async (tx) => {
+    await tx
+      .update(blueskyAccount)
+      .set({ authVariant: "v2" })
+      .where(eq(blueskyAccount.did, did));
+    await tx
+      .delete(atprotoAuthSession)
+      .where(eq(atprotoAuthSession.key, `${v1ClientId}::${did}`));
+  });
+};
 import { getBlueskyLists } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
@@ -40,7 +69,7 @@ const bluesky = new Hono()
   // GET /api/bluesky/auth/authorize - Start Bluesky OAuth flow
   .get("/auth/authorize", zValidator("query", AuthorizeSchema), async (c) => {
     try {
-      const oauthClient = await createOAuthClient(c.req.raw);
+      const oauthClient = await createOAuthClient("v2", c.req.raw);
       let { handle, mode } = c.req.valid("query");
       const isSignup = mode === "signup";
 
@@ -65,7 +94,7 @@ const bluesky = new Hono()
       // For connecting an account (user already logged in), allow without handle
       if (!isLogin && !handle) {
         const url = await oauthClient.authorize("https://bsky.social", {
-          scope: "atproto transition:generic",
+          scope: oauthClient.clientMetadata.scope,
         });
         return c.json({
           success: true,
@@ -133,7 +162,7 @@ const bluesky = new Hono()
 
       // Build OAuth options
       const oauthOptions = {
-        scope: "atproto transition:generic",
+        scope: oauthClient.clientMetadata.scope,
       };
 
       try {
@@ -220,13 +249,16 @@ const bluesky = new Hono()
         );
       }
 
-      const oauthClient = await createOAuthClient(c.req.raw);
+      const oauthClient = await createOAuthClient("v2", c.req.raw);
 
       try {
         const { session: oauthSession } = await oauthClient.callback(
           searchParams,
         );
-        const agent = new Agent(oauthSession);
+        const agent = new Agent(oauthSession).withProxy(
+          "bsky_appview",
+          "did:web:api.bsky.app",
+        );
         const profile = await agent.getProfile({
           actor: oauthSession.did,
         });
@@ -263,6 +295,7 @@ const bluesky = new Hono()
                 userId: newUser[0].id,
                 service: oauthSession.serverMetadata.issuer,
                 authErrorNotificationSent: false,
+                authVariant: "v2",
               });
 
               // Create terms agreement
@@ -314,6 +347,9 @@ const bluesky = new Hono()
           // User exists, log them in
           userId = existingAccount.userId;
 
+          // Flip account to v2 and clean up the old v1 session row.
+          await completeV2Migration(oauthSession.did, c.req.raw);
+
           // Create session for login
           const newSession = await db
             .insert(session)
@@ -351,6 +387,7 @@ const bluesky = new Hono()
             userId: userId!,
             service: oauthSession.serverMetadata.issuer,
             authErrorNotificationSent: false,
+            authVariant: "v2",
           })
           .onConflictDoUpdate({
             target: blueskyAccount.did,
@@ -359,8 +396,12 @@ const bluesky = new Hono()
               service: oauthSession.serverMetadata.issuer,
               authErrorNotificationSent: false,
               userId: userId!, // Update userId in case account was previously linked to another user
+              authVariant: "v2",
             },
           });
+
+        // If this DID had a pre-existing v1 row, clean up its v1 session.
+        await completeV2Migration(oauthSession.did, c.req.raw);
 
         return c.json({
           success: true,
@@ -398,161 +439,12 @@ const bluesky = new Hono()
           }
         }
 
-        // Fallback - try callback again
-        const { session: oauthSession } = await oauthClient.callback(
-          searchParams,
-        );
-        const agent = new Agent(oauthSession);
-        const profile = await agent.getProfile({
-          actor: oauthSession.did,
-        });
-
-        console.error("Bluesky OAuth Error (handled with retry):", {
-          error: String(error),
-        });
-
-        // Handle login/signup flow in retry
-        if (isLogin) {
-          const existingAccount = await db.query.blueskyAccount.findFirst({
-            where: eq(blueskyAccount.did, oauthSession.did),
-          });
-
-          if (!existingAccount) {
-            if (isSignup) {
-              // Signup flow in retry: Create new user
-              const transaction = await db.transaction(async (tx) => {
-                const newUser = await tx
-                  .insert(user)
-                  .values({
-                    id: uuidv7(),
-                    email: null,
-                    name: profile.data.displayName || profile.data.handle,
-                    emailConfirmed: false,
-                    freeTrialEnd: new Date(
-                      Date.now() + 1000 * 60 * 60 * 24 * 14,
-                    ).toISOString(),
-                  })
-                  .returning({ id: user.id });
-
-                await tx.insert(blueskyAccount).values({
-                  id: uuidv7(),
-                  did: oauthSession.did,
-                  handle: profile.data.handle,
-                  userId: newUser[0].id,
-                  service: oauthSession.serverMetadata.issuer,
-                  authErrorNotificationSent: false,
-                });
-
-                const latestTerms = await tx.query.termsUpdate.findFirst({
-                  orderBy: desc(termsUpdate.termsDate),
-                });
-                if (latestTerms) {
-                  await tx.insert(termsAgreement).values({
-                    id: uuidv7(),
-                    userId: newUser[0].id,
-                    termsUpdateId: latestTerms.id,
-                  });
-                }
-
-                const newSession = await tx
-                  .insert(session)
-                  .values({
-                    id: uuidv7(),
-                    expirationDate: getSessionExpirationDate(),
-                    userId: newUser[0].id,
-                  })
-                  .returning({
-                    id: session.id,
-                    expirationDate: session.expirationDate,
-                  });
-
-                return { user: newUser[0], session: newSession[0] };
-              });
-
-              setSessionCookie(
-                c,
-                transaction.session.id,
-                transaction.session.expirationDate,
-              );
-
-              return c.json({
-                success: true,
-                isSignup: true,
-                account: {
-                  did: oauthSession.did,
-                  handle: profile.data.handle,
-                  service: oauthSession.serverMetadata.issuer,
-                },
-              });
-            }
-
-            // No account found - reject login
-            return c.json(
-              {
-                error: "No account found with this Bluesky account.",
-                code: "account_not_found",
-              },
-              404,
-            );
-          }
-
-          userId = existingAccount.userId;
-
-          const newSession = await db
-            .insert(session)
-            .values({
-              id: uuidv7(),
-              expirationDate: getSessionExpirationDate(),
-              userId: userId,
-            })
-            .returning({
-              id: session.id,
-              expirationDate: session.expirationDate,
-            });
-
-          setSessionCookie(c, newSession[0].id, newSession[0].expirationDate);
-
-          return c.json({
-            success: true,
-            isLogin: true,
-            account: {
-              did: oauthSession.did,
-              handle: profile.data.handle,
-              service: oauthSession.serverMetadata.issuer,
-            },
-          });
-        }
-
-        // Handle connect flow in retry
-        await db
-          .insert(blueskyAccount)
-          .values({
-            id: uuidv7(),
-            did: oauthSession.did,
-            handle: profile.data.handle,
-            userId: userId!,
-            service: oauthSession.serverMetadata.issuer,
-            authErrorNotificationSent: false,
-          })
-          .onConflictDoUpdate({
-            target: blueskyAccount.did,
-            set: {
-              handle: profile.data.handle,
-              service: oauthSession.serverMetadata.issuer,
-              authErrorNotificationSent: false,
-              userId: userId!,
-            },
-          });
-
-        return c.json({
-          success: true,
-          isLogin: false,
-          account: {
-            did: oauthSession.did,
-            handle: profile.data.handle,
-            service: oauthSession.serverMetadata.issuer,
-          },
-        });
+        // Surface the original error rather than retrying — the OAuth state
+        // is single-use and was already consumed by the first callback() call,
+        // so any retry is guaranteed to fail with "Unknown authorization
+        // session" and mask the real failure.
+        console.error("Bluesky callback inner error:", error);
+        throw error;
       }
     } catch (error) {
       console.error("Bluesky callback error:", error);
@@ -622,7 +514,7 @@ const bluesky = new Hono()
       }
 
       try {
-        const client = await createOAuthClient(c.req.raw);
+        const client = await createOAuthClient("v2", c.req.raw);
         await client.restore(account.did);
 
         return c.json({
@@ -640,10 +532,10 @@ const bluesky = new Hono()
             error.constructor.name === "TokenRefreshError")
         ) {
           // Token refresh failed, need to re-authorize
-          const client = await createOAuthClient(c.req.raw);
+          const client = await createOAuthClient("v2", c.req.raw);
           try {
             const url = await client.authorize(account.handle, {
-              scope: "atproto transition:generic",
+              scope: client.clientMetadata.scope,
             });
             return c.json({
               status: "needs_reauth",
@@ -654,7 +546,7 @@ const bluesky = new Hono()
             // Try with DID if handle fails
             try {
               const url = await client.authorize(account.did, {
-                scope: "atproto transition:generic",
+                scope: client.clientMetadata.scope,
               });
               return c.json({
                 status: "needs_reauth",
@@ -677,7 +569,7 @@ const bluesky = new Hono()
         if (error instanceof OAuthResponseError) {
           // Try again after catching OAuthResponseError
           try {
-            const client = await createOAuthClient(c.req.raw);
+            const client = await createOAuthClient("v2", c.req.raw);
             await client.restore(account.did);
 
             return c.json({
@@ -696,10 +588,10 @@ const bluesky = new Hono()
               (retryError instanceof Error &&
                 retryError.constructor.name === "TokenRefreshError")
             ) {
-              const client = await createOAuthClient(c.req.raw);
+              const client = await createOAuthClient("v2", c.req.raw);
               try {
                 const url = await client.authorize(account.handle, {
-                  scope: "atproto transition:generic",
+                  scope: client.clientMetadata.scope,
                 });
                 return c.json({
                   status: "needs_reauth",
@@ -710,7 +602,7 @@ const bluesky = new Hono()
                 // Try with DID if handle fails
                 try {
                   const url = await client.authorize(account.did, {
-                    scope: "atproto transition:generic",
+                    scope: client.clientMetadata.scope,
                   });
                   return c.json({
                     status: "needs_reauth",

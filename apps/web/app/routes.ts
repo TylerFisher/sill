@@ -48,6 +48,7 @@ export default [
     index("routes/bookmarks/index.tsx"),
   ]),
   route("client-metadata.json", "routes/client-metadata.ts"),
+  route("oauth-client-metadata.json", "routes/oauth-client-metadata.ts"),
   ...prefix("digest", [
     route(":userId/:feedItemId", "routes/digest/feedItem.tsx"),
     route(":userId.rss", "routes/digest/feed.tsx"),

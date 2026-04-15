@@ -365,6 +365,20 @@
       "when": 1773314173079,
       "tag": "0051_mysterious_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1776082918592,
+      "tag": "0052_add_auth_variant",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1776082956167,
+      "tag": "0053_prefix_auth_keys",
+      "breakpoints": true
     }
   ]
 }

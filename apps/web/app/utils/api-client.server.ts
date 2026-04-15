@@ -1424,11 +1424,19 @@ export async function apiForgotPassword(
 }
 
 /**
- * Get OAuth client metadata via API
+ * Get OAuth client metadata via API. `variant` selects which scope document
+ * to return — v1 ("transition:generic", legacy) or v2 ("app.bsky.authViewAll"
+ * + "repo:community.lexicon.bookmarks.bookmark", current).
  */
-export async function apiGetClientMetadata(request: Request) {
+export async function apiGetClientMetadata(
+  request: Request,
+  variant: "v1" | "v2",
+) {
   const client = createApiClient(request);
-  const response = await client.api.auth["client-metadata"].$get();
+  const response =
+    variant === "v2"
+      ? await client.api.auth["oauth-client-metadata"].$get()
+      : await client.api.auth["client-metadata"].$get();
 
   if (!response.ok) {
     throw new Error(`Failed to get client metadata: ${response.status}`);

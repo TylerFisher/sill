@@ -1,0 +1,1 @@
+ALTER TABLE "bluesky_account" ADD COLUMN "authVariant" text DEFAULT 'v1' NOT NULL;

@@ -765,10 +765,11 @@ const auth = new Hono()
       }
     }
   )
-  // GET /api/auth/client-metadata - Get OAuth client metadata
+  // GET /api/auth/client-metadata - v1 OAuth client metadata (legacy, kept for
+  // existing sessions still refreshing against transition:generic)
   .get("/client-metadata", async (c) => {
     try {
-      const oauthClient = await createOAuthClient(c.req.raw);
+      const oauthClient = await createOAuthClient("v1", c.req.raw);
 
       return c.json(oauthClient.clientMetadata, {
         headers: {
@@ -785,10 +786,31 @@ const auth = new Hono()
       );
     }
   })
-  // GET /api/auth/jwks - Get OAuth JWKs
+  // GET /api/auth/oauth-client-metadata - v2 OAuth client metadata
+  // (app.bsky.authViewAll + community.lexicon.bookmarks.bookmark)
+  .get("/oauth-client-metadata", async (c) => {
+    try {
+      const oauthClient = await createOAuthClient("v2", c.req.raw);
+
+      return c.json(oauthClient.clientMetadata, {
+        headers: {
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to get v2 client metadata:", error);
+      return c.json(
+        {
+          error: "Internal server error",
+        },
+        500
+      );
+    }
+  })
+  // GET /api/auth/jwks - Get OAuth JWKs (shared keyset across v1 and v2)
   .get("/jwks", async (c) => {
     try {
-      const oauthClient = await createOAuthClient(c.req.raw);
+      const oauthClient = await createOAuthClient("v2", c.req.raw);
 
       return c.json(oauthClient.jwks, {
         headers: {
