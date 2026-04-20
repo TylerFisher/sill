@@ -209,9 +209,7 @@ async function handleIdleQueue(batchSize: number): Promise<void> {
 	});
 
 	const users = usersWithAccounts.filter(
-		(u) =>
-			u.blueskyAccounts.some((a) => a.mostRecentPostDate !== null) ||
-			u.mastodonAccounts.some((a) => a.mostRecentPostId !== null),
+		(u) => u.blueskyAccounts.length > 0 || u.mastodonAccounts.length > 0,
 	);
 
 	// Delete completed jobs
