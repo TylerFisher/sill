@@ -46,6 +46,11 @@ export class StateStore implements NodeSavedStateStore {
 
 /**
  * Session store for Bluesky OAuth client. See StateStore for namespacing rationale.
+ *
+ * `get` self-heals legacy un-namespaced rows: rows written before the per-client-id
+ * namespacing existed are keyed by raw DID. On a prefixed miss we look up the bare
+ * key and, on hit, rewrite the row to the prefixed form so future reads take the
+ * fast path. This avoids needing a one-shot data migration coordinated with deploy.
  */
 export class SessionStore implements NodeSavedSessionStore {
   constructor(private readonly clientId: string) {}
@@ -55,11 +60,31 @@ export class SessionStore implements NodeSavedSessionStore {
   }
 
   async get(key: string): Promise<NodeSavedSession | undefined> {
-    const authSession = await db.query.atprotoAuthSession.findFirst({
-      where: eq(atprotoAuthSession.key, this.k(key)),
+    const prefixed = this.k(key);
+    const hit = await db.query.atprotoAuthSession.findFirst({
+      where: eq(atprotoAuthSession.key, prefixed),
     });
-    if (!authSession) return;
-    return JSON.parse(authSession.session) as NodeSavedSession;
+    if (hit) return JSON.parse(hit.session) as NodeSavedSession;
+
+    const legacy = await db.query.atprotoAuthSession.findFirst({
+      where: eq(atprotoAuthSession.key, key),
+    });
+    if (!legacy) return undefined;
+
+    try {
+      await db
+        .update(atprotoAuthSession)
+        .set({ key: prefixed })
+        .where(eq(atprotoAuthSession.key, key));
+    } catch {
+      // PK conflict: a prefixed row already exists (e.g. another worker
+      // self-healed concurrently, or a prior token refresh wrote one). The
+      // prefixed row is the canonical winner — drop the orphaned legacy row.
+      await db
+        .delete(atprotoAuthSession)
+        .where(eq(atprotoAuthSession.key, key));
+    }
+    return JSON.parse(legacy.session) as NodeSavedSession;
   }
 
   async set(key: string, session: NodeSavedSession) {
