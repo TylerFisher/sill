@@ -7,15 +7,29 @@ import { SessionStore, StateStore } from "./storage.js";
 export type AuthVariant = "v1" | "v2";
 
 const V1_SCOPE = "atproto transition:generic";
-// Bluesky enforces the #bsky_appview service-endpoint aud for appview RPCs
-// when the agent correctly proxies through the PDS to the appview service.
-// If any RPC still returns ScopeMissingError with aud=did:web:api.bsky.app
-// (no fragment), it means the agent is NOT setting the atproto-proxy header
-// and the request is being authed against the bare PDS aud — the fix for
-// that is to configure the Agent with .withProxy("bsky_appview", "did:web:api.bsky.app")
-// rather than granting a broader scope.
-const V2_SCOPE =
-  "atproto include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview repo:community.lexicon.bookmarks.bookmark";
+// The include:app.bsky.authViewAll scope is bound to the #bsky_appview aud,
+// but a known Bluesky bug breaks service-proxying permission validation for
+// the "pipethrough" path (only the read-after-write path works). The team's
+// workaround until the spec rework lands is to add explicit rpc:<lxm>?aud=*
+// scopes for each appview RPC the app actually calls. The list below covers
+// every appview RPC Sill invokes via the agent — when adding a new
+// agent.app.bsky.* / agent.getX call, add the matching rpc scope here too.
+const V2_APPVIEW_RPCS = [
+  "app.bsky.actor.getPreferences",
+  "app.bsky.actor.getProfile",
+  "app.bsky.feed.getFeed",
+  "app.bsky.feed.getFeedGenerator",
+  "app.bsky.feed.getListFeed",
+  "app.bsky.feed.getTimeline",
+  "app.bsky.graph.getFollows",
+  "app.bsky.graph.getList",
+];
+const V2_SCOPE = [
+  "atproto",
+  "include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview",
+  ...V2_APPVIEW_RPCS.map((lxm) => `rpc:${lxm}?aud=*`),
+  "repo:community.lexicon.bookmarks.bookmark",
+].join(" ");
 
 const isProduction = process.env.NODE_ENV === "production";
 
