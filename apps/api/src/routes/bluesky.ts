@@ -166,7 +166,6 @@ const bluesky = new Hono()
       };
 
       try {
-        console.log("trying authorize");
         const url = await oauthClient.authorize(handle, oauthOptions);
         return c.json({
           success: true,
@@ -255,10 +254,7 @@ const bluesky = new Hono()
         const { session: oauthSession } = await oauthClient.callback(
           searchParams,
         );
-        const agent = new Agent(oauthSession).withProxy(
-          "bsky_appview",
-          "did:web:api.bsky.app",
-        );
+        const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({
           actor: oauthSession.did,
         });
@@ -271,16 +267,38 @@ const bluesky = new Hono()
           });
 
           if (!existingAccount) {
+            // Fetch the PDS-verified email if the user granted account:email.
+            // The scope is optional at consent time: if the user denies it, the
+            // PDS returns the session record with `email` absent. We only
+            // persist the email when the PDS has confirmed it — an unconfirmed
+            // PDS email isn't a verified contact channel for Sill. Network
+            // errors here must not block signup, so we swallow them and
+            // proceed without an email.
+            let email: string | null = null;
+            try {
+              const sessionAgent = new Agent(oauthSession);
+              const sessionInfo =
+                await sessionAgent.com.atproto.server.getSession();
+
+              if (sessionInfo.data.email) {
+                email = sessionInfo.data.email;
+              }
+            } catch (err) {
+              console.warn(
+                "Failed to fetch Bluesky session email on signup:",
+                err,
+              );
+            }
+
             // No existing account - create new user
             const transaction = await db.transaction(async (tx) => {
-              // Create user without email
               const newUser = await tx
                 .insert(user)
                 .values({
                   id: uuidv7(),
-                  email: null,
+                  email,
                   name: profile.data.displayName || profile.data.handle,
-                  emailConfirmed: false,
+                  emailConfirmed: email !== null,
                   freeTrialEnd: new Date(
                     Date.now() + 1000 * 60 * 60 * 24 * 14,
                   ).toISOString(),

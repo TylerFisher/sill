@@ -235,14 +235,7 @@ export const getOrCreateAgent = async (
 
   recordCacheMiss(account.handle);
   const expiresAt = (await oauthSession.getTokenInfo()).expiresAt;
-  // Proxy appview calls to the bsky_appview service endpoint so the auth
-  // check aud matches the scope we requested. Without this, the PDS routes
-  // some appview RPCs as "bare" did:web:api.bsky.app which rejects our
-  // aud=did:web:api.bsky.app#bsky_appview scope.
-  const agent = new Agent(oauthSession).withProxy(
-    "bsky_appview",
-    "did:web:api.bsky.app",
-  );
+  const agent = new Agent(oauthSession);
   agentCache.set(key, { agent, expiresAt });
   return agent;
 };
