@@ -26,9 +26,10 @@ const V2_APPVIEW_RPCS = [
 ];
 const V2_SCOPE = [
   "atproto",
+  "account:email",
   "include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview",
   ...V2_APPVIEW_RPCS.map((lxm) => `rpc:${lxm}?aud=*`),
-  "repo:community.lexicon.bookmarks.bookmark",
+  "include:community.lexicon.bookmarks.authManageBookmarks",
 ].join(" ");
 
 const isProduction = process.env.NODE_ENV === "production";
