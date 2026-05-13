@@ -18,5 +18,9 @@ export {
   prepareVerification,
   deleteVerification,
 } from "./verification.js";
-export { createOAuthClient } from "./client.js";
+export {
+  createOAuthClient,
+  getVariantForAccount,
+  type AuthVariant,
+} from "./client.js";
 export { SessionStore, StateStore } from "./storage.js";

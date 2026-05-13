@@ -28,7 +28,11 @@ import { userContext } from "./context/user-context";
 import type { SubscriptionStatus } from "@sill/schema";
 
 // Routes that don't require authentication
-const UNAUTHENTICATED_ROUTES = ["/client-metadata.json", "/jwks.json"] as const;
+const UNAUTHENTICATED_ROUTES = [
+	"/client-metadata.json",
+	"/oauth-client-metadata.json",
+	"/jwks.json",
+] as const;
 
 // Middleware to fetch user profile and set in context
 const authMiddleware: unstable_MiddlewareFunction<Response> = async ({

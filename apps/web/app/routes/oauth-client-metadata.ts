@@ -1,5 +1,5 @@
 import { apiGetClientMetadata } from "~/utils/api-client.server";
-import type { Route } from "./+types/client-metadata";
+import type { Route } from "./+types/oauth-client-metadata";
 
 export const headers: Route.HeadersFunction = () => ({
 	"Content-Type": "application/json",
@@ -7,6 +7,6 @@ export const headers: Route.HeadersFunction = () => ({
 });
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-	const clientMetadata = await apiGetClientMetadata(request, "v1");
+	const clientMetadata = await apiGetClientMetadata(request, "v2");
 	return Response.json(clientMetadata);
 };

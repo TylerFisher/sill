@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:latest
+    image: postgres:17
     volumes:
       - sill_postgres_db:/var/lib/postgresql/data
     environment:
