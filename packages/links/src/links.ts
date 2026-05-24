@@ -6,6 +6,7 @@ import {
   getTableColumns,
   gte,
   ilike,
+  inArray,
   isNotNull,
   isNull,
   ne,
@@ -44,6 +45,13 @@ import {
   processMastodonLink,
   isQuote,
 } from "./mastodon.js";
+import {
+  appViewEnabled,
+  fetchNetworkTrending,
+  shareRowToLinkPost,
+  toIso,
+  urlItemToLink,
+} from "./appview.js";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {
@@ -710,40 +718,88 @@ export interface TopTenResults {
   mostRecentPostDate: Date;
 }
 
+/**
+ * The "Most popular post" for a URL: the single most-shared post across all of
+ * Sill's indexed posts (not viewer-scoped) within the window. May be undefined
+ * for URLs Sill hasn't ingested a post for.
+ */
+const topPostForUrl = async (url: string, start: Date) =>
+  db
+    .select({
+      ...getTableColumns(linkPostDenormalized),
+      count:
+        sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
+          "count",
+        ),
+    })
+    .from(linkPostDenormalized)
+    .where(
+      and(
+        eq(linkPostDenormalized.linkUrl, url),
+        gte(linkPostDenormalized.postDate, start.toISOString()),
+      ),
+    )
+    .orderBy(desc(sql`count`))
+    .limit(1)
+    .then((posts) => posts[0]);
+
+/**
+ * Global trending for the discovery page. Ranking comes from the AppView's
+ * `/v1/network-trending` (whole-index, fresh) when configured, falling back to
+ * the DB materialized view. Link metadata and the representative "most popular
+ * post" are enriched from Sill's DB in both cases.
+ */
 export const networkTopTen = async (): Promise<TopTenResults[]> => {
+  if (appViewEnabled()) {
+    try {
+      return await networkTopTenFromAppView();
+    } catch (e) {
+      console.error("AppView network-trending failed, falling back to DB:", e);
+    }
+  }
+  return networkTopTenFromDb();
+};
+
+const networkTopTenFromAppView = async (): Promise<TopTenResults[]> => {
+  const items = await fetchNetworkTrending({ days: 1, limit: 10 });
+  if (items.length === 0) return [];
+
+  // Enrich link metadata (stable id, topics) from the DB where we have it.
+  const urls = items.map((i) => i.url);
+  const dbLinks = await db.select().from(link).where(inArray(link.url, urls));
+  const dbLinkByUrl = new Map(dbLinks.map((l) => [l.url, l]));
+
+  return items.map((item) => {
+    // The AppView supplies the most-shared post for the URL (topPost); map it
+    // to Sill's post shape. `count` is that post's reposts + quotes.
+    const posts = item.topPost
+      ? [{ ...shareRowToLinkPost(item.topPost, ""), count: item.topPost.shares }]
+      : undefined;
+    return {
+      uniqueActorsCount: item.shares ?? 0,
+      link: urlItemToLink(item, dbLinkByUrl.get(item.url) ?? null),
+      mostRecentPostDate: new Date(toIso(item.mostRecent) ?? Date.now()),
+      posts,
+    };
+  });
+};
+
+const networkTopTenFromDb = async (): Promise<TopTenResults[]> => {
   const start = new Date(Date.now() - 10800000);
 
-  const topTen = await db
+  return db
     .select()
     .from(networkTopTenView)
     .then(async (results) => {
       const postsPromise = results.map(async (result) => {
-        const post = await db
-          .select({
-            ...getTableColumns(linkPostDenormalized),
-            count:
-              sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
-                "count",
-              ),
-          })
-          .from(linkPostDenormalized)
-          .where(
-            and(
-              eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              gte(linkPostDenormalized.postDate, start.toISOString()),
-            ),
-          )
-          .orderBy(desc(sql`count`))
-          .limit(1)
-          .then((posts) => posts[0]);
+        const post = await topPostForUrl(result.link?.url || "", start);
         return {
           ...result,
-          posts: [post],
+          posts: post ? [post] : undefined,
         };
       });
       return Promise.all(postsPromise);
     });
-  return topTen;
 };
 
 /**

@@ -32,6 +32,9 @@ export interface UrlItem {
   siteName?: string;
   byline?: string;
   publishedAt?: string;
+  // network-trending only: the most-shared post for this URL, hydrated.
+  // `shares` here = that post's reposts + quotes ("Most shared").
+  topPost?: ShareRow & { shares: number };
 }
 
 export interface SubjectPost {
@@ -133,6 +136,20 @@ export const fetchUrlPage = async (
     params.set("q", opts.query);
   }
   return appViewGet<ListResponse>(path, params);
+};
+
+/**
+ * Global trending across the whole index (no viewer / follow-graph scoping).
+ * Powers Sill's discovery "Trending links" page. Never returns `cold`.
+ */
+export const fetchNetworkTrending = async (
+  opts: { days?: number; limit?: number } = {},
+): Promise<UrlItem[]> => {
+  const params = new URLSearchParams();
+  params.set("days", String(opts.days ?? 1));
+  params.set("limit", String(opts.limit ?? 10));
+  const res = await appViewGet<ListResponse>("/v1/network-trending", params);
+  return res.items;
 };
 
 interface HydrationOptions {

@@ -32,7 +32,7 @@ atproto is multi-network. The `network` param selects which follow graph(s) defi
 Example: `?network=bsky,tangled`. Most consumers can ignore this and accept the `bsky` default.
 
 ### Time window
-`days` (int, 1–90, default 7) bounds results to shares in the last N days.
+`days` (int, 1–90, default 1) bounds results to shares in the last N days.
 
 ### Cold start
 A viewer whose follow graph hasn't been indexed yet is **cold**. Cold responses return `{ "items": [], "cold": true }`; the first time a viewer is seen the API registers them as a seed and enqueues their network for backfill in the background. **Frontend handling**: when `cold: true`, show an "indexing your network, check back shortly" state and retry the same request later (seconds-to-minutes). Don't treat it as an error or as "no results". To avoid the cold round-trip entirely, pre-register users at signup via [`POST /v1/seeds`](#post-v1seeds).
@@ -161,6 +161,18 @@ GET /v1/trending?viewer=did:plc:abc&days=1&limit=25
   ],
   "cursor": "eyJ..."
 }
+```
+
+### `GET /v1/network-trending`
+Top URLs across the **entire index** by distinct sharers — **not** scoped to any viewer's follow set. Powers a global/discovery trending page.
+- **No `viewer`** (and no `network` param — network selection is about follow graphs, irrelevant here).
+- `limit` defaults to **10** (the other endpoints default to 20). `days`, `collection`, and the hide-prefs (`hideLabels`/`hideUrls`/`hideDids`) all apply; hide-prefs are optional so a caller can layer on moderation.
+- **Returns**: `{ items: UrlItem[]; cursor? }` (never `cold`), sorted by `shares` desc, then recency.
+- Each item also carries **`topPost`** — the most-shared post containing that link (a hydrated post, same shape as a `/v1/hydration` share, plus `shares` = its reposts + quotes, i.e. "Most shared"). Omitted when no candidate post is found. Note `topPost.shares` (reposts + quotes of that one post) is distinct from the item-level `shares` (distinct accounts who shared the URL).
+- Same result for every caller, so it's cached and shared server-side; expect it to be a few seconds stale at most.
+
+```
+GET /v1/network-trending?days=1&limit=10
 ```
 
 ### `GET /v1/latest`
