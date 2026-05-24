@@ -32,7 +32,7 @@ atproto is multi-network. The `network` param selects which follow graph(s) defi
 Example: `?network=bsky,tangled`. Most consumers can ignore this and accept the `bsky` default.
 
 ### Time window
-`days` (int, 1–90, default 1) bounds results to shares in the last N days.
+`days` (int, 1–90, default 1) bounds results to shares in the last N days. For **sub-day** windows use `hours` (int, 1–23) instead — e.g. `?hours=6` for the last 6 hours. When both are supplied, `hours` takes precedence. Omit both for the 1-day default. Applies to every endpoint that takes `days`.
 
 ### Cold start
 A viewer whose follow graph hasn't been indexed yet is **cold**. Cold responses return `{ "items": [], "cold": true }`; the first time a viewer is seen the API registers them as a seed and enqueues their network for backfill in the background. **Frontend handling**: when `cold: true`, show an "indexing your network, check back shortly" state and retry the same request later (seconds-to-minutes). Don't treat it as an error or as "no results". To avoid the cold round-trip entirely, pre-register users at signup via [`POST /v1/seeds`](#post-v1seeds).
@@ -133,7 +133,7 @@ interface SubjectPost {
 
 ## 5. Endpoints
 
-All paginated endpoints accept the shared params: `viewer`, `days`, `limit` (1–100, default 20), `cursor`, `collection`, `network`, `hideLabels`, `hideUrls`, `hideDids`.
+All paginated endpoints accept the shared params: `viewer`, `days` (or `hours` for a sub-day window — see §2), `limit` (1–100, default 20), `cursor`, `collection`, `network`, `hideLabels`, `hideUrls`, `hideDids`.
 
 ### `GET /v1/trending`
 Top URLs by number of distinct accounts in the viewer's network who shared them.
@@ -166,7 +166,7 @@ GET /v1/trending?viewer=did:plc:abc&days=1&limit=25
 ### `GET /v1/network-trending`
 Top URLs across the **entire index** by distinct sharers — **not** scoped to any viewer's follow set. Powers a global/discovery trending page.
 - **No `viewer`** (and no `network` param — network selection is about follow graphs, irrelevant here).
-- `limit` defaults to **10** (the other endpoints default to 20). `days`, `collection`, and the hide-prefs (`hideLabels`/`hideUrls`/`hideDids`) all apply; hide-prefs are optional so a caller can layer on moderation.
+- `limit` defaults to **10** (the other endpoints default to 20). `days` (or `hours`), `collection`, and the hide-prefs (`hideLabels`/`hideUrls`/`hideDids`) all apply; hide-prefs are optional so a caller can layer on moderation.
 - **Returns**: `{ items: UrlItem[]; cursor? }` (never `cold`), sorted by `shares` desc, then recency.
 - Each item also carries **`topPost`** — the most-shared post containing that link (a hydrated post, same shape as a `/v1/hydration` share, plus `shares` = its reposts + quotes, i.e. "Most shared"). Omitted when no candidate post is found. Note `topPost.shares` (reposts + quotes of that one post) is distinct from the item-level `shares` (distinct accounts who shared the URL).
 - Same result for every caller, so it's cached and shared server-side; expect it to be a few seconds stale at most.
@@ -202,7 +202,7 @@ URLs from a specific hostname (leading `www.` stripped).
 ### `GET /v1/hydration`
 Given canonical URLs, return the **individual shares** of each by accounts in the viewer's network — the rows you render under a URL card ("shared by @a, @b, …").
 - **Required**: `viewer`, `urls` (repeated param, 1–100 URLs).
-- Accepts `days`, `collection`, `network`, and the hide-prefs — **pass the same values you used for the trending/latest call** so the share set matches what was counted.
+- Accepts `days` (or `hours`), `collection`, `network`, and the hide-prefs — **pass the same window and values you used for the trending/latest call** so the share set matches what was counted.
 - **Returns**: `{ shares: ShareRow[] }` sorted by share time desc. (No pagination/cursor.)
 
 ```
@@ -286,7 +286,7 @@ So a typical URL card shows: the URL's `title`/`imageUrl`/`siteName` (from the t
 
 1. **List view** — `GET /v1/trending?viewer=<did>&days=1` → URL cards with metadata + share counts.
    - If `cold: true` → show "indexing your network…" and retry shortly.
-2. **Who shared it** — take the `url`s you're displaying and `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`/`days`/`collection`/`network`/prefs as step 1) → render the sharer avatars/names/posts under each card.
+2. **Who shared it** — take the `url`s you're displaying and `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`, time window — `days` or `hours` — `collection`/`network`/prefs as step 1) → render the sharer avatars/names/posts under each card.
 3. **Pagination** — pass the trending `cursor` back as `?cursor=…` for the next page; stop when no `cursor` is returned.
 4. **Search / filters** — `/v1/search`, `/v1/by-author`, `/v1/by-domain` for discovery; `hideDids`/`hideUrls`/`hideLabels` to honour user mutes/moderation.
 

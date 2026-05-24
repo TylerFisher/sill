@@ -103,9 +103,21 @@ const collectionsForRepostFilter = (
   return undefined; // include: all collections
 };
 
+/** A time window: a sub-day `hours` window (1–23) or an N-`days` window. */
+export interface TimeWindow {
+  days?: number;
+  hours?: number;
+}
+
+/** Set the AppView time-window param. `hours` (sub-day) takes precedence over `days`. */
+const appendWindow = (params: URLSearchParams, window: TimeWindow): void => {
+  if (window.hours != null) params.set("hours", String(window.hours));
+  else params.set("days", String(window.days ?? 1));
+};
+
 interface UrlPageOptions {
   viewer: string;
-  days: number;
+  window: TimeWindow;
   limit: number;
   cursor?: string;
   query?: string;
@@ -123,7 +135,7 @@ export const fetchUrlPage = async (
 ): Promise<ListResponse> => {
   const params = new URLSearchParams();
   params.set("viewer", opts.viewer);
-  params.set("days", String(opts.days));
+  appendWindow(params, opts.window);
   params.set("limit", String(opts.limit));
   if (opts.cursor) params.set("cursor", opts.cursor);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
@@ -154,7 +166,7 @@ export const fetchNetworkTrending = async (
 
 interface HydrationOptions {
   viewer: string;
-  days: number;
+  window: TimeWindow;
   urls: string[];
   hideReposts: "include" | "exclude" | "only";
 }
@@ -166,7 +178,7 @@ export const fetchHydration = async (
   if (opts.urls.length === 0) return [];
   const params = new URLSearchParams();
   params.set("viewer", opts.viewer);
-  params.set("days", String(opts.days));
+  appendWindow(params, opts.window);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }

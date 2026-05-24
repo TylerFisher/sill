@@ -8,6 +8,7 @@ import {
   resolveRepostSubjects,
   type ShareRow,
   shareRowToLinkPost,
+  type TimeWindow,
   toIso,
   type UrlItem,
   urlItemToLink,
@@ -147,8 +148,17 @@ const buildEntries = (c: CachedRanking): RankedEntry[] => {
   return ranked;
 };
 
-const daysFromTime = (timeMs: number): number =>
-  Math.min(90, Math.max(1, Math.ceil(timeMs / ONE_DAY_MS)));
+const HOUR_MS = 3600000;
+
+/** Derive the AppView time window from a millisecond span: sub-day → hours. */
+const timeWindow = (timeMs: number): TimeWindow =>
+  timeMs < ONE_DAY_MS
+    ? { hours: Math.min(23, Math.max(1, Math.ceil(timeMs / HOUR_MS))) }
+    : { days: Math.min(90, Math.max(1, Math.ceil(timeMs / ONE_DAY_MS))) };
+
+/** Stable cache-key fragment for a window (distinguishes 3h vs 6h vs 1d). */
+const windowKey = (w: TimeWindow): string =>
+  w.hours != null ? `h${w.hours}` : `d${w.days ?? 1}`;
 
 const cacheKey = (
   userId: string,
@@ -156,10 +166,10 @@ const cacheKey = (
   sort: string,
   hideReposts: string,
   query: string,
-  days: number,
+  window: string,
   minShares: number,
 ): string =>
-  [userId, service, sort, hideReposts, query, days, minShares].join("|");
+  [userId, service, sort, hideReposts, query, window, minShares].join("|");
 
 /**
  * Entry point used by the `/links` filter route. Returns the same shape as
@@ -279,7 +289,7 @@ const getPostsForUrl = async (
   const url = args.url;
   if (!url) return [];
   const service = args.service ?? "all";
-  const days = daysFromTime(args.time ?? ONE_DAY_MS);
+  const window = timeWindow(args.time ?? ONE_DAY_MS);
   const hideReposts = args.hideReposts ?? "include";
 
   let blueskyPosts: LinkPost[] = [];
@@ -288,7 +298,7 @@ const getPostsForUrl = async (
     try {
       let shares = await fetchHydration({
         viewer: viewerDid,
-        days,
+        window,
         urls: [url],
         hideReposts,
       });
@@ -360,7 +370,7 @@ const getRankedEntries = async (
       : "popularity";
   const hideReposts = args.hideReposts ?? "include";
   const query = args.query ?? "";
-  const days = daysFromTime(args.time ?? ONE_DAY_MS);
+  const window = timeWindow(args.time ?? ONE_DAY_MS);
   const minShares = args.minShares ?? 0;
 
   const key = cacheKey(
@@ -369,7 +379,7 @@ const getRankedEntries = async (
     sort,
     hideReposts,
     query,
-    days,
+    windowKey(window),
     minShares,
   );
 
@@ -404,7 +414,7 @@ const getRankedEntries = async (
         : Promise.resolve([] as TimelineItem[]),
       fetchUrlPage({
         viewer: viewerDid,
-        days,
+        window,
         limit: APPVIEW_PAGE_LIMIT,
         query: query || undefined,
         hideReposts,
@@ -435,7 +445,7 @@ const getRankedEntries = async (
       cached,
       await fetchUrlPage({
         viewer: viewerDid,
-        days,
+        window,
         limit: APPVIEW_PAGE_LIMIT,
         cursor: cached.blueskyCursor,
         query: query || undefined,
@@ -513,7 +523,7 @@ const hydratePage = async (
   viewerDid: string,
 ): Promise<TimelineItem[]> => {
   const userId = args.userId;
-  const days = daysFromTime(args.time ?? ONE_DAY_MS);
+  const window = timeWindow(args.time ?? ONE_DAY_MS);
   const hideReposts = args.hideReposts ?? "include";
   const minShares = args.minShares ?? 0;
 
@@ -523,7 +533,7 @@ const hydratePage = async (
     try {
       shares = await fetchHydration({
         viewer: viewerDid,
-        days,
+        window,
         urls: blueskyUrls,
         hideReposts,
       });
