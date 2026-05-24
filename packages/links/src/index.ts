@@ -14,6 +14,7 @@ export {
 } from "./mastodon.js";
 export {
   type ProcessedResult,
+  type FilterArgs,
   evaluateNotifications,
   fetchLinks,
   fetchSingleList,
@@ -25,6 +26,8 @@ export {
   networkTopTen,
   conflictUpdateSetAllColumns,
 } from "./links.js";
+export { getTimeline } from "./timeline.js";
+export { appViewEnabled } from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export {
   fetchHtmlViaProxy,

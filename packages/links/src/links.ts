@@ -286,7 +286,7 @@ export function conflictUpdateSetAllColumns<TTable extends PgTable>(
   ) as PgUpdateSetSource<TTable>;
   return conflictUpdateSet;
 }
-interface FilterArgs {
+export interface FilterArgs {
   userId: string;
   time?: number;
   hideReposts?: "include" | "exclude" | "only";

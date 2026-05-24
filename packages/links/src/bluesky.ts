@@ -766,7 +766,7 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
   return foundLink;
 };
 
-const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
+export const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
   const rt = new RichText({
     text: post.text,
     facets: post.facets,

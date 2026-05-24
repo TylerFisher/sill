@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getUserIdFromSession } from "@sill/auth";
 import { link, db } from "@sill/schema";
 import {
-  filterLinkOccurrences,
+  getTimeline,
   findLinksByAuthor,
   findLinksByDomain,
   findLinksByTopic,
@@ -88,7 +88,7 @@ const links = new Hono()
     const params = c.req.valid("query");
 
     try {
-      const result = await filterLinkOccurrences({
+      const result = await getTimeline({
         userId,
         ...params,
       });
