@@ -96,6 +96,10 @@ export interface MostRecentLinkPosts {
   uniqueActorsCount: number;
   link: Link | null;
   posts?: LinkPost[];
+  // Up to a few sharer avatar URLs for a face-pile preview. Lets the list
+  // render "shared by" without hydrating every post upfront; posts are loaded
+  // on demand when a card is expanded.
+  avatars?: string[];
 }
 
 export interface NotificationQuery {

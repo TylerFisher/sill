@@ -5,7 +5,7 @@ import {
   distinctActorCount,
   fetchHydration,
   fetchUrlPage,
-  type ShareRow,
+  resolveRepostSubjects,
   shareRowToLinkPost,
   toIso,
   type UrlItem,
@@ -28,13 +28,17 @@ import { type FilterArgs, filterLinkOccurrences } from "./links.js";
 const DEFAULT_LIMIT = 10;
 const ONE_DAY_MS = 86400000;
 
-/** Max URLs pulled from the AppView for ranking (bounds first-page latency). */
-const RANK_CAP = 150;
-/** Per-request page size when walking AppView cursors to fill RANK_CAP. */
-const APPVIEW_PAGE_LIMIT = 100;
+/**
+ * Per-AppView-call page size. We fetch one page for the first paint and walk
+ * more cursors only when the user paginates past what's cached — the second
+ * trending page can be multiple seconds server-side, so we avoid it upfront.
+ */
+const APPVIEW_PAGE_LIMIT = 50;
+/** Safety cap on total AppView items accumulated for one ranking. */
+const RANK_MAX = 300;
 /** Max Mastodon URLs pulled from the DB to merge into the ranking. */
 const MASTODON_CAP = 100;
-/** TTL for the cached ranked list that translates page numbers into slices. */
+/** TTL for the cached ranking (raw items + cursor) used for pagination. */
 const CACHE_TTL_MS = 60000;
 
 type TimelineItem = {
@@ -42,6 +46,23 @@ type TimelineItem = {
   uniqueActorsCount: number;
   mostRecentPostDate: Date;
   posts: LinkPost[];
+  avatars?: string[];
+};
+
+/** Up to `limit` distinct sharer avatars from a post set, for a face pile. */
+const avatarsFromPosts = (posts: LinkPost[], limit = 3): string[] => {
+  const seen = new Set<string>();
+  const avatars: string[] = [];
+  for (const p of posts) {
+    // The reposter is the network member who shared it; otherwise the author.
+    const avatar = p.repostActorAvatarUrl ?? p.actorAvatarUrl;
+    const id = p.repostActorHandle ?? p.actorHandle;
+    if (!avatar || seen.has(id)) continue;
+    seen.add(id);
+    avatars.push(avatar);
+    if (avatars.length >= limit) break;
+  }
+  return avatars;
 };
 
 interface RankedEntry {
@@ -58,13 +79,72 @@ interface RankedEntry {
 }
 
 interface CachedRanking {
-  entries: RankedEntry[];
+  blueskyItems: UrlItem[];
+  blueskyCursor: string | undefined;
+  blueskyExhausted: boolean;
+  mastodon: TimelineItem[];
+  sort: "popularity" | "recency";
+  minShares: number;
   expires: number;
 }
 
-// Module-level cache. The AppView's own responses are cacheable for ~60s, so a
-// short TTL here keeps pagination cheap without serving stale rankings.
+// Module-level cache holding the raw fetched items + the AppView cursor, so
+// pagination extends the same fetch rather than re-fetching from page 1. The
+// merged/sorted entries are recomputed per request (cheap: ~1ms).
 const rankingCache = new Map<string, CachedRanking>();
+
+/** Merge Bluesky + Mastodon items into ranked entries (the join is ~1ms). */
+const buildEntries = (c: CachedRanking): RankedEntry[] => {
+  const entries = new Map<string, RankedEntry>();
+
+  for (const item of c.blueskyItems) {
+    const recent = toIso(item.mostRecent ?? item.eventTime);
+    entries.set(item.url, {
+      url: item.url,
+      rankShares: item.shares ?? 0,
+      mostRecent: recent ? new Date(recent).getTime() : 0,
+      blueskyShares: item.shares,
+      blueskyItem: item,
+    });
+  }
+
+  for (const m of c.mastodon) {
+    const url = m.link?.url;
+    if (!url) continue;
+    const mastoRecent = m.mostRecentPostDate
+      ? new Date(m.mostRecentPostDate).getTime()
+      : 0;
+    const existing = entries.get(url);
+    if (existing) {
+      existing.mastodon = m;
+      existing.rankShares += m.uniqueActorsCount;
+      existing.mostRecent = Math.max(existing.mostRecent, mastoRecent);
+    } else {
+      entries.set(url, {
+        url,
+        rankShares: m.uniqueActorsCount,
+        mostRecent: mastoRecent,
+        mastodon: m,
+      });
+    }
+  }
+
+  let ranked = Array.from(entries.values());
+  // minShares: drop entries below the threshold when the count is known.
+  if (c.minShares > 0) {
+    ranked = ranked.filter((e) => {
+      const countKnown = e.blueskyShares !== undefined || e.mastodon;
+      return !countKnown || e.rankShares >= c.minShares;
+    });
+  }
+
+  ranked.sort((a, b) =>
+    c.sort === "recency"
+      ? b.mostRecent - a.mostRecent
+      : b.rankShares - a.rankShares || b.mostRecent - a.mostRecent,
+  );
+  return ranked;
+};
 
 const daysFromTime = (timeMs: number): number =>
   Math.min(90, Math.max(1, Math.ceil(timeMs / ONE_DAY_MS)));
@@ -97,24 +177,36 @@ export const getTimeline = async (
     limit = DEFAULT_LIMIT,
   } = args;
 
-  // Keep the DB path for the sync trigger, specific-link lookups, custom feeds,
-  // and Mastodon-only views.
-  if (fetch || url || selectedList !== "all" || service === "mastodon") {
-    return filterLinkOccurrences(args);
-  }
+  // The sync trigger ingests + reads the DB.
+  if (fetch) return filterLinkOccurrences(args);
 
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
   });
 
-  // No Bluesky account, or the AppView isn't configured: fall back to the DB.
-  if (!account || !appViewEnabled()) {
+  // Whether this request should be served from the AppView at all.
+  const useAppView =
+    !!account &&
+    appViewEnabled() &&
+    selectedList === "all" &&
+    service !== "mastodon";
+
+  // On-demand expansion: hydrate one URL's posts when a card is opened.
+  if (url) {
+    return account && useAppView
+      ? getPostsForUrl(args, account.did)
+      : filterLinkOccurrences(args);
+  }
+
+  // Custom feeds, Mastodon-only, no Bluesky account, or AppView off → DB.
+  if (!account || !useAppView) {
     return filterLinkOccurrences(args);
   }
 
   let ranked: RankedEntry[];
   try {
-    ranked = await getRankedEntries(args, account.did);
+    // Only fetch enough AppView pages to cover the requested page.
+    ranked = await getRankedEntries(args, account.did, page * limit);
   } catch (e) {
     // AppView unavailable: degrade to the DB path rather than erroring the view.
     console.error("AppView timeline fetch failed:", e);
@@ -125,13 +217,92 @@ export const getTimeline = async (
   const slice = ranked.slice(offset, offset + limit);
   if (slice.length === 0) return [];
 
-  return assemblePage(slice, args, account.did);
+  return assemblePage(slice, args);
 };
 
-/** Build (or reuse from cache) the full ranked, merged URL list. */
+/**
+ * Hydrate the individual posts for a single URL, on demand (when a card is
+ * expanded). Bluesky posts come from the AppView hydration endpoint; Mastodon
+ * posts from the DB. Returns a single-item array shaped like the list rows.
+ */
+const getPostsForUrl = async (
+  args: FilterArgs,
+  viewerDid: string,
+): Promise<TimelineItem[]> => {
+  const url = args.url;
+  if (!url) return [];
+  const service = args.service ?? "all";
+  const days = daysFromTime(args.time ?? ONE_DAY_MS);
+  const hideReposts = args.hideReposts ?? "include";
+
+  let blueskyPosts: LinkPost[] = [];
+  let blueskyCount = 0;
+  if (service !== "mastodon") {
+    try {
+      let shares = await fetchHydration({
+        viewer: viewerDid,
+        days,
+        urls: [url],
+        hideReposts,
+      });
+      shares = await resolveRepostSubjects(shares);
+      blueskyPosts = shares.map((s) => shareRowToLinkPost(s, args.userId));
+      blueskyCount = distinctActorCount(shares);
+    } catch (e) {
+      console.error("AppView hydration failed:", e);
+    }
+  }
+
+  // Mastodon posts for this URL (also merged when service is "all").
+  let mastodonItem: TimelineItem | undefined;
+  if (service !== "bluesky") {
+    const res = await filterLinkOccurrences({
+      userId: args.userId,
+      time: args.time,
+      hideReposts,
+      sort: args.sort,
+      query: args.query,
+      service: "mastodon",
+      page: 1,
+      fetch: false,
+      selectedList: "all",
+      url,
+      limit: 1,
+    });
+    mastodonItem = res[0];
+  }
+
+  const posts = [...blueskyPosts, ...(mastodonItem?.posts ?? [])].sort(
+    (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+  );
+
+  const dbLink =
+    (await db.select().from(link).where(eq(link.url, url)))[0] ??
+    mastodonItem?.link ??
+    null;
+
+  return [
+    {
+      link: dbLink,
+      uniqueActorsCount: blueskyCount + (mastodonItem?.uniqueActorsCount ?? 0),
+      mostRecentPostDate: posts[0]
+        ? new Date(`${posts[0].postDate}Z`)
+        : new Date(),
+      posts,
+      avatars: avatarsFromPosts(posts),
+    },
+  ];
+};
+
+/**
+ * Build the ranked, merged list, fetching AppView pages incrementally until it
+ * covers `needed` entries (or the network is exhausted). The first paint costs
+ * a single AppView call; deeper pages walk more cursors, reusing the cache.
+ */
 const getRankedEntries = async (
   args: FilterArgs,
   viewerDid: string,
+  needed: number,
 ): Promise<RankedEntry[]> => {
   const service = args.service ?? "all";
   // Match the DB path: anything that isn't "popularity" (e.g. "newest") is recency.
@@ -150,137 +321,93 @@ const getRankedEntries = async (
     days,
     minShares,
   );
-  const cached = rankingCache.get(key);
-  if (cached && cached.expires > Date.now()) {
-    return cached.entries;
-  }
 
-  // --- Bluesky: walk AppView pages up to RANK_CAP ---
-  // Throws on AppView failure; getTimeline catches and falls back to the DB.
-  const blueskyItems: UrlItem[] = [];
-  let cursor: string | undefined;
-  while (blueskyItems.length < RANK_CAP) {
-    const res = await fetchUrlPage({
-      viewer: viewerDid,
-      days,
-      limit: APPVIEW_PAGE_LIMIT,
-      cursor,
-      sort,
-      query: query || undefined,
-      hideReposts,
-    });
-    blueskyItems.push(...res.items);
-    if (res.cold || !res.cursor || res.items.length === 0) break;
-    cursor = res.cursor;
-  }
-
-  // --- Mastodon: pull a comparable slice from the DB to merge (service=all) ---
-  let mastodonResults: TimelineItem[] = [];
-  if (service === "all") {
-    mastodonResults = await filterLinkOccurrences({
-      userId: args.userId,
-      time: args.time,
-      hideReposts,
-      sort,
-      query: args.query,
-      service: "mastodon",
-      page: 1,
-      fetch: false,
-      selectedList: "all",
-      limit: MASTODON_CAP,
-      minShares: undefined, // combined threshold is applied after merging
-    });
-  }
-
-  // --- Merge by canonical URL ---
-  const entries = new Map<string, RankedEntry>();
-
-  for (const item of blueskyItems) {
-    const recent = toIso(item.mostRecent ?? item.eventTime);
-    entries.set(item.url, {
-      url: item.url,
-      rankShares: item.shares ?? 0,
-      mostRecent: recent ? new Date(recent).getTime() : 0,
-      blueskyShares: item.shares,
-      blueskyItem: item,
-    });
-  }
-
-  for (const m of mastodonResults) {
-    const url = m.link?.url;
-    if (!url) continue;
-    const mastoRecent = m.mostRecentPostDate
-      ? new Date(m.mostRecentPostDate).getTime()
-      : 0;
-    const existing = entries.get(url);
-    if (existing) {
-      existing.mastodon = m;
-      existing.rankShares += m.uniqueActorsCount;
-      existing.mostRecent = Math.max(existing.mostRecent, mastoRecent);
+  const applyPage = (c: CachedRanking, res: { items: UrlItem[]; cursor?: string; cold?: true }) => {
+    c.blueskyItems.push(...res.items);
+    if (res.cold || !res.cursor || res.items.length === 0) {
+      c.blueskyExhausted = true;
     } else {
-      entries.set(url, {
-        url,
-        rankShares: m.uniqueActorsCount,
-        mostRecent: mastoRecent,
-        mastodon: m,
-      });
+      c.blueskyCursor = res.cursor;
     }
+  };
+
+  // Fresh ranking: fetch the Mastodon side and the first AppView page in
+  // parallel (the AppView call dominates; don't make Mastodon wait behind it).
+  let cached = rankingCache.get(key);
+  if (!cached || cached.expires <= Date.now()) {
+    const [mastodon, firstPage] = await Promise.all([
+      service === "all"
+        ? filterLinkOccurrences({
+            userId: args.userId,
+            time: args.time,
+            hideReposts,
+            sort,
+            query: args.query,
+            service: "mastodon",
+            page: 1,
+            fetch: false,
+            selectedList: "all",
+            limit: MASTODON_CAP,
+            minShares: undefined, // combined threshold applied after merging
+          })
+        : Promise.resolve([] as TimelineItem[]),
+      fetchUrlPage({
+        viewer: viewerDid,
+        days,
+        limit: APPVIEW_PAGE_LIMIT,
+        query: query || undefined,
+        hideReposts,
+      }),
+    ]);
+    cached = {
+      blueskyItems: [],
+      blueskyCursor: undefined,
+      blueskyExhausted: false,
+      mastodon,
+      sort,
+      minShares,
+      expires: Date.now() + CACHE_TTL_MS,
+    };
+    applyPage(cached, firstPage);
+    rankingCache.set(key, cached);
   }
 
-  // minShares: drop entries below the threshold when the count is known. For
-  // recency-sorted Bluesky-only entries the count is unknown until hydration,
-  // so keep them here and filter precisely during page assembly.
-  let ranked = Array.from(entries.values());
-  if (minShares > 0) {
-    ranked = ranked.filter((e) => {
-      const countKnown = e.blueskyShares !== undefined || e.mastodon;
-      return !countKnown || e.rankShares >= minShares;
-    });
+  // Walk additional AppView pages only if this page needs more entries.
+  // Throws on AppView failure; getTimeline catches and falls back to the DB.
+  let ranked = buildEntries(cached);
+  while (
+    ranked.length < needed &&
+    !cached.blueskyExhausted &&
+    cached.blueskyItems.length < RANK_MAX
+  ) {
+    applyPage(
+      cached,
+      await fetchUrlPage({
+        viewer: viewerDid,
+        days,
+        limit: APPVIEW_PAGE_LIMIT,
+        cursor: cached.blueskyCursor,
+        query: query || undefined,
+        hideReposts,
+      }),
+    );
+    ranked = buildEntries(cached);
   }
 
-  ranked.sort((a, b) =>
-    sort === "recency"
-      ? b.mostRecent - a.mostRecent
-      : b.rankShares - a.rankShares || b.mostRecent - a.mostRecent,
-  );
-
-  rankingCache.set(key, { entries: ranked, expires: Date.now() + CACHE_TTL_MS });
   return ranked;
 };
 
-/** Hydrate one page of ranked entries into the renderable timeline shape. */
+/**
+ * Build one page of list rows from the ranked entries — no hydration. Each row
+ * carries the share count and a face-pile of avatars (Bluesky avatars from
+ * trending + a few Mastodon avatars); the actual posts are fetched on demand
+ * via `getPostsForUrl` when the card is expanded.
+ */
 const assemblePage = async (
   slice: RankedEntry[],
   args: FilterArgs,
-  viewerDid: string,
 ): Promise<TimelineItem[]> => {
-  const userId = args.userId;
-  const days = daysFromTime(args.time ?? ONE_DAY_MS);
-  const hideReposts = args.hideReposts ?? "include";
   const minShares = args.minShares ?? 0;
-
-  const blueskyUrls = slice.filter((e) => e.blueskyItem).map((e) => e.url);
-
-  // Individual Bluesky shares for the page's URLs (one batched call).
-  let shares: ShareRow[] = [];
-  if (blueskyUrls.length > 0) {
-    try {
-      shares = await fetchHydration({
-        viewer: viewerDid,
-        days,
-        urls: blueskyUrls,
-        hideReposts,
-      });
-    } catch (e) {
-      console.error("AppView hydration failed:", e);
-    }
-  }
-  const sharesByUrl = new Map<string, ShareRow[]>();
-  for (const s of shares) {
-    const list = sharesByUrl.get(s.url);
-    if (list) list.push(s);
-    else sharesByUrl.set(s.url, [s]);
-  }
 
   // Enrich link metadata (stable id, topics, scrape status) from the DB.
   const sliceUrls = slice.map((e) => e.url);
@@ -291,20 +418,17 @@ const assemblePage = async (
 
   const items: TimelineItem[] = [];
   for (const entry of slice) {
-    const urlShares = sharesByUrl.get(entry.url) ?? [];
-    const blueskyPosts = urlShares.map((s) => shareRowToLinkPost(s, userId));
-    const mastodonPosts = entry.mastodon?.posts ?? [];
-    const posts = [...blueskyPosts, ...mastodonPosts].sort(
-      (a, b) =>
-        new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
-    );
-
-    const blueskyCount = entry.blueskyShares ?? distinctActorCount(urlShares);
+    const blueskyCount = entry.blueskyShares ?? 0;
     const mastodonCount = entry.mastodon?.uniqueActorsCount ?? 0;
     const uniqueActorsCount = blueskyCount + mastodonCount;
 
-    // Precise minShares filter for entries whose count was unknown at ranking.
     if (minShares > 0 && uniqueActorsCount < minShares) continue;
+
+    const blueskyAvatars = entry.blueskyItem?.avatars ?? [];
+    const mastodonAvatars = entry.mastodon
+      ? avatarsFromPosts(entry.mastodon.posts)
+      : [];
+    const avatars = [...blueskyAvatars, ...mastodonAvatars].slice(0, 3);
 
     const dbLink = dbLinkByUrl.get(entry.url) ?? entry.mastodon?.link ?? null;
     const linkObj = entry.blueskyItem
@@ -315,7 +439,8 @@ const assemblePage = async (
       link: linkObj,
       uniqueActorsCount,
       mostRecentPostDate: new Date(entry.mostRecent),
-      posts,
+      posts: [], // hydrated on demand when the card is expanded
+      avatars,
     });
   }
 

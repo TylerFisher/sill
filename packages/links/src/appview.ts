@@ -22,6 +22,7 @@ export const appViewEnabled = (): boolean =>
 export interface UrlItem {
   url: string;
   shares?: number; // present on trending/search; absent on /v1/latest
+  avatars?: string[]; // up to 3 sharer avatars for a face pile; absent on /v1/latest
   mostRecent?: string; // present on trending/search
   eventTime?: string; // present on /v1/latest instead of shares/mostRecent
   giftUrl?: string;
@@ -67,8 +68,6 @@ interface HydrationResponse {
   shares: ShareRow[];
 }
 
-export type TimelineSort = "popularity" | "recency";
-
 // --- Low-level fetch ---
 
 const appViewGet = async <T>(
@@ -106,14 +105,15 @@ interface UrlPageOptions {
   days: number;
   limit: number;
   cursor?: string;
-  sort: TimelineSort;
   query?: string;
   hideReposts: "include" | "exclude" | "only";
 }
 
 /**
  * Fetch one page of ranked URLs. Routes to /v1/search when a query is present,
- * /v1/latest for recency, otherwise /v1/trending.
+ * otherwise /v1/trending. We always use trending (not /v1/latest) because only
+ * trending carries the `shares` count and `avatars` face pile the list needs to
+ * render without hydrating; recency is applied by re-sorting these items.
  */
 export const fetchUrlPage = async (
   opts: UrlPageOptions,
@@ -127,14 +127,10 @@ export const fetchUrlPage = async (
     params.append("collection", c);
   }
 
-  let path: string;
+  let path = "/v1/trending";
   if (opts.query) {
     path = "/v1/search";
     params.set("q", opts.query);
-  } else if (opts.sort === "recency") {
-    path = "/v1/latest";
-  } else {
-    path = "/v1/trending";
   }
   return appViewGet<ListResponse>(path, params);
 };
@@ -160,6 +156,36 @@ export const fetchHydration = async (
   for (const url of opts.urls) params.append("urls", url);
   const res = await appViewGet<HydrationResponse>("/v1/hydration", params);
   return res.shares;
+};
+
+// --- Slingshot fallback (resolve repost subjects the AppView couldn't) ---
+
+// Slingshot is an atproto edge record cache; getRecordByUri returns
+// { cid, uri, value } where value is the raw record. Public, no auth.
+const SLINGSHOT_URL =
+  process.env.SLINGSHOT_URL ??
+  "https://slingshot.microcosm.blue/xrpc/blue.microcosm.repo.getRecordByUri";
+const SLINGSHOT_TIMEOUT_MS = 5000;
+
+const didFromAtUri = (atUri: string): string =>
+  atUri.replace("at://", "").split("/")[0];
+
+/** Fetch a single record by at:// URI from Slingshot. Returns null on any failure. */
+const fetchRecordFromSlingshot = async (
+  atUri: string,
+): Promise<string | null> => {
+  try {
+    const url = `${SLINGSHOT_URL}?at_uri=${encodeURIComponent(atUri)}`;
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(SLINGSHOT_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { value?: unknown };
+    return json.value ? JSON.stringify(json.value) : null;
+  } catch (e) {
+    console.error("Slingshot getRecordByUri failed:", atUri, e);
+    return null;
+  }
 };
 
 // --- Mapping helpers ---
@@ -235,6 +261,23 @@ const parseRecord = (raw: string): AppBskyFeedPost.Record | null => {
     return JSON.parse(raw) as AppBskyFeedPost.Record;
   } catch {
     return null;
+  }
+};
+
+/**
+ * The AppView returns unresolved records as an empty object (`"{}"`) rather than
+ * omitting them, so a present-but-empty record/subject must be treated as
+ * "missing" — otherwise it bypasses the repost fallback and renders blank.
+ */
+const isEmptyRecord = (raw?: string | null): boolean => {
+  if (!raw) return true;
+  try {
+    const obj = JSON.parse(raw);
+    return (
+      !obj || typeof obj !== "object" || Object.keys(obj as object).length === 0
+    );
+  } catch {
+    return true;
   }
 };
 
@@ -319,7 +362,8 @@ export const shareRowToLinkPost = (
   const base = emptyDenormalized(share, userId);
 
   if (share.collection === "app.bsky.feed.repost") {
-    if (!share.subject) return base; // out-of-network original, render bare
+    // Absent or empty (`{}`) subject → unresolved original; render bare.
+    if (!share.subject || isEmptyRecord(share.subject.record)) return base;
     const subjectRecord = parseRecord(share.subject.record);
     return {
       ...base,
@@ -351,7 +395,7 @@ export const shareRowToLinkPost = (
     postImages: extractImagesFromRecord(record, share.actorDid),
   };
 
-  if (share.subject) {
+  if (share.subject && !isEmptyRecord(share.subject.record)) {
     const quoted = parseRecord(share.subject.record);
     post.quotedActorUrl = profileUrl(
       share.subject.actorHandle || share.subject.actorDid,
@@ -373,6 +417,85 @@ export const shareRowToLinkPost = (
   }
 
   return post;
+};
+
+/**
+ * Fill in missing repost subjects. When the AppView can't resolve a repost's
+ * original post (`subject` absent — typically an out-of-network author), try to
+ * recover it: first from elsewhere in the same hydrated set (the post or its
+ * subject may appear under another share), then from Slingshot by at:// URI.
+ * Mutates and returns `shares`.
+ */
+export const resolveRepostSubjects = async (
+  shares: ShareRow[],
+): Promise<ShareRow[]> => {
+  // Index every non-empty post/subject already present in the set, by at:// URI.
+  const known = new Map<string, SubjectPost>();
+  for (const s of shares) {
+    if (s.collection === "app.bsky.feed.post" && !isEmptyRecord(s.record)) {
+      known.set(s.atUri, {
+        atUri: s.atUri,
+        record: s.record,
+        actorDid: s.actorDid,
+        actorHandle: s.actorHandle,
+        actorName: s.actorName,
+        actorAvatar: s.actorAvatar,
+      });
+    }
+    if (s.subject && !isEmptyRecord(s.subject.record)) {
+      known.set(s.subject.atUri, s.subject);
+    }
+  }
+
+  // Reposts whose subject is absent or empty → resolve from the set, else fetch.
+  const toFetch = new Map<string, ShareRow[]>();
+  for (const s of shares) {
+    if (s.collection !== "app.bsky.feed.repost") continue;
+    if (s.subject && !isEmptyRecord(s.subject.record)) continue; // already resolved
+
+    // Prefer the subject's own URI (kept even when its record is empty); else
+    // read the target from the repost pointer record.
+    let targetUri = s.subject?.atUri;
+    if (!targetUri) {
+      try {
+        targetUri = (JSON.parse(s.record) as { subject?: { uri?: string } })
+          ?.subject?.uri;
+      } catch {
+        targetUri = undefined;
+      }
+    }
+    if (!targetUri) continue;
+
+    const found = known.get(targetUri);
+    if (found) {
+      s.subject = found;
+    } else {
+      const queued = toFetch.get(targetUri);
+      if (queued) queued.push(s);
+      else toFetch.set(targetUri, [s]);
+    }
+  }
+
+  await Promise.all(
+    Array.from(toFetch.entries()).map(async ([uri, rows]) => {
+      const record = await fetchRecordFromSlingshot(uri);
+      if (!record) return;
+      // Slingshot returns only the record; keep any author identity already on
+      // the (empty) subject and fall back to the URI's DID.
+      for (const r of rows) {
+        r.subject = {
+          atUri: uri,
+          record,
+          actorDid: r.subject?.actorDid ?? didFromAtUri(uri),
+          actorHandle: r.subject?.actorHandle,
+          actorName: r.subject?.actorName,
+          actorAvatar: r.subject?.actorAvatar,
+        };
+      }
+    }),
+  );
+
+  return shares;
 };
 
 /** Distinct sharing accounts among a set of shares (matches Sill's "shared by" count). */

@@ -11,6 +11,7 @@ import Layout from "~/components/nav/Layout";
 import { useLayout } from "~/routes/resources/layout-switch";
 import type { SubscriptionStatus } from "@sill/schema";
 import { requireUserFromContext } from "~/utils/context.server";
+import { timeParamToMs } from "~/utils/timeRange";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import type { Route } from "./+types/index";
 import {
@@ -109,22 +110,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		minShares: minShares && minShares > 0 ? minShares : undefined,
 	};
 
-	const timeParam = url.searchParams.get("time");
-	let time = 86400000;
-
-	if (timeParam === "3h") {
-		time = 10800000;
-	} else if (timeParam === "6h") {
-		time = 21600000;
-	} else if (timeParam === "12h") {
-		time = 43200000;
-	} else if (timeParam === "2d") {
-		time = 172800000; // 2 days
-	} else if (timeParam === "3d") {
-		time = 259200000; // 3 days
-	} else if (timeParam === "7d") {
-		time = 604800000; // 7 days
-	}
+	const time = timeParamToMs(url.searchParams.get("time"));
 
 	const links = apiFilterLinkOccurrences(request, {
 		time,

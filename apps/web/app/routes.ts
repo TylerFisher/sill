@@ -83,6 +83,7 @@ export default [
   ...prefix("resources", [
     route("layout-switch", "routes/resources/layout-switch.tsx"),
     route("theme-switch", "routes/resources/theme-switch.tsx"),
+    route("link-posts", "routes/resources/link-posts.tsx"),
   ]),
   ...prefix("settings", [
     index("routes/settings/index.tsx"),

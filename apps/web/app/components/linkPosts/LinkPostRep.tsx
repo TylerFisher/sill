@@ -1,11 +1,12 @@
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Box, Card } from "@radix-ui/themes";
+import { Box, Card, Flex, Spinner } from "@radix-ui/themes";
+import type { MostRecentLinkPosts, bookmark } from "@sill/schema";
+import type { SubscriptionStatus } from "@sill/schema";
 import groupBy from "object.groupby";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFetcher, useSearchParams } from "react-router";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
-import type { bookmark, MostRecentLinkPosts } from "@sill/schema";
-import type { SubscriptionStatus } from "@sill/schema";
 import SharedByBug from "./SharedByBug";
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
@@ -107,52 +108,109 @@ const LinkPostRep = ({
 }: LinkPostRepProps) => {
 	if (!linkPost) return null;
 	if (!linkPost.link) return null;
+	const linkUrl = linkPost.link.url;
 	const [open, setOpen] = useState(autoExpand);
-	const groupedPosts = groupBy(linkPost.posts || [], (l) => l.postUrl);
-	const uniqueActors = getUniqueAvatarUrls(linkPost.posts);
+	// Posts may arrive with the row (DB paths) or be hydrated on demand when the
+	// card is first expanded (AppView timeline). `requested` guards a single load.
+	const [posts, setPosts] = useState<MostRecentLinkPosts["posts"]>(
+		linkPost.posts ?? [],
+	);
+	const requested = useRef(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [visible, setVisible] = useState(false);
+	const fetcher = useFetcher<{ posts: MostRecentLinkPosts["posts"] }>();
+	const [searchParams] = useSearchParams();
+
+	const needsHydration = (posts?.length ?? 0) === 0;
+
+	// Mark the card visible once it scrolls near the viewport, so we can warm its
+	// posts in the background ahead of a click. Runs post-mount (after load).
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el || visible || !needsHydration) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					setVisible(true);
+					observer.disconnect();
+				}
+			},
+			{ rootMargin: "300px" },
+		);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [visible, needsHydration]);
+
+	// Hydrate posts once, on expand or when prefetched into view.
+	useEffect(() => {
+		if (!(open || visible) || !needsHydration || requested.current) return;
+		requested.current = true;
+		const params = new URLSearchParams(searchParams);
+		params.set("url", linkUrl);
+		fetcher.load(`/resources/link-posts?${params.toString()}`);
+	}, [open, visible, needsHydration, fetcher, linkUrl, searchParams]);
+
+	useEffect(() => {
+		if (fetcher.data?.posts) setPosts(fetcher.data.posts);
+	}, [fetcher.data]);
+
+	const groupedPosts = groupBy(posts ?? [], (l) => l.postUrl);
+	// Face pile: avatars provided by the row (AppView) or derived from posts.
+	const uniqueActors =
+		linkPost.avatars && linkPost.avatars.length > 0
+			? linkPost.avatars
+			: getUniqueAvatarUrls(posts);
+	const isLoading = needsHydration && fetcher.state === "loading";
 	const isBookmarked = bookmarks.find(
 		(bookmark) => bookmark.linkUrl === linkPost.link?.url,
 	);
 
 	return (
 		<WrapperComponent layout={layout} key={linkPost.link.url}>
-			<LinkRep
-				link={linkPost.link}
-				instance={instance}
-				bsky={bsky}
-				layout={layout}
-				isBookmarked={isBookmarked}
-				subscribed={subscribed}
-			/>
-			{Object.entries(groupedPosts).length > 0 && (
-				<Box mt="4">
-					<Collapsible.Root
-						className="CollapsibleRoot"
-						open={open}
-						onOpenChange={setOpen}
-					>
-						<SharedByBug
-							uniqueActors={uniqueActors}
-							uniqueActorsCount={linkPost.uniqueActorsCount}
+			<div ref={containerRef}>
+				<LinkRep
+					link={linkPost.link}
+					instance={instance}
+					bsky={bsky}
+					layout={layout}
+					isBookmarked={isBookmarked}
+					subscribed={subscribed}
+				/>
+				{linkPost.uniqueActorsCount > 0 && (
+					<Box mt="4">
+						<Collapsible.Root
+							className="CollapsibleRoot"
 							open={open}
-							layout={layout}
-						/>
-						<Collapsible.Content>
-							<Box mt="5">
-								{Object.entries(groupedPosts).map(([postUrl, group]) => (
-									<PostRep
-										key={postUrl}
-										group={group}
-										instance={instance}
-										bsky={bsky}
-										layout={layout}
-									/>
-								))}
-							</Box>
-						</Collapsible.Content>
-					</Collapsible.Root>
-				</Box>
-			)}
+							onOpenChange={setOpen}
+						>
+							<SharedByBug
+								uniqueActors={uniqueActors}
+								uniqueActorsCount={linkPost.uniqueActorsCount}
+								open={open}
+								layout={layout}
+							/>
+							<Collapsible.Content>
+								<Box mt="5">
+									{isLoading && (
+										<Flex justify="center" py="4">
+											<Spinner size="3" />
+										</Flex>
+									)}
+									{Object.entries(groupedPosts).map(([postUrl, group]) => (
+										<PostRep
+											key={postUrl}
+											group={group}
+											instance={instance}
+											bsky={bsky}
+											layout={layout}
+										/>
+									))}
+								</Box>
+							</Collapsible.Content>
+						</Collapsible.Root>
+					</Box>
+				)}
+			</div>
 		</WrapperComponent>
 	);
 };

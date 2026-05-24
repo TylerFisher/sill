@@ -35,8 +35,7 @@ Example: `?network=bsky,tangled`. Most consumers can ignore this and accept the 
 `days` (int, 1–90, default 7) bounds results to shares in the last N days.
 
 ### Cold start
-A viewer whose follow graph hasn't been indexed yet is **cold**. Cold responses return `{ "items": [], "cold": true }` and the API automatically enqueues that viewer's network for backfill in the background. **Frontend handling**: when `cold: true`, show an "indexing your network, check back shortly" state and retry the same request later (seconds-to-minutes). Don't treat it as an error or as "no results".
-(`/v1/audience-trending` can also be cold but does **not** auto-enqueue — that data fills in over time via the live firehose.)
+A viewer whose follow graph hasn't been indexed yet is **cold**. Cold responses return `{ "items": [], "cold": true }`; the first time a viewer is seen the API registers them as a seed and enqueues their network for backfill in the background. **Frontend handling**: when `cold: true`, show an "indexing your network, check back shortly" state and retry the same request later (seconds-to-minutes). Don't treat it as an error or as "no results". To avoid the cold round-trip entirely, pre-register users at signup via [`POST /v1/seeds`](#post-v1seeds).
 
 ### Canonical URLs
 Aggregating endpoints return **canonical** URLs: variants that point to the same thing are collapsed (e.g. `youtu.be/X` and `youtube.com/watch?v=X` become one row, tracking params stripped). The `url` you get back is the canonical form. When you call `/v1/hydration`, pass these canonical URLs back — it resolves raw variants for you.
@@ -62,7 +61,7 @@ const d = new Date(ts.replace(" ", "T") + "Z");
 
 ## 3. Response envelopes
 
-**Paginated endpoints** (`trending`, `latest`, `search`, `by-author`, `by-domain`, `audience-trending`):
+**Paginated endpoints** (`trending`, `latest`, `search`, `by-author`, `by-domain`):
 ```ts
 { items: Item[]; cursor?: string; cold?: true }
 ```
@@ -83,6 +82,7 @@ const d = new Date(ts.replace(" ", "T") + "Z");
 interface UrlItem {
   url: string;          // canonical URL
   shares: number;       // distinct accounts in scope who shared it
+  avatars: string[];    // up to 3 sharer avatar URLs, for a face-pile preview
   mostRecent: string;   // UTC datetime of the latest share
   giftUrl?: string;     // a gift/unlocked-article link, if a sharer used one (NYT/WaPo/etc.)
   // URL metadata — present only when the URL has been scraped; fields omitted when unknown:
@@ -94,7 +94,7 @@ interface UrlItem {
   publishedAt?: string; // UTC datetime the article was published
 }
 ```
-**Exception**: `/v1/latest` items use `eventTime` (UTC datetime) instead of `shares` + `mostRecent`; everything else is identical.
+`avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; arbitrary 3 of the sharers, not ranked. **Exception**: `/v1/latest` items use `eventTime` (UTC datetime) instead of `shares` + `mostRecent` and have **no** `avatars` (it isn't a share-count endpoint); everything else is identical.
 
 > Metadata is scraped asynchronously. A freshly-seen URL may come back with only `url` (+ maybe `giftUrl`) and no `title`/`imageUrl` until the scraper catches up. Render a graceful fallback (show the bare URL/domain).
 
@@ -187,12 +187,6 @@ URLs from a specific hostname (leading `www.` stripped).
 - **Required**: `domain` — a bare hostname like `nytimes.com` (no scheme/path).
 - **`viewer` optional** (same modes as search).
 
-### `GET /v1/audience-trending`
-Top URLs shared by the **followers of** a given account (audience view), rather than by the viewer's own follows.
-- **Required**: `account` (the DID whose followers you're analysing).
-- **`viewer` optional**: if present, the viewer's blocks/hide-prefs are applied to the follower set.
-- Cold (`cold: true`) when `account` has no indexed followers yet; does **not** auto-enqueue backfill.
-
 ### `GET /v1/hydration`
 Given canonical URLs, return the **individual shares** of each by accounts in the viewer's network — the rows you render under a URL card ("shared by @a, @b, …").
 - **Required**: `viewer`, `urls` (repeated param, 1–100 URLs).
@@ -219,6 +213,24 @@ GET /v1/hydration?viewer=did:plc:abc&days=1&urls=https://www.nytimes.com/2026/05
     }
   ]
 }
+```
+
+### `POST /v1/seeds`
+Register one or more viewer DIDs as **seeds** — the accounts whose follow graph we index. Call this at signup/login so a user's follows are tracked from the start, rather than waiting for their first feed request to auto-register them (which the cold-start probe also does).
+
+- **Body** (JSON): `{ "dids": ["did:plc:…", …] }` — 1–1000 valid `did:` URIs.
+- Registers each DID and enqueues a backfill of their existing follows. **Idempotent** — re-registering an already-known seed is a no-op (a previously-indexed non-seed is upgraded and re-walked).
+- **Returns**: `{ "registered": number, "total": number }` — `registered` = newly-added DIDs, `total` = DIDs in the request.
+
+```
+POST /v1/seeds
+Content-Type: application/json
+X-API-Key: …
+
+{ "dids": ["did:plc:abc", "did:plc:def"] }
+```
+```json
+{ "registered": 1, "total": 2 }
 ```
 
 ### `GET /v1/backfill-status`
