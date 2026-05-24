@@ -311,18 +311,23 @@ const serializeRecord = (record: AppBskyFeedPost.Record | null): string => {
  * scrape status), with AppView metadata filling any gaps.
  */
 export const urlItemToLink = (item: UrlItem, dbLink?: Link | null): Link => {
+  // The AppView is the source of truth for URL metadata. The DB row is only a
+  // fallback for URLs the AppView hasn't scraped yet (no title). When the
+  // AppView has metadata we mark it scraped and set a non-null `metadata` so
+  // the client-side scraper (useClientMetadata) doesn't re-fetch and override.
+  const fromAppView = Boolean(item.title);
   return {
     id: dbLink?.id ?? uuidv7(),
     url: item.url,
-    title: dbLink?.title ?? item.title ?? "",
-    description: dbLink?.description ?? item.description ?? null,
-    imageUrl: dbLink?.imageUrl ?? item.imageUrl ?? null,
-    giftUrl: dbLink?.giftUrl ?? item.giftUrl ?? null,
-    metadata: dbLink?.metadata ?? null,
-    scraped: dbLink?.scraped ?? Boolean(item.title),
-    publishedDate: dbLink?.publishedDate ?? toDbDate(item.publishedAt),
-    authors: dbLink?.authors ?? (item.byline ? [item.byline] : null),
-    siteName: dbLink?.siteName ?? item.siteName ?? null,
+    title: item.title ?? dbLink?.title ?? "",
+    description: item.description ?? dbLink?.description ?? null,
+    imageUrl: item.imageUrl ?? dbLink?.imageUrl ?? null,
+    giftUrl: item.giftUrl ?? dbLink?.giftUrl ?? null,
+    metadata: dbLink?.metadata ?? (fromAppView ? { source: "appview" } : null),
+    scraped: fromAppView || (dbLink?.scraped ?? false),
+    publishedDate: toDbDate(item.publishedAt) ?? dbLink?.publishedDate ?? null,
+    authors: item.byline ? [item.byline] : (dbLink?.authors ?? null),
+    siteName: item.siteName ?? dbLink?.siteName ?? null,
     topics: dbLink?.topics ?? null,
   };
 };

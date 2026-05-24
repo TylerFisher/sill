@@ -764,9 +764,12 @@ const networkTopTenFromAppView = async (): Promise<TopTenResults[]> => {
   const items = await fetchNetworkTrending({ days: 1, limit: 10 });
   if (items.length === 0) return [];
 
-  // Enrich link metadata (stable id, topics) from the DB where we have it.
-  const urls = items.map((i) => i.url);
-  const dbLinks = await db.select().from(link).where(inArray(link.url, urls));
+  // The AppView carries URL metadata; only fall back to the DB for URLs it
+  // hasn't scraped (no title).
+  const fallbackUrls = items.filter((i) => !i.title).map((i) => i.url);
+  const dbLinks = fallbackUrls.length
+    ? await db.select().from(link).where(inArray(link.url, fallbackUrls))
+    : [];
   const dbLinkByUrl = new Map(dbLinks.map((l) => [l.url, l]));
 
   return items.map((item) => {

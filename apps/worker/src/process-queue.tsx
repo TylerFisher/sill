@@ -3,9 +3,9 @@ import {
   db,
   accountUpdateQueue,
   networkTopTenView,
+  notificationGroup,
   user,
   type bookmark,
-  type notificationGroup,
 } from "@sill/schema";
 import {
   type ProcessedResult,
@@ -206,14 +206,30 @@ async function handleIdleQueue(batchSize: number): Promise<void> {
 
   const usersWithAccounts = await db.query.user.findMany({
     with: {
-      blueskyAccounts: true,
+      blueskyAccounts: { with: { lists: true } },
       mastodonAccounts: true,
     },
     orderBy: asc(user.createdAt),
   });
 
+  // Users with notification groups must be ingested every cycle so their
+  // notifications evaluate against fresh data (notifications read the DB).
+  const notificationUserIds = new Set(
+    (
+      await db
+        .selectDistinct({ userId: notificationGroup.userId })
+        .from(notificationGroup)
+    ).map((row) => row.userId)
+  );
+
+  // The AppView now serves the Bluesky following timeline, so the worker only
+  // needs to fetch for users with something it doesn't cover: Bluesky lists
+  // (custom feeds), a Mastodon account, or notification groups to evaluate.
   const users = usersWithAccounts.filter(
-    (u) => u.blueskyAccounts.length > 0 || u.mastodonAccounts.length > 0
+    (u) =>
+      u.mastodonAccounts.length > 0 ||
+      u.blueskyAccounts.some((account) => account.lists.length > 0) ||
+      notificationUserIds.has(u.id)
   );
 
   // Delete completed jobs

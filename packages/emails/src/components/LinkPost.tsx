@@ -179,16 +179,16 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 					))}
 					<Text style={accounts}>
 						<Link style={postsLink} href={`${digestUrl}#${link.id}`}>
-							Shared by {uniqueActors.length}{" "}
-							{uniqueActors.length === 1 ? "account" : "accounts"}
+							Shared by {linkPost.uniqueActorsCount}{" "}
+							{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}
 						</Link>
 					</Text>
 				</>
 			) : (
 				<>
 					<Heading style={accountsHeading} as="h3">
-						Shared by {uniqueActors.length}{" "}
-						{uniqueActors.length === 1 ? "account" : "accounts"}
+						Shared by {linkPost.uniqueActorsCount}{" "}
+						{linkPost.uniqueActorsCount === 1 ? "account" : "accounts"}
 					</Heading>
 					{Object.entries(groupedPosts).map(([postUrl, group]) => (
 						<Post key={postUrl} group={group} />

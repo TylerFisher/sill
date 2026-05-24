@@ -26,7 +26,7 @@ export {
   networkTopTen,
   conflictUpdateSetAllColumns,
 } from "./links.js";
-export { getTimeline } from "./timeline.js";
+export { getTimeline, getMergedOccurrences } from "./timeline.js";
 export { appViewEnabled } from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export {

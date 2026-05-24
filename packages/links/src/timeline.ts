@@ -6,6 +6,7 @@ import {
   fetchHydration,
   fetchUrlPage,
   resolveRepostSubjects,
+  type ShareRow,
   shareRowToLinkPost,
   toIso,
   type UrlItem,
@@ -221,6 +222,52 @@ export const getTimeline = async (
 };
 
 /**
+ * Same merged AppView + DB Mastodon ranking as the timeline, but **eager** —
+ * each row comes back with its posts hydrated. For server-side consumers that
+ * need the posts up front (digests, and later notifications) rather than the
+ * lazy-on-expand list view. Falls back to the DB for list/Mastodon-only views,
+ * users without a Bluesky account, or when the AppView is unavailable.
+ */
+export const getMergedOccurrences = async (
+  args: FilterArgs,
+): Promise<TimelineItem[]> => {
+  const {
+    userId,
+    service = "all",
+    selectedList = "all",
+    page = 1,
+    limit = DEFAULT_LIMIT,
+  } = args;
+
+  const account = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+  const useAppView =
+    !!account &&
+    appViewEnabled() &&
+    selectedList === "all" &&
+    service !== "mastodon";
+
+  if (!account || !useAppView) {
+    return filterLinkOccurrences(args);
+  }
+
+  let ranked: RankedEntry[];
+  try {
+    ranked = await getRankedEntries(args, account.did, page * limit);
+  } catch (e) {
+    console.error("AppView merged occurrences failed:", e);
+    return filterLinkOccurrences(args);
+  }
+
+  const offset = (page - 1) * limit;
+  const slice = ranked.slice(offset, offset + limit);
+  if (slice.length === 0) return [];
+
+  return hydratePage(slice, args, account.did);
+};
+
+/**
  * Hydrate the individual posts for a single URL, on demand (when a card is
  * expanded). Bluesky posts come from the AppView hydration endpoint; Mastodon
  * posts from the DB. Returns a single-item array shaped like the list rows.
@@ -305,8 +352,12 @@ const getRankedEntries = async (
   needed: number,
 ): Promise<RankedEntry[]> => {
   const service = args.service ?? "all";
-  // Match the DB path: anything that isn't "popularity" (e.g. "newest") is recency.
-  const sort = args.sort === "popularity" ? "popularity" : "recency";
+  // Default to popularity (like the DB path); only an explicit recency/newest
+  // sort flips to recency. An absent sort (e.g. digests) means popularity.
+  const sort: "popularity" | "recency" =
+    args.sort === "newest" || args.sort === "recency"
+      ? "recency"
+      : "popularity";
   const hideReposts = args.hideReposts ?? "include";
   const query = args.query ?? "";
   const days = daysFromTime(args.time ?? ONE_DAY_MS);
@@ -409,10 +460,14 @@ const assemblePage = async (
 ): Promise<TimelineItem[]> => {
   const minShares = args.minShares ?? 0;
 
-  // Enrich link metadata (stable id, topics, scrape status) from the DB.
-  const sliceUrls = slice.map((e) => e.url);
-  const dbLinks = sliceUrls.length
-    ? await db.select().from(link).where(inArray(link.url, sliceUrls))
+  // The AppView already carries URL metadata. Only consult the DB as a fallback
+  // for Bluesky URLs the AppView hasn't scraped (no title). Merged URLs also
+  // reuse the Mastodon row below, so those keep a stable id/topics.
+  const fallbackUrls = slice
+    .filter((e) => e.blueskyItem && !e.blueskyItem.title)
+    .map((e) => e.url);
+  const dbLinks = fallbackUrls.length
+    ? await db.select().from(link).where(inArray(link.url, fallbackUrls))
     : [];
   const dbLinkByUrl = new Map<string, Link>(dbLinks.map((l) => [l.url, l]));
 
@@ -441,6 +496,84 @@ const assemblePage = async (
       mostRecentPostDate: new Date(entry.mostRecent),
       posts: [], // hydrated on demand when the card is expanded
       avatars,
+    });
+  }
+
+  return items;
+};
+
+/**
+ * Eager version of `assemblePage`: hydrates the Bluesky posts for the page
+ * (one batched `/v1/hydration` call) and merges them with the Mastodon posts,
+ * so each row comes back with its full `posts`. Used by `getMergedOccurrences`.
+ */
+const hydratePage = async (
+  slice: RankedEntry[],
+  args: FilterArgs,
+  viewerDid: string,
+): Promise<TimelineItem[]> => {
+  const userId = args.userId;
+  const days = daysFromTime(args.time ?? ONE_DAY_MS);
+  const hideReposts = args.hideReposts ?? "include";
+  const minShares = args.minShares ?? 0;
+
+  const blueskyUrls = slice.filter((e) => e.blueskyItem).map((e) => e.url);
+  let shares: ShareRow[] = [];
+  if (blueskyUrls.length > 0) {
+    try {
+      shares = await fetchHydration({
+        viewer: viewerDid,
+        days,
+        urls: blueskyUrls,
+        hideReposts,
+      });
+      shares = await resolveRepostSubjects(shares);
+    } catch (e) {
+      console.error("AppView hydration failed:", e);
+    }
+  }
+  const sharesByUrl = new Map<string, ShareRow[]>();
+  for (const s of shares) {
+    const list = sharesByUrl.get(s.url);
+    if (list) list.push(s);
+    else sharesByUrl.set(s.url, [s]);
+  }
+
+  // DB only as a metadata fallback for Bluesky URLs the AppView hasn't titled.
+  const fallbackUrls = slice
+    .filter((e) => e.blueskyItem && !e.blueskyItem.title)
+    .map((e) => e.url);
+  const dbLinks = fallbackUrls.length
+    ? await db.select().from(link).where(inArray(link.url, fallbackUrls))
+    : [];
+  const dbLinkByUrl = new Map<string, Link>(dbLinks.map((l) => [l.url, l]));
+
+  const items: TimelineItem[] = [];
+  for (const entry of slice) {
+    const urlShares = sharesByUrl.get(entry.url) ?? [];
+    const blueskyPosts = urlShares.map((s) => shareRowToLinkPost(s, userId));
+    const mastodonPosts = entry.mastodon?.posts ?? [];
+    const posts = [...blueskyPosts, ...mastodonPosts].sort(
+      (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+    );
+
+    const blueskyCount = entry.blueskyShares ?? distinctActorCount(urlShares);
+    const mastodonCount = entry.mastodon?.uniqueActorsCount ?? 0;
+    const uniqueActorsCount = blueskyCount + mastodonCount;
+
+    if (minShares > 0 && uniqueActorsCount < minShares) continue;
+
+    const dbLink = dbLinkByUrl.get(entry.url) ?? entry.mastodon?.link ?? null;
+    const linkObj = entry.blueskyItem
+      ? urlItemToLink(entry.blueskyItem, dbLink)
+      : (entry.mastodon?.link ?? null);
+
+    items.push({
+      link: linkObj,
+      uniqueActorsCount,
+      mostRecentPostDate: new Date(entry.mostRecent),
+      posts,
+      avatars: avatarsFromPosts(posts),
     });
   }
 
