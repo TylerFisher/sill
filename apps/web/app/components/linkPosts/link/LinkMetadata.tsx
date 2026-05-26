@@ -49,36 +49,35 @@ const LinkMetadata = ({
 							{authors.length === 2 ? (
 								authors.map((author, index) => (
 									<Text key={author}>
-										{/* <Link
+										<Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
-										> */}
-										{author}
-										{/* </Link> */}
+										>
+											{author}
+										</Link>
 										{index === 0 && " and "}
 									</Text>
 								))
 							) : authors.length > 2 ? (
 								authors.map((author, index) => (
 									<Text key={author}>
-										{/* <Link
+										<Link
 											href={`/links/author/${encodeURIComponent(author)}`}
 											color="gray"
-										> */}
-										{author}
-										{/* </Link> */}
+										>
+											{author}
+										</Link>
 										{index < authors.length - 1 &&
 											(index === authors.length - 2 ? " and " : ", ")}
 									</Text>
 								))
 							) : (
-								// <Link
-								// 	href={`/links/author/${encodeURIComponent(authors[0])}`}
-								// 	color="gray"
-								// >
-								// 	{authors[0]}
-								// </Link>
-								<Text>{authors[0]}</Text>
+								<Link
+									href={`/links/author/${encodeURIComponent(authors[0])}`}
+									color="gray"
+								>
+									{authors[0]}
+								</Link>
 							)}
 						</>
 					)}

@@ -1,7 +1,7 @@
-import { DropdownMenu } from "@radix-ui/themes";
+import { DropdownMenu, Spinner } from "@radix-ui/themes";
 import type { list } from "@sill/schema";
 import { ChevronDown } from "lucide-react";
-import { useSearchParams } from "react-router";
+import { useNavigation, useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import styles from "./PresetFilterItem.module.css";
 
@@ -39,13 +39,28 @@ const FilterPresetList = ({
 }: FilterPresetListProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { clearFilterFromStorage } = useFilterStorage();
+	const navigation = useNavigation();
 
-	const sort = searchParams.get("sort");
-	const time = searchParams.get("time") || "";
-	const reposts = searchParams.get("reposts") || "";
-	const minShares = searchParams.get("minShares") || "";
-	const activeService = searchParams.get("service");
-	const activeList = searchParams.get("list");
+	// While a filter navigation is in flight, reflect the target params
+	// optimistically and flag the control whose value is changing as pending.
+	const pendingParams =
+		navigation.state === "loading" && navigation.location
+			? new URLSearchParams(navigation.location.search)
+			: null;
+	const params = pendingParams ?? searchParams;
+	const paramChanging = (key: string) =>
+		pendingParams !== null &&
+		(pendingParams.get(key) ?? "") !== (searchParams.get(key) ?? "");
+
+	const sort = params.get("sort");
+	const time = params.get("time") || "";
+	const reposts = params.get("reposts") || "";
+	const minShares = params.get("minShares") || "";
+	const activeService = params.get("service");
+	const activeList = params.get("list");
+	// Selecting a service/list can change either param, so the "From" group is
+	// pending if either is in flight.
+	const fromChanging = paramChanging("service") || paramChanging("list");
 
 	const handleSelectSort = (value: string) => {
 		setSearchParams((prev) => {
@@ -167,6 +182,7 @@ const FilterPresetList = ({
 						className={`${styles.item} ${sort !== "newest" ? styles.active : ""}`}
 					>
 						Most popular
+						{paramChanging("sort") && sort !== "newest" && <Spinner size="1" />}
 					</button>
 					<button
 						type="button"
@@ -174,6 +190,7 @@ const FilterPresetList = ({
 						className={`${styles.item} ${sort === "newest" ? styles.active : ""}`}
 					>
 						Newest
+						{paramChanging("sort") && sort === "newest" && <Spinner size="1" />}
 					</button>
 				</>
 			)}
@@ -186,7 +203,11 @@ const FilterPresetList = ({
 						className={`${styles.item} ${time ? styles.active : ""}`}
 					>
 						<span>{getTimeLabel()}</span>
-						<ChevronDown className={styles.chevron} width={14} height={14} />
+						{paramChanging("time") ? (
+							<Spinner size="1" />
+						) : (
+							<ChevronDown className={styles.chevron} width={14} height={14} />
+						)}
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
@@ -208,7 +229,11 @@ const FilterPresetList = ({
 						className={`${styles.item} ${minShares ? styles.active : ""}`}
 					>
 						<span>{getSharesLabel()} shares</span>
-						<ChevronDown className={styles.chevron} width={14} height={14} />
+						{paramChanging("minShares") ? (
+							<Spinner size="1" />
+						) : (
+							<ChevronDown className={styles.chevron} width={14} height={14} />
+						)}
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
@@ -230,7 +255,11 @@ const FilterPresetList = ({
 						className={`${styles.item} ${styles.fullWidth} ${reposts ? styles.active : ""}`}
 					>
 						<span>{getRepostsLabel()}</span>
-						<ChevronDown className={styles.chevron} width={14} height={14} />
+						{paramChanging("reposts") ? (
+							<Spinner size="1" />
+						) : (
+							<ChevronDown className={styles.chevron} width={14} height={14} />
+						)}
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
@@ -254,6 +283,9 @@ const FilterPresetList = ({
 						className={`${styles.item} ${styles.fullWidth} ${!activeService && !activeList ? styles.active : ""}`}
 					>
 						All
+						{fromChanging && !activeService && !activeList && (
+							<Spinner size="1" />
+						)}
 					</button>
 					{showService && (
 						<>
@@ -263,6 +295,9 @@ const FilterPresetList = ({
 								className={`${styles.item} ${activeService === "bluesky" ? styles.active : ""}`}
 							>
 								Bluesky
+								{fromChanging && activeService === "bluesky" && (
+									<Spinner size="1" />
+								)}
 							</button>
 							<button
 								type="button"
@@ -270,6 +305,9 @@ const FilterPresetList = ({
 								className={`${styles.item} ${activeService === "mastodon" ? styles.active : ""}`}
 							>
 								Mastodon
+								{fromChanging && activeService === "mastodon" && (
+									<Spinner size="1" />
+								)}
 							</button>
 						</>
 					)}
@@ -285,6 +323,7 @@ const FilterPresetList = ({
 									className={`${styles.item} ${isActive ? styles.active : ""}`}
 								>
 									{list.name}
+									{fromChanging && isActive && <Spinner size="1" />}
 								</button>
 							);
 						})}

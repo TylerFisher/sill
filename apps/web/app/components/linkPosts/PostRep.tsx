@@ -26,6 +26,17 @@ const PostRep = ({
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
+	// Source logo shown in the card corner. Semble bookmarks (atbookmark on
+	// semble.so) get the Semble mark; other atbookmarks show none.
+	const sourceLogo =
+		post.postType === "bluesky"
+			? "/bluesky-logo.svg"
+			: post.postType === "mastodon"
+				? "/mastodon-logo.svg"
+				: post.postUrl?.includes("semble.so")
+					? "/semble-logo.svg"
+					: null;
+
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
 			<Box mb="5">
@@ -163,23 +174,21 @@ const PostRep = ({
 				</Inset>
 			)}
 
-			<img
-				src={
-					post.postType === "bluesky"
-						? "/bluesky-logo.svg"
-						: "/mastodon-logo.svg"
-				}
-				alt=""
-				width="24"
-				height="auto"
-				style={{
-					display: "inline",
-					position: "absolute",
-					top: "10px",
-					right: "10px",
-					opacity: "0.3",
-				}}
-			/>
+			{sourceLogo && (
+				<img
+					src={sourceLogo}
+					alt=""
+					width="24"
+					height="auto"
+					style={{
+						display: "inline",
+						position: "absolute",
+						top: "10px",
+						right: "10px",
+						opacity: "0.3",
+					}}
+				/>
+			)}
 		</Card>
 	);
 };

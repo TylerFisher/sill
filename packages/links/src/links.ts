@@ -31,6 +31,7 @@ import {
   mutePhrase,
   networkTopTenView,
   postType,
+  type MostRecentLinkPosts,
   type NotificationQuery,
 } from "@sill/schema";
 import {
@@ -47,9 +48,17 @@ import {
 } from "./mastodon.js";
 import {
   appViewEnabled,
+  distinctActorCount,
+  fetchByAuthor,
+  fetchByDomain,
+  fetchHydration,
   fetchNetworkTrending,
+  resolveRepostSubjects,
+  type ShareRow,
   shareRowToLinkPost,
+  type TimeWindow,
   toIso,
+  type UrlItem,
   urlItemToLink,
 } from "./appview.js";
 
@@ -761,7 +770,7 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
 };
 
 const networkTopTenFromAppView = async (): Promise<TopTenResults[]> => {
-  const items = await fetchNetworkTrending({ days: 1, limit: 10 });
+  const items = await fetchNetworkTrending({ limit: 10 });
   if (items.length === 0) return [];
 
   // The AppView carries URL metadata; only fall back to the DB for URLs it
@@ -805,14 +814,101 @@ const networkTopTenFromDb = async (): Promise<TopTenResults[]> => {
     });
 };
 
+// Broad window for the by-domain / by-author discovery pages.
+const DISCOVERY_WINDOW: TimeWindow = { days: 90 };
+
+/** A viewer's Bluesky DID, or null if they have no Bluesky account. */
+const viewerDidForUser = async (userId: string): Promise<string | null> => {
+  const account = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+  return account?.did ?? null;
+};
+
 /**
- * Finds all link objects that have a URL matching the specified domain
+ * Hydrate AppView UrlItems (from by-domain/by-author) into the renderable shape,
+ * eagerly loading each URL's posts for the viewer's network.
+ */
+const linksFromAppViewItems = async (
+  items: UrlItem[],
+  viewerDid: string,
+  userId: string,
+): Promise<MostRecentLinkPosts[]> => {
+  if (items.length === 0) return [];
+
+  let shares = await fetchHydration({
+    viewer: viewerDid,
+    window: DISCOVERY_WINDOW,
+    urls: items.map((i) => i.url),
+    hideReposts: "include",
+  });
+  shares = await resolveRepostSubjects(shares);
+
+  const sharesByUrl = new Map<string, ShareRow[]>();
+  for (const s of shares) {
+    const list = sharesByUrl.get(s.url);
+    if (list) list.push(s);
+    else sharesByUrl.set(s.url, [s]);
+  }
+
+  // DB only as a metadata fallback for URLs the AppView hasn't titled.
+  const fallbackUrls = items.filter((i) => !i.title).map((i) => i.url);
+  const dbLinks = fallbackUrls.length
+    ? await db.select().from(link).where(inArray(link.url, fallbackUrls))
+    : [];
+  const dbLinkByUrl = new Map(dbLinks.map((l) => [l.url, l]));
+
+  return items.map((item) => {
+    const urlShares = sharesByUrl.get(item.url) ?? [];
+    const posts = urlShares
+      .map((s) => shareRowToLinkPost(s, userId))
+      .sort(
+        (a, b) =>
+          new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+      );
+    return {
+      uniqueActorsCount: item.shares ?? distinctActorCount(urlShares),
+      link: urlItemToLink(item, dbLinkByUrl.get(item.url) ?? null),
+      posts,
+    };
+  });
+};
+
+/**
+ * Finds links from a hostname. When the AppView is configured and the viewer
+ * has a Bluesky account, this comes from `/v1/by-domain` (scoped to the
+ * viewer's network); otherwise it falls back to the DB.
  * @param domain Domain to match against (e.g., "example.com")
  * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with URLs from the specified domain, including linkPostDenormalized objects and total share count
+ * @param userId Viewer whose network scopes the AppView lookup
  */
 export const findLinksByDomain = async (
+  domain: string,
+  page = 1,
+  pageSize = 10,
+  userId?: string,
+): Promise<MostRecentLinkPosts[]> => {
+  if (userId && appViewEnabled()) {
+    const viewerDid = await viewerDidForUser(userId);
+    if (viewerDid) {
+      try {
+        const items = await fetchByDomain({
+          domain,
+          viewer: viewerDid,
+          window: DISCOVERY_WINDOW,
+          limit: pageSize,
+        });
+        return await linksFromAppViewItems(items, viewerDid, userId);
+      } catch (e) {
+        console.error("AppView by-domain failed, falling back to DB:", e);
+      }
+    }
+  }
+  return findLinksByDomainFromDb(domain, page, pageSize);
+};
+
+const findLinksByDomainFromDb = async (
   domain: string,
   page = 1,
   pageSize = 10,
@@ -860,7 +956,40 @@ export const findLinksByDomain = async (
  * @param pageSize Number of results per page (defaults to 10)
  * @returns Array of link objects with the specified author, including linkPostDenormalized objects and total share count
  */
+/**
+ * Finds links whose article byline matches `author`. AppView `/v1/by-author`
+ * (viewer-scoped) when configured, else the DB.
+ * @param author Author name to match against
+ * @param page Page number (1-based, defaults to 1)
+ * @param pageSize Number of results per page (defaults to 10)
+ * @param userId Viewer whose network scopes the AppView lookup
+ */
 export const findLinksByAuthor = async (
+  author: string,
+  page = 1,
+  pageSize = 10,
+  userId?: string,
+): Promise<MostRecentLinkPosts[]> => {
+  if (userId && appViewEnabled()) {
+    const viewerDid = await viewerDidForUser(userId);
+    if (viewerDid) {
+      try {
+        const items = await fetchByAuthor({
+          author,
+          viewer: viewerDid,
+          window: DISCOVERY_WINDOW,
+          limit: pageSize,
+        });
+        return await linksFromAppViewItems(items, viewerDid, userId);
+      } catch (e) {
+        console.error("AppView by-author failed, falling back to DB:", e);
+      }
+    }
+  }
+  return findLinksByAuthorFromDb(author, page, pageSize);
+};
+
+const findLinksByAuthorFromDb = async (
   author: string,
   page = 1,
   pageSize = 10,

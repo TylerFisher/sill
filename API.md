@@ -32,7 +32,7 @@ atproto is multi-network. The `network` param selects which follow graph(s) defi
 Example: `?network=bsky,tangled`. Most consumers can ignore this and accept the `bsky` default.
 
 ### Time window
-`days` (int, 1–90, default 1) bounds results to shares in the last N days. For **sub-day** windows use `hours` (int, 1–23) instead — e.g. `?hours=6` for the last 6 hours. When both are supplied, `hours` takes precedence. Omit both for the 1-day default. Applies to every endpoint that takes `days`.
+`days` (int, 1–90, default 1) bounds results to shares in the last N days. For **sub-day** windows use `hours` (int, 1–23) instead — e.g. `?hours=6` for the last 6 hours. When both are supplied, `hours` takes precedence. Omit both for the 1-day default (**except `/v1/network-trending`, which defaults to 3 hours** — see §5). Applies to every endpoint that takes `days`.
 
 ### Cold start
 A viewer whose follow graph hasn't been indexed yet is **cold**. Cold responses return `{ "items": [], "cold": true }`; the first time a viewer is seen the API registers them as a seed and enqueues their network for backfill in the background. **Frontend handling**: when `cold: true`, show an "indexing your network, check back shortly" state and retry the same request later (seconds-to-minutes). Don't treat it as an error or as "no results". To avoid the cold round-trip entirely, pre-register users at signup via [`POST /v1/seeds`](#post-v1seeds).
@@ -94,7 +94,7 @@ interface UrlItem {
   publishedAt?: string; // UTC datetime the article was published
 }
 ```
-`avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; arbitrary 3 of the sharers, not ranked. **Exception**: `/v1/latest` items use `eventTime` (UTC datetime) instead of `shares` + `mostRecent` and have **no** `avatars` (it isn't a share-count endpoint); everything else is identical.
+`avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; arbitrary 3 of the sharers, not ranked. **Exception**: `/v1/latest` items carry `eventTime` (UTC datetime of the most recent share) in place of `mostRecent`; they still include `shares` and `avatars`, counted over the same `days`/`hours` window. Everything else is identical.
 
 > Metadata is scraped asynchronously. A freshly-seen URL may come back with only `url` (+ maybe `giftUrl`) and no `title`/`imageUrl` until the scraper catches up. Render a graceful fallback (show the bare URL/domain).
 
@@ -166,7 +166,7 @@ GET /v1/trending?viewer=did:plc:abc&days=1&limit=25
 ### `GET /v1/network-trending`
 Top URLs across the **entire index** by distinct sharers — **not** scoped to any viewer's follow set. Powers a global/discovery trending page.
 - **No `viewer`** (and no `network` param — network selection is about follow graphs, irrelevant here).
-- `limit` defaults to **10** (the other endpoints default to 20). `days` (or `hours`), `collection`, and the hide-prefs (`hideLabels`/`hideUrls`/`hideDids`) all apply; hide-prefs are optional so a caller can layer on moderation.
+- `limit` defaults to **10** (the other endpoints default to 20). The time window defaults to **3 hours** here (other endpoints default to 1 day) — a fresher "what's hot right now" view; override with `days` or `hours`. `collection` and the hide-prefs (`hideLabels`/`hideUrls`/`hideDids`) all apply; hide-prefs are optional so a caller can layer on moderation.
 - **Returns**: `{ items: UrlItem[]; cursor? }` (never `cold`), sorted by `shares` desc, then recency.
 - Each item also carries **`topPost`** — the most-shared post containing that link (a hydrated post, same shape as a `/v1/hydration` share, plus `shares` = its reposts + quotes, i.e. "Most shared"). Omitted when no candidate post is found. Note `topPost.shares` (reposts + quotes of that one post) is distinct from the item-level `shares` (distinct accounts who shared the URL).
 - Same result for every caller, so it's cached and shared server-side; expect it to be a few seconds stale at most.
@@ -176,7 +176,7 @@ GET /v1/network-trending?days=1&limit=10
 ```
 
 ### `GET /v1/latest`
-Same as trending but ordered by recency (most recent share first). Items use `eventTime` instead of `shares`/`mostRecent`.
+Same shape as trending — including `shares` (distinct accounts in the network who shared the URL within the `days`/`hours` window) and the `avatars` face-pile — but ordered by recency (most recent share first) rather than share count. Items carry `eventTime` (the latest share time) in place of `mostRecent`.
 - **Required**: `viewer`.
 
 ### `GET /v1/search`
@@ -198,6 +198,7 @@ URLs whose scraped article **byline** matches the given author (whole-token AND 
 URLs from a specific hostname (leading `www.` stripped).
 - **Required**: `domain` — a bare hostname like `nytimes.com` (no scheme/path).
 - **`viewer` optional** (same modes as search).
+- Matches on each URL's **canonical** domain, so shares posted via link shorteners / redirects (bit.ly, t.co, …) that resolve to this hostname are counted — share counts here line up with what the same URL shows in trending.
 
 ### `GET /v1/hydration`
 Given canonical URLs, return the **individual shares** of each by accounts in the viewer's network — the rows you render under a URL card ("shared by @a, @b, …").

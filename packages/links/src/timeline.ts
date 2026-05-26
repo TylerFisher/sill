@@ -228,6 +228,8 @@ export const getTimeline = async (
   const slice = ranked.slice(offset, offset + limit);
   if (slice.length === 0) return [];
 
+  // Both trending and /v1/latest carry shares + avatars, so the list renders
+  // lazily (face pile from the item, posts hydrated on expand) for either sort.
   return assemblePage(slice, args);
 };
 
@@ -417,6 +419,7 @@ const getRankedEntries = async (
         window,
         limit: APPVIEW_PAGE_LIMIT,
         query: query || undefined,
+        sort,
         hideReposts,
       }),
     ]);
@@ -449,6 +452,7 @@ const getRankedEntries = async (
         limit: APPVIEW_PAGE_LIMIT,
         cursor: cached.blueskyCursor,
         query: query || undefined,
+        sort,
         hideReposts,
       }),
     );

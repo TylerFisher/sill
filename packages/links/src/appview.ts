@@ -21,10 +21,10 @@ export const appViewEnabled = (): boolean =>
 
 export interface UrlItem {
   url: string;
-  shares?: number; // present on trending/search; absent on /v1/latest
-  avatars?: string[]; // up to 3 sharer avatars for a face pile; absent on /v1/latest
-  mostRecent?: string; // present on trending/search
-  eventTime?: string; // present on /v1/latest instead of shares/mostRecent
+  shares?: number; // distinct sharers (all aggregating endpoints)
+  avatars?: string[]; // up to 3 sharer avatars for a face pile
+  mostRecent?: string; // latest share time (trending/search)
+  eventTime?: string; // latest share time on /v1/latest (in place of mostRecent)
   giftUrl?: string;
   title?: string;
   description?: string;
@@ -75,7 +75,7 @@ interface HydrationResponse {
 
 const appViewGet = async <T>(
   path: string,
-  params: URLSearchParams,
+  params: URLSearchParams
 ): Promise<T> => {
   const base = process.env.APPVIEW_API_URL;
   const key = process.env.APPVIEW_API_KEY;
@@ -96,7 +96,7 @@ const appViewGet = async <T>(
 
 /** Collection NSIDs to request based on Sill's repost filter. */
 const collectionsForRepostFilter = (
-  hideReposts: "include" | "exclude" | "only",
+  hideReposts: "include" | "exclude" | "only"
 ): string[] | undefined => {
   if (hideReposts === "exclude") return ["app.bsky.feed.post"];
   if (hideReposts === "only") return ["app.bsky.feed.repost"];
@@ -121,17 +121,19 @@ interface UrlPageOptions {
   limit: number;
   cursor?: string;
   query?: string;
+  sort?: "popularity" | "recency";
   hideReposts: "include" | "exclude" | "only";
 }
 
 /**
- * Fetch one page of ranked URLs. Routes to /v1/search when a query is present,
- * otherwise /v1/trending. We always use trending (not /v1/latest) because only
- * trending carries the `shares` count and `avatars` face pile the list needs to
- * render without hydrating; recency is applied by re-sorting these items.
+ * Fetch one page of ranked URLs:
+ * - a query → /v1/search,
+ * - recency sort → /v1/latest (most-recent share first),
+ * - otherwise → /v1/trending.
+ * All three carry `shares` + `avatars`, so the list renders without hydrating.
  */
 export const fetchUrlPage = async (
-  opts: UrlPageOptions,
+  opts: UrlPageOptions
 ): Promise<ListResponse> => {
   const params = new URLSearchParams();
   params.set("viewer", opts.viewer);
@@ -146,6 +148,8 @@ export const fetchUrlPage = async (
   if (opts.query) {
     path = "/v1/search";
     params.set("q", opts.query);
+  } else if (opts.sort === "recency") {
+    path = "/v1/latest";
   }
   return appViewGet<ListResponse>(path, params);
 };
@@ -155,12 +159,44 @@ export const fetchUrlPage = async (
  * Powers Sill's discovery "Trending links" page. Never returns `cold`.
  */
 export const fetchNetworkTrending = async (
-  opts: { days?: number; limit?: number } = {},
+  opts: { limit?: number } = {}
 ): Promise<UrlItem[]> => {
   const params = new URLSearchParams();
-  params.set("days", String(opts.days ?? 1));
+  // No days/hours — let network-trending use its server-side default window.
   params.set("limit", String(opts.limit ?? 10));
   const res = await appViewGet<ListResponse>("/v1/network-trending", params);
+  return res.items;
+};
+
+/** Top URLs from a hostname. `viewer` scopes to that network; omit for whole-index. */
+export const fetchByDomain = async (opts: {
+  domain: string;
+  viewer?: string;
+  window?: TimeWindow;
+  limit?: number;
+}): Promise<UrlItem[]> => {
+  const params = new URLSearchParams();
+  params.set("domain", opts.domain);
+  if (opts.viewer) params.set("viewer", opts.viewer);
+  if (opts.window) appendWindow(params, opts.window);
+  params.set("limit", String(opts.limit ?? 20));
+  const res = await appViewGet<ListResponse>("/v1/by-domain", params);
+  return res.items;
+};
+
+/** Top URLs whose article byline matches `author`. `viewer` scopes to that network. */
+export const fetchByAuthor = async (opts: {
+  author: string;
+  viewer?: string;
+  window?: TimeWindow;
+  limit?: number;
+}): Promise<UrlItem[]> => {
+  const params = new URLSearchParams();
+  params.set("author", opts.author);
+  if (opts.viewer) params.set("viewer", opts.viewer);
+  if (opts.window) appendWindow(params, opts.window);
+  params.set("limit", String(opts.limit ?? 20));
+  const res = await appViewGet<ListResponse>("/v1/by-author", params);
   return res.items;
 };
 
@@ -173,7 +209,7 @@ interface HydrationOptions {
 
 /** Fetch the individual shares (who shared what) for a set of canonical URLs. */
 export const fetchHydration = async (
-  opts: HydrationOptions,
+  opts: HydrationOptions
 ): Promise<ShareRow[]> => {
   if (opts.urls.length === 0) return [];
   const params = new URLSearchParams();
@@ -201,7 +237,7 @@ const didFromAtUri = (atUri: string): string =>
 
 /** Fetch a single record by at:// URI from Slingshot. Returns null on any failure. */
 const fetchRecordFromSlingshot = async (
-  atUri: string,
+  atUri: string
 ): Promise<string | null> => {
   try {
     const url = `${SLINGSHOT_URL}?at_uri=${encodeURIComponent(atUri)}`;
@@ -262,27 +298,32 @@ const postUrlFromAtUri = (atUri: string, handle?: string | null): string => {
 const extractImagesFromRecord = (
   // biome-ignore lint/suspicious/noExplicitAny: raw atproto record JSON
   record: any,
-  did: string,
+  did: string
 ): { url: string; alt: string }[] => {
   const embed = record?.embed;
   if (!embed) return [];
   // app.bsky.embed.recordWithMedia nests the media under .media
   const media =
     embed.$type === "app.bsky.embed.recordWithMedia" ? embed.media : embed;
-  if (media?.$type !== "app.bsky.embed.images" || !Array.isArray(media.images)) {
+  if (
+    media?.$type !== "app.bsky.embed.images" ||
+    !Array.isArray(media.images)
+  ) {
     return [];
   }
-  return media.images
-    // biome-ignore lint/suspicious/noExplicitAny: raw atproto image JSON
-    .map((img: any) => {
-      const cid = img?.image?.ref?.$link ?? img?.image?.ref;
-      if (typeof cid !== "string") return null;
-      return {
-        url: `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${cid}@jpeg`,
-        alt: typeof img?.alt === "string" ? img.alt : "",
-      };
-    })
-    .filter((i: { url: string; alt: string } | null) => i !== null);
+  return (
+    media.images
+      // biome-ignore lint/suspicious/noExplicitAny: raw atproto image JSON
+      .map((img: any) => {
+        const cid = img?.image?.ref?.$link ?? img?.image?.ref;
+        if (typeof cid !== "string") return null;
+        return {
+          url: `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${cid}@jpeg`,
+          alt: typeof img?.alt === "string" ? img.alt : "",
+        };
+      })
+      .filter((i: { url: string; alt: string } | null) => i !== null)
+  );
 };
 
 const parseRecord = (raw: string): AppBskyFeedPost.Record | null => {
@@ -338,21 +379,19 @@ export const urlItemToLink = (item: UrlItem, dbLink?: Link | null): Link => {
     metadata: dbLink?.metadata ?? (fromAppView ? { source: "appview" } : null),
     scraped: fromAppView || (dbLink?.scraped ?? false),
     publishedDate: toDbDate(item.publishedAt) ?? dbLink?.publishedDate ?? null,
-    authors: item.byline ? [item.byline] : (dbLink?.authors ?? null),
+    authors: item.byline ? [item.byline] : dbLink?.authors ?? null,
     siteName: item.siteName ?? dbLink?.siteName ?? null,
     topics: dbLink?.topics ?? null,
   };
 };
 
-const emptyDenormalized = (
-  share: ShareRow,
-  userId: string,
-): LinkPost => ({
+const emptyDenormalized = (share: ShareRow, userId: string): LinkPost => ({
   id: uuidv7(),
   linkUrl: share.url,
   postUrl: "",
   postText: "",
-  postDate: toDbDate(share.eventTime) ?? toDbDate(new Date().toISOString()) ?? "",
+  postDate:
+    toDbDate(share.eventTime) ?? toDbDate(new Date().toISOString()) ?? "",
   postType: postType.enumValues[0], // "bluesky"
   postImages: [],
   actorUrl: profileUrl(share.actorHandle || share.actorDid),
@@ -377,6 +416,31 @@ const emptyDenormalized = (
 });
 
 /**
+ * `network.cosmik.card` is a bookmark on Semble. Render it as a bookmark card
+ * ("{actor} bookmarked this URL on Semble") linking to the Semble page for the
+ * bookmarked URL taken from the record (the raw, non-canonical URL).
+ */
+const cosmikCardToLinkPost = (share: ShareRow, base: LinkPost): LinkPost => {
+  let recordUrl = share.url; // fall back to the canonical URL
+  try {
+    const record = JSON.parse(share.record) as { url?: string };
+    if (typeof record.url === "string") recordUrl = record.url;
+  } catch {
+    // keep the canonical URL
+  }
+  const sembleUrl = `https://semble.so/url?id=${encodeURIComponent(recordUrl)}`;
+  return {
+    ...base,
+    postType: postType.enumValues[2], // "atbookmark"
+    postUrl: sembleUrl,
+    postText: `Bookmarked this on <a href="${sembleUrl}">Semble</a>.`,
+    actorUrl: `https://semble.so/profile/${
+      share.actorHandle || share.actorDid
+    }`,
+  };
+};
+
+/**
  * Map an AppView hydration ShareRow to Sill's `linkPostDenormalized` shape.
  *
  * - `app.bsky.feed.post`: a normal post or a quote. `actor*` is the sharer; a
@@ -384,6 +448,7 @@ const emptyDenormalized = (
  * - `app.bsky.feed.repost`: `actor*` becomes the original author (from
  *   `subject`) and the reposter moves to `repostActor*`, matching Sill's model
  *   where the card body is the original post with a "reposted by" banner.
+ * - `network.cosmik.card`: a Semble bookmark (see `cosmikCardToLinkPost`).
  *
  * Quoted-post cards and repost original-authors are only available when the
  * AppView resolved `subject` (in-network author); otherwise we fall back to a
@@ -391,9 +456,13 @@ const emptyDenormalized = (
  */
 export const shareRowToLinkPost = (
   share: ShareRow,
-  userId: string,
+  userId: string
 ): LinkPost => {
   const base = emptyDenormalized(share, userId);
+
+  if (share.collection === "network.cosmik.card") {
+    return cosmikCardToLinkPost(share, base);
+  }
 
   if (share.collection === "app.bsky.feed.repost") {
     // Absent or empty (`{}`) subject → unresolved original; render bare.
@@ -406,7 +475,10 @@ export const shareRowToLinkPost = (
       postUrl: postUrlFromAtUri(share.subject.atUri, share.subject.actorHandle),
       postText: serializeRecord(subjectRecord),
       postDate: toDbDate(subjectRecord?.createdAt) ?? base.postDate,
-      postImages: extractImagesFromRecord(subjectRecord, share.subject.actorDid),
+      postImages: extractImagesFromRecord(
+        subjectRecord,
+        share.subject.actorDid
+      ),
       actorUrl: profileUrl(share.subject.actorHandle || share.subject.actorDid),
       actorHandle: share.subject.actorHandle || share.subject.actorDid,
       actorName: share.subject.actorName ?? null,
@@ -432,21 +504,22 @@ export const shareRowToLinkPost = (
   if (share.subject && !isEmptyRecord(share.subject.record)) {
     const quoted = parseRecord(share.subject.record);
     post.quotedActorUrl = profileUrl(
-      share.subject.actorHandle || share.subject.actorDid,
+      share.subject.actorHandle || share.subject.actorDid
     );
-    post.quotedActorHandle = share.subject.actorHandle || share.subject.actorDid;
+    post.quotedActorHandle =
+      share.subject.actorHandle || share.subject.actorDid;
     post.quotedActorName = share.subject.actorName ?? null;
     post.quotedActorAvatarUrl = share.subject.actorAvatar ?? null;
     post.quotedPostUrl = postUrlFromAtUri(
       share.subject.atUri,
-      share.subject.actorHandle,
+      share.subject.actorHandle
     );
     post.quotedPostText = serializeRecord(quoted);
     post.quotedPostDate = toDbDate(quoted?.createdAt);
     post.quotedPostType = postType.enumValues[0]; // "bluesky"
     post.quotedPostImages = extractImagesFromRecord(
       quoted,
-      share.subject.actorDid,
+      share.subject.actorDid
     );
   }
 
@@ -461,7 +534,7 @@ export const shareRowToLinkPost = (
  * Mutates and returns `shares`.
  */
 export const resolveRepostSubjects = async (
-  shares: ShareRow[],
+  shares: ShareRow[]
 ): Promise<ShareRow[]> => {
   // Index every non-empty post/subject already present in the set, by at:// URI.
   const known = new Map<string, SubjectPost>();
@@ -526,7 +599,7 @@ export const resolveRepostSubjects = async (
           actorAvatar: r.subject?.actorAvatar,
         };
       }
-    }),
+    })
   );
 
   return shares;

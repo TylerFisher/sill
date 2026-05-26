@@ -132,9 +132,10 @@ const links = new Hono()
   // GET /api/links/author - Find links by author
   .get("/author", zValidator("query", FindLinksByAuthorSchema), async (c) => {
     const { author, page, pageSize } = c.req.valid("query");
+    const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByAuthor(author, page, pageSize);
+      const result = await findLinksByAuthor(author, page, pageSize, userId);
       return c.json(result);
     } catch (error) {
       console.error("Find links by author error:", error);
@@ -144,9 +145,10 @@ const links = new Hono()
   // GET /api/links/domain - Find links by domain
   .get("/domain", zValidator("query", FindLinksByDomainSchema), async (c) => {
     const { domain, page, pageSize } = c.req.valid("query");
+    const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByDomain(domain, page, pageSize);
+      const result = await findLinksByDomain(domain, page, pageSize, userId);
       return c.json(result);
     } catch (error) {
       console.error("Find links by domain error:", error);
