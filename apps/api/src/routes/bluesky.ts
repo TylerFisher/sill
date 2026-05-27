@@ -57,7 +57,7 @@ const completeV2Migration = async (did: string, request: Request) => {
       .where(eq(atprotoAuthSession.key, `${v1ClientId}::${did}`));
   });
 };
-import { getBlueskyLists } from "@sill/links";
+import { getBlueskyLists, seedViewer } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
 const AuthorizeSchema = z.object({
@@ -258,6 +258,12 @@ const bluesky = new Hono()
         const profile = await agent.getProfile({
           actor: oauthSession.did,
         });
+
+        // Register this DID as an AppView seed so its follow graph is indexed
+        // from the start. This replaces the old DB initial sync for Bluesky
+        // signups (the AppView serves the following timeline at read time);
+        // idempotent and best-effort, so fire-and-forget for login/connect too.
+        void seedViewer(oauthSession.did);
 
         // Handle login/signup flow (no existing user session)
         if (isLogin) {

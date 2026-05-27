@@ -343,78 +343,6 @@ export const getBlueskyList = async (
 };
 
 /**
- * Fetches new posts from Bluesky timeline and updates account with most recent post date.
- * @param userId ID for logged in user
- * @returns New posts from Bluesky timeline
- */
-export const getBlueskyTimeline = async (
-  account: typeof blueskyAccount.$inferSelect,
-  agent: Agent,
-) => {
-  async function getTimeline(cursor: string | undefined = undefined) {
-    const response = await agent.getTimeline({
-      limit: 100,
-      cursor,
-    });
-    const timeline = response.data.feed;
-    const checkDate = account?.mostRecentPostDate
-      ? new Date(
-          `${account.mostRecentPostDate.replace(" ", "T")}Z`,
-        ).toISOString()
-      : new Date(Date.now() - ONE_DAY_MS).toISOString();
-
-    let reachedEnd = false;
-    const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
-    for (const item of timeline) {
-      if (item.post.author.handle === account?.handle) continue;
-      if (
-        AppBskyFeedDefs.isReasonRepost(item.reason) &&
-        item.reason.by.handle === account?.handle
-      )
-        continue;
-
-      const postDate = AppBskyFeedDefs.isReasonRepost(item.reason)
-        ? new Date(item.reason.indexedAt).toISOString()
-        : new Date(item.post.indexedAt).toISOString();
-
-      if (postDate <= checkDate) {
-        reachedEnd = true;
-        break;
-      }
-      newPosts.push(item);
-    }
-
-    if (!reachedEnd && response.data.cursor) {
-      const nextPosts = await getTimeline(response.data.cursor);
-      newPosts.push(...nextPosts);
-    }
-    return newPosts;
-  }
-
-  try {
-    const timeline = await getTimeline();
-    if (timeline.length > 0) {
-      const firstPost = timeline[0];
-      await db
-        .update(blueskyAccount)
-        .set({
-          mostRecentPostDate: AppBskyFeedDefs.isReasonRepost(firstPost.reason)
-            ? firstPost.reason.indexedAt
-            : firstPost.post.indexedAt,
-        })
-        .where(eq(blueskyAccount.id, account.id));
-    }
-    return timeline;
-  } catch (e) {
-    console.error(
-      `Error fetching Bluesky timeline for ${account.handle}`,
-      e?.constructor?.name,
-    );
-    return [];
-  }
-};
-
-/**
  * Constructs a full URL for a Bluesky post
  * @param authorHandle Handle of the author of the post
  * @param postUri Full AT URI of the post
@@ -663,7 +591,6 @@ export const processBlueskyLink = async (
 export const getLinksFromBluesky = async (
   userId: string,
 ): Promise<ProcessedResult[]> => {
-  const start = new Date();
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
     with: {
@@ -675,20 +602,10 @@ export const getLinksFromBluesky = async (
   const agent = await getOrCreateAgent(account);
   if (!agent) return [];
 
-  const timelinePromise = getBlueskyTimeline(account, agent);
-  const timeline = await Promise.race([
-    timelinePromise,
-    new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeline fetch timeout")), 150000),
-    ),
-  ]).catch((e) => {
-    console.error("Error fetching timeline:", e?.constructor?.name);
-    return [];
-  });
-
-  const processedResults = (
-    await Promise.all(timeline.map(async (t) => processBlueskyLink(userId, t)))
-  ).filter((p) => p !== null);
+  // The AppView serves the Bluesky following timeline, so the worker no longer
+  // ingests it. Only Bluesky lists (custom feeds), which the AppView doesn't
+  // cover, are fetched below.
+  const processedResults: ProcessedResult[] = [];
 
   const subscribed = await isSubscribed(userId);
   if (subscribed !== "free") {
@@ -719,7 +636,6 @@ export const getLinksFromBluesky = async (
       );
     }
   }
-  const end = new Date();
   return processedResults;
 };
 

@@ -27,7 +27,7 @@ export {
   conflictUpdateSetAllColumns,
 } from "./links.js";
 export { getTimeline, getMergedOccurrences } from "./timeline.js";
-export { appViewEnabled } from "./appview.js";
+export { appViewEnabled, seedViewer } from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export {
   fetchHtmlViaProxy,

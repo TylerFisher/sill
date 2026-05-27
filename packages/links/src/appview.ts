@@ -103,6 +103,32 @@ const appViewGet = async <T>(
   return (await res.json()) as T;
 };
 
+/**
+ * Register a viewer DID as an AppView seed so their follow graph is indexed
+ * from signup, avoiding the cold-start round trip on their first feed request
+ * (see API.md `POST /v1/seeds`). Idempotent and best-effort — never throws, so
+ * callers can fire-and-forget without blocking auth.
+ */
+export const seedViewer = async (did: string): Promise<void> => {
+  const base = process.env.APPVIEW_API_URL;
+  const key = process.env.APPVIEW_API_KEY;
+  if (!base || !key || !did) return;
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/v1/seeds`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": key },
+      body: JSON.stringify({ dids: [did] }),
+      signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`AppView /v1/seeds returned ${res.status}: ${body}`);
+    }
+  } catch (e) {
+    console.error("AppView /v1/seeds failed:", did, e);
+  }
+};
+
 /** Collection NSIDs to request based on Sill's repost filter. */
 const collectionsForRepostFilter = (
   hideReposts: "include" | "exclude" | "only"
