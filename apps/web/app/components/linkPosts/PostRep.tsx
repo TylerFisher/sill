@@ -26,10 +26,10 @@ const PostRep = ({
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
-	// Source logo shown in the card corner. Both Semble bookmarks and Leaflet
-	// documents come through as "atbookmark"; distinguish by the document host
-	// (Leaflet docs live on *.leaflet.pub or a custom domain) and the
-	// `leaflet-source` marker the Leaflet card body always carries.
+	// Source logo shown in the card corner. Semble bookmarks, Sill bookmarks, and
+	// Leaflet documents all come through as "atbookmark"; distinguish by the
+	// document host (Semble/Leaflet) or a marker class the card body carries
+	// (`sill-bookmark` for Sill's own bookmarks, `leaflet-source` for Leaflet).
 	const sourceLogo =
 		post.postType === "bluesky"
 			? "/bluesky-logo.svg"
@@ -37,10 +37,12 @@ const PostRep = ({
 				? "/mastodon-logo.svg"
 				: post.postUrl?.includes("semble.so")
 					? "/semble-logo.svg"
-					: post.postUrl?.includes("leaflet.pub") ||
-							post.postText?.includes("leaflet-source")
-						? "/leaflet.svg"
-						: null;
+					: post.postText?.includes("sill-bookmark")
+						? "/sill.svg"
+						: post.postUrl?.includes("leaflet.pub") ||
+								post.postText?.includes("leaflet-source")
+							? "/leaflet.svg"
+							: null;
 
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
