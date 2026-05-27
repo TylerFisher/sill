@@ -17,8 +17,8 @@ export const loader = async ({ params, context, request }: Route.LoaderArgs) => 
 
 	return {
 		links,
-		instance: existingUser.mastodonAccounts[0].mastodonInstance.instance,
-		bsky: existingUser.blueskyAccounts[0].handle,
+		instance: existingUser.mastodonAccounts[0]?.mastodonInstance?.instance,
+		bsky: existingUser.blueskyAccounts[0]?.handle,
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		author,
