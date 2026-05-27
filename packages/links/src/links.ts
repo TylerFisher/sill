@@ -316,6 +316,12 @@ export interface FilterArgs {
   limit?: number;
   url?: string;
   minShares?: number;
+  /**
+   * The DB sources to merge alongside the AppView's Bluesky timeline: Mastodon
+   * (all) + Bluesky list posts, never the Bluesky following timeline (which the
+   * AppView already serves). Overrides the `service` postType filter.
+   */
+  appViewMerge?: boolean;
 }
 
 const DEFAULT_HIDE_REPOSTS = "include";
@@ -343,7 +349,29 @@ export const filterLinkOccurrences = async ({
   limit = PAGE_SIZE,
   url = undefined,
   minShares = undefined,
+  appViewMerge = false,
 }: FilterArgs) => {
+  // DB sources that complement the AppView Bluesky timeline, never the Bluesky
+  // following timeline (which the AppView serves). For service "bluesky" that's
+  // just Bluesky list posts; otherwise Mastodon (all) + Bluesky lists.
+  const blueskyListClause = and(
+    eq(linkPostDenormalized.postType, "bluesky"),
+    isNotNull(linkPostDenormalized.listId),
+  );
+  const serviceClause = appViewMerge
+    ? service === "bluesky"
+      ? blueskyListClause
+      : or(eq(linkPostDenormalized.postType, "mastodon"), blueskyListClause)
+    : service !== "all"
+      ? eq(linkPostDenormalized.postType, service)
+      : undefined;
+  // Match a requested URL regardless of a trailing slash — the AppView's
+  // canonical form and the DB's form can differ only by it.
+  const urlBase = url?.replace(/\/+$/, "");
+  const urlClause =
+    urlBase !== undefined
+      ? inArray(link.url, [urlBase, `${urlBase}/`])
+      : undefined;
   if (fetch) {
     try {
       const results = await fetchLinks(userId);
@@ -401,12 +429,10 @@ export const filterLinkOccurrences = async ({
       and(
         eq(linkPostDenormalized.userId, userId),
         gte(linkPostDenormalized.postDate, start.toISOString()),
-        url ? eq(link.url, url) : undefined,
+        urlClause,
         listRecord ? eq(linkPostDenormalized.listId, listRecord.id) : undefined,
         ...urlMuteClauses,
-        service !== "all"
-          ? eq(linkPostDenormalized.postType, service)
-          : undefined,
+        serviceClause,
         hideReposts === "exclude"
           ? isNull(linkPostDenormalized.repostActorHandle)
           : hideReposts === "only"
@@ -460,9 +486,7 @@ export const filterLinkOccurrences = async ({
               listRecord
                 ? eq(linkPostDenormalized.listId, listRecord.id)
                 : undefined,
-              service !== "all"
-                ? eq(linkPostDenormalized.postType, service)
-                : undefined,
+              serviceClause,
               hideReposts === "exclude"
                 ? isNull(linkPostDenormalized.repostActorHandle)
                 : hideReposts === "only"

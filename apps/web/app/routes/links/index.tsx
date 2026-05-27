@@ -243,7 +243,10 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					{(links) => (
 						<Box>
 							{links.map((link) => (
-								<div key={link.link?.url}>
+								// Include the loader key so cards remount when the feed
+								// reloads (e.g. filtering to a list), discarding any posts
+								// hydrated for a URL under the previous filters.
+								<div key={`${loaderData.key}:${link.link?.url}`}>
 									<LinkPost
 										linkPost={link}
 										instance={loaderData.instance}

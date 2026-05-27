@@ -44,6 +44,10 @@ export interface SubjectPost {
   actorHandle?: string;
   actorName?: string;
   actorAvatar?: string;
+  // Present when this subject is itself a quote/repost — the post it references.
+  // Mainly: a repost OF a quote post, where `subject` is the quote post and
+  // `subject.subject` is the quoted post. Resolution stops at this second level.
+  subject?: SubjectPost;
 }
 
 export interface ShareRow {
@@ -59,6 +63,11 @@ export interface ShareRow {
   actorAvatar?: string;
   giftUrl?: string;
   subject?: SubjectPost; // resolved referenced post for reposts & quotes
+  // Resolved by `resolveLeafletPublications`: the base URL and display name of a
+  // `site.standard.document`'s publication, used to build the document link and
+  // label the card ("From {title} on {publicationName}").
+  publicationUrl?: string;
+  publicationName?: string;
 }
 
 interface ListResponse {
@@ -429,14 +438,298 @@ const cosmikCardToLinkPost = (share: ShareRow, base: LinkPost): LinkPost => {
     // keep the canonical URL
   }
   const sembleUrl = `https://semble.so/url?id=${encodeURIComponent(recordUrl)}`;
+  const profileUrl = `https://semble.so/profile/${
+    share.actorHandle || share.actorDid
+  }`;
   return {
     ...base,
     postType: postType.enumValues[2], // "atbookmark"
-    postUrl: sembleUrl,
+    // Per-bookmarker URL so two people bookmarking the same link don't collapse
+    // into one card under `groupBy(postUrl)` (the cosmik record is often `{}`,
+    // so every bookmark would otherwise share the same Semble URL). The link to
+    // the Semble page for the URL itself lives in `postText`.
+    postUrl: profileUrl,
     postText: `Bookmarked this on <a href="${sembleUrl}">Semble</a>.`,
-    actorUrl: `https://semble.so/profile/${
-      share.actorHandle || share.actorDid
-    }`,
+    actorUrl: profileUrl,
+  };
+};
+
+/**
+ * `community.lexicon.bookmarks.bookmark` is a platform-agnostic bookmark of a
+ * URL. We don't name or link a platform — the bookmarked URL is the share's URL
+ * (shown by the link card) and the bookmarker is the share's actor.
+ */
+const communityBookmarkToLinkPost = (
+  share: ShareRow,
+  base: LinkPost
+): LinkPost => {
+  const profile = profileUrl(share.actorHandle || share.actorDid);
+  return {
+    ...base,
+    postType: postType.enumValues[2], // "atbookmark"
+    // Per-bookmarker URL so two people bookmarking the same link don't collapse
+    // into one card under `groupBy(postUrl)` (there's no per-bookmark permalink).
+    postUrl: profile,
+    postText: "Bookmarked this URL.",
+    actorUrl: profile,
+  };
+};
+
+// --- site.standard.document (leaflet content) ---
+
+// A `site.standard.document` is a long-form post (a blog entry). The AppView
+// indexes it as a "share" of any URL linked inside its body. We render the one
+// paragraph that links to the shared URL and point the card at the original
+// document (the publication's base URL + the document's path). Content can be
+// in several lexicons; `pub.leaflet.content` is the only one handled so far.
+
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+const escapeAttr = (s: string): string => escapeHtml(s).replace(/"/g, "&quot;");
+
+/** Only allow http(s) hrefs through (no `javascript:` etc.). */
+const safeHref = (uri: string): string | null =>
+  /^https?:\/\//i.test(uri) ? uri : null;
+
+interface LeafletFacet {
+  index?: { byteStart: number; byteEnd: number };
+  features?: { $type?: string; uri?: string }[];
+}
+
+const LEAFLET_FACET = "pub.leaflet.richtext.facet";
+
+/** Wrap a (already HTML-escaped) text run in the markup for its facet features. */
+const wrapLeafletFeatures = (
+  text: string,
+  features: { $type?: string; uri?: string }[]
+): string => {
+  let html = text;
+  let href: string | null = null;
+  for (const f of features) {
+    switch (f.$type) {
+      case `${LEAFLET_FACET}#link`:
+        if (typeof f.uri === "string") href = safeHref(f.uri);
+        break;
+      case `${LEAFLET_FACET}#bold`:
+        html = `<strong>${html}</strong>`;
+        break;
+      case `${LEAFLET_FACET}#italic`:
+        html = `<em>${html}</em>`;
+        break;
+      case `${LEAFLET_FACET}#code`:
+        html = `<code>${html}</code>`;
+        break;
+      case `${LEAFLET_FACET}#strikethrough`:
+        html = `<s>${html}</s>`;
+        break;
+      case `${LEAFLET_FACET}#underline`:
+        html = `<u>${html}</u>`;
+        break;
+      // highlight/footnote/mentions: rendered as plain text for now.
+    }
+  }
+  if (href) html = `<a href="${escapeAttr(href)}">${html}</a>`;
+  return html;
+};
+
+/**
+ * Render a leaflet rich-text block (plaintext + `pub.leaflet.richtext.facet[]`)
+ * to HTML. Facet indices are byte offsets into the UTF-8 text, so we slice a
+ * byte view and decode each run (a JS string slice would mis-index on any
+ * multi-byte character).
+ */
+const renderLeafletRichText = (
+  plaintext: string,
+  facets?: LeafletFacet[]
+): string => {
+  const bytes = new TextEncoder().encode(plaintext);
+  const decoder = new TextDecoder();
+  const slice = (start: number, end: number): string =>
+    escapeHtml(decoder.decode(bytes.slice(start, end))).replace(
+      /\n/g,
+      "<br />"
+    );
+
+  const valid = (facets ?? [])
+    .filter(
+      (f): f is Required<Pick<LeafletFacet, "index">> & LeafletFacet =>
+        !!f.index &&
+        Array.isArray(f.features) &&
+        f.index.byteEnd > f.index.byteStart
+    )
+    .sort((a, b) => a.index.byteStart - b.index.byteStart);
+
+  const out: string[] = [];
+  let cursor = 0;
+  for (const f of valid) {
+    const { byteStart, byteEnd } = f.index;
+    if (byteStart < cursor) continue; // skip overlapping facets
+    if (byteStart > cursor) out.push(slice(cursor, byteStart));
+    out.push(wrapLeafletFeatures(slice(byteStart, byteEnd), f.features ?? []));
+    cursor = byteEnd;
+  }
+  if (cursor < bytes.length) out.push(slice(cursor, bytes.length));
+  return out.join("");
+};
+
+const stripTrailingSlash = (u: string): string => u.replace(/\/+$/, "");
+
+/** Trailing-slash- and query-insensitive URL match, for locating a link facet. */
+const urlsMatchForFacet = (a: string, b: string): boolean => {
+  const na = stripTrailingSlash(a).toLowerCase();
+  const nb = stripTrailingSlash(b).toLowerCase();
+  if (na === nb) return true;
+  const bare = (u: string): string => {
+    try {
+      const x = new URL(u);
+      x.hash = "";
+      x.search = "";
+      return stripTrailingSlash(x.toString()).toLowerCase();
+    } catch {
+      return stripTrailingSlash(u).toLowerCase();
+    }
+  };
+  return bare(a) === bare(b);
+};
+
+// biome-ignore lint/suspicious/noExplicitAny: raw leaflet record JSON
+type LeafletRecord = any;
+
+/**
+ * Find the first leaflet block (text/header/blockquote — anything with
+ * `plaintext` + `facets`) whose facets link to `targetUrl`, and return it
+ * rendered to HTML. Handles both `linearDocument` and `canvas` pages (both
+ * carry blocks as `{ block: <inner> }`). Returns null when the content isn't
+ * `pub.leaflet.content` or no block links to the URL.
+ */
+const findLeafletLinkParagraph = (
+  record: LeafletRecord,
+  targetUrl: string
+): string | null => {
+  const content = record?.content;
+  if (!content || content.$type !== "pub.leaflet.content") return null;
+  const pages = Array.isArray(content.pages) ? content.pages : [];
+  for (const page of pages) {
+    const blocks = Array.isArray(page?.blocks) ? page.blocks : [];
+    for (const wrapper of blocks) {
+      const inner = wrapper?.block;
+      if (
+        !inner ||
+        typeof inner.plaintext !== "string" ||
+        !Array.isArray(inner.facets)
+      ) {
+        continue;
+      }
+      const links = inner.facets.some((f: LeafletFacet) =>
+        f?.features?.some(
+          (ft) =>
+            ft?.$type === `${LEAFLET_FACET}#link` &&
+            typeof ft.uri === "string" &&
+            urlsMatchForFacet(ft.uri, targetUrl)
+        )
+      );
+      if (links) return renderLeafletRichText(inner.plaintext, inner.facets);
+    }
+  }
+  return null;
+};
+
+/**
+ * Build the public document URL: the publication's base URL (resolved by
+ * `resolveLeafletPublications`, or an https `site` used directly) joined with
+ * the document's `path`. Returns null when no base URL is known.
+ */
+const buildLeafletDocUrl = (
+  record: LeafletRecord,
+  publicationUrl?: string
+): string | null => {
+  let base = publicationUrl;
+  if (!base) {
+    const site = typeof record?.site === "string" ? record.site : "";
+    if (/^https?:\/\//i.test(site)) base = site;
+  }
+  if (!base) return null;
+  const b = stripTrailingSlash(base);
+  const path = typeof record?.path === "string" ? record.path : "";
+  if (!path) return b;
+  return `${b}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
+/**
+ * Map a `site.standard.document` share to Sill's `linkPostDenormalized` shape:
+ * the card body is the paragraph that links to the shared URL (rendered rich
+ * text) plus a line linking to the full document on its publication (leaflet).
+ */
+const leafletDocumentToLinkPost = (
+  share: ShareRow,
+  base: LinkPost
+): LinkPost => {
+  let record: LeafletRecord = null;
+  try {
+    record = JSON.parse(share.record);
+  } catch {
+    // leave record null → bare fallback below
+  }
+  const docUrl = buildLeafletDocUrl(record, share.publicationUrl);
+  const title =
+    typeof record?.title === "string" && record.title ? record.title : "a post";
+  const docLink = docUrl
+    ? `<a href="${escapeAttr(docUrl)}">${escapeHtml(title)}</a>`
+    : escapeHtml(title);
+
+  const publication = escapeHtml(share.publicationName || "Leaflet");
+
+  const paragraph = record
+    ? findLeafletLinkParagraph(record, share.url)
+    : null;
+  // When the paragraph is found, quote it as a blockquote with a "from {doc}"
+  // line; otherwise a generic line still linking to the document. The
+  // `leaflet-source` class also flags the card for the Leaflet logo in PostRep.
+  const postText = paragraph
+    ? `<blockquote>${paragraph}</blockquote><p class="leaflet-source">From ${docLink} on ${publication}</p>`
+    : `<p class="leaflet-source">Linked to this in ${docLink} on ${publication}.</p>`;
+
+  return {
+    ...base,
+    postType: postType.enumValues[2], // "atbookmark" (non-bsky/mastodon collection)
+    // The card timestamp links to the document. Falls back to the author's
+    // profile only when the document URL can't be resolved.
+    postUrl: docUrl ?? base.actorUrl,
+    postText,
+    actorUrl: profileUrl(share.actorHandle || share.actorDid),
+  };
+};
+
+type QuotedFields = Pick<
+  LinkPost,
+  | "quotedActorUrl"
+  | "quotedActorHandle"
+  | "quotedActorName"
+  | "quotedActorAvatarUrl"
+  | "quotedPostUrl"
+  | "quotedPostText"
+  | "quotedPostDate"
+  | "quotedPostType"
+  | "quotedPostImages"
+>;
+
+/** Build Sill's `quoted*` fields from a resolved quoted post (a SubjectPost). */
+const quotedFields = (subject: SubjectPost): QuotedFields => {
+  const quoted = parseRecord(subject.record);
+  return {
+    quotedActorUrl: profileUrl(subject.actorHandle || subject.actorDid),
+    quotedActorHandle: subject.actorHandle || subject.actorDid,
+    quotedActorName: subject.actorName ?? null,
+    quotedActorAvatarUrl: subject.actorAvatar ?? null,
+    quotedPostUrl: postUrlFromAtUri(subject.atUri, subject.actorHandle),
+    quotedPostText: serializeRecord(quoted),
+    quotedPostDate: toDbDate(quoted?.createdAt),
+    quotedPostType: postType.enumValues[0], // "bluesky"
+    quotedPostImages: extractImagesFromRecord(quoted, subject.actorDid),
   };
 };
 
@@ -447,8 +740,14 @@ const cosmikCardToLinkPost = (share: ShareRow, base: LinkPost): LinkPost => {
  *   `subject` (if present) is the quoted post → `quoted*` fields.
  * - `app.bsky.feed.repost`: `actor*` becomes the original author (from
  *   `subject`) and the reposter moves to `repostActor*`, matching Sill's model
- *   where the card body is the original post with a "reposted by" banner.
+ *   where the card body is the original post with a "reposted by" banner. If
+ *   the reposted post is itself a quote, its quoted post (`subject.subject`)
+ *   fills the `quoted*` fields.
  * - `network.cosmik.card`: a Semble bookmark (see `cosmikCardToLinkPost`).
+ * - `community.lexicon.bookmarks.bookmark`: a platform-agnostic bookmark (see
+ *   `communityBookmarkToLinkPost`).
+ * - `site.standard.document`: a long-form post linking to the URL in its body
+ *   (see `leafletDocumentToLinkPost`).
  *
  * Quoted-post cards and repost original-authors are only available when the
  * AppView resolved `subject` (in-network author); otherwise we fall back to a
@@ -464,10 +763,23 @@ export const shareRowToLinkPost = (
     return cosmikCardToLinkPost(share, base);
   }
 
+  if (share.collection === "community.lexicon.bookmarks.bookmark") {
+    return communityBookmarkToLinkPost(share, base);
+  }
+
+  if (share.collection === "site.standard.document") {
+    return leafletDocumentToLinkPost(share, base);
+  }
+
   if (share.collection === "app.bsky.feed.repost") {
     // Absent or empty (`{}`) subject → unresolved original; render bare.
     if (!share.subject || isEmptyRecord(share.subject.record)) return base;
     const subjectRecord = parseRecord(share.subject.record);
+    // Repost OF a quote post: the quoted post is the subject's own subject.
+    const nestedQuote =
+      share.subject.subject && !isEmptyRecord(share.subject.subject.record)
+        ? quotedFields(share.subject.subject)
+        : null;
     return {
       ...base,
       // original author becomes the primary actor; the card body is the
@@ -488,6 +800,7 @@ export const shareRowToLinkPost = (
       repostActorHandle: share.actorHandle || share.actorDid,
       repostActorName: share.actorName ?? null,
       repostActorAvatarUrl: share.actorAvatar ?? null,
+      ...nestedQuote,
     };
   }
 
@@ -502,25 +815,7 @@ export const shareRowToLinkPost = (
   };
 
   if (share.subject && !isEmptyRecord(share.subject.record)) {
-    const quoted = parseRecord(share.subject.record);
-    post.quotedActorUrl = profileUrl(
-      share.subject.actorHandle || share.subject.actorDid
-    );
-    post.quotedActorHandle =
-      share.subject.actorHandle || share.subject.actorDid;
-    post.quotedActorName = share.subject.actorName ?? null;
-    post.quotedActorAvatarUrl = share.subject.actorAvatar ?? null;
-    post.quotedPostUrl = postUrlFromAtUri(
-      share.subject.atUri,
-      share.subject.actorHandle
-    );
-    post.quotedPostText = serializeRecord(quoted);
-    post.quotedPostDate = toDbDate(quoted?.createdAt);
-    post.quotedPostType = postType.enumValues[0]; // "bluesky"
-    post.quotedPostImages = extractImagesFromRecord(
-      quoted,
-      share.subject.actorDid
-    );
+    Object.assign(post, quotedFields(share.subject));
   }
 
   return post;
@@ -598,6 +893,55 @@ export const resolveRepostSubjects = async (
           actorName: r.subject?.actorName,
           actorAvatar: r.subject?.actorAvatar,
         };
+      }
+    })
+  );
+
+  return shares;
+};
+
+/**
+ * Resolve the publication base URL for `site.standard.document` shares so the
+ * card can link to the original document (base URL + the document's `path`).
+ * The record's `site` is either an https URL (used directly) or an at:// URI to
+ * a `site.standard.publication` record, whose `url` we fetch from Slingshot.
+ * One fetch per distinct publication. Mutates and returns `shares`.
+ */
+export const resolveLeafletPublications = async (
+  shares: ShareRow[]
+): Promise<ShareRow[]> => {
+  const toFetch = new Map<string, ShareRow[]>(); // publication at-uri → shares
+  for (const s of shares) {
+    if (s.collection !== "site.standard.document") continue;
+    let site: string | undefined;
+    try {
+      site = (JSON.parse(s.record) as { site?: string })?.site;
+    } catch {
+      site = undefined;
+    }
+    if (!site) continue;
+    if (/^https?:\/\//i.test(site)) {
+      s.publicationUrl = site; // path appends to the site directly
+    } else if (site.startsWith("at://")) {
+      const queued = toFetch.get(site);
+      if (queued) queued.push(s);
+      else toFetch.set(site, [s]);
+    }
+  }
+
+  await Promise.all(
+    Array.from(toFetch.entries()).map(async ([uri, rows]) => {
+      const record = await fetchRecordFromSlingshot(uri);
+      if (!record) return;
+      let pub: { url?: string; name?: string } = {};
+      try {
+        pub = JSON.parse(record) as { url?: string; name?: string };
+      } catch {
+        pub = {};
+      }
+      for (const r of rows) {
+        if (pub.url) r.publicationUrl = pub.url;
+        if (pub.name) r.publicationName = pub.name;
       }
     })
   );

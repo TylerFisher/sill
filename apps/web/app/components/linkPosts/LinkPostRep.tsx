@@ -110,8 +110,10 @@ const LinkPostRep = ({
 	if (!linkPost.link) return null;
 	const linkUrl = linkPost.link.url;
 	const [open, setOpen] = useState(autoExpand);
-	// Posts may arrive with the row (DB paths) or be hydrated on demand when the
-	// card is first expanded (AppView timeline). `requested` guards a single load.
+	// Posts arrive with the row (DB/list feeds, eager) or are hydrated on demand
+	// when the card is expanded (AppView feeds, `requested` guards one load).
+	// The parent keys cards by the loader run, so this state remounts fresh on
+	// every filter change — a URL shared by two feeds won't keep stale posts.
 	const [posts, setPosts] = useState<MostRecentLinkPosts["posts"]>(
 		linkPost.posts ?? [],
 	);

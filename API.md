@@ -126,6 +126,10 @@ interface SubjectPost {
   actorHandle?: string;
   actorName?: string;
   actorAvatar?: string;
+  subject?: SubjectPost; // present when THIS subject is itself a quote/repost — the post it
+                         // in turn references. Mainly: a repost OF a quote post, where
+                         // `subject` is the quote post and `subject.subject` is the quoted
+                         // post, so you can render the quoted content inside the reposted card.
 }
 ```
 
@@ -277,7 +281,7 @@ Prometheus exposition format.
 - `app.bsky.feed.post` — a normal post, or a **quote post**. `record.text` is the author's own words. If it's a quote, `subject` carries the quoted post (its `record`, author, avatar) — render the author's text with the quoted post embedded beneath.
 - `app.bsky.feed.repost` — a repost. Here `record` is just the *repost* pointer (`{ subject: { uri, cid }, createdAt }`) with no text of its own; the **reposted post is in `subject`** (its `record` + author). Render "@actor reposted" above the `subject` post card.
 
-**`subject` (reposts & quotes):** the AppView resolves the referenced post for you — `subject.record` is the full post (JSON.parse it the same as `record`), with `subject.actorDid`/`actorHandle`/`actorName`/`actorAvatar` for its author. It's **absent** only when that post isn't indexed (out-of-network author); in that case fall back to the bare pointer in `record.subject.uri` / the embed. Resolution is one level deep — a quoted post that itself quotes another isn't recursively expanded.
+**`subject` (reposts & quotes):** the AppView resolves the referenced post for you — `subject.record` is the full post (JSON.parse it the same as `record`), with `subject.actorDid`/`actorHandle`/`actorName`/`actorAvatar` for its author. It's **absent** only when that post isn't indexed (out-of-network author); in that case fall back to the bare pointer in `record.subject.uri` / the embed. Resolution goes up to **two levels**: a share's `subject`, plus that subject's own `subject` when the subject is itself a quote/repost — e.g. a **repost of a quote post** resolves both the quote post (`subject`) and the quoted post (`subject.subject`). It stops there; a third level isn't expanded.
 
 So a typical URL card shows: the URL's `title`/`imageUrl`/`siteName` (from the trending/latest item), then a row of the network members who shared it (from hydration: avatar + name + link to their post), and optionally a "read free" link if `giftUrl` is present.
 
