@@ -1,4 +1,5 @@
 import { Box, Card, Inset } from "@radix-ui/themes";
+import { useState } from "react";
 import { useClientMetadata } from "~/hooks/useClientMetadata";
 import { useTheme } from "~/routes/resources/theme-switch";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
@@ -67,21 +68,31 @@ const LinkRep = ({
 			}
 		: link;
 
+	// When the inline tweet embed fails (e.g. deleted/protected tweet causing
+	// react-tweet to throw on a malformed syndication response), fall back to
+	// the regular link card with its image — gated here so the negative-margin
+	// Inset around the embed isn't rendered for the fallback.
+	const [xEmbedFailed, setXEmbedFailed] = useState(false);
+	const isTweetHost =
+		url.hostname === "twitter.com" || url.hostname === "x.com";
+	const showXEmbed = isTweetHost && layout === "default" && !xEmbedFailed;
+
 	return (
 		<WrapperComponent layout={layout}>
-			<LinkImage link={effectiveLink} url={url} layout={layout} />
+			{!showXEmbed && (
+				<LinkImage link={effectiveLink} url={url} layout={layout} />
+			)}
 			{(url.hostname === "www.youtube.com" || url.hostname === "youtu.be") &&
 				layout === "default" && (
 					<Inset mb="-4" className={styles.inset}>
 						<YoutubeEmbed url={url} />
 					</Inset>
 				)}
-			{(url.hostname === "twitter.com" || url.hostname === "x.com") &&
-				layout === "default" && (
-					<Inset mt="-5" className={styles.inset}>
-						<XEmbed url={url} />
-					</Inset>
-				)}
+			{showXEmbed && (
+				<Inset mt="-5" className={styles.inset}>
+					<XEmbed url={url} onError={() => setXEmbedFailed(true)} />
+				</Inset>
+			)}
 			<Box position="relative" mb={layout === "default" ? "5" : "0"}>
 				{layout === "default" && (
 					<DisplayHost

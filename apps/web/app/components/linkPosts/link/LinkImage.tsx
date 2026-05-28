@@ -10,12 +10,14 @@ interface LinkImageProps {
 
 const LinkImage = ({ link, url, layout }: LinkImageProps) => {
 	if (!link) return null;
+	// Twitter/X gating is handled by LinkRep so it can swap to the image when
+	// the inline tweet embed fails; here we only need to skip YouTube hosts
+	// (the YouTube embed always replaces the static image).
 	const shouldShowMainImage =
 		link.imageUrl &&
 		layout === "default" &&
 		url.hostname !== "www.youtube.com" &&
-		url.hostname !== "youtu.be" &&
-		url.hostname !== "twitter.com";
+		url.hostname !== "youtu.be";
 
 	return (
 		<>
