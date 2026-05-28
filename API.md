@@ -142,6 +142,7 @@ All paginated endpoints accept the shared params: `viewer`, `days` (or `hours` f
 ### `GET /v1/trending`
 Top URLs by number of distinct accounts in the viewer's network who shared them.
 - **Required**: `viewer`.
+- **Optional**: `minShares` (int, 1–1000, default 1) — drop URLs whose distinct-sharer count is below this. Use to surface only URLs that have caught on (e.g. `?minShares=3` for "shared by at least 3 people in my network"). Default 1 = no filter. Filtering is applied **before** ranking and pagination, so the cursor stays consistent across pages.
 - **Returns**: `{ items: UrlItem[]; cursor?; cold? }` sorted by `shares` desc, then recency.
 
 ```
@@ -182,6 +183,7 @@ GET /v1/network-trending?days=1&limit=10
 ### `GET /v1/latest`
 Same shape as trending — including `shares` (distinct accounts in the network who shared the URL within the `days`/`hours` window) and the `avatars` face-pile — but ordered by recency (most recent share first) rather than share count. Items carry `eventTime` (the latest share time) in place of `mostRecent`.
 - **Required**: `viewer`.
+- **Optional**: `minShares` (int, 1–1000, default 1) — same semantics as on `/v1/trending`. Useful here to keep the recency feed from being dominated by URLs only one person has posted (e.g. `?minShares=2`). Default 1 = no filter.
 
 ### `GET /v1/search`
 Keyword search over shared URLs. Matches whole tokens (case-insensitive, all tokens required) against post text, scraped title, and scraped description — or the query as a substring of the URL.

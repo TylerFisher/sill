@@ -14,6 +14,7 @@ import {
 	Link as RLink,
 	RadioGroup,
 	Separator,
+	Spinner,
 	Text,
 	TextField,
 } from "@radix-ui/themes";
@@ -73,6 +74,14 @@ const NotificationGroup = ({
 	);
 	const testFetcher = useFetcher();
 	const deleteFetcher = useFetcher();
+	// Track when the filters have changed since the last test so the previous
+	// count is hidden until the user re-runs Test (the count is approximate,
+	// not auto-updated — testing is a manual step now).
+	const [testStale, setTestStale] = useState(true);
+	const testing = testFetcher.state !== "idle";
+	const hasValidQueries = queryItems.some(
+		(q) => q.category && q.operator && q.value,
+	);
 
 	const { dispatch } = useNotificationsDispatch();
 
@@ -95,6 +104,7 @@ const NotificationGroup = ({
 		const newQueryItems = [...validItems];
 		newQueryItems[index] = item;
 		setQueryItems(newQueryItems);
+		setTestStale(true);
 
 		dispatch({
 			type: "changed",
@@ -103,19 +113,23 @@ const NotificationGroup = ({
 				query: newQueryItems,
 			},
 		});
-
-		const formData = new FormData();
-		formData.append("queries", JSON.stringify(newQueryItems));
-		testFetcher.submit(formData, {
-			method: "POST",
-			action: "/notifications/test",
-		});
 	};
 
 	const onQueryItemRemove = (index: number) => {
 		const newQueryItems = [...queryItems];
 		newQueryItems.splice(index, 1);
 		setQueryItems(newQueryItems);
+		setTestStale(true);
+	};
+
+	const runTest = () => {
+		const formData = new FormData();
+		formData.append("queries", JSON.stringify(queryItems));
+		testFetcher.submit(formData, {
+			method: "POST",
+			action: "/notifications/test",
+		});
+		setTestStale(false);
 	};
 	return (
 		<Form method="POST" action="/notifications" {...getFormProps(form)}>
@@ -255,16 +269,42 @@ const NotificationGroup = ({
 						</Box>
 					</Card>
 				</Box>
-				{(testFetcher.data || testFetcher.data === 0) && (
-					<Box width="100%" my="4">
-						<strong>
-							{testFetcher.data} result{testFetcher.data !== 1 && "s"}
-						</strong>{" "}
-						found from the last 24 hours.{" "}
-						{testFetcher.data === 0 &&
-							"Adjust your filters for better results."}
-					</Box>
-				)}
+				<Box width="100%" my="4">
+					<Flex align="center" gap="3" wrap="wrap">
+						<Button
+							type="button"
+							variant="soft"
+							onClick={runTest}
+							disabled={testing || !hasValidQueries}
+						>
+							{testing ? (
+								<>
+									<Spinner /> Testing filters…
+								</>
+							) : (
+								"Test filters"
+							)}
+						</Button>
+						{testing && (
+							<Text size="2" color="gray">
+								This can take a few seconds.
+							</Text>
+						)}
+						{!testing &&
+							!testStale &&
+							(testFetcher.data || testFetcher.data === 0) && (
+								<Text size="2">
+									<strong>
+										~{testFetcher.data} result
+										{testFetcher.data !== 1 && "s"}
+									</strong>{" "}
+									found in the last 24 hours.{" "}
+									{testFetcher.data === 0 &&
+										"Adjust your filters for better results."}
+								</Text>
+							)}
+					</Flex>
+				</Box>
 				<Flex direction="row" gap="2">
 					<Button
 						type="submit"

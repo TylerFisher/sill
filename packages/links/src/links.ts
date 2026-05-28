@@ -31,6 +31,8 @@ import {
   mutePhrase,
   networkTopTenView,
   postType,
+  type Link,
+  type LinkPost,
   type MostRecentLinkPosts,
   type NotificationQuery,
 } from "@sill/schema";
@@ -53,6 +55,8 @@ import {
   fetchByDomain,
   fetchHydration,
   fetchNetworkTrending,
+  fetchUrlPage,
+  resolveLeafletPublications,
   resolveRepostSubjects,
   type ShareRow,
   shareRowToLinkPost,
@@ -61,6 +65,7 @@ import {
   type UrlItem,
   urlItemToLink,
 } from "./appview.js";
+import { getMergedOccurrences } from "./timeline.js";
 
 const PAGE_SIZE = 10;
 export interface ProcessedResult {
@@ -322,6 +327,12 @@ export interface FilterArgs {
    * AppView already serves). Overrides the `service` postType filter.
    */
   appViewMerge?: boolean;
+  /**
+   * Override the per-AppView-call page size (default 10, the feed value;
+   * AppView caps at 100). Heavier sweeps (notifications) pass 100 to cover
+   * their larger candidate set in fewer round trips.
+   */
+  appViewPageLimit?: number;
 }
 
 const DEFAULT_HIDE_REPOSTS = "include";
@@ -516,232 +527,492 @@ export const filterLinkOccurrences = async ({
     });
 };
 
+// --- Notification evaluation ---
+//
+// Source-aware: notifications query a mix of the AppView (Bluesky following)
+// and the DB (Mastodon + Bluesky lists). The AppView already applies the
+// viewer's combined mute lists via `/v1/preferences`; DB-side posts go through
+// Sill's `mute_phrase` here in memory. The query DSL is parsed once into
+// structured filters, then applied in two phases: source-routing (decides
+// where to fetch from, and which conditions can be pushed server-side), and
+// in-memory pruning (URL/post-level filters that the AppView can't express).
+//
+// Caps the candidate set per evaluation. `getMergedOccurrences` will walk
+// AppView pages up to this many results; seenLinks dedupes across cycles, so
+// even high-volume groups settle into a small steady-state per evaluation.
+const NOTIFICATION_FETCH_LIMIT = 200;
+
+interface ParsedNotificationFilters {
+  serviceEquals?: "bluesky" | "mastodon";
+  serviceExcludes: Set<"bluesky" | "mastodon" | "atbookmark">;
+  listIdEquals?: string;
+  listIdExcludes: Set<string>;
+  minShares?: number;
+  /** url/link/post/author/repost — applied in-memory below. */
+  textQueries: NotificationQuery[];
+}
+
+const parseNotificationFilters = (
+  queries: NotificationQuery[],
+): ParsedNotificationFilters => {
+  const filters: ParsedNotificationFilters = {
+    serviceExcludes: new Set(),
+    listIdExcludes: new Set(),
+    textQueries: [],
+  };
+  for (const q of queries) {
+    const id = q.category.id;
+    if (id === "service" && typeof q.value === "string") {
+      const v = postType.enumValues.find((pv) => pv === q.value);
+      if (!v) continue;
+      if (q.operator === "equals" && (v === "bluesky" || v === "mastodon")) {
+        filters.serviceEquals = v;
+      } else if (q.operator === "excludes") {
+        filters.serviceExcludes.add(v);
+      }
+    } else if (id === "list" && typeof q.value === "string") {
+      if (q.operator === "equals") filters.listIdEquals = q.value;
+      else if (q.operator === "excludes") filters.listIdExcludes.add(q.value);
+    } else if (id === "shares" && typeof q.value === "number") {
+      // The original SQL applied every shares operator as a lower bound (`>=`),
+      // so equals/>=/> all map to the same minShares — preserved here.
+      filters.minShares = q.value;
+    } else if (
+      id === "url" ||
+      id === "link" ||
+      id === "post" ||
+      id === "author" ||
+      id === "repost"
+    ) {
+      filters.textQueries.push(q);
+    }
+  }
+  return filters;
+};
+
+/**
+ * Build a `/v1/search` query from the notification's text-contains filters
+ * (url/link/post). Routes notifications with text terms to the AppView's
+ * search endpoint instead of walking `/v1/latest` and filtering in memory.
+ * Returns undefined when no contains-style text filter is present, in which
+ * case the caller falls back to `/v1/latest`.
+ *
+ * NOTE on semantics: `/v1/search` matches **whole tokens** in post text /
+ * title / description (URL substring still works as expected). Sill's
+ * notification "contains" is substring, so a post containing "policlimate"
+ * doesn't match a `"climate"` filter via `/v1/search`. The in-memory
+ * `matchesTextQuery` runs after to apply Sill's substring semantics; the
+ * residual gap is Bluesky-only posts that are substring-but-not-whole-token
+ * matches (DB merge with ilike still catches Mastodon/list posts).
+ */
+const SEARCH_Q_MIN_LENGTH = 2;
+const SEARCH_Q_MAX_LENGTH = 256;
+
+const searchQueryFromFilters = (
+  filters: ParsedNotificationFilters,
+): string | undefined => {
+  const terms = filters.textQueries
+    .filter(
+      (q) =>
+        q.operator === "contains" &&
+        (q.category.id === "url" ||
+          q.category.id === "link" ||
+          q.category.id === "post") &&
+        typeof q.value === "string" &&
+        q.value.trim().length > 0,
+    )
+    .map((q) => String(q.value).trim());
+  if (terms.length === 0) return undefined;
+  // `/v1/search` already AND-combines tokens across post text / title /
+  // description, so multiple contains-terms join naturally.
+  const joined = terms.join(" ").slice(0, SEARCH_Q_MAX_LENGTH);
+  return joined.length >= SEARCH_Q_MIN_LENGTH ? joined : undefined;
+};
+
+const includesCi = (h: string | null | undefined, n: string): boolean =>
+  !!h && h.toLowerCase().includes(n.toLowerCase());
+
+const distinctActorsInPosts = (posts: LinkPost[]): number => {
+  const ids = new Set<string>();
+  for (const p of posts) {
+    const id = p.repostActorHandle ?? p.actorHandle;
+    if (id) ids.add(id);
+  }
+  return ids.size;
+};
+
+/**
+ * Rebuild a result after its `posts` array has been pruned so the share count
+ * and most-recent date track the post set that's actually being delivered.
+ * Without this, the minShares safety net below would compare against stale
+ * pre-prune counts.
+ */
+const rebuildItem = <T extends { posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
+  item: T,
+  posts: LinkPost[],
+): T => {
+  const sorted = [...posts].sort(
+    (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+  );
+  const mostRecent = sorted[0]
+    ? new Date(`${sorted[0].postDate}Z`)
+    : item.mostRecentPostDate;
+  return {
+    ...item,
+    posts: sorted,
+    uniqueActorsCount: distinctActorsInPosts(sorted),
+    mostRecentPostDate: mostRecent,
+  };
+};
+
+const applySillMutePhrases = <T extends { link: Link | null; posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
+  items: T[],
+  phrases: string[],
+): T[] => {
+  if (phrases.length === 0) return items;
+  const out: T[] = [];
+  for (const item of items) {
+    const urlMuted = phrases.some(
+      (p) =>
+        includesCi(item.link?.url, p) ||
+        includesCi(item.link?.title, p) ||
+        includesCi(item.link?.description, p),
+    );
+    if (urlMuted) continue;
+    const posts = (item.posts ?? []).filter(
+      (post) =>
+        !phrases.some(
+          (p) =>
+            includesCi(post.postText, p) ||
+            includesCi(post.postUrl, p) ||
+            includesCi(post.actorName, p) ||
+            includesCi(post.actorHandle, p) ||
+            includesCi(post.quotedPostText, p) ||
+            includesCi(post.quotedActorName, p) ||
+            includesCi(post.quotedActorHandle, p) ||
+            includesCi(post.repostActorName, p) ||
+            includesCi(post.repostActorHandle, p),
+        ),
+    );
+    if (posts.length === 0) continue;
+    out.push(rebuildItem(item, posts));
+  }
+  return out;
+};
+
+const applyServiceListFilters = <T extends { posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
+  items: T[],
+  filters: ParsedNotificationFilters,
+): T[] => {
+  const { serviceEquals, serviceExcludes, listIdEquals, listIdExcludes } =
+    filters;
+  const noPostLevel =
+    !serviceEquals &&
+    serviceExcludes.size === 0 &&
+    !listIdEquals &&
+    listIdExcludes.size === 0;
+  if (noPostLevel) return items;
+  const out: T[] = [];
+  for (const item of items) {
+    const posts = (item.posts ?? []).filter((p) => {
+      if (serviceEquals && p.postType !== serviceEquals) return false;
+      if (serviceExcludes.has(p.postType)) return false;
+      if (listIdEquals && p.listId !== listIdEquals) return false;
+      if (p.listId && listIdExcludes.has(p.listId)) return false;
+      return true;
+    });
+    if (posts.length === 0) continue;
+    out.push(rebuildItem(item, posts));
+  }
+  return out;
+};
+
+const matchesTextQuery = (
+  item: { link: Link | null; posts?: LinkPost[] },
+  q: NotificationQuery,
+): boolean => {
+  if (typeof q.value !== "string") return true;
+  const op = q.operator;
+  const needle = q.value;
+  let haystacks: (string | null | undefined)[];
+  switch (q.category.id) {
+    case "url":
+      haystacks = [item.link?.url];
+      break;
+    case "link":
+      haystacks = [item.link?.title, item.link?.description];
+      break;
+    case "post":
+      haystacks = (item.posts ?? []).map((p) => p.postText);
+      break;
+    case "author":
+      haystacks = (item.posts ?? []).flatMap((p) => [
+        p.actorName,
+        p.actorHandle,
+      ]);
+      break;
+    case "repost":
+      haystacks = (item.posts ?? []).flatMap((p) => [
+        p.repostActorName,
+        p.repostActorHandle,
+      ]);
+      break;
+    default:
+      return true;
+  }
+  if (op === "equals") return haystacks.some((h) => !!h && h === needle);
+  if (op === "contains") return haystacks.some((h) => includesCi(h, needle));
+  // `excludes`: NONE of the haystacks contain the needle (matches SQL "link"
+  // semantics; tightens the buggier "any-doesn't-contain" SQL for author/repost).
+  if (op === "excludes") return haystacks.every((h) => !includesCi(h, needle));
+  return true;
+};
+
 export const evaluateNotifications = async (
   userId: string,
   queries: NotificationQuery[],
   seenLinks: string[] = [],
   createdAt?: Date,
+  /**
+   * Cap the candidate set this evaluation pulls. Defaults to the full sweep
+   * for production notifications; the test/preview endpoint passes a smaller
+   * value so an interactive UI ping is a single small fetch + hydration
+   * instead of the full two-page walk.
+   */
+  candidateLimit: number = NOTIFICATION_FETCH_LIMIT,
 ) => {
   const start = createdAt
     ? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
     : new Date(Date.now() - ONE_DAY_MS);
-  const mutePhrases = await getMutePhrases(userId);
-  const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-    notIlike(link.url, `%${phrase.phrase}%`),
-    notIlike(link.title, `%${phrase.phrase}%`),
-    notIlike(link.description, `%${phrase.phrase}%`),
-  ]);
-  const postMuteCondition =
-    mutePhrases.length > 0
-      ? sql`CASE WHEN ${or(
-          ...mutePhrases.flatMap((phrase) => [
-            ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-          ]),
-        )} THEN NULL ELSE 1 END`
-      : sql`1`;
+  const timeMs = Date.now() - start.getTime();
+  const filters = parseNotificationFilters(queries);
+  const seen = new Set(seenLinks);
 
-  const linkSQLQueries: (SQL | undefined)[] = [];
-  const postSQLQueries: (SQL | undefined)[] = [];
-  for (const query of queries) {
-    if (query.category.id === "url" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        linkSQLQueries.push(eq(link.url, query.value));
-      }
-      if (query.operator === "contains") {
-        linkSQLQueries.push(ilike(link.url, `%${query.value}%`));
-      }
-      if (query.operator === "excludes") {
-        linkSQLQueries.push(notIlike(link.url, `%${query.value}%`));
-      }
-    }
+  // Pick the source. A list filter or `service=mastodon` restricts to data the
+  // AppView doesn't have (lists are DB-stored; Mastodon never reached the
+  // AppView), so those go straight to the DB. Everything else routes through
+  // the merged AppView + DB path. `minShares` is applied to the combined count
+  // (post-merge) — never pushed to the AppView, since pre-filtering by
+  // Bluesky-only share count would drop URLs whose combined count crosses the
+  // threshold via Mastodon or Bluesky-list contributions.
+  const useDbOnly =
+    filters.listIdEquals !== undefined ||
+    filters.serviceEquals === "mastodon";
 
-    if (query.category.id === "link" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        linkSQLQueries.push(
-          or(eq(link.title, query.value), eq(link.description, query.value)),
-        );
-      }
-      if (query.operator === "contains") {
-        linkSQLQueries.push(
-          or(
-            ilike(link.title, `%${query.value}%`),
-            ilike(link.description, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        linkSQLQueries.push(
-          and(
-            notIlike(link.title, `%${query.value}%`),
-            notIlike(link.description, `%${query.value}%`),
-          ),
-        );
-      }
-    }
+  // Match the AppView per-page size to the candidate cap (clamped to the
+  // AppView's 1–100 range). Small caps (test/preview) avoid over-fetching;
+  // the full sweep uses 100/page so the 200-URL slice fits in 2 round trips.
+  const appViewPageLimit = Math.min(100, Math.max(10, candidateLimit));
 
-    if (query.category.id === "post" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(eq(linkPostDenormalized.postText, query.value));
-      }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          ilike(linkPostDenormalized.postText, `%${query.value}%`),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          notIlike(linkPostDenormalized.postText, `%${query.value}%`),
-        );
-      }
-    }
+  let candidates;
+  if (useDbOnly) {
+    candidates = await filterLinkOccurrences({
+      userId,
+      service: filters.serviceEquals ?? "all",
+      selectedList: filters.listIdEquals ?? "all",
+      time: timeMs,
+      hideReposts: "include",
+      page: 1,
+      fetch: false,
+      limit: candidateLimit,
+      minShares: filters.minShares,
+    });
+  } else {
+    // Route text-search notifications to `/v1/search` (set via args.query —
+    // `fetchUrlPage` already maps that to the search endpoint). The DB side
+    // of the merge uses the same query for its substring ilike, which catches
+    // substring-but-not-whole-token matches the AppView's tokenizer skips.
+    const searchQuery = searchQueryFromFilters(filters);
+    candidates = await getMergedOccurrences({
+      userId,
+      service: filters.serviceEquals ?? "all",
+      selectedList: "all",
+      time: timeMs,
+      hideReposts: "include",
+      // Recency-sort so the AppView page walk samples the freshest URLs first.
+      // The polling loop + seenLinks naturally process new activity each cycle;
+      // a popularity sort would bias the candidate set toward already-popular
+      // URLs and miss long-tail matches for text-only queries. (Ignored when
+      // `query` is set — `/v1/search` returns by share count desc.)
+      sort: "newest",
+      query: searchQuery,
+      page: 1,
+      fetch: false,
+      limit: candidateLimit,
+      minShares: filters.minShares,
+      appViewPageLimit,
+    });
+  }
 
-    if (query.category.id === "author" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(
-          or(
-            eq(linkPostDenormalized.actorName, query.value),
-            eq(linkPostDenormalized.actorHandle, query.value),
-          ),
-        );
-      }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          or(
-            ilike(linkPostDenormalized.actorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          or(
-            notIlike(linkPostDenormalized.actorName, `%${query.value}%`),
-            notIlike(linkPostDenormalized.actorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-    }
+  // Drop links already delivered for this group.
+  let items = candidates.filter(
+    (c) => !!c.link?.url && !seen.has(c.link.url),
+  );
 
-    if (query.category.id === "list" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(eq(linkPostDenormalized.listId, query.value));
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          or(
-            ne(linkPostDenormalized.listId, query.value),
-            isNull(linkPostDenormalized.listId),
-          ),
-        );
-      }
+  // Sill mutePhrase in-memory. AppView URLs are already pre-filtered for the
+  // viewer's combined mutes via `/v1/preferences`, but DB-side posts (Mastodon,
+  // Bluesky lists) need them applied here.
+  const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
+  items = applySillMutePhrases(items, mutePhrases);
+
+  // Post-level service/list filters (shrinks the post set, recomputes counts).
+  items = applyServiceListFilters(items, filters);
+
+  // Text/operator filters (url/link/post/author/repost).
+  for (const q of filters.textQueries) {
+    items = items.filter((c) => matchesTextQuery(c, q));
+  }
+
+  // Re-apply the minShares threshold against the possibly-reduced combined
+  // count — post-level filters can drop posts and lower the count.
+  if (filters.minShares !== undefined && filters.minShares > 0) {
+    const threshold = filters.minShares;
+    items = items.filter((c) => c.uniqueActorsCount >= threshold);
+  }
+
+  // Match the previous SQL ordering: popularity desc, then recency.
+  items.sort((a, b) => {
+    if (b.uniqueActorsCount !== a.uniqueActorsCount) {
+      return b.uniqueActorsCount - a.uniqueActorsCount;
     }
-    if (query.category.id === "repost" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(
-          or(
-            eq(linkPostDenormalized.repostActorName, query.value),
-            eq(linkPostDenormalized.repostActorHandle, query.value),
-          ),
-        );
+    const ad = a.mostRecentPostDate
+      ? new Date(a.mostRecentPostDate).getTime()
+      : 0;
+    const bd = b.mostRecentPostDate
+      ? new Date(b.mostRecentPostDate).getTime()
+      : 0;
+    return bd - ad;
+  });
+
+  return items;
+};
+
+/**
+ * Approximate match count for the `/api/notifications/test` endpoint — same
+ * source routing as `evaluateNotifications` but **without hydration**, since
+ * the caller (the notification-builder UI) just needs an interactive preview
+ * the user explicitly asks for. The preview walks the full 24h window so
+ * matches anywhere in the period are reflected, paginating `/v1/latest` to
+ * exhaustion (or `PREVIEW_MAX_PAGES`). Post-level filters (post/author/repost
+ * text, post-level service/list, mute phrases against post fields) are
+ * skipped — the URL items from `/v1/latest` carry no post data, so post-level
+ * filters would be a no-op anyway. The real notification firing later runs
+ * `evaluateNotifications` (full sweep with hydration), which is the source of
+ * truth.
+ */
+// 100 pages × 100 URLs = up to 10k URLs over 24h. Covers all but the heaviest
+// networks; anything above counts as "many" for UI purposes.
+const PREVIEW_MAX_PAGES = 100;
+// `/v1/search` returns a much narrower set, so we cap the page walk lower —
+// 5 × 100 = 500 search hits is more than enough for a count preview.
+const PREVIEW_SEARCH_MAX_PAGES = 5;
+const PREVIEW_DB_LIMIT = 10_000;
+
+export const previewNotificationCount = async (
+  userId: string,
+  queries: NotificationQuery[],
+): Promise<number> => {
+  const filters = parseNotificationFilters(queries);
+
+  const useDbOnly =
+    filters.listIdEquals !== undefined ||
+    filters.serviceEquals === "mastodon";
+
+  // We only need each candidate's `link` and `uniqueActorsCount` — no posts.
+  let items: { link: Link | null; uniqueActorsCount: number }[];
+
+  if (useDbOnly) {
+    items = await filterLinkOccurrences({
+      userId,
+      service: filters.serviceEquals ?? "all",
+      selectedList: filters.listIdEquals ?? "all",
+      time: ONE_DAY_MS,
+      hideReposts: "include",
+      page: 1,
+      fetch: false,
+      limit: PREVIEW_DB_LIMIT,
+      minShares: filters.minShares,
+    });
+  } else {
+    const bsky = await db.query.blueskyAccount.findFirst({
+      where: eq(blueskyAccount.userId, userId),
+    });
+    if (!bsky || !appViewEnabled()) {
+      // No AppView available — degrade to the DB. Bluesky-following posts
+      // won't be reflected (worker no longer ingests them), but the preview
+      // is best-effort and the user can save and verify against a real fire.
+      items = await filterLinkOccurrences({
+        userId,
+        service: filters.serviceEquals ?? "all",
+        selectedList: "all",
+        time: ONE_DAY_MS,
+        hideReposts: "include",
+        page: 1,
+        fetch: false,
+        limit: PREVIEW_DB_LIMIT,
+        minShares: filters.minShares,
+      });
+    } else {
+      // AppView only — no `/v1/hydration`, no Slingshot. Router:
+      //   - text-contains on url/link/post → `/v1/search` (smaller candidate
+      //     set from server-side matching; minShares applied in-memory below
+      //     since `/v1/search` doesn't accept it).
+      //   - otherwise → `/v1/latest` paginated to exhaustion (or safety cap),
+      //     with `minShares` pushed server-side as a pre-filter.
+      const searchQuery = searchQueryFromFilters(filters);
+      const allItems: Awaited<ReturnType<typeof fetchUrlPage>>["items"] = [];
+      let cursor: string | undefined;
+      const maxPages = searchQuery ? PREVIEW_SEARCH_MAX_PAGES : PREVIEW_MAX_PAGES;
+      for (let page = 0; page < maxPages; page++) {
+        const res = await fetchUrlPage({
+          viewer: bsky.did,
+          window: { days: 1 },
+          limit: 100,
+          cursor,
+          sort: "recency",
+          hideReposts: "include",
+          query: searchQuery,
+          minShares: searchQuery ? undefined : filters.minShares,
+        });
+        allItems.push(...res.items);
+        cursor = res.cursor;
+        if (!cursor || res.items.length === 0) break;
       }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          or(
-            ilike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          and(
-            notIlike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            notIlike(
-              linkPostDenormalized.repostActorHandle,
-              `%${query.value}%`,
-            ),
-          ),
-        );
-      }
-    }
-    if (query.category.id === "service" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        const value = postType.enumValues.find((v) => v === query.value);
-        if (value) {
-          postSQLQueries.push(eq(linkPostDenormalized.postType, value));
-        }
-      }
-      if (query.operator === "excludes") {
-        const value = postType.enumValues.find((v) => v === query.value);
-        if (value) {
-          postSQLQueries.push(ne(linkPostDenormalized.postType, value));
-        }
-      }
+      items = allItems.map((item) => ({
+        link: urlItemToLink(item, null),
+        uniqueActorsCount: item.shares ?? 0,
+      }));
     }
   }
 
-  const sharesQuery = queries.find(
-    (query) =>
-      query.category.id === "shares" && typeof query.value === "number",
-  );
+  // URL-level mute phrases (post-level mutes skipped — no post data).
+  const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
+  if (mutePhrases.length > 0) {
+    items = items.filter(
+      (item) =>
+        !mutePhrases.some(
+          (p) =>
+            includesCi(item.link?.url, p) ||
+            includesCi(item.link?.title, p) ||
+            includesCi(item.link?.description, p),
+        ),
+    );
+  }
 
-  return await db
-    .select({
-      link,
-      uniqueActorsCount:
-        getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(
-      and(
-        eq(linkPostDenormalized.userId, userId),
-        gte(linkPostDenormalized.postDate, start.toISOString()),
-        notInArray(link.url, seenLinks),
-        ...urlMuteClauses,
-        ...linkSQLQueries,
-        ...postSQLQueries,
-      ),
-    )
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(
-      sharesQuery
-        ? gte(getUniqueActorsCountSql(postMuteCondition), sharesQuery.value)
-        : sql`count(*) > 0`,
-    )
-    .orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(
-            and(
-              eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start.toISOString()),
-              sql`${postMuteCondition} = 1`,
-            ),
-          )
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
-    });
+  // URL-level text filters only (`url`, `link`). post/author/repost skipped.
+  for (const q of filters.textQueries) {
+    if (q.category.id !== "url" && q.category.id !== "link") continue;
+    items = items.filter((item) =>
+      matchesTextQuery({ link: item.link, posts: [] }, q),
+    );
+  }
+
+  if (filters.minShares !== undefined && filters.minShares > 0) {
+    const threshold = filters.minShares;
+    items = items.filter((c) => c.uniqueActorsCount >= threshold);
+  }
+
+  return items.length;
 };
 
 export interface TopTenResults {

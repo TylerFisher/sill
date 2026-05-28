@@ -18,6 +18,7 @@ export {
   type ProcessedResult,
   type FilterArgs,
   evaluateNotifications,
+  previewNotificationCount,
   fetchLinks,
   fetchSingleList,
   filterLinkOccurrences,

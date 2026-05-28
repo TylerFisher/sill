@@ -3,6 +3,9 @@ import { uuidv7 } from "uuidv7-js";
 import {
   db,
   accountUpdateQueue,
+  blueskyAccount,
+  list,
+  mastodonAccount,
   notificationGroup,
   bookmark,
 } from "@sill/schema";
@@ -62,10 +65,35 @@ interface ProcessJobResult {
  * Processes a single job by fetching links, notification groups, and bookmarks for a user.
  * Marks the job as completed upon success.
  */
+/**
+ * Whether `fetchLinks` would actually ingest anything for this user. The
+ * worker no longer ingests the Bluesky following timeline (the AppView serves
+ * it), so a user with no Mastodon account and no Bluesky lists has nothing for
+ * `fetchLinks` to pull — skip the OAuth restore / agent spin-up and go
+ * straight to evaluating their notifications against the AppView.
+ */
+async function hasIngestionSources(userId: string): Promise<boolean> {
+  const [mastodon, blueskyList] = await Promise.all([
+    db
+      .select({ id: mastodonAccount.id })
+      .from(mastodonAccount)
+      .where(eq(mastodonAccount.userId, userId))
+      .limit(1),
+    db
+      .select({ id: list.id })
+      .from(list)
+      .innerJoin(blueskyAccount, eq(list.blueskyAccountId, blueskyAccount.id))
+      .where(eq(blueskyAccount.userId, userId))
+      .limit(1),
+  ]);
+  return mastodon.length > 0 || blueskyList.length > 0;
+}
+
 export async function processJob(
   job: typeof accountUpdateQueue.$inferSelect,
 ): Promise<ProcessJobResult> {
-  const links = await fetchLinks(job.userId);
+  const needsIngestion = await hasIngestionSources(job.userId);
+  const links = needsIngestion ? await fetchLinks(job.userId) : [];
   // get new bookmarks from ATProto repo
   // await addNewBookmarks(job.userId);
 

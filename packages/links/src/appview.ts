@@ -213,6 +213,13 @@ interface UrlPageOptions {
   query?: string;
   sort?: "popularity" | "recency";
   hideReposts: "include" | "exclude" | "only";
+  /**
+   * Server-side pre-filter on the AppView (`minShares` param) — drop URLs with
+   * fewer distinct sharers than this. Default 1 = no filter. Used by the
+   * notifications path (where the threshold is the whole point); the feed path
+   * keeps its combined-count semantics by leaving this unset.
+   */
+  minShares?: number;
 }
 
 /**
@@ -230,6 +237,9 @@ export const fetchUrlPage = async (
   appendWindow(params, opts.window);
   params.set("limit", String(opts.limit));
   if (opts.cursor) params.set("cursor", opts.cursor);
+  if (opts.minShares != null && opts.minShares > 1) {
+    params.set("minShares", String(opts.minShares));
+  }
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }
