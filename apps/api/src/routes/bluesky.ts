@@ -57,7 +57,7 @@ const completeV2Migration = async (did: string, request: Request) => {
       .where(eq(atprotoAuthSession.key, `${v1ClientId}::${did}`));
   });
 };
-import { getBlueskyLists, seedViewer } from "@sill/links";
+import { getBlueskyLists, seedViewer, syncMutes } from "@sill/links";
 import { setSessionCookie } from "../utils/session.server.js";
 
 const AuthorizeSchema = z.object({
@@ -259,12 +259,6 @@ const bluesky = new Hono()
           actor: oauthSession.did,
         });
 
-        // Register this DID as an AppView seed so its follow graph is indexed
-        // from the start. This replaces the old DB initial sync for Bluesky
-        // signups (the AppView serves the following timeline at read time);
-        // idempotent and best-effort, so fire-and-forget for login/connect too.
-        void seedViewer(oauthSession.did);
-
         // Handle login/signup flow (no existing user session)
         if (isLogin) {
           // Check if account already exists
@@ -296,6 +290,8 @@ const bluesky = new Hono()
               );
             }
 
+            const blueskyAccountId = uuidv7();
+
             // No existing account - create new user
             const transaction = await db.transaction(async (tx) => {
               const newUser = await tx
@@ -313,7 +309,7 @@ const bluesky = new Hono()
 
               // Create bluesky account
               await tx.insert(blueskyAccount).values({
-                id: uuidv7(),
+                id: blueskyAccountId,
                 did: oauthSession.did,
                 handle: profile.data.handle,
                 userId: newUser[0].id,
@@ -356,6 +352,21 @@ const bluesky = new Hono()
               transaction.session.id,
               transaction.session.expirationDate,
             );
+
+            // Register the new viewer's DID as an AppView seed so their follow
+            // graph backfills in the background, avoiding the cold-start probe
+            // on their first feed view. Signup-only — login/connect viewers
+            // are already known to the AppView.
+            void seedViewer(oauthSession.did);
+
+            // Sync the user's Bluesky muted words + muted accounts, then push
+            // the combined preferences (Sill + Bluesky words, Bluesky DIDs) to
+            // the AppView.
+            void syncMutes(agent, {
+              id: blueskyAccountId,
+              userId: transaction.user.id,
+              did: oauthSession.did,
+            });
 
             return c.json({
               success: true,
@@ -426,6 +437,11 @@ const bluesky = new Hono()
 
         // If this DID had a pre-existing v1 row, clean up its v1 session.
         await completeV2Migration(oauthSession.did, c.req.raw);
+
+        // Seed the DID with the AppView — a user signing up via Mastodon and
+        // adding Bluesky later first reaches the AppView here. Idempotent, so
+        // re-connects of an already-known DID are a no-op server-side.
+        void seedViewer(oauthSession.did);
 
         return c.json({
           success: true,
@@ -539,7 +555,12 @@ const bluesky = new Hono()
 
       try {
         const client = await createOAuthClient("v2", c.req.raw);
-        await client.restore(account.did);
+        const oauthSession = await client.restore(account.did);
+
+        // Keep mutes in sync on each status check: refresh the Bluesky muted
+        // words + muted accounts and push the combined preferences to the
+        // AppView.
+        void syncMutes(new Agent(oauthSession), account);
 
         return c.json({
           status: "connected",

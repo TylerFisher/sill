@@ -4,6 +4,8 @@ export {
   processBlueskyLink,
   handleBlueskyOAuth,
   getOrCreateAgent,
+  syncMutes,
+  syncUserMutesToAppView,
   clearOAuthSessionCache,
 } from "./bluesky.js";
 export {

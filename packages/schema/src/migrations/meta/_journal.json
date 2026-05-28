@@ -372,6 +372,13 @@
       "when": 1776082918592,
       "tag": "0052_add_auth_variant",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1779900322400,
+      "tag": "0053_lush_texas_twister",
+      "breakpoints": true
     }
   ]
 }

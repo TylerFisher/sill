@@ -1480,20 +1480,67 @@ export async function apiGetBlueskyLists(request: Request) {
 }
 
 /**
- * Check Bluesky OAuth status and trigger re-authorization if needed via API
+ * GA-style "visit" gate for the Bluesky status check: a 30-min sliding TTL
+ * cache keyed by the Sill session cookie. While a session is actively browsing
+ * (any check within 30 min) the cached "connected" response is returned and the
+ * expiry slides forward, so multiple page loads in one visit hit the API once.
+ * Only happy-path (`status: "connected"`) responses are cached — failure states
+ * (`needs_reauth`/`not_connected`/errors) re-check on every navigation so the
+ * user sees the state change immediately and can act on it.
  */
-export async function apiCheckBlueskyStatus(request: Request) {
+const BLUESKY_STATUS_TTL_MS = 30 * 60 * 1000;
+
+const getSessionIdFromCookie = (request: Request): string | null => {
+  const header = request.headers.get("cookie");
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [name, value] = part.trim().split("=");
+    if (name === "sessionId" && value) return decodeURIComponent(value);
+  }
+  return null;
+};
+
+async function performBlueskyStatusCheck(request: Request) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.status.$get();
-
   if (!response.ok) {
     throw new Error(`Failed to check Bluesky status: ${response.status}`);
   }
-
   const json = await response.json();
-
   if ("error" in json) {
     throw new Error(json.error as string);
+  }
+  return json;
+}
+
+type BlueskyStatusValue = Awaited<
+  ReturnType<typeof performBlueskyStatusCheck>
+>;
+const blueskyStatusCache = new Map<
+  string,
+  { expiresAt: number; value: BlueskyStatusValue }
+>();
+
+export async function apiCheckBlueskyStatus(request: Request) {
+  const sessionId = getSessionIdFromCookie(request);
+  const now = Date.now();
+
+  if (sessionId) {
+    const cached = blueskyStatusCache.get(sessionId);
+    if (cached && cached.expiresAt > now) {
+      // Slide the expiry — the visit extends with continued activity.
+      cached.expiresAt = now + BLUESKY_STATUS_TTL_MS;
+      return cached.value;
+    }
+  }
+
+  const json = await performBlueskyStatusCheck(request);
+
+  if (sessionId && "status" in json && json.status === "connected") {
+    blueskyStatusCache.set(sessionId, {
+      expiresAt: now + BLUESKY_STATUS_TTL_MS,
+      value: json,
+    });
   }
 
   return json;

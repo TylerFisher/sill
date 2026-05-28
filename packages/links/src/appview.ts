@@ -129,6 +129,61 @@ export const seedViewer = async (did: string): Promise<void> => {
   }
 };
 
+/**
+ * Store a viewer's mute lists on the AppView (`POST /v1/preferences`), so mutes
+ * are applied before ranking. Each field is **per-field last-write-wins**:
+ * include `mutedWords` and/or `mutedDids` to replace that list; omit a field to
+ * leave the AppView's stored value untouched. An empty array clears the list.
+ * Skipped if both fields are omitted (the AppView requires at least one).
+ * Best-effort — never throws.
+ */
+export const postViewerPreferences = async (
+  viewer: string,
+  prefs: { mutedWords?: string[]; mutedDids?: string[] }
+): Promise<void> => {
+  const base = process.env.APPVIEW_API_URL;
+  const key = process.env.APPVIEW_API_KEY;
+  if (!base || !key || !viewer) return;
+
+  const cleanedWords =
+    prefs.mutedWords !== undefined
+      ? Array.from(
+          new Set(prefs.mutedWords.map((w) => w.trim()).filter(Boolean))
+        )
+      : undefined;
+  const cleanedDids =
+    prefs.mutedDids !== undefined
+      ? Array.from(
+          new Set(
+            prefs.mutedDids.filter(
+              (d) => typeof d === "string" && d.startsWith("did:")
+            )
+          )
+        )
+      : undefined;
+  if (cleanedWords === undefined && cleanedDids === undefined) return;
+
+  try {
+    // JSON.stringify drops undefined values, so omitted fields aren't sent.
+    const res = await fetch(`${base.replace(/\/$/, "")}/v1/preferences`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": key },
+      body: JSON.stringify({
+        viewer,
+        mutedWords: cleanedWords,
+        mutedDids: cleanedDids,
+      }),
+      signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`AppView /v1/preferences returned ${res.status}: ${body}`);
+    }
+  } catch (e) {
+    console.error("AppView /v1/preferences failed:", viewer, e);
+  }
+};
+
 /** Collection NSIDs to request based on Sill's repost filter. */
 const collectionsForRepostFilter = (
   hideReposts: "include" | "exclude" | "only"

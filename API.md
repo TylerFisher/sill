@@ -250,6 +250,39 @@ X-API-Key: …
 { "registered": 1, "total": 2 }
 ```
 
+### `POST /v1/preferences`
+Store a viewer's **muted words** and/or **muted accounts** (DIDs) server-side so they're applied to that viewer's feeds **before** ranking — i.e. trending share counts and ordering are computed over the already-muted set. This is the right home for them because the lists are open-ended (too large for query params), and post-rank client-side filtering would leave a correct ranking of the wrong set. Call this at login and whenever the user's Bluesky mutes change.
+
+- **Body** (JSON): both fields are **optional**, and each one updates independently — send only what's changed, the other stays put. Each list is last-write-wins (replaces the whole list when present).
+  - `mutedWords?: string[]` — from `app.bsky.actor.getPreferences`. Caps: ≤2000 entries, ≤128 chars each. Blanks dropped, entries deduped.
+  - `mutedDids?: string[]` — from `app.bsky.graph.getMutes` (just the DIDs). Caps: ≤5000. Deduped.
+  - At least one of the two must be present.
+- **Muted-words matching.** A share is muted if a muted word appears in the **sharer's post text**, the **link URL** (so muting a domain like `nytimes.com` hides that domain's links), or the **linked article's title/description** — whole-word, case-insensitive — **or** if a muted word **exactly equals the sharer's handle** (an account mute by handle; leading `@` and case ignored, matched against the indexed handle snapshot so it's best-effort).
+- **Muted-DIDs matching.** Shares by a muted DID are dropped at `effective_follows` — exact and instant, no snapshot. Covers direct shares AND repost/quote credit rows from the muted account. The reliable way to mute an account.
+- **Where applied.** All viewer-scoped endpoints (`trending`, `latest`, viewer-mode `search`/`by-author`/`by-domain`, `hydration`). **Not** applied to `network-trending` or network-mode (no-`viewer`) requests — those are shared/global with no viewer to attribute mutes to.
+- **You no longer send mute lists on read requests** — just `viewer`. (The small `hideUrls`/`hideDids`/`hideLabels` query params still work, and `hideDids` is fine for per-request transient exclusion alongside the persistent muted set.)
+- **Freshness.** Uncached endpoints reflect a change immediately; `trending`'s first page is cached, so a change takes effect on the next revalidation (within ~a minute).
+- **Returns**: `{ "ok": true, "mutedWords": number | null, "mutedDids": number | null }` — the count stored for each field, or `null` for a field you didn't include.
+
+```
+POST /v1/preferences
+Content-Type: application/json
+X-API-Key: …
+
+{ "viewer": "did:plc:abc", "mutedWords": ["spoilers", "crypto"] }
+```
+```json
+{ "ok": true, "mutedWords": 2, "mutedDids": null }
+```
+
+```
+POST /v1/preferences
+{ "viewer": "did:plc:abc", "mutedDids": ["did:plc:xyz", "did:plc:def"] }
+```
+```json
+{ "ok": true, "mutedWords": null, "mutedDids": 2 }
+```
+
 ### `GET /v1/backfill-status`
 Global indexing progress (not per-viewer).
 ```ts

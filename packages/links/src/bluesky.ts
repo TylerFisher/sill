@@ -16,18 +16,21 @@ import {
   type OAuthSession,
   TokenRefreshError,
 } from "@atproto/oauth-client-node";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
 import { type AuthVariant, isSubscribed } from "@sill/auth";
 import {
   db,
   blueskyAccount,
+  blueskyMutedWord,
   link,
   list,
+  mutePhrase,
   postType,
   user,
   type ListOption,
 } from "@sill/schema";
+import { postViewerPreferences } from "./appview.js";
 import { createOAuthClient } from "@sill/auth";
 import { sendBlueskyAuthErrorEmail } from "@sill/emails";
 import type { ProcessedResult } from "./links.js";
@@ -733,6 +736,150 @@ type BlueskyAccount = typeof blueskyAccount.$inferSelect;
 interface AccountWithLists extends BlueskyAccount {
   lists: (typeof list.$inferSelect)[];
 }
+
+/**
+ * Sync the account's Bluesky muted words (app.bsky.actor.getPreferences
+ * `mutedWordsPref`) into the `bluesky_muted_word` table. Replaces the stored
+ * set each time so removals are reflected. This is the user's own Bluesky
+ * mutes — separate from Sill's `mute_phrase`. Best-effort: never throws, so
+ * callers can fire-and-forget.
+ */
+export const syncBlueskyMutedWords = async (
+  agent: Agent,
+  blueskyAccountId: string,
+): Promise<void> => {
+  try {
+    const prefs = await agent.getPreferences();
+    // Ignore "exclude-following" mutes: they apply to everyone EXCEPT accounts
+    // the user follows, and Sill only ever surfaces the following graph, so they
+    // would never match. Keep "all" (and any other target), which do apply.
+    const words = (prefs.moderationPrefs?.mutedWords ?? []).filter(
+      (w) => w.actorTarget !== "exclude-following",
+    );
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(blueskyMutedWord)
+        .where(eq(blueskyMutedWord.blueskyAccountId, blueskyAccountId));
+      if (words.length === 0) return;
+      await tx.insert(blueskyMutedWord).values(
+        words.map((w) => ({
+          id: uuidv7(),
+          blueskyAccountId,
+          bskyId: w.id ?? null,
+          value: w.value,
+          targets: w.targets ?? [],
+          actorTarget: w.actorTarget || "all",
+          expiresAt: w.expiresAt ?? null,
+        })),
+      );
+    });
+  } catch (e) {
+    console.error(
+      "Failed to sync Bluesky muted words:",
+      blueskyAccountId,
+      e instanceof Error ? e.message : e,
+    );
+  }
+};
+
+/** Page through `app.bsky.graph.getMutes` and return all muted account DIDs. */
+const fetchBlueskyMutedDids = async (
+  agent: Agent,
+): Promise<string[] | undefined> => {
+  try {
+    const dids: string[] = [];
+    let cursor: string | undefined;
+    // Safety cap: 50 pages × 100 = 5000 (matches the AppView's mutedDids cap).
+    for (let page = 0; page < 50; page++) {
+      const res = await agent.app.bsky.graph.getMutes({ limit: 100, cursor });
+      for (const a of res.data.mutes) dids.push(a.did);
+      cursor = res.data.cursor;
+      if (!cursor || res.data.mutes.length === 0) break;
+    }
+    return dids;
+  } catch (e) {
+    // Returning undefined leaves the AppView's stored mutedDids untouched.
+    console.error(
+      "Failed to fetch Bluesky muted DIDs:",
+      e instanceof Error ? e.message : e,
+    );
+    return undefined;
+  }
+};
+
+/**
+ * Push the viewer's preferences to the AppView (`POST /v1/preferences`) — the
+ * combined mute words (Sill `mute_phrase` ∪ Bluesky `bluesky_muted_word`),
+ * plus an optional muted-DIDs list when caller supplies one (omitted leaves
+ * the AppView's stored DIDs untouched, per the per-field LWW semantics).
+ * Reads words from the DB so it reflects whatever was last synced. Best-effort.
+ */
+const pushCombinedPreferences = async (
+  account: { id: string; userId: string; did: string },
+  opts: { mutedDids?: string[] } = {},
+): Promise<void> => {
+  try {
+    const [sillMutes, bskyMutes] = await Promise.all([
+      db
+        .select({ phrase: mutePhrase.phrase })
+        .from(mutePhrase)
+        .where(
+          and(
+            eq(mutePhrase.userId, account.userId),
+            eq(mutePhrase.active, true),
+          ),
+        ),
+      db
+        .select({ value: blueskyMutedWord.value })
+        .from(blueskyMutedWord)
+        .where(eq(blueskyMutedWord.blueskyAccountId, account.id)),
+    ]);
+    await postViewerPreferences(account.did, {
+      mutedWords: [
+        ...sillMutes.map((m) => m.phrase),
+        ...bskyMutes.map((m) => m.value),
+      ],
+      mutedDids: opts.mutedDids,
+    });
+  } catch (e) {
+    console.error("Failed to push combined preferences to AppView:", e);
+  }
+};
+
+/**
+ * Sync the account's mutes end-to-end: store the user's Bluesky muted words in
+ * the DB (from `getPreferences`), fetch their muted accounts (from `getMutes`),
+ * and push the combined preferences (Sill+Bluesky words, Bluesky DIDs) to the
+ * AppView. Best-effort throughout, so safe to fire-and-forget at signup/status.
+ */
+export const syncMutes = async (
+  agent: Agent,
+  account: { id: string; userId: string; did: string },
+): Promise<void> => {
+  await syncBlueskyMutedWords(agent, account.id);
+  const mutedDids = await fetchBlueskyMutedDids(agent);
+  await pushCombinedPreferences(account, { mutedDids });
+};
+
+/**
+ * Re-push a user's combined mute list to the AppView after they change their
+ * own Sill mutes (`mute_phrase`). Looks up their Bluesky account for the viewer
+ * DID; no-op if they have none. Sends only `mutedWords` — `mutedDids` is left
+ * alone (Sill mute changes don't affect Bluesky muted accounts). Best-effort.
+ */
+export const syncUserMutesToAppView = async (
+  userId: string,
+): Promise<void> => {
+  const account = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+  if (!account) return;
+  await pushCombinedPreferences({
+    id: account.id,
+    userId,
+    did: account.did,
+  });
+};
 
 export const getBlueskyLists = async (account: AccountWithLists) => {
   const listOptions: ListOption[] = [];
