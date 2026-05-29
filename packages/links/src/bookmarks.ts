@@ -6,12 +6,15 @@ import {
   bookmarkTag,
   tag,
   link,
-  type linkPostDenormalized,
 } from "@sill/schema";
 import { getOrCreateAgent, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
-import type { ProcessedResult } from "./links.js";
-import { filterLinkOccurrences } from "./links.js";
+import {
+  appViewEnabled,
+  fetchHydration,
+  resolveRepostSubjects,
+  shareRowToLinkPost,
+} from "./appview.js";
 
 type BaseSliceResponse = {
   cid: string;
@@ -100,32 +103,16 @@ const getProfile = async (did: string): Promise<ATProfileResponse> => {
   return await response.json();
 };
 
+/**
+ * @deprecated The `ProcessedResult` tuple this returned is gone with the
+ * AppView cutover. Retained as a no-op so any historic external callers
+ * still resolve to undefined.
+ */
 export const formatBookmark = async (
-  bookmark: ATBookmark,
-  userId: string
-): Promise<ProcessedResult | undefined> => {
-  const profile = await getProfile(bookmark.did);
-  if (!Object.hasOwn(profile, "did")) return undefined;
-
-  return {
-    link: {
-      id: uuidv7(),
-      url: bookmark.value.subject,
-      title: "",
-    },
-    denormalized: {
-      id: uuidv7(),
-      postType: "atbookmark",
-      postDate: bookmark.value.createdAt,
-      postUrl: bookmark.uri,
-      actorHandle: "dafeea",
-      actorName: profile.value.displayName || "",
-      actorUrl: `https://bsky.app/profile/${bookmark.did}`,
-      postText: `${profile.value.displayName || ""} bookmarked this link`,
-      linkUrl: bookmark.value.subject,
-      userId,
-    },
-  };
+  _bookmark: ATBookmark,
+  _userId: string,
+): Promise<undefined> => {
+  return undefined;
 };
 
 const getFollows = async (userId: string) => {
@@ -360,16 +347,35 @@ export const updateBookmarkPosts = async (
 ) => {
   const posts = userBookmark.posts;
 
-  const newPosts = await filterLinkOccurrences({
-    userId: userBookmark.userId,
-    url: userBookmark.linkUrl,
-  });
-
-  // Merge new posts if found
-  if (newPosts.length > 0 && newPosts[0].posts) {
-    for (const newPost of newPosts[0].posts.reverse()) {
-      if (!posts.posts?.some((p) => p.id === newPost.id)) {
-        posts.posts?.unshift(newPost);
+  // Hydrate the URL's viewer-scoped shares from the AppView and merge any
+  // newly observed posts into the bookmark snapshot, oldest-first so that
+  // unshift preserves recency order.
+  if (appViewEnabled()) {
+    const viewerAccount = await db.query.blueskyAccount.findFirst({
+      where: eq(blueskyAccount.userId, userBookmark.userId),
+    });
+    if (viewerAccount) {
+      try {
+        let shares = await fetchHydration({
+          viewer: viewerAccount.did,
+          urls: [userBookmark.linkUrl],
+          window: { days: 1 },
+          hideReposts: "include",
+        });
+        shares = await resolveRepostSubjects(shares);
+        const newPosts = shares
+          .map((s) => shareRowToLinkPost(s, userBookmark.userId))
+          .sort(
+            (a, b) =>
+              new Date(a.postDate).getTime() - new Date(b.postDate).getTime(),
+          );
+        for (const newPost of newPosts) {
+          if (!posts.posts?.some((p) => p.id === newPost.id)) {
+            posts.posts?.unshift(newPost);
+          }
+        }
+      } catch (e) {
+        console.error("AppView hydration failed for bookmark update:", e);
       }
     }
   }

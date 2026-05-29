@@ -514,14 +514,12 @@ export async function apiFindLinksByAuthor(
   request: Request,
   params: {
     author: string;
-    page?: number;
     pageSize?: number;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     author: params.author,
-    ...(params.page && { page: String(params.page) }),
     ...(params.pageSize && { pageSize: String(params.pageSize) }),
   };
 
@@ -549,14 +547,12 @@ export async function apiFindLinksByDomain(
   request: Request,
   params: {
     domain: string;
-    page?: number;
     pageSize?: number;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     domain: params.domain,
-    ...(params.page && { page: String(params.page) }),
     ...(params.pageSize && { pageSize: String(params.pageSize) }),
   };
 
@@ -566,41 +562,6 @@ export async function apiFindLinksByDomain(
 
   if (!response.ok) {
     throw new Error(`Failed to find links by domain: ${response.status}`);
-  }
-
-  const json = await response.json();
-
-  if ("error" in json) {
-    throw new Error(json.error as string);
-  }
-
-  return json;
-}
-
-/**
- * Find links by topic via API
- */
-export async function apiFindLinksByTopic(
-  request: Request,
-  params: {
-    topic: string;
-    page?: number;
-    pageSize?: number;
-  },
-) {
-  const client = createApiClient(request);
-  const queryParams = {
-    topic: params.topic,
-    ...(params.page && { page: String(params.page) }),
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
-  };
-
-  const response = await client.api.links.topic.$get({
-    query: queryParams,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to find links by topic: ${response.status}`);
   }
 
   const json = await response.json();

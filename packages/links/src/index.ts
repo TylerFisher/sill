@@ -15,22 +15,28 @@ export {
   isQuote,
 } from "./mastodon.js";
 export {
-  type ProcessedResult,
   type FilterArgs,
   evaluateNotifications,
   previewNotificationCount,
   fetchLinks,
   fetchSingleList,
-  filterLinkOccurrences,
-  insertNewLinks,
   findLinksByAuthor,
   findLinksByDomain,
-  findLinksByTopic,
   networkTopTen,
-  conflictUpdateSetAllColumns,
 } from "./links.js";
 export { getTimeline, getMergedOccurrences } from "./timeline.js";
-export { appViewEnabled, seedViewer } from "./appview.js";
+export {
+  appViewEnabled,
+  distinctActorCount,
+  fetchHydration,
+  type PushShareBatch,
+  pushShareBatches,
+  resolveRepostSubjects,
+  seedViewer,
+  type ShareRow,
+  shareRowToLinkPost,
+  type TimeWindow,
+} from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export {
   fetchHtmlViaProxy,
@@ -39,6 +45,7 @@ export {
   getHighActivityUrls,
 } from "./metadata.js";
 export { renderPageContent } from "./cloudflare.js";
+export { conflictUpdateSetAllColumns } from "./db-helpers.js";
 export {
   fetchLatestBookmarks,
   formatBookmark,

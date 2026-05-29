@@ -23,23 +23,20 @@ import {
   db,
   blueskyAccount,
   blueskyMutedWord,
-  link,
   list,
   mutePhrase,
   postType,
   user,
   type ListOption,
 } from "@sill/schema";
-import { postViewerPreferences } from "./appview.js";
+import {
+  postViewerPreferences,
+  type PushShare,
+  type PushShareBatch,
+  type PushShareSource,
+} from "./appview.js";
 import { createOAuthClient } from "@sill/auth";
 import { sendBlueskyAuthErrorEmail } from "@sill/emails";
-import type { ProcessedResult } from "./links.js";
-import {
-  getFullUrl,
-  isGiftLink,
-  isShortenedLink,
-  normalizeLink,
-} from "./normalizeLink.js";
 import {
   recordCacheHit,
   recordCacheMiss,
@@ -52,6 +49,13 @@ interface BskyDetectedLink {
   description: string | null;
   imageUrl?: string | null;
 }
+
+/** Defensive clip for actor.handle (AppView rejects > 512 chars). */
+const HANDLE_MAX = 512;
+const clipHandle = (h: string | null | undefined): string | null => {
+  if (!h) return null;
+  return h.length > HANDLE_MAX ? h.slice(0, HANDLE_MAX) : h;
+};
 
 export const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
@@ -479,177 +483,161 @@ const handleLinkTitle = async (title: string) => {
 };
 
 /**
- * Processes a post from Bluesky timeline to detect links and prepares data for database insertion
- * @param userId ID for logged in user
- * @param t Post object from Bluesky timeline
- * @returns Actors, quoted post, images, post, link, and new link post to insert into database
+ * Build the `/v1/shares` payload for one Bluesky list/feed entry. Returns null
+ * when the entry has no link, links to a gif, or fails to parse. URL is
+ * normalised (shortener expansion, gift link detection is a no-op here — the
+ * AppView re-canonicalises). The legacy DB-shaped `{ link, denormalized }`
+ * tuple is gone: the worker now pushes shares to the AppView instead of
+ * writing them to `linkPostDenormalized`.
  */
 export const processBlueskyLink = async (
-  userId: string,
   t: AppBskyFeedDefs.FeedViewPost,
-  listId?: string,
-) => {
-  if (!AppBskyFeedPost.isRecord(t.post.record)) {
-    return null;
-  }
-  const record = t.post.record;
-  const postUrl = await getPostUrl(t.post.author.handle, t.post.uri);
+  source: PushShareSource,
+): Promise<PushShare | null> => {
+  if (!AppBskyFeedPost.isRecord(t.post.record)) return null;
+  const record = t.post.record as AppBskyFeedPost.Record;
 
   const {
     quotedRecord,
     quotedValue,
-    quotedImageGroup,
     quotedPostUrl,
     externalRecord,
     detectedLink: initialDetectedLink,
-    imageGroup,
   } = await handleEmbeds(t.post.embed);
 
   const detectedLink = await getDetectedLink(
-    record as AppBskyFeedPost.Record,
+    record,
     externalRecord,
     initialDetectedLink,
   );
+  if (!detectedLink) return null;
+  if (detectedLink.uri.includes(".gif")) return null;
+  // The AppView canonicalises URLs (shortener expansion, tracking-param strip,
+  // case-folding host, etc.) on receipt — we pass the raw URI through.
+  const url = detectedLink.uri;
 
-  if (!detectedLink) {
-    return null;
-  }
+  // Defensive: actor.id must be a non-empty string. Bluesky DIDs always are,
+  // but guard rather than send a broken share.
+  if (!t.post.author.did) return null;
 
-  if (detectedLink.uri.includes(".gif")) {
-    return null;
-  }
-
-  if (await isShortenedLink(detectedLink.uri)) {
-    detectedLink.uri = await getFullUrl(detectedLink.uri);
-  }
-
-  const link = {
-    id: uuidv7(),
-    url: await normalizeLink(detectedLink.uri),
-    title: detectedLink.title || "",
-    description: detectedLink.description,
-    imageUrl: detectedLink.imageUrl,
-    giftUrl: (await isGiftLink(detectedLink.uri))
-      ? detectedLink.uri
-      : undefined,
+  const share: PushShare = {
+    url,
+    network: "bsky",
+    source,
+    post: {
+      // at:// URI per API.md (Bluesky side uses the atproto-native ref).
+      uri: t.post.uri,
+      text: record.text,
+      createdAt: record.createdAt,
+    },
+    actor: {
+      id: t.post.author.did,
+      handle: clipHandle(t.post.author.handle),
+      displayName: t.post.author.displayName ?? null,
+      avatarUrl: t.post.author.avatar ?? null,
+    },
   };
 
-  const denormalized = {
-    id: uuidv7(),
-    postUrl,
-    postText: serializeBlueskyPostToHtml(record as AppBskyFeedPost.Record),
-    postDate: new Date(t.post.indexedAt).toISOString(),
-    postType: postType.enumValues[0],
-    postImages: imageGroup.map((image) => ({
-      alt: image.alt,
-      url: image.thumb,
-    })),
-    linkUrl: link.url,
-    actorHandle: t.post.author.handle,
-    actorUrl: `https://bsky.app/profile/${t.post.author.handle}`,
-    actorName: t.post.author.displayName,
-    actorAvatarUrl: t.post.author.avatar,
-    quotedActorHandle: quotedRecord?.author.handle,
-    quotedActorUrl: quotedRecord
-      ? `https://bsky.app/profile/${quotedRecord.author.handle}`
-      : undefined,
-    quotedActorName: quotedRecord?.author.displayName,
-    quotedActorAvatarUrl: quotedRecord?.author.avatar,
-    quotedPostUrl: quotedPostUrl,
-    quotedPostText: quotedValue
-      ? serializeBlueskyPostToHtml(quotedValue)
-      : undefined,
-    quotedPostDate: quotedRecord
-      ? new Date(quotedRecord.indexedAt).toISOString()
-      : undefined,
-    quotedPostImages: quotedImageGroup.map((image) => ({
-      alt: image.alt,
-      url: image.thumb,
-    })),
-    quotedPostType: quotedValue ? postType.enumValues[0] : undefined,
-    repostActorHandle: AppBskyFeedDefs.isReasonRepost(t.reason)
-      ? t.reason.by.handle
-      : undefined,
-    repostActorUrl: AppBskyFeedDefs.isReasonRepost(t.reason)
-      ? `https://bsky.app/profile/${t.reason.by.handle}`
-      : undefined,
-    repostActorName: AppBskyFeedDefs.isReasonRepost(t.reason)
-      ? t.reason.by.displayName
-      : undefined,
-    repostActorAvatarUrl: AppBskyFeedDefs.isReasonRepost(t.reason)
-      ? t.reason.by.avatar
-      : undefined,
-    userId,
-    listId,
-  };
+  if (AppBskyFeedDefs.isReasonRepost(t.reason) && t.reason.by.did) {
+    share.repost = {
+      actor: {
+        id: t.reason.by.did,
+        handle: clipHandle(t.reason.by.handle),
+        displayName: t.reason.by.displayName ?? null,
+        avatarUrl: t.reason.by.avatar ?? null,
+      },
+      createdAt: t.reason.indexedAt,
+    };
+  }
 
-  return { link, denormalized };
+  if (
+    quotedRecord &&
+    quotedValue &&
+    quotedRecord.author.did &&
+    quotedRecord.uri
+  ) {
+    share.quoted = {
+      actor: {
+        id: quotedRecord.author.did,
+        handle: clipHandle(quotedRecord.author.handle),
+        displayName: quotedRecord.author.displayName ?? null,
+        avatarUrl: quotedRecord.author.avatar ?? null,
+      },
+      post: {
+        uri: quotedRecord.uri,
+        text: quotedValue.text ?? "",
+        createdAt: quotedValue.createdAt,
+      },
+    };
+  }
+
+  return share;
 };
 
 /**
- * Gets Bluesky timeline and processed posts
- * @param userId ID for logged in user
- * @returns Processed posts for database insertion
+ * Collect observed Bluesky-list/feed shares for a viewer. Returns a single
+ * `{viewer, shares}` batch ready to feed into `pushShareBatches`, or null
+ * when nothing was observed. The caller (worker batch or one-off API route)
+ * decides when to flush.
+ *
+ * The Bluesky following timeline is NOT touched here — the AppView ingests
+ * that from the Jetstream firehose directly.
  */
 export const getLinksFromBluesky = async (
   userId: string,
-): Promise<ProcessedResult[]> => {
+): Promise<PushShareBatch | null> => {
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
-    with: {
-      lists: true,
-    },
+    with: { lists: true },
   });
-  if (!account) return [];
+  if (!account) return null;
 
   const agent = await getOrCreateAgent(account);
-  if (!agent) return [];
-
-  // The AppView serves the Bluesky following timeline, so the worker no longer
-  // ingests it. Only Bluesky lists (custom feeds), which the AppView doesn't
-  // cover, are fetched below.
-  const processedResults: ProcessedResult[] = [];
+  if (!agent) return null;
 
   const subscribed = await isSubscribed(userId);
-  if (subscribed !== "free") {
-    for (const list of account.lists) {
-      const listPosts = await Promise.race([
-        getBlueskyList(agent, list, account.handle),
-        new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
-                ),
+  if (subscribed === "free") return null;
+
+  const shares: PushShare[] = [];
+  for (const list of account.lists) {
+    // The AppView canonicalises both `app.bsky.graph.list` and
+    // `app.bsky.feed.generator` at-URIs to the same `at-uri` source kind —
+    // pass the at-URI verbatim.
+    const source: PushShareSource = { kind: "at-uri", uri: list.uri };
+    const listPosts = await Promise.race([
+      getBlueskyList(agent, list, account.handle),
+      new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `List timeout: ${list.name}, ${list.uri} for ${account.handle}`,
               ),
-            120000,
-          ),
+            ),
+          120000,
         ),
-      ]).catch((e) => {
-        console.error("Error fetching list:", list.name, e?.constructor?.name);
-        return [];
-      });
-      processedResults.push(
-        ...(
-          await Promise.all(
-            listPosts.map(async (t) => processBlueskyLink(userId, t, list.id)),
-          )
-        ).filter((p) => p !== null),
-      );
+      ),
+    ]).catch((e) => {
+      console.error("Error fetching list:", list.name, e?.constructor?.name);
+      return [];
+    });
+    for (const t of listPosts) {
+      const share = await processBlueskyLink(t, source);
+      if (share) shares.push(share);
     }
   }
-  return processedResults;
+
+  return shares.length > 0 ? { viewer: account.did, shares } : null;
 };
 
 /**
- * Searches for a link facet in a Bluesky post record
- * If found, passes the link to the metadata fetcher
- * @param record Bluesky Post Record
- * @returns Detected link from post record
+ * Find the first non-bsky.app link facet in a Bluesky post record. Returns
+ * the raw URI; the AppView canonicalises on receipt, so no normalisation or
+ * metadata lookup is done here.
  */
-const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
-  let foundLink: BskyDetectedLink | null = null;
+const findBlueskyLinkFacets = async (
+  record: AppBskyFeedPost.Record,
+): Promise<BskyDetectedLink | null> => {
   const rt = new RichText({
     text: record.text,
     facets: record.facets,
@@ -660,29 +648,15 @@ const findBlueskyLinkFacets = async (record: AppBskyFeedPost.Record) => {
       AppBskyRichtextFacet.validateLink(segment.link).success &&
       !segment.link.uri.includes("bsky.app")
     ) {
-      const existingLink = await db.query.link.findFirst({
-        where: eq(link.url, await normalizeLink(segment.link.uri)),
-      });
-
-      // if we already have data
-      if (existingLink?.description) {
-        return {
-          uri: existingLink.url,
-          title: existingLink.title,
-          imageUrl: existingLink.imageUrl,
-          description: existingLink.description,
-        };
-      }
-      foundLink = {
+      return {
         uri: segment.link.uri,
         title: "",
         imageUrl: null,
         description: null,
       };
-      break;
     }
   }
-  return foundLink;
+  return null;
 };
 
 export const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {

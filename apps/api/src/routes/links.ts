@@ -8,10 +8,9 @@ import {
   getTimeline,
   findLinksByAuthor,
   findLinksByDomain,
-  findLinksByTopic,
   fetchLinks,
-  insertNewLinks,
   networkTopTen,
+  pushShareBatches,
 } from "@sill/links";
 
 // Schema for filtering links
@@ -54,21 +53,12 @@ const UpdateMetadataSchema = z.object({
 // Schema for finding links by author
 const FindLinksByAuthorSchema = z.object({
   author: z.string().min(1),
-  page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(100).default(10),
 });
 
 // Schema for finding links by domain
 const FindLinksByDomainSchema = z.object({
   domain: z.string().min(1),
-  page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(100).default(10),
-});
-
-// Schema for finding links by topic
-const FindLinksByTopicSchema = z.object({
-  topic: z.string().min(1),
-  page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(100).default(10),
 });
 
@@ -131,11 +121,11 @@ const links = new Hono()
   })
   // GET /api/links/author - Find links by author
   .get("/author", zValidator("query", FindLinksByAuthorSchema), async (c) => {
-    const { author, page, pageSize } = c.req.valid("query");
+    const { author, pageSize } = c.req.valid("query");
     const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByAuthor(author, page, pageSize, userId);
+      const result = await findLinksByAuthor(author, pageSize, userId);
       return c.json(result);
     } catch (error) {
       console.error("Find links by author error:", error);
@@ -144,26 +134,14 @@ const links = new Hono()
   })
   // GET /api/links/domain - Find links by domain
   .get("/domain", zValidator("query", FindLinksByDomainSchema), async (c) => {
-    const { domain, page, pageSize } = c.req.valid("query");
+    const { domain, pageSize } = c.req.valid("query");
     const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByDomain(domain, page, pageSize, userId);
+      const result = await findLinksByDomain(domain, pageSize, userId);
       return c.json(result);
     } catch (error) {
       console.error("Find links by domain error:", error);
-      return c.json({ error: "Internal server error" }, 500);
-    }
-  })
-  // GET /api/links/topic - Find links by topic
-  .get("/topic", zValidator("query", FindLinksByTopicSchema), async (c) => {
-    const { topic, page, pageSize } = c.req.valid("query");
-
-    try {
-      const result = await findLinksByTopic(topic, page, pageSize);
-      return c.json(result);
-    } catch (error) {
-      console.error("Find links by topic error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   })
@@ -178,12 +156,12 @@ const links = new Hono()
     const { type } = c.req.valid("json");
 
     try {
-      const results = await fetchLinks(userId, type);
-      await insertNewLinks(results);
+      // One-off: collect this user's shares and POST them as a single batch.
+      const batch = await fetchLinks(userId, type);
+      if (batch) await pushShareBatches([batch]);
 
       return c.json({
         success: true,
-        processed: results.length,
         type: type || "all",
       });
     } catch (error) {

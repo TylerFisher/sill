@@ -198,6 +198,135 @@ export const postViewerPreferences = async (
   }
 };
 
+// --- Share ingestion (`POST /v1/shares`) ---
+//
+// The path we use to feed Mastodon + Bluesky-list/feed observations into the
+// AppView so its trending/latest/search responses include them natively
+// (instead of Sill doing a separate DB merge + per-page hydration backfill).
+
+export interface PushShareActor {
+  /** ActivityPub Actor URI for Mastodon, DID for Bluesky. */
+  id: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+export interface PushSharePost {
+  /** http(s) URL for Mastodon, at:// URI for Bluesky. */
+  uri: string;
+  text: string;
+  createdAt: string; // ISO-8601
+}
+
+/**
+ * Where the viewer saw the share. `follows` is the home timeline (writes to
+ * link_posts + synthesizes a follow). Non-`follows` kinds carry the source
+ * identifier the AppView canonicalizes into a single string for the read-side
+ * `?sourceId=` filter.
+ */
+export type PushShareSource =
+  | { kind: "follows" }
+  | { kind: "at-uri"; uri: string } // Bluesky list or custom feed
+  | { kind: "mastodon-list"; instance: string; id: string };
+
+export interface PushShare {
+  url: string;
+  network: "mastodon" | "bsky";
+  source: PushShareSource;
+  post: PushSharePost;
+  actor: PushShareActor;
+  /**
+   * Present when the timeline entry was a reblog/repost. `actor` (above) is
+   * the ORIGINAL post author; `repost.actor` is the reblogger who gets
+   * share credit.
+   */
+  repost?: { actor: PushShareActor; createdAt: string };
+  /**
+   * Present when the post quotes another. `actor` (above) is the QUOTER;
+   * `quoted` carries the quoted author and post.
+   */
+  quoted?: { actor: PushShareActor; post: PushSharePost };
+}
+
+/** One viewer's slice of an AppView shares push. */
+export type PushShareBatch = { viewer: string; shares: PushShare[] };
+
+/** Per-viewer cap per API.md §POST /v1/shares. */
+const SHARES_PER_VIEWER_CAP = 2000;
+/** Per-request batches cap (batched form) per API.md. */
+const BATCHES_PER_REQUEST_CAP = 1000;
+
+/**
+ * Push observed shares to the AppView in the **batched form**
+ * (`{ batches: [{viewer, shares}, ...] }`), splitting around the spec caps:
+ *   - any viewer with >2000 shares is split into multiple per-viewer entries;
+ *   - any request with >1000 entries is split into multiple POSTs.
+ *
+ * The endpoint returns 202 and enqueues; writes are at-least-once and visible
+ * in feeds within seconds. Best-effort — logs but does not throw on failure.
+ *
+ * For Sill's worker pattern (≤100 viewers/pass, modest shares per viewer) this
+ * is one HTTP call per batch, replacing the old per-viewer N-call fanout.
+ */
+export const pushShareBatches = async (
+  batches: PushShareBatch[],
+): Promise<void> => {
+  if (batches.length === 0) return;
+  const base = process.env.APPVIEW_API_URL;
+  const key = process.env.APPVIEW_API_KEY;
+  if (!base || !key) return;
+  const target = `${base.replace(/\/$/, "")}/v1/shares`;
+
+  // Per-viewer cap: split any 2000-share viewer into multiple entries.
+  const split: PushShareBatch[] = [];
+  for (const b of batches) {
+    if (!b.viewer || b.shares.length === 0) continue;
+    for (let i = 0; i < b.shares.length; i += SHARES_PER_VIEWER_CAP) {
+      split.push({
+        viewer: b.viewer,
+        shares: b.shares.slice(i, i + SHARES_PER_VIEWER_CAP),
+      });
+    }
+  }
+  if (split.length === 0) return;
+
+  // Per-request cap: up to 1000 batches per POST.
+  for (let i = 0; i < split.length; i += BATCHES_PER_REQUEST_CAP) {
+    const chunk = split.slice(i, i + BATCHES_PER_REQUEST_CAP);
+    try {
+      const res = await fetch(target, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": key },
+        body: JSON.stringify({ batches: chunk }),
+        signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        const totalShares = chunk.reduce((n, b) => n + b.shares.length, 0);
+        console.error(
+          `AppView /v1/shares returned ${res.status} for ${chunk.length} batches / ${totalShares} shares: ${body}`,
+        );
+      }
+    } catch (e) {
+      console.error("AppView /v1/shares failed:", e);
+    }
+  }
+};
+
+/**
+ * One-shot convenience: push a single viewer's shares. Wraps the batched form;
+ * use this for one-off callers (API routes, single-list syncs). Workers
+ * should collect across users and call `pushShareBatches` once per pass.
+ */
+export const pushShares = async (
+  viewer: string,
+  shares: PushShare[],
+): Promise<void> => {
+  if (!viewer || shares.length === 0) return;
+  await pushShareBatches([{ viewer, shares }]);
+};
+
 /** Collection NSIDs to request based on Sill's repost filter. */
 const collectionsForRepostFilter = (
   hideReposts: "include" | "exclude" | "only"
@@ -229,11 +358,15 @@ interface UrlPageOptions {
   hideReposts: "include" | "exclude" | "only";
   /**
    * Server-side pre-filter on the AppView (`minShares` param) — drop URLs with
-   * fewer distinct sharers than this. Default 1 = no filter. Used by the
-   * notifications path (where the threshold is the whole point); the feed path
-   * keeps its combined-count semantics by leaving this unset.
+   * fewer distinct sharers than this. Default 1 = no filter.
    */
   minShares?: number;
+  /**
+   * Scope reads to one feed/list. Bluesky feeds/lists: the at-URI verbatim.
+   * Mastodon lists: `mastodon-list://<instance>/<id>`. When present, the
+   * AppView skips the follow-attributed branch entirely.
+   */
+  sourceId?: string;
 }
 
 /**
@@ -254,6 +387,7 @@ export const fetchUrlPage = async (
   if (opts.minShares != null && opts.minShares > 1) {
     params.set("minShares", String(opts.minShares));
   }
+  if (opts.sourceId) params.set("sourceId", opts.sourceId);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }
@@ -288,12 +422,14 @@ export const fetchByDomain = async (opts: {
   viewer?: string;
   window?: TimeWindow;
   limit?: number;
+  sourceId?: string;
 }): Promise<UrlItem[]> => {
   const params = new URLSearchParams();
   params.set("domain", opts.domain);
   if (opts.viewer) params.set("viewer", opts.viewer);
   if (opts.window) appendWindow(params, opts.window);
   params.set("limit", String(opts.limit ?? 20));
+  if (opts.sourceId) params.set("sourceId", opts.sourceId);
   const res = await appViewGet<ListResponse>("/v1/by-domain", params);
   return res.items;
 };
@@ -304,12 +440,14 @@ export const fetchByAuthor = async (opts: {
   viewer?: string;
   window?: TimeWindow;
   limit?: number;
+  sourceId?: string;
 }): Promise<UrlItem[]> => {
   const params = new URLSearchParams();
   params.set("author", opts.author);
   if (opts.viewer) params.set("viewer", opts.viewer);
   if (opts.window) appendWindow(params, opts.window);
   params.set("limit", String(opts.limit ?? 20));
+  if (opts.sourceId) params.set("sourceId", opts.sourceId);
   const res = await appViewGet<ListResponse>("/v1/by-author", params);
   return res.items;
 };
@@ -319,6 +457,8 @@ interface HydrationOptions {
   window: TimeWindow;
   urls: string[];
   hideReposts: "include" | "exclude" | "only";
+  /** Match the read-side scope used by the list call so counts align. */
+  sourceId?: string;
 }
 
 /** Fetch the individual shares (who shared what) for a set of canonical URLs. */
@@ -329,6 +469,7 @@ export const fetchHydration = async (
   const params = new URLSearchParams();
   params.set("viewer", opts.viewer);
   appendWindow(params, opts.window);
+  if (opts.sourceId) params.set("sourceId", opts.sourceId);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }

@@ -24,12 +24,20 @@ X-API-Key: <your-key>
 ## 2. Core concepts
 
 ### Viewer & "my network"
-Most endpoints take a `viewer` (a DID, e.g. `did:plc:...`). Results are scoped to **the accounts that viewer follows** (their network). The follow graph is expanded server-side, so the request stays small no matter how many people the viewer follows.
+Most endpoints take a `viewer`. Results are scoped to **the accounts that viewer follows** (their network). The follow graph is expanded server-side, so the request stays small no matter how many people the viewer follows.
+
+The `viewer` is one of:
+- A `did:` URI (e.g. `did:plc:abc…`) — for Bluesky users (and users who have both Bluesky and Mastodon — use the Bluesky DID).
+- An ActivityPub Actor URI (e.g. `https://mastodon.social/users/alice`) — for Mastodon-only users.
+
+The AppView treats `viewer` as an opaque stable identifier; it's used as a key in caches, `viewer_shares`, `viewer_prefs`, etc. Pick one form per user at signup and keep it. The format also determines whether the cold-viewer path tries to enqueue a Bluesky firehose backfill: only `did:plc:…` viewers do, since they're the only ones with an atproto repo to walk.
 
 ### Networks
-atproto is multi-network. The `network` param selects which follow graph(s) define "my network". Default is `bsky`. Comma-separated. Valid keys:
-`bsky`, `tangled`, `grain`, `sprk`, `cosmik`, `sifa`, `rocksky`, `skyreader`, `standard`.
-Example: `?network=bsky,tangled`. Most consumers can ignore this and accept the `bsky` default.
+The `network` param selects which follow graph(s) define "my network". Default is `bsky`. Comma-separated. Valid keys:
+`bsky`, `tangled`, `grain`, `sprk`, `cosmik`, `sifa`, `rocksky`, `skyreader`, `standard`, `mastodon`.
+Example: `?network=bsky,tangled` or `?network=bsky,mastodon`. Most consumers can ignore this and accept the `bsky` default.
+
+**Mastodon is off-firehose.** Bluesky-style atproto networks are ingested live from Jetstream; Mastodon shares are pushed in by the consumer's worker via [`POST /v1/shares`](#post-v1shares). The API surface and `network=` filter behave identically for both, but Mastodon coverage is only as fresh as the worker's last push. There's no Bluesky-firehose equivalent for ActivityPub.
 
 ### Time window
 `days` (int, 1–90, default 1) bounds results to shares in the last N days. For **sub-day** windows use `hours` (int, 1–23) instead — e.g. `?hours=6` for the last 6 hours. When both are supplied, `hours` takes precedence. Omit both for the 1-day default (**except `/v1/network-trending`, which defaults to 3 hours** — see §5). Applies to every endpoint that takes `days`.
@@ -48,6 +56,13 @@ Paginated endpoints return an optional `cursor` string. To get the next page, pa
 - `hideUrls` — repeated param, exact URLs to exclude (max 25, each ≤2048 chars).
 - `hideDids` — repeated param, DIDs to exclude (max 50).
 - `collection` — repeated param, restrict to specific record types (NSIDs, max 10). e.g. `?collection=app.bsky.feed.post&collection=app.bsky.feed.repost`. Omit to include all.
+
+<a id="sourceid"></a>
+**`sourceId` (viewer-scoped reads only)** — scope the response to a single content source (one of the viewer's custom feeds or lists). Two canonical forms:
+- Bluesky feed or list: the at-URI verbatim (e.g. `?sourceId=at://did:plc:abc/app.bsky.feed.generator/whats-hot`).
+- Mastodon list: `?sourceId=mastodon-list://<instance>/<id>` (e.g. `?sourceId=mastodon-list://mastodon.social/12345`).
+
+When present, the follow-attributed branch is **skipped entirely** — the viewer is asking "what's trending in THIS feed/list", not "across my whole network", so follow-graph shares would dilute the answer. When absent (default), the response unions follow-attributed shares with ALL of the viewer's feed/list-attributed shares — today's behavior. Applies to `trending`, `latest`, `search`, `by-author`, `by-domain`, and `hydration`; ignored on network-wide (no-`viewer`) requests. The same canonical strings come back round-trip via `POST /v1/shares` — see the `source` discriminator there.
 
 **Param encoding**: CSV params (`network`, `hideLabels`) use commas. Repeated params (`collection`, `hideUrls`, `hideDids`, `urls`) repeat the key: `?hideDids=did:plc:a&hideDids=did:plc:b`. Keep the total URL under ~16 KB (the caps above are tuned for this).
 
@@ -294,6 +309,142 @@ POST /v1/preferences
 { "ok": true, "mutedWords": null, "mutedDids": 2 }
 ```
 
+### `POST /v1/shares`
+Push a batch of link shares the caller observed for a viewer. The endpoint validates and enqueues to a durable Postgres queue; a separate worker drains the queue into ClickHouse asynchronously. **Returns 202 Accepted** — writes are at-least-once and visible in `/v1/trending` et al within a few seconds (queue latency, not per-write).
+
+This is how non-firehose share streams reach the AppView:
+- **Mastodon timeline / lists / custom feeds** (no firehose exists).
+- **Bluesky lists and custom feeds** (the Jetstream firehose only carries the global timeline; list/feed members have to be requested via the viewer's PDS).
+
+**Body** (JSON):
+```ts
+{
+  viewer: string;                  // the Sill user this batch is on behalf of (DID or ActivityPub Actor URI — see §2)
+  shares: Array<{
+    url: string;                   // the URL being shared
+    network: "mastodon" | "bsky";  // which network the share came from (default: mastodon)
+    // Where the viewer saw it (default: {kind: "follows"}).
+    //   `follows`        — home timeline; writes to link_posts + synthesizes a follow.
+    //   `at-uri`         — a Bluesky custom feed or list (the at-URI of the feed/list).
+    //   `mastodon-list`  — a Mastodon list, identified by {instance, id}.
+    // Storage canonicalizes the non-`follows` kinds to a single string:
+    //   at-uri        → the at-URI verbatim
+    //   mastodon-list → `mastodon-list://<instance>/<id>`
+    // — used as the read-side `?sourceId=` filter (see §5).
+    source:
+      | { kind: "follows" }
+      | { kind: "at-uri";        uri: string }                          // bsky feed or list
+      | { kind: "mastodon-list"; instance: string; id: string };        // mastodon list
+
+    // The post that contains the URL.
+    //   - Plain post: the timeline entry itself.
+    //   - Reblog: the ORIGINAL (reblogged-from) post.
+    //   - Quote post: the quoter's post (contains the URL in its text).
+    post: {
+      uri:       string;           // http(s) URL (Mastodon) or at:// URI (Bluesky)
+      text:      string;
+      createdAt: string;           // ISO-8601 datetime
+    };
+
+    // Author of `post` (the URL-bearing post).
+    actor: {
+      id:          string;         // ActivityPub Actor URI (Mastodon) or did:... (Bluesky)
+      handle:      string | null;
+      displayName: string | null;
+      avatarUrl:   string | null;
+    };
+
+    // Optional: present ONLY when the timeline entry was a reblog. The
+    // reblogger gets the share credit; `actor` (above) is the ORIGINAL author.
+    repost?: { actor: <Actor>; createdAt: string };
+
+    // Optional: present when the post quotes another. `actor` is the QUOTER;
+    // `quoted` carries the quoted post and its author.
+    quoted?: { actor: <Actor>; post: <Post> };
+  }>;  // 1..2000 entries
+}
+```
+
+**Source rules**:
+- `{kind: "follows"}` — the viewer's home timeline. Writes to the main shares table and **synthesizes an implicit follow** (`viewer` → `actor.id`) so trending counts it as a follow-attributed share.
+- `{kind: "at-uri", uri}` / `{kind: "mastodon-list", instance, id}` — a custom feed or curated list the viewer subscribes to. Writes to a separate per-viewer table (`viewer_shares`) and **does NOT** synthesize a follow (the viewer may not actually follow the actor). Trending surfaces it for THIS viewer only. The identifier is canonicalized into a single string used as the read-side `?sourceId=` filter — see [§5 `?sourceId`](#sourceid).
+
+**Reblog and quote semantics** mirror atproto:
+- A repost-of-quote (Mastodon: reblog of a quote post) sends both `repost` and `quoted` on the same share. The synthesized record carries `subject.subject` so `/v1/hydration` returns both hops.
+- Mastodon subjects are stored inline in the synthesized record (Mastodon URIs don't decompose into the (did, collection, rkey) key our records table uses), so hydration assembles `subject` without an extra round-trip.
+
+**Caps & limits (single-viewer)**: up to 2000 shares per request.
+
+**Batched form (recommended for continuous workers).** For pushers processing many viewers per pass, send one request with all viewers' batches in it. The API issues a single PG bulk-INSERT and the drainer processes them the same way as N independent requests — no behavioural difference, just fewer round-trips.
+
+```ts
+// Body alternative form:
+{
+  batches: Array<{
+    viewer: string;
+    shares: Share[];   // same shape as single-viewer
+  }>;                  // 1..1000 entries
+}
+```
+
+Response shape mirrors the request — single-viewer in, single-viewer out; batched in, batched out:
+```ts
+// Single-viewer body → response:
+{ accepted: number, queueId: number }
+
+// Batched body → response:
+{ accepted: number /* total across all batches */, batches: number /* viewer count */, queueIds: number[] }
+```
+
+Both bodies are accepted on the same endpoint; pick whichever matches your worker pattern. Batched is recommended when pushing >50 viewers per pass — at 400 viewers/pass it saves ~200 ms of round-trip per pass.
+
+```
+POST /v1/shares
+Content-Type: application/json
+X-API-Key: …
+
+{
+  "viewer": "did:plc:abc",
+  "shares": [
+    {
+      "url": "https://www.nytimes.com/2026/05/29/...",
+      "network": "mastodon",
+      "source": { "kind": "follows" },
+      "post": {
+        "uri":       "https://mastodon.social/@reporter/123456",
+        "text":      "Important read:",
+        "createdAt": "2026-05-29T13:00:00.000Z"
+      },
+      "actor": {
+        "id":          "https://mastodon.social/users/reporter",
+        "handle":      "reporter@mastodon.social",
+        "displayName": "A Reporter",
+        "avatarUrl":   "https://files.mastodon.social/.../avatar.png"
+      }
+    },
+    {
+      "url": "https://www.theatlantic.com/2026/05/28/...",
+      "network": "mastodon",
+      "source": { "kind": "mastodon-list", "instance": "mastodon.social", "id": "12345" },
+      "post": {
+        "uri":       "https://mastodon.social/@critic/789",
+        "text":      "Worth your time:",
+        "createdAt": "2026-05-29T14:00:00.000Z"
+      },
+      "actor": {
+        "id":          "https://mastodon.social/users/critic",
+        "handle":      "critic@mastodon.social",
+        "displayName": "A Critic",
+        "avatarUrl":   null
+      }
+    }
+  ]
+}
+```
+```json
+{ "accepted": 1, "queueId": 4271 }
+```
+
 ### `GET /v1/backfill-status`
 Global indexing progress (not per-viewer).
 ```ts
@@ -324,6 +475,8 @@ Prometheus exposition format.
 **Collection nuance** — check `collection`:
 - `app.bsky.feed.post` — a normal post, or a **quote post**. `record.text` is the author's own words. If it's a quote, `subject` carries the quoted post (its `record`, author, avatar) — render the author's text with the quoted post embedded beneath.
 - `app.bsky.feed.repost` — a repost. Here `record` is just the *repost* pointer (`{ subject: { uri, cid }, createdAt }`) with no text of its own; the **reposted post is in `subject`** (its `record` + author). Render "@actor reposted" above the `subject` post card.
+- `mastodon.status` — a Mastodon post (plain or quote). The synthesized record body has `text`, `createdAt`, `uri`. Permalink target is `atUri` (a Mastodon HTTP URL — use as-is, no bsky.app construction). When `subject` is set, it's the quoted post.
+- `mastodon.repost` — a Mastodon reblog. The reposted post is in `subject`, same convention as `app.bsky.feed.repost`. `record` here just has `createdAt` (the reblog event time) plus the inline `subject`.
 
 **`subject` (reposts & quotes):** the AppView resolves the referenced post for you — `subject.record` is the full post (JSON.parse it the same as `record`), with `subject.actorDid`/`actorHandle`/`actorName`/`actorAvatar` for its author. It's **absent** only when that post isn't indexed (out-of-network author); in that case fall back to the bare pointer in `record.subject.uri` / the embed. Resolution goes up to **two levels**: a share's `subject`, plus that subject's own `subject` when the subject is itself a quote/repost — e.g. a **repost of a quote post** resolves both the quote post (`subject`) and the quoted post (`subject.subject`). It stops there; a third level isn't expanded.
 
@@ -338,6 +491,7 @@ So a typical URL card shows: the URL's `title`/`imageUrl`/`siteName` (from the t
 2. **Per-share rendering** — if you want to render each sharer's post text / quote / repost subject (not just their identity), `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`, time window — `days` or `hours` — `collection`/`network`/prefs as step 1) → returns the full `ShareRow[]` with record bodies + subject posts.
 3. **Pagination** — pass the trending `cursor` back as `?cursor=…` for the next page; stop when no `cursor` is returned.
 4. **Search / filters** — `/v1/search`, `/v1/by-author`, `/v1/by-domain` for discovery; `hideDids`/`hideUrls`/`hideLabels` to honour user mutes/moderation.
+5. **Pushing non-firehose shares** — for Mastodon timelines/lists/feeds and Bluesky lists/custom-feeds, run a worker that fetches per viewer and `POST /v1/shares` the results. Use `network` and `source` to tell the AppView whether to treat them as follow-attributed (writes implicit follows) or viewer-scoped (no follow inferred). All other endpoints then return a unified view across both Bluesky firehose and your pushed shares.
 
 ---
 

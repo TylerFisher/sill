@@ -54,7 +54,7 @@ export async function dequeueJobs(batchSize: number) {
 }
 
 interface ProcessJobResult {
-  links: Awaited<ReturnType<typeof import("./links.js").fetchLinks>>;
+  shareBatch: Awaited<ReturnType<typeof import("./links.js").fetchLinks>>;
   notificationGroups: Awaited<
     ReturnType<typeof db.query.notificationGroup.findMany>
   >;
@@ -93,7 +93,9 @@ export async function processJob(
   job: typeof accountUpdateQueue.$inferSelect,
 ): Promise<ProcessJobResult> {
   const needsIngestion = await hasIngestionSources(job.userId);
-  const links = needsIngestion ? await fetchLinks(job.userId) : [];
+  // `fetchLinks` collects shares (no DB writes); the worker accumulates
+  // batches across the pass and flushes once via `pushShareBatches`.
+  const shareBatch = needsIngestion ? await fetchLinks(job.userId) : null;
   // get new bookmarks from ATProto repo
   // await addNewBookmarks(job.userId);
 
@@ -114,7 +116,7 @@ export async function processJob(
     .where(eq(accountUpdateQueue.id, job.id));
 
   return {
-    links,
+    shareBatch,
     notificationGroups: groups,
     bookmarks: userBookmarks,
   };

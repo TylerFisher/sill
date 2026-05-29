@@ -8,8 +8,6 @@ import {
   type bookmark,
 } from "@sill/schema";
 import {
-  type ProcessedResult,
-  insertNewLinks,
   dequeueJobs,
   enqueueJob,
   processUrl,
@@ -19,6 +17,8 @@ import {
   getHighActivityUrls,
   clearUrlExpansionCache,
   flushCacheReport,
+  type PushShareBatch,
+  pushShareBatches,
 } from "@sill/links";
 
 // Constants
@@ -50,7 +50,7 @@ process.on("SIGINT", () => {
  */
 async function processJobWithTimeout(
   job: typeof accountUpdateQueue.$inferSelect,
-  allLinks: ProcessedResult[],
+  shareBatches: PushShareBatch[],
   notificationGroups: (typeof notificationGroup.$inferSelect)[],
   bookmarks: (typeof bookmark.$inferSelect)[]
 ): Promise<JobResult> {
@@ -66,8 +66,9 @@ async function processJobWithTimeout(
 
     const result = await Promise.race([timeoutPromise, processJob(job)]);
 
-    // Only push results if we got here (didn't timeout)
-    allLinks.push(...result.links);
+    // Per-job shares accumulate here; the batch flushes once at the end via
+    // `pushShareBatches` so the whole worker pass is one HTTP request.
+    if (result.shareBatch) shareBatches.push(result.shareBatch);
     notificationGroups.push(...result.notificationGroups);
     bookmarks.push(...result.bookmarks);
 
@@ -102,19 +103,23 @@ async function processBatch(
   console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
   const batchStart = Date.now();
 
-  const allLinks: ProcessedResult[] = [];
+  const shareBatches: PushShareBatch[] = [];
   const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
   const bookmarks: (typeof bookmark.$inferSelect)[] = [];
 
-  // Process all jobs in parallel
+  // Process all jobs in parallel. Each job collects its viewer's shares; we
+  // POST `/v1/shares` once for the whole batch in the AppView's batched form.
   const results = await Promise.all(
     jobs.map((job) =>
-      processJobWithTimeout(job, allLinks, notificationGroups, bookmarks)
+      processJobWithTimeout(job, shareBatches, notificationGroups, bookmarks)
     )
   );
 
-  // Insert all new links
-  await insertNewLinks(allLinks);
+  // Single batched POST per worker pass — saves ~200 ms / pass vs. one POST
+  // per viewer (API.md §POST /v1/shares "Batched form").
+  if (shareBatches.length > 0) {
+    await pushShareBatches(shareBatches);
+  }
 
   // Process notifications sequentially
   for (const group of notificationGroups) {
