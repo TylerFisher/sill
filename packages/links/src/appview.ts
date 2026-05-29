@@ -19,10 +19,24 @@ export const appViewEnabled = (): boolean =>
 
 // --- Response shapes (mirror API.md §4) ---
 
+export interface Sharer {
+  did: string;
+  handle?: string;
+  name?: string;
+}
+
 export interface UrlItem {
   url: string;
   shares?: number; // distinct sharers (all aggregating endpoints)
   avatars?: string[]; // up to 3 sharer avatars for a face pile
+  /**
+   * Up to 1000 distinct accounts that shared this URL within the window,
+   * most-recent first. Emitted by `/v1/trending`, `/v1/latest`, `/v1/search`,
+   * `/v1/by-author`, `/v1/by-domain` (NOT `/v1/network-trending`). Lets us
+   * dedupe Bluesky sharers across sources (AppView following + DB Bluesky
+   * lists) before counting — same person in both shouldn't count twice.
+   */
+  sharers?: Sharer[];
   mostRecent?: string; // latest share time (trending/search)
   eventTime?: string; // latest share time on /v1/latest (in place of mostRecent)
   giftUrl?: string;

@@ -83,6 +83,7 @@ interface UrlItem {
   url: string;          // canonical URL
   shares: number;       // distinct accounts in scope who shared it
   avatars: string[];    // up to 3 sharer avatar URLs, for a face-pile preview
+  sharers: Sharer[];    // up to 1000 sharers, most-recent-share first (viewer-scoped endpoints only — see below)
   mostRecent: string;   // UTC datetime of the latest share
   giftUrl?: string;     // a gift/unlocked-article link, if a sharer used one (NYT/WaPo/etc.)
   // URL metadata — present only when the URL has been scraped; fields omitted when unknown:
@@ -93,8 +94,16 @@ interface UrlItem {
   byline?: string;      // article author(s)
   publishedAt?: string; // UTC datetime the article was published
 }
+
+interface Sharer {
+  did: string;          // stable identifier; always present
+  handle?: string;      // current handle, e.g. "reporter.bsky.social" — omitted when unknown
+  name?: string;        // profile display name — omitted when unknown
+}
 ```
-`avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; arbitrary 3 of the sharers, not ranked. **Exception**: `/v1/latest` items carry `eventTime` (UTC datetime of the most recent share) in place of `mostRecent`; they still include `shares` and `avatars`, counted over the same `days`/`hours` window. Everything else is identical.
+`avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; the first 3 from the most-recent-share-first ordering. **Exception**: `/v1/latest` items carry `eventTime` (UTC datetime of the most recent share) in place of `mostRecent`; they still include `shares`, `avatars`, and `sharers`, counted over the same `days`/`hours` window. Everything else is identical.
+
+**`sharers`** lists distinct accounts that shared the URL within the window, ordered most-recent-share first, capped at 1000 (the safety belt — viral URLs in very active networks could exceed this). Each entry carries the stable `did`, and `handle`/`name` when known; either can be missing for accounts that haven't been fully indexed yet. **Emitted by `/v1/trending`, `/v1/latest`, `/v1/search`, `/v1/by-author`, and `/v1/by-domain`.** The set it draws from depends on the endpoint's mode: viewer-scoped requests (trending/latest, or search/by-author/by-domain *with* `viewer`) list sharers from the viewer's network; network-wide requests (search/by-author/by-domain *without* `viewer`) list sharers from the whole index. **`/v1/network-trending` deliberately omits this field** — the global feed's per-URL sharer list can run into the millions and isn't a useful UI primitive. For a full per-share render with record bodies + repost/quote subjects, use `/v1/hydration`.
 
 > Metadata is scraped asynchronously. A freshly-seen URL may come back with only `url` (+ maybe `giftUrl`) and no `title`/`imageUrl` until the scraper catches up. Render a graceful fallback (show the bare URL/domain).
 
@@ -324,9 +333,9 @@ So a typical URL card shows: the URL's `title`/`imageUrl`/`siteName` (from the t
 
 ## 7. Typical frontend flow
 
-1. **List view** — `GET /v1/trending?viewer=<did>&days=1` → URL cards with metadata + share counts.
+1. **List view** — `GET /v1/trending?viewer=<did>&days=1` → URL cards with metadata, share counts, and `sharers[]` (handles + names) for everyone in the viewer's network who shared each URL. For a face-pile + "shared by Jane, John, and 12 others" UI, no second call is needed.
    - If `cold: true` → show "indexing your network…" and retry shortly.
-2. **Who shared it** — take the `url`s you're displaying and `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`, time window — `days` or `hours` — `collection`/`network`/prefs as step 1) → render the sharer avatars/names/posts under each card.
+2. **Per-share rendering** — if you want to render each sharer's post text / quote / repost subject (not just their identity), `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`, time window — `days` or `hours` — `collection`/`network`/prefs as step 1) → returns the full `ShareRow[]` with record bodies + subject posts.
 3. **Pagination** — pass the trending `cursor` back as `?cursor=…` for the next page; stop when no `cursor` is returned.
 4. **Search / filters** — `/v1/search`, `/v1/by-author`, `/v1/by-domain` for discovery; `hideDids`/`hideUrls`/`hideLabels` to honour user mutes/moderation.
 
