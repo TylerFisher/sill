@@ -1,4 +1,4 @@
-import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
+import { Box, Card, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import { Suspense, useEffect, useRef, useState } from "react";
 import {
 	Await,
@@ -259,18 +259,41 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					hideSort={true}
 				/>
 			</LinkFiltersCollapsible>
-			{showPending && (
-				<Box mb="3" aria-live="polite">
-					<Flex gap="2" align="center" justify="center">
-						<Spinner size="2" />
-						<Text size="2" color="gray">
-							{pendingQuery
-								? `Searching for “${pendingQuery}”…`
-								: "Updating results…"}
-						</Text>
-					</Flex>
-				</Box>
-			)}
+			<Box position="relative">
+				{/* Floating overlay indicator. `position: fixed` takes the pill
+				    completely out of document flow so toggling it never shifts
+				    the cards below — sticky still claims its initial flow slot
+				    before pinning, which produced the residual nudge. Fixed
+				    also keeps the indicator pinned to the viewport so it stays
+				    visible no matter how far down the user has scrolled. */}
+				{showPending && (
+					<Box
+						aria-live="polite"
+						style={{
+							position: "fixed",
+							top: 16,
+							left: "50%",
+							transform: "translateX(-50%)",
+							zIndex: 50,
+							pointerEvents: "none",
+						}}
+					>
+						<Card
+							variant="surface"
+							size="1"
+							style={{ pointerEvents: "auto" }}
+						>
+							<Flex gap="2" align="center" px="2">
+								<Spinner size="2" />
+								<Text size="2" color="gray">
+									{pendingQuery
+										? `Searching for “${pendingQuery}”…`
+										: "Updating results…"}
+								</Text>
+							</Flex>
+						</Card>
+					</Box>
+				)}
 			<Suspense
 				fallback={
 					<Box>
@@ -341,6 +364,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					)}
 				</Await>
 			</Suspense>
+			</Box>
 		</Layout>
 	);
 };
