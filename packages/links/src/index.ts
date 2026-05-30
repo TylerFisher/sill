@@ -39,13 +39,6 @@ export {
   type TimeWindow,
 } from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
-export {
-  fetchHtmlViaProxy,
-  extractHtmlMetadata,
-  processUrl,
-  getHighActivityUrls,
-} from "./metadata.js";
-export { renderPageContent } from "./cloudflare.js";
 export { conflictUpdateSetAllColumns } from "./db-helpers.js";
 export {
   fetchLatestBookmarks,

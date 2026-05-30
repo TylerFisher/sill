@@ -26,7 +26,6 @@ export default [
     route("bluesky/status", "routes/api/bluesky.status.ts"),
     route("email/send-verification", "routes/api/email.send-verification.ts"),
     route("email/verify", "routes/api/email.verify.ts"),
-    route("link/update-metadata", "routes/api/link.update-metadata.ts"),
     route("list/subscribe", "routes/api/list.subscribe.ts"),
     route("lists/bluesky", "routes/api/lists.bluesky.ts"),
     route("lists/mastodon", "routes/api/lists.mastodon.ts"),

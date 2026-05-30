@@ -761,9 +761,7 @@ const serializeRecord = (record: AppBskyFeedPost.Record | null): string => {
  */
 export const urlItemToLink = (item: UrlItem, dbLink?: Link | null): Link => {
   // The AppView is the source of truth for URL metadata. The DB row is only a
-  // fallback for URLs the AppView hasn't scraped yet (no title). When the
-  // AppView has metadata we mark it scraped and set a non-null `metadata` so
-  // the client-side scraper (useClientMetadata) doesn't re-fetch and override.
+  // fallback for URLs the AppView hasn't scraped yet (no title).
   const fromAppView = Boolean(item.title);
   return {
     id: dbLink?.id ?? uuidv7(),

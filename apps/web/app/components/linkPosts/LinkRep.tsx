@@ -1,6 +1,5 @@
 import { Box, Card, Inset } from "@radix-ui/themes";
 import { useState } from "react";
-import { useClientMetadata } from "~/hooks/useClientMetadata";
 import { useTheme } from "~/routes/resources/theme-switch";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 import styles from "./LinkRep.module.css";
@@ -49,24 +48,9 @@ const LinkRep = ({
 	const host = url.host.replace("www.", "");
 	const theme = useTheme();
 
-	const { clientMetadata } = useClientMetadata({
-		url: link.url,
-		metadata: link.metadata,
-	});
-
-	const effectiveLink = clientMetadata
-		? {
-				...link,
-				title: clientMetadata.title || link.title || link.url,
-				description: clientMetadata.description || link.description,
-				imageUrl: clientMetadata.imageUrl || link.imageUrl,
-				authors: clientMetadata.authors || link.authors,
-				publishedDate: clientMetadata.publishedDate || link.publishedDate,
-				topics: clientMetadata.topics || link.topics,
-				siteName: clientMetadata.siteName || link.siteName,
-				metadata: clientMetadata.metadata || link.metadata,
-			}
-		: link;
+	// AppView is the source of truth for URL metadata; no client-side scrape
+	// fallback. `link` is whatever the server returned.
+	const effectiveLink = link;
 
 	// When the inline tweet embed fails (e.g. deleted/protected tweet causing
 	// react-tweet to throw on a malformed syndication response), fall back to

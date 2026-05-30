@@ -1,7 +1,6 @@
 import { redirect } from "react-router";
 import { hc } from "hono/client";
 import type { AppType } from "@sill/api";
-import type { link } from "@sill/schema";
 
 // API URL for server-to-server communication
 // Defaults to localhost for local development, Docker service name for containerized
@@ -1547,33 +1546,6 @@ export async function apiGetNetworkTopTen(request: Request) {
   return json;
 }
 
-/**
- * Update link metadata via API
- */
-export async function apiUpdateLinkMetadata(
-  request: Request,
-  data: {
-    url: string;
-    metadata: Partial<Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">>;
-  },
-) {
-  const client = createApiClient(request);
-  const response = await client.api.links.metadata.$post({
-    json: data,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update link metadata: ${response.status}`);
-  }
-
-  const json = await response.json();
-
-  if ("error" in json) {
-    throw new Error(json.error as string);
-  }
-
-  return json;
-}
 
 /**
  * Start a sync job via API

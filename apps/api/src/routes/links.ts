@@ -1,9 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getUserIdFromSession } from "@sill/auth";
-import { link, db } from "@sill/schema";
 import {
   getTimeline,
   findLinksByAuthor,
@@ -29,25 +27,6 @@ const FilterLinksSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10),
   url: z.string().optional(),
   minShares: z.coerce.number().optional(),
-});
-
-// Schema for updating link metadata
-const UpdateMetadataSchema = z.object({
-  url: z.string().url(),
-  metadata: z.object({
-    title: z.string().nullable().optional(),
-    description: z.string().nullable().optional(),
-    imageUrl: z.string().nullable().optional(),
-    siteName: z.string().nullable().optional(),
-    publishedDate: z
-      .string()
-      .nullable()
-      .optional()
-      .transform((val) => (val ? new Date(val) : null)),
-    authors: z.array(z.string()).nullable().optional(),
-    topics: z.array(z.string()).nullable().optional(),
-    metadata: z.record(z.unknown()).nullable().optional(),
-  }),
 });
 
 // Schema for finding links by author
@@ -85,37 +64,6 @@ const links = new Hono()
       return c.json(result);
     } catch (error) {
       console.error("Filter links error:", error);
-      return c.json({ error: "Internal server error" }, 500);
-    }
-  })
-  // POST /api/links/metadata - Update link metadata
-  .post("/metadata", zValidator("json", UpdateMetadataSchema), async (c) => {
-    const userId = await getUserIdFromSession(c.req.raw);
-
-    if (!userId) {
-      return c.json({ error: "Not authenticated" }, 401);
-    }
-
-    const { url, metadata } = c.req.valid("json");
-
-    try {
-      const filteredMetadata = Object.fromEntries(
-        Object.entries(metadata).filter(([, value]) => value !== null)
-      );
-
-      const result = await db
-        .update(link)
-        .set(filteredMetadata)
-        .where(eq(link.url, url))
-        .returning();
-
-      if (result.length === 0) {
-        return c.json({ error: "Link not found" }, 404);
-      }
-
-      return c.json({ success: true, link: result[0] });
-    } catch (error) {
-      console.error("Update metadata error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   })
