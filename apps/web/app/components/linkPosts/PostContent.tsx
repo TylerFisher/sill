@@ -17,7 +17,6 @@ interface PostContentProps {
 
 const PostContent = ({ post, layout }: PostContentProps) => {
   if (!post) return null;
-  console.log(post);
 
   // Process post text to add target="_blank" and rel attributes to all links
   if (post.postText) {

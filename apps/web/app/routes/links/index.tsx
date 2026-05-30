@@ -1,6 +1,12 @@
 import { Box, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { Await, useFetcher, useLocation, useSearchParams } from "react-router";
+import {
+	Await,
+	useFetcher,
+	useLocation,
+	useNavigation,
+	useSearchParams,
+} from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
@@ -143,6 +149,38 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [key, setKey] = useState(loaderData.key);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
+	const navigation = useNavigation();
+	const location = useLocation();
+
+	// Pending state for any in-flight filter navigation on this page — covers
+	// the search box, the sort/service/list filters, and the minShares input.
+	// Matches when React Router is loading a navigation destined for the same
+	// pathname but with a different query string (so it doesn't trigger on
+	// fresh page mounts or on cross-route nav).
+	const isPending =
+		navigation.state === "loading" &&
+		navigation.location?.pathname === location.pathname &&
+		(navigation.location.search ?? "") !== (location.search ?? "");
+
+	// Defer the visible pending UI by 50 ms so cached/fast navigations don't
+	// produce a flicker. If the navigation resolves before the timer fires,
+	// `showPending` stays false and the user sees no transition; turning off
+	// is immediate so the spinner doesn't linger after results arrive.
+	const [showPending, setShowPending] = useState(false);
+	useEffect(() => {
+		if (!isPending) {
+			setShowPending(false);
+			return;
+		}
+		const t = setTimeout(() => setShowPending(true), 50);
+		return () => clearTimeout(t);
+	}, [isPending]);
+
+	// The fresh search param being navigated to — used to tell a query update
+	// apart from a sort/service swap when we want a "Searching for X…" label.
+	const pendingQuery = showPending
+		? (new URLSearchParams(navigation.location?.search ?? "").get("query") ?? "")
+		: "";
 
 	function setupIntersectionObserver() {
 		const $form = formRef.current;
@@ -221,6 +259,18 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					hideSort={true}
 				/>
 			</LinkFiltersCollapsible>
+			{showPending && (
+				<Box mb="3" aria-live="polite">
+					<Flex gap="2" align="center" justify="center">
+						<Spinner size="2" />
+						<Text size="2" color="gray">
+							{pendingQuery
+								? `Searching for “${pendingQuery}”…`
+								: "Updating results…"}
+						</Text>
+					</Flex>
+				</Box>
+			)}
 			<Suspense
 				fallback={
 					<Box>
@@ -241,7 +291,14 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					}
 				>
 					{(links) => (
-						<Box>
+						<Box
+							aria-busy={showPending}
+							style={{
+								opacity: showPending ? 0.55 : 1,
+								transition: "opacity 150ms ease",
+								pointerEvents: showPending ? "none" : "auto",
+							}}
+						>
 							{links.map((link) => (
 								// Include the loader key so cards remount when the feed
 								// reloads (e.g. filtering to a list), discarding any posts
