@@ -229,10 +229,6 @@ export const isQuote = (
   );
 };
 
-/** Strip HTML tags from Mastodon post content for the AppView's `post.text`. */
-const stripHtml = (s: string): string =>
-  s.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-
 /** Defensive clip for actor.handle (AppView rejects > 512 chars). */
 const HANDLE_MAX = 512;
 const clipHandle = (h: string | null | undefined): string | null => {
@@ -273,7 +269,10 @@ export const processMastodonLink = async (
     source,
     post: {
       uri: postUrl,
-      text: stripHtml(original.content),
+      // Mastodon's `content` is already HTML (the form Sill's renderer expects
+      // via `dangerouslySetInnerHTML`). Send it through unchanged — the
+      // AppView's `/v1/search` tokenizer ignores tag noise.
+      text: original.content,
       createdAt: original.createdAt,
     },
     actor: {
@@ -313,7 +312,7 @@ export const processMastodonLink = async (
         },
         post: {
           uri: q.url,
-          text: stripHtml(q.content),
+          text: q.content,
           createdAt: q.createdAt,
         },
       };

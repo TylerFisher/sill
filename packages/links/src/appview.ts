@@ -652,6 +652,41 @@ const postUrlFromAtUri = (atUri: string, handle?: string | null): string => {
 };
 
 /**
+ * Mastodon actor identifier (the ActivityPub Actor URI Sill pushed up — e.g.
+ * `https://mastodon.social/users/alice`) is itself a fine profile URL. We
+ * leave it untransformed; the federated instance redirects `/users/x` to the
+ * human `/@x` view on the client.
+ */
+const mastodonProfileUrl = (actorId: string): string => actorId;
+
+/**
+ * Heuristic: an `at://…` URI is Bluesky, anything else (http(s)://) is
+ * Mastodon. Used to type quoted subjects since `SubjectPost` has no
+ * `collection` field — the parent share's collection is the only authoritative
+ * signal, and only when the quoted post is reachable.
+ */
+const networkFromAtUri = (atUri: string): "bluesky" | "mastodon" =>
+  atUri.startsWith("at://") ? "bluesky" : "mastodon";
+
+/** Quoted-post permalink that respects the subject's network shape. */
+const quotedPostPermalink = (
+  atUri: string,
+  handle: string | null | undefined,
+): string =>
+  networkFromAtUri(atUri) === "bluesky"
+    ? postUrlFromAtUri(atUri, handle)
+    : atUri;
+
+/** Profile URL builder that respects the subject's network shape. */
+const subjectProfileUrl = (
+  atUri: string,
+  handleOrDid: string,
+): string =>
+  networkFromAtUri(atUri) === "bluesky"
+    ? profileUrl(handleOrDid)
+    : mastodonProfileUrl(handleOrDid);
+
+/**
  * Extract attached images from a raw (record-level) atproto post embed,
  * constructing CDN thumbnail URLs from blob refs. Best-effort: returns [] for
  * shapes we don't recognize.
@@ -1090,19 +1125,29 @@ type QuotedFields = Pick<
   | "quotedPostImages"
 >;
 
-/** Build Sill's `quoted*` fields from a resolved quoted post (a SubjectPost). */
+/**
+ * Build Sill's `quoted*` fields from a resolved quoted post (a SubjectPost).
+ * The subject carries no `collection` of its own, so we infer the network from
+ * the at:// vs http(s) shape of `atUri` — Bluesky quotes get a bsky.app
+ * permalink and `quotedPostType: "bluesky"`; Mastodon quotes pass the HTTP
+ * URL through and get `quotedPostType: "mastodon"`.
+ */
 const quotedFields = (subject: SubjectPost): QuotedFields => {
   const quoted = parseRecord(subject.record);
+  const isBsky = networkFromAtUri(subject.atUri) === "bluesky";
+  const handleOrDid = subject.actorHandle || subject.actorDid;
   return {
-    quotedActorUrl: profileUrl(subject.actorHandle || subject.actorDid),
-    quotedActorHandle: subject.actorHandle || subject.actorDid,
+    quotedActorUrl: subjectProfileUrl(subject.atUri, handleOrDid),
+    quotedActorHandle: handleOrDid,
     quotedActorName: subject.actorName ?? null,
     quotedActorAvatarUrl: subject.actorAvatar ?? null,
-    quotedPostUrl: postUrlFromAtUri(subject.atUri, subject.actorHandle),
+    quotedPostUrl: quotedPostPermalink(subject.atUri, subject.actorHandle),
     quotedPostText: serializeRecord(quoted),
     quotedPostDate: toDbDate(quoted?.createdAt),
-    quotedPostType: postType.enumValues[0], // "bluesky"
-    quotedPostImages: extractImagesFromRecord(quoted, subject.actorDid),
+    quotedPostType: isBsky ? postType.enumValues[0] : postType.enumValues[1], // "bluesky" | "mastodon"
+    quotedPostImages: isBsky
+      ? extractImagesFromRecord(quoted, subject.actorDid)
+      : [],
   };
 };
 
@@ -1142,6 +1187,14 @@ export const shareRowToLinkPost = (
 
   if (share.collection === "site.standard.document") {
     return leafletDocumentToLinkPost(share, base);
+  }
+
+  if (share.collection === "mastodon.status") {
+    return mastodonStatusToLinkPost(share, base);
+  }
+
+  if (share.collection === "mastodon.repost") {
+    return mastodonRepostToLinkPost(share, base);
   }
 
   if (share.collection === "app.bsky.feed.repost") {
@@ -1192,6 +1245,86 @@ export const shareRowToLinkPost = (
   }
 
   return post;
+};
+
+/**
+ * `mastodon.status`: a Mastodon post or quote-post. The AppView synthesises
+ * the record body with `text`/`createdAt`/`uri`; `atUri` is the Mastodon HTTP
+ * permalink (use as-is). `actorDid` is the ActivityPub Actor URI Sill pushed
+ * up — its own profile URL. When `subject` is set the post is a quote;
+ * `quotedFields` infers Mastodon vs Bluesky from the subject's `atUri` shape.
+ */
+const mastodonStatusToLinkPost = (
+  share: ShareRow,
+  base: LinkPost,
+): LinkPost => {
+  const record = parseMastodonRecord(share.record);
+  const post: LinkPost = {
+    ...base,
+    postType: postType.enumValues[1], // "mastodon"
+    postUrl: share.atUri,
+    postText: record?.text ?? "",
+    postDate: toDbDate(record?.createdAt) ?? base.postDate,
+    actorUrl: mastodonProfileUrl(share.actorDid),
+  };
+
+  if (share.subject && !isEmptyRecord(share.subject.record)) {
+    Object.assign(post, quotedFields(share.subject));
+  }
+  return post;
+};
+
+/**
+ * `mastodon.repost`: a reblog of a Mastodon status. Same shape convention as
+ * `app.bsky.feed.repost` — the reposted post lives in `subject`; the sharer
+ * (actor*) is collapsed into `repostActor*` while the original author rides
+ * up to the primary actor slot. Mastodon-flavoured URLs throughout.
+ */
+const mastodonRepostToLinkPost = (
+  share: ShareRow,
+  base: LinkPost,
+): LinkPost => {
+  // No subject → unresolved (out-of-network original). Render the sharer with
+  // a `mastodon` type so it isn't mis-typed as Bluesky.
+  if (!share.subject || isEmptyRecord(share.subject.record)) {
+    return {
+      ...base,
+      postType: postType.enumValues[1], // "mastodon"
+      actorUrl: mastodonProfileUrl(share.actorDid),
+    };
+  }
+  const subjectRecord = parseMastodonRecord(share.subject.record);
+  const nestedQuote =
+    share.subject.subject && !isEmptyRecord(share.subject.subject.record)
+      ? quotedFields(share.subject.subject)
+      : null;
+  return {
+    ...base,
+    postType: postType.enumValues[1], // "mastodon"
+    postUrl: share.subject.atUri,
+    postText: subjectRecord?.text ?? "",
+    postDate: toDbDate(subjectRecord?.createdAt) ?? base.postDate,
+    actorUrl: mastodonProfileUrl(share.subject.actorDid),
+    actorHandle: share.subject.actorHandle || share.subject.actorDid,
+    actorName: share.subject.actorName ?? null,
+    actorAvatarUrl: share.subject.actorAvatar ?? null,
+    repostActorUrl: mastodonProfileUrl(share.actorDid),
+    repostActorHandle: share.actorHandle || share.actorDid,
+    repostActorName: share.actorName ?? null,
+    repostActorAvatarUrl: share.actorAvatar ?? null,
+    ...nestedQuote,
+  };
+};
+
+/** Minimal parse for the synthesized Mastodon record body (`{text, createdAt, uri}`). */
+const parseMastodonRecord = (
+  raw: string,
+): { text?: string; createdAt?: string; uri?: string } | null => {
+  try {
+    return JSON.parse(raw) as { text?: string; createdAt?: string; uri?: string };
+  } catch {
+    return null;
+  }
 };
 
 /**

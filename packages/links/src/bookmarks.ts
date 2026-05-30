@@ -9,13 +9,6 @@ import {
 } from "@sill/schema";
 import { getOrCreateAgent, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
-import {
-  appViewEnabled,
-  fetchHydration,
-  networkFromService,
-  resolveRepostSubjects,
-  shareRowToLinkPost,
-} from "./appview.js";
 
 type BaseSliceResponse = {
   cid: string;
@@ -339,82 +332,3 @@ export const addNewBookmarks = async (userId: string) => {
   return insertedBookmarks;
 };
 
-/**
- * Updates a bookmark with new posts and recalculates the unique actors count.
- * Fetches new posts for the bookmark's URL and merges them with existing posts.
- */
-export const updateBookmarkPosts = async (
-  userBookmark: typeof bookmark.$inferSelect
-) => {
-  const posts = userBookmark.posts;
-
-  // Hydrate the URL's viewer-scoped shares from the AppView and merge any
-  // newly observed posts into the bookmark snapshot, oldest-first so that
-  // unshift preserves recency order.
-  if (appViewEnabled()) {
-    const viewerAccount = await db.query.blueskyAccount.findFirst({
-      where: eq(blueskyAccount.userId, userBookmark.userId),
-    });
-    if (viewerAccount) {
-      try {
-        let shares = await fetchHydration({
-          viewer: viewerAccount.did,
-          urls: [userBookmark.linkUrl],
-          window: { days: 1 },
-          hideReposts: "include",
-          network: networkFromService("all"),
-        });
-        shares = await resolveRepostSubjects(shares);
-        const newPosts = shares
-          .map((s) => shareRowToLinkPost(s, userBookmark.userId))
-          .sort(
-            (a, b) =>
-              new Date(a.postDate).getTime() - new Date(b.postDate).getTime(),
-          );
-        for (const newPost of newPosts) {
-          if (!posts.posts?.some((p) => p.id === newPost.id)) {
-            posts.posts?.unshift(newPost);
-          }
-        }
-      } catch (e) {
-        console.error("AppView hydration failed for bookmark update:", e);
-      }
-    }
-  }
-
-  // Update uniqueActorsCount by counting unique actors
-  const uniqueActors = new Set();
-
-  for (const post of posts.posts || []) {
-    const actorHandle = post.repostActorHandle || post.actorHandle;
-    const actorName = post.repostActorHandle
-      ? post.repostActorName
-      : post.actorName;
-
-    const normalizedHandle =
-      post.postType === "mastodon"
-        ? actorHandle.match(/^@?([^@]+)(?:@|$)/)?.[1]?.toLowerCase()
-        : actorHandle
-            .replace(".bsky.social", "")
-            .replace("@", "")
-            .toLowerCase();
-
-    if (normalizedHandle) {
-      const normalizedName = actorName
-        ?.toLowerCase()
-        .replace(/\s*\(.*?\)\s*/g, "");
-      uniqueActors.add(`${normalizedName}|${normalizedHandle}`);
-    }
-  }
-
-  // Update posts object with new data
-  posts.uniqueActorsCount = uniqueActors.size;
-  posts.posts = posts.posts || [];
-
-  await db
-    .update(bookmark)
-    .set({
-      posts: posts,
-    })
-    .where(eq(bookmark.id, userBookmark.id));
-};

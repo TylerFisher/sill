@@ -2,19 +2,14 @@ import { asc, eq, sql } from "drizzle-orm";
 import {
   db,
   accountUpdateQueue,
-  networkTopTenView,
   notificationGroup,
   user,
-  type bookmark,
 } from "@sill/schema";
 import {
   dequeueJobs,
   enqueueJob,
-  processUrl,
-  updateBookmarkPosts,
   processJob,
   processNotificationGroup,
-  getHighActivityUrls,
   clearUrlExpansionCache,
   flushCacheReport,
   type PushShareBatch,
@@ -24,7 +19,6 @@ import {
 // Constants
 const MAX_ERRORS_PER_BATCH = 50;
 const JOB_TIMEOUT_MS = 2 * 60 * 1000; // 3 minutes
-const CLOUDFLARE_RATE_LIMIT_MS = 1000; // 1 second between URL scrapes (Cloudflare requirement)
 const QUEUE_POLL_INTERVAL_MS = 10 * 1000; // 10 seconds between batches
 const SLOW_QUEUE_DELAY_MS = 120 * 1000; // 2 minute delay when few users
 
@@ -51,8 +45,7 @@ process.on("SIGINT", () => {
 async function processJobWithTimeout(
   job: typeof accountUpdateQueue.$inferSelect,
   shareBatches: PushShareBatch[],
-  notificationGroups: (typeof notificationGroup.$inferSelect)[],
-  bookmarks: (typeof bookmark.$inferSelect)[]
+  notificationGroups: (typeof notificationGroup.$inferSelect)[]
 ): Promise<JobResult> {
   const jobStart = Date.now();
   let timeoutId: NodeJS.Timeout | undefined;
@@ -70,7 +63,6 @@ async function processJobWithTimeout(
     // `pushShareBatches` so the whole worker pass is one HTTP request.
     if (result.shareBatch) shareBatches.push(result.shareBatch);
     notificationGroups.push(...result.notificationGroups);
-    bookmarks.push(...result.bookmarks);
 
     return { status: "success", duration: Date.now() - jobStart };
   } catch (error) {
@@ -105,13 +97,12 @@ async function processBatch(
 
   const shareBatches: PushShareBatch[] = [];
   const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
-  const bookmarks: (typeof bookmark.$inferSelect)[] = [];
 
   // Process all jobs in parallel. Each job collects its viewer's shares; we
   // POST `/v1/shares` once for the whole batch in the AppView's batched form.
   const results = await Promise.all(
     jobs.map((job) =>
-      processJobWithTimeout(job, shareBatches, notificationGroups, bookmarks)
+      processJobWithTimeout(job, shareBatches, notificationGroups)
     )
   );
 
@@ -127,15 +118,6 @@ async function processBatch(
       await processNotificationGroup(group);
     } catch (error) {
       console.error("[Queue] Error processing notification group:", error);
-    }
-  }
-
-  // Update bookmarks sequentially
-  for (const bookmark of bookmarks) {
-    try {
-      await updateBookmarkPosts(bookmark);
-    } catch (error) {
-      console.error("[Queue] Error updating bookmark:", error);
     }
   }
 
@@ -178,37 +160,6 @@ async function processBatch(
  * Handles idle queue state
  */
 async function handleIdleQueue(batchSize: number): Promise<void> {
-  // Refresh materialized view
-  await db.refreshMaterializedView(networkTopTenView);
-
-  // Scrape high-activity URLs with Cloudflare rate limiting
-  const highActivityUrls = await getHighActivityUrls();
-  if (highActivityUrls.length > 0) {
-    console.log(`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`);
-
-    // Create promises with 1-second intervals between starts (Cloudflare requirement)
-    const promises = highActivityUrls.map(
-      (url, index) =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve(
-                processUrl(url).catch((error) => {
-                  console.error(
-                    `[BROWSER RENDER] Failed to process ${url}:`,
-                    error
-                  );
-                  return null;
-                })
-              ),
-            index * CLOUDFLARE_RATE_LIMIT_MS
-          )
-        )
-    );
-
-    await Promise.all(promises);
-  }
-
   const usersWithAccounts = await db.query.user.findMany({
     with: {
       blueskyAccounts: { with: { lists: true } },

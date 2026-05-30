@@ -51,7 +51,6 @@ export {
   fetchLatestBookmarks,
   formatBookmark,
   evaluateBookmark,
-  updateBookmarkPosts,
   getUserBookmarks,
   addNewBookmarks,
 } from "./bookmarks.js";

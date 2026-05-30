@@ -7,10 +7,8 @@ import {
   list,
   mastodonAccount,
   notificationGroup,
-  bookmark,
 } from "@sill/schema";
 import { fetchLinks } from "./links.js";
-import { addNewBookmarks } from "./bookmarks.js";
 import { clearOAuthSessionCache } from "./bluesky.js";
 
 export async function enqueueJob(userId: string) {
@@ -58,11 +56,10 @@ interface ProcessJobResult {
   notificationGroups: Awaited<
     ReturnType<typeof db.query.notificationGroup.findMany>
   >;
-  bookmarks: Awaited<ReturnType<typeof db.query.bookmark.findMany>>;
 }
 
 /**
- * Processes a single job by fetching links, notification groups, and bookmarks for a user.
+ * Processes a single job by fetching links and notification groups for a user.
  * Marks the job as completed upon success.
  */
 /**
@@ -96,15 +93,9 @@ export async function processJob(
   // `fetchLinks` collects shares (no DB writes); the worker accumulates
   // batches across the pass and flushes once via `pushShareBatches`.
   const shareBatch = needsIngestion ? await fetchLinks(job.userId) : null;
-  // get new bookmarks from ATProto repo
-  // await addNewBookmarks(job.userId);
 
   const groups = await db.query.notificationGroup.findMany({
     where: eq(notificationGroup.userId, job.userId),
-  });
-
-  const userBookmarks = await db.query.bookmark.findMany({
-    where: eq(bookmark.userId, job.userId),
   });
 
   await db
@@ -118,6 +109,5 @@ export async function processJob(
   return {
     shareBatch,
     notificationGroups: groups,
-    bookmarks: userBookmarks,
   };
 }
