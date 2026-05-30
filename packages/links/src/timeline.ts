@@ -14,6 +14,7 @@ import {
   distinctActorCount,
   fetchHydration,
   fetchUrlPage,
+  networkFromService,
   resolveLeafletPublications,
   resolveRepostSubjects,
   type ShareRow,
@@ -139,8 +140,11 @@ const cacheKey = (
   window: string,
   minShares: number,
   sourceId: string,
+  network: string,
 ): string =>
-  [userId, sort, hideReposts, query, window, minShares, sourceId].join("|");
+  [userId, sort, hideReposts, query, window, minShares, sourceId, network].join(
+    "|",
+  );
 
 /** Up to `limit` distinct sharer avatars from a post set, for a face pile. */
 const avatarsFromPosts = (posts: LinkPost[], limit = 3): string[] => {
@@ -291,6 +295,7 @@ const getPostsForUrl = async (
   if (!url) return [];
   const window = timeWindow(args.time ?? ONE_DAY_MS);
   const hideReposts = args.hideReposts ?? "include";
+  const network = networkFromService(args.service);
 
   let posts: LinkPost[] = [];
   let count = 0;
@@ -302,12 +307,12 @@ const getPostsForUrl = async (
       urls: [url],
       hideReposts,
       sourceId,
+      network,
     });
     shares = await resolveRepostSubjects(shares);
     shares = await resolveLeafletPublications(shares);
     posts = shares.map((s) => shareRowToLinkPost(s, args.userId));
     count = distinctActorCount(shares);
-    posts = applyServiceFilter(posts, args.service);
     // Dedupe shares: a post + its reposts share `postUrl`; keep distinct
     // (postUrl, sharer) pairs so reposters aren't collapsed.
     const seen = new Set<string>();
@@ -357,6 +362,7 @@ const getRankedEntries = async (
   const query = args.query ?? "";
   const window = timeWindow(args.time ?? ONE_DAY_MS);
   const minShares = args.minShares ?? 0;
+  const network = networkFromService(args.service);
 
   const appViewPageLimit = Math.min(
     100,
@@ -371,6 +377,7 @@ const getRankedEntries = async (
     windowKey(window),
     minShares,
     sourceId ?? "",
+    network ?? "",
   );
 
   let cached = rankingCache.get(key);
@@ -383,6 +390,7 @@ const getRankedEntries = async (
       sort,
       hideReposts,
       sourceId,
+      network,
     });
     cached = {
       items: firstPage.items,
@@ -414,6 +422,7 @@ const getRankedEntries = async (
       sort,
       hideReposts,
       sourceId,
+      network,
     });
     cached.items.push(...next.items);
     if (!next.cursor || next.items.length === 0) {
@@ -466,6 +475,7 @@ const hydratePage = async (
   const window = timeWindow(args.time ?? ONE_DAY_MS);
   const hideReposts = args.hideReposts ?? "include";
   const minShares = args.minShares ?? 0;
+  const network = networkFromService(args.service);
 
   const urls = slice.map((e) => e.url);
   let shares: ShareRow[] = [];
@@ -477,6 +487,7 @@ const hydratePage = async (
         urls,
         hideReposts,
         sourceId,
+        network,
       });
       shares = await resolveRepostSubjects(shares);
       shares = await resolveLeafletPublications(shares);
@@ -495,7 +506,6 @@ const hydratePage = async (
   for (const entry of slice) {
     const urlShares = sharesByUrl.get(entry.url) ?? [];
     let posts = urlShares.map((s) => shareRowToLinkPost(s, userId));
-    posts = applyServiceFilter(posts, args.service);
     const seen = new Set<string>();
     posts = posts
       .filter((p) => {
@@ -520,16 +530,6 @@ const hydratePage = async (
     });
   }
   return items;
-};
-
-/** In-memory service filter for hydrated posts. AppView has no `network=`
- * scope for `bsky` vs `mastodon`, so we filter post-fetch. `"all"` is a no-op. */
-const applyServiceFilter = (
-  posts: LinkPost[],
-  service: FilterArgs["service"],
-): LinkPost[] => {
-  if (!service || service === "all") return posts;
-  return posts.filter((p) => p.postType === service);
 };
 
 // Re-export for files that referenced these helpers from timeline.

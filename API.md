@@ -445,6 +445,101 @@ X-API-Key: …
 { "accepted": 1, "queueId": 4271 }
 ```
 
+### `POST /v1/query`
+**Notification-group query**, for Sill's custom notifications feature. Each request carries a list of `NotificationQuery` predicates (`category` + `operator` + `value`) which the appview AND's together and evaluates against the viewer's last N hours (default 24h, max 168h). Returns one entry per matching canonical URL with the individual matching shares fully hydrated.
+
+**Body**:
+```ts
+{
+  viewer: string;           // DID or ActivityPub Actor URI (see §2)
+  hours?: number;           // 1–168, default 24
+  limit?: number;           // 1–100, default 50 (cap on URLs returned)
+  queries: NotificationQuery[];  // 1–20 predicates, AND'd together
+}
+```
+
+A `NotificationQuery` is one predicate. The `category.id` drives operator + value validation:
+
+| `category.id` | type | operators | value | column / matched expression |
+|---|---|---|---|---|
+| `url`     | string | `equals`, `contains`, `excludes` | `string` | the URL being shared (case-insensitive substring) |
+| `link`    | string | `equals`, `contains`, `excludes` | `string` | `url_metadata.title` **OR** `url_metadata.description` (either matches) |
+| `shares`  | number | `equals`, `greaterThan`, `greaterThanEqual` | `number` (int ≥0) | distinct-sharer count **over the surviving set** (see "AND semantics" below) |
+| `author`  | string | `equals`, `contains`, `excludes` | `string` | sharer handle, restricted to **direct posts** (excludes reposts) |
+| `post`    | string | `equals`, `contains`, `excludes` | `string` | post body text |
+| `repost`  | string | `equals`, `contains`, `excludes` | `string` | sharer handle, restricted to **repost actions** (the reposter, not the original author) |
+| `service` | enum   | `equals`, `excludes` | `"bluesky" \| "mastodon"` | the network the share came from |
+| `list`    | enum   | `equals`, `excludes` | canonical sourceId (`at://…` or `mastodon-list://<instance>/<id>`) | a specific feed/list the viewer subscribes to. `equals` restricts to viewer_shares from that list (follow-attributed shares are skipped entirely); `excludes` removes shares from that list. |
+
+The `category` object also accepts `name`, `type`, and `values` fields (Sill's client passes them through) — the server ignores them. Only `category.id` drives dispatch. String operators are case-insensitive on the SQL side.
+
+**AND semantics**. Predicates are AND'd: a share must satisfy every predicate to count, and the `shares` count is evaluated over **that filtered set**. So `post contains "climate" AND shares >= 5` means "5+ distinct accounts each shared something whose post text mentions climate", NOT "this URL has 5+ total shares and at least one mentions climate". This is the natural reading of "all queries succeed" and matches what users mean by "notify me when 5 people are talking about X".
+
+**`author` vs `repost`**. These are complementary, not equivalent. `author = X` matches shares where X is the post author (direct posts only — i.e. NOT reposts). `repost = X` matches shares where X is the reposter (reposts only). A query with both would always match the empty set since a share can't be both at once.
+
+**Response** (per-URL grouped). The per-URL fields mirror the shape `/v1/trending` returns for each `UrlItem` — minus `sharers` (the per-URL sharer list, which `items` makes redundant) and plus `items` (the actual hydrated matching shares):
+
+```ts
+{
+  matches: Array<{
+    url: string;                // canonical
+    shares: number;             // distinct-sharer count in the filtered set
+    mostRecent: string;         // latest matching share time — CH UTC string "YYYY-MM-DD HH:MM:SS.fff" (see §2 Datetime)
+    avatars: string[];          // up to 3 most-recent distinct sharer avatars (face-pile)
+    // URL metadata — same fields trending exposes via UrlMetaProjection.
+    // Omitted (not null) when not yet scraped or absent on the page.
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    siteName?: string;
+    byline?: string;
+    publishedAt?: string;
+    items: ShareRow[];          // hydrated, same shape as /v1/hydration
+  }>;
+  cold?: true;                  // pre-backfill empty result (retry shortly)
+}
+```
+
+Sort is `shares DESC, mostRecent DESC` on `matches`. Per-URL `items` ordered by event time desc, capped at 200 per URL — `mostRecent` is computed in ClickHouse, so it stays accurate even when `items` is capped.
+
+```
+POST /v1/query
+Content-Type: application/json
+X-API-Key: …
+
+{
+  "viewer": "did:plc:abc",
+  "hours": 24,
+  "queries": [
+    { "category": { "id": "post" },   "operator": "contains", "value": "climate" },
+    { "category": { "id": "shares" }, "operator": "greaterThanEqual", "value": 3 }
+  ]
+}
+```
+```json
+{
+  "matches": [
+    {
+      "url": "https://www.nytimes.com/2026/05/29/climate-bill-passes",
+      "shares": 4,
+      "mostRecent": "2026-05-30 11:24:00.000",
+      "avatars": [
+        "https://cdn.bsky.app/.../avatar1.jpeg",
+        "https://cdn.bsky.app/.../avatar2.jpeg",
+        "https://cdn.bsky.app/.../avatar3.jpeg"
+      ],
+      "title": "Climate Bill Passes Senate",
+      "description": "Landmark emissions legislation",
+      "imageUrl": "https://static01.nyt.com/.../hero.jpg",
+      "siteName": "The New York Times",
+      "byline": "A Reporter",
+      "publishedAt": "2026-05-29T13:00:00.000Z",
+      "items": [/* ShareRow[] — see §6 */]
+    }
+  ]
+}
+```
+
 ### `GET /v1/backfill-status`
 Global indexing progress (not per-viewer).
 ```ts

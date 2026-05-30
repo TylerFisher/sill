@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import {
   appViewEnabled,
   fetchHydration,
+  networkFromService,
   resolveRepostSubjects,
   shareRowToLinkPost,
 } from "./appview.js";
@@ -361,6 +362,7 @@ export const updateBookmarkPosts = async (
           urls: [userBookmark.linkUrl],
           window: { days: 1 },
           hideReposts: "include",
+          network: networkFromService("all"),
         });
         shares = await resolveRepostSubjects(shares);
         const newPosts = shares

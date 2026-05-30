@@ -29,6 +29,7 @@ export {
   appViewEnabled,
   distinctActorCount,
   fetchHydration,
+  networkFromService,
   type PushShareBatch,
   pushShareBatches,
   resolveRepostSubjects,

@@ -5,7 +5,6 @@ import {
   blueskyAccount,
   mastodonAccount,
   mutePhrase,
-  postType,
   type Link,
   type LinkPost,
   type MostRecentLinkPosts,
@@ -24,17 +23,21 @@ import {
   isQuote,
 } from "./mastodon.js";
 import {
+  type AppViewNotificationQuery,
   appViewEnabled,
   distinctActorCount,
   fetchByAuthor,
   fetchByDomain,
   fetchHydration,
   fetchNetworkTrending,
-  fetchUrlPage,
+  fetchQuery,
+  networkFromService,
   type PushShare,
   type PushShareBatch,
   type PushShareSource,
   pushShareBatches,
+  type QueryMatch,
+  type QueryResponse,
   resolveLeafletPublications,
   resolveRepostSubjects,
   type ShareRow,
@@ -44,7 +47,7 @@ import {
   type UrlItem,
   urlItemToLink,
 } from "./appview.js";
-import { getMergedOccurrences, sourceIdForList } from "./timeline.js";
+import { sourceIdForList } from "./timeline.js";
 
 const PAGE_SIZE = 10;
 
@@ -211,243 +214,102 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
 // --- Notification evaluation ---
 //
-// Source-aware: notifications query a mix of the AppView (Bluesky following)
-// and the DB (Mastodon + Bluesky lists). The AppView already applies the
-// viewer's combined mute lists via `/v1/preferences`; DB-side posts go through
-// Sill's `mute_phrase` here in memory. The query DSL is parsed once into
-// structured filters, then applied in two phases: source-routing (decides
-// where to fetch from, and which conditions can be pushed server-side), and
-// in-memory pruning (URL/post-level filters that the AppView can't express).
+// One `POST /v1/query` per evaluation. The AppView AND's the predicate set
+// (url/link/post/author/repost/service/shares/list) and returns matching URLs
+// with hydrated ShareRows already filtered+sorted. We only post-process two
+// things in-memory:
+//   - `seenLinks` dedupe (group-local, no server state).
+//   - Sill's `mute_phrase` URL-level safety net (in case Sill mutes aren't
+//     synced into AppView preferences — defensive only).
 //
-// Caps the candidate set per evaluation. `getMergedOccurrences` will walk
-// AppView pages up to this many results; seenLinks dedupes across cycles, so
-// even high-volume groups settle into a small steady-state per evaluation.
-const NOTIFICATION_FETCH_LIMIT = 200;
+// Notification cap. The AppView's `limit` maxes at 100 (URLs); within each
+// match, items are server-capped at 200 ShareRows.
+const NOTIFICATION_DEFAULT_LIMIT = 100;
+const ONE_HOUR_MS = 3600000;
 
-interface ParsedNotificationFilters {
-  serviceEquals?: "bluesky" | "mastodon";
-  serviceExcludes: Set<"bluesky" | "mastodon" | "atbookmark">;
-  listIdEquals?: string;
-  listIdExcludes: Set<string>;
-  minShares?: number;
-  /** url/link/post/author/repost — applied in-memory below. */
-  textQueries: NotificationQuery[];
-}
+/** Smallest hours bucket the AppView accepts for `/v1/query`. */
+const QUERY_MIN_HOURS = 1;
+/** Largest hours bucket (7d). */
+const QUERY_MAX_HOURS = 168;
 
-const parseNotificationFilters = (
+/**
+ * Derive `/v1/query` `hours` from the notification group's `createdAt`. The
+ * AppView caps at 7d; we also bound from below at 1h so a freshly-created
+ * group still has a window to scan.
+ */
+const hoursSinceCreated = (createdAt?: Date): number => {
+  if (!createdAt) return 24;
+  const ms = Math.max(0, Date.now() - createdAt.getTime());
+  const hours = Math.ceil(ms / ONE_HOUR_MS);
+  return Math.min(QUERY_MAX_HOURS, Math.max(QUERY_MIN_HOURS, hours));
+};
+
+/**
+ * Rewrite Sill list-ids to canonical AppView sourceIds and validate the
+ * query shape so we don't ship malformed predicates. Unknown predicates are
+ * dropped (forward-compatible with future categories the server doesn't yet
+ * recognise).
+ */
+const translateNotificationQueries = async (
   queries: NotificationQuery[],
-): ParsedNotificationFilters => {
-  const filters: ParsedNotificationFilters = {
-    serviceExcludes: new Set(),
-    listIdExcludes: new Set(),
-    textQueries: [],
-  };
+): Promise<AppViewNotificationQuery[]> => {
+  const out: AppViewNotificationQuery[] = [];
   for (const q of queries) {
     const id = q.category.id;
-    if (id === "service" && typeof q.value === "string") {
-      const v = postType.enumValues.find((pv) => pv === q.value);
-      if (!v) continue;
-      if (q.operator === "equals" && (v === "bluesky" || v === "mastodon")) {
-        filters.serviceEquals = v;
-      } else if (q.operator === "excludes") {
-        filters.serviceExcludes.add(v);
-      }
-    } else if (id === "list" && typeof q.value === "string") {
-      if (q.operator === "equals") filters.listIdEquals = q.value;
-      else if (q.operator === "excludes") filters.listIdExcludes.add(q.value);
-    } else if (id === "shares" && typeof q.value === "number") {
-      // The original SQL applied every shares operator as a lower bound (`>=`),
-      // so equals/>=/> all map to the same minShares — preserved here.
-      filters.minShares = q.value;
+    if (id === "list" && typeof q.value === "string") {
+      const sourceId = await sourceIdForList(q.value);
+      if (!sourceId) continue;
+      out.push({
+        category: { id },
+        operator: q.operator,
+        value: sourceId,
+      });
     } else if (
+      id === "service" ||
       id === "url" ||
       id === "link" ||
       id === "post" ||
       id === "author" ||
-      id === "repost"
+      id === "repost" ||
+      id === "shares"
     ) {
-      filters.textQueries.push(q);
+      out.push({ category: { id }, operator: q.operator, value: q.value });
     }
   }
-  return filters;
-};
-
-/**
- * Build a `/v1/search` query from the notification's text-contains filters
- * (url/link/post). Routes notifications with text terms to the AppView's
- * search endpoint instead of walking `/v1/latest` and filtering in memory.
- * Returns undefined when no contains-style text filter is present, in which
- * case the caller falls back to `/v1/latest`.
- *
- * NOTE on semantics: `/v1/search` matches **whole tokens** in post text /
- * title / description (URL substring still works as expected). Sill's
- * notification "contains" is substring, so a post containing "policlimate"
- * doesn't match a `"climate"` filter via `/v1/search`. The in-memory
- * `matchesTextQuery` runs after to apply Sill's substring semantics; the
- * residual gap is Bluesky-only posts that are substring-but-not-whole-token
- * matches (DB merge with ilike still catches Mastodon/list posts).
- */
-const SEARCH_Q_MIN_LENGTH = 2;
-const SEARCH_Q_MAX_LENGTH = 256;
-
-const searchQueryFromFilters = (
-  filters: ParsedNotificationFilters,
-): string | undefined => {
-  const terms = filters.textQueries
-    .filter(
-      (q) =>
-        q.operator === "contains" &&
-        (q.category.id === "url" ||
-          q.category.id === "link" ||
-          q.category.id === "post") &&
-        typeof q.value === "string" &&
-        q.value.trim().length > 0,
-    )
-    .map((q) => String(q.value).trim());
-  if (terms.length === 0) return undefined;
-  // `/v1/search` already AND-combines tokens across post text / title /
-  // description, so multiple contains-terms join naturally.
-  const joined = terms.join(" ").slice(0, SEARCH_Q_MAX_LENGTH);
-  return joined.length >= SEARCH_Q_MIN_LENGTH ? joined : undefined;
+  return out;
 };
 
 const includesCi = (h: string | null | undefined, n: string): boolean =>
   !!h && h.toLowerCase().includes(n.toLowerCase());
 
-const distinctActorsInPosts = (posts: LinkPost[]): number => {
-  const ids = new Set<string>();
-  for (const p of posts) {
-    const id = p.repostActorHandle ?? p.actorHandle;
-    if (id) ids.add(id);
-  }
-  return ids.size;
-};
-
 /**
- * Rebuild a result after its `posts` array has been pruned so the share count
- * and most-recent date track the post set that's actually being delivered.
- * Without this, the minShares safety net below would compare against stale
- * pre-prune counts.
+ * Convert one `/v1/query` match into the `MostRecentLinkPosts`-shaped item the
+ * notifier and email/RSS renderers expect. The match shape mirrors `UrlItem`
+ * for the link half, so `urlItemToLink` maps it cleanly.
  */
-const rebuildItem = <T extends { posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
-  item: T,
-  posts: LinkPost[],
-): T => {
-  const sorted = [...posts].sort(
-    (a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
-  );
-  const mostRecent = sorted[0]
-    ? new Date(`${sorted[0].postDate}Z`)
-    : item.mostRecentPostDate;
+const matchToItem = async (
+  match: QueryMatch,
+  userId: string,
+): Promise<MostRecentLinkPosts> => {
+  let shares = match.items;
+  try {
+    shares = await resolveRepostSubjects(shares);
+    shares = await resolveLeafletPublications(shares);
+  } catch (e) {
+    console.error("notification subject resolution failed:", e);
+  }
+  const posts = shares
+    .map((s) => shareRowToLinkPost(s, userId))
+    .sort(
+      (a, b) =>
+        new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+    );
   return {
-    ...item,
-    posts: sorted,
-    uniqueActorsCount: distinctActorsInPosts(sorted),
-    mostRecentPostDate: mostRecent,
+    link: urlItemToLink(match, null),
+    uniqueActorsCount: match.shares,
+    posts,
+    avatars: match.avatars,
   };
-};
-
-const applySillMutePhrases = <T extends { link: Link | null; posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
-  items: T[],
-  phrases: string[],
-): T[] => {
-  if (phrases.length === 0) return items;
-  const out: T[] = [];
-  for (const item of items) {
-    const urlMuted = phrases.some(
-      (p) =>
-        includesCi(item.link?.url, p) ||
-        includesCi(item.link?.title, p) ||
-        includesCi(item.link?.description, p),
-    );
-    if (urlMuted) continue;
-    const posts = (item.posts ?? []).filter(
-      (post) =>
-        !phrases.some(
-          (p) =>
-            includesCi(post.postText, p) ||
-            includesCi(post.postUrl, p) ||
-            includesCi(post.actorName, p) ||
-            includesCi(post.actorHandle, p) ||
-            includesCi(post.quotedPostText, p) ||
-            includesCi(post.quotedActorName, p) ||
-            includesCi(post.quotedActorHandle, p) ||
-            includesCi(post.repostActorName, p) ||
-            includesCi(post.repostActorHandle, p),
-        ),
-    );
-    if (posts.length === 0) continue;
-    out.push(rebuildItem(item, posts));
-  }
-  return out;
-};
-
-const applyServiceListFilters = <T extends { posts?: LinkPost[]; uniqueActorsCount: number; mostRecentPostDate?: Date }>(
-  items: T[],
-  filters: ParsedNotificationFilters,
-): T[] => {
-  const { serviceEquals, serviceExcludes, listIdEquals, listIdExcludes } =
-    filters;
-  const noPostLevel =
-    !serviceEquals &&
-    serviceExcludes.size === 0 &&
-    !listIdEquals &&
-    listIdExcludes.size === 0;
-  if (noPostLevel) return items;
-  const out: T[] = [];
-  for (const item of items) {
-    const posts = (item.posts ?? []).filter((p) => {
-      if (serviceEquals && p.postType !== serviceEquals) return false;
-      if (serviceExcludes.has(p.postType)) return false;
-      if (listIdEquals && p.listId !== listIdEquals) return false;
-      if (p.listId && listIdExcludes.has(p.listId)) return false;
-      return true;
-    });
-    if (posts.length === 0) continue;
-    out.push(rebuildItem(item, posts));
-  }
-  return out;
-};
-
-const matchesTextQuery = (
-  item: { link: Link | null; posts?: LinkPost[] },
-  q: NotificationQuery,
-): boolean => {
-  if (typeof q.value !== "string") return true;
-  const op = q.operator;
-  const needle = q.value;
-  let haystacks: (string | null | undefined)[];
-  switch (q.category.id) {
-    case "url":
-      haystacks = [item.link?.url];
-      break;
-    case "link":
-      haystacks = [item.link?.title, item.link?.description];
-      break;
-    case "post":
-      haystacks = (item.posts ?? []).map((p) => p.postText);
-      break;
-    case "author":
-      haystacks = (item.posts ?? []).flatMap((p) => [
-        p.actorName,
-        p.actorHandle,
-      ]);
-      break;
-    case "repost":
-      haystacks = (item.posts ?? []).flatMap((p) => [
-        p.repostActorName,
-        p.repostActorHandle,
-      ]);
-      break;
-    default:
-      return true;
-  }
-  if (op === "equals") return haystacks.some((h) => !!h && h === needle);
-  if (op === "contains") return haystacks.some((h) => includesCi(h, needle));
-  // `excludes`: NONE of the haystacks contain the needle (matches SQL "link"
-  // semantics; tightens the buggier "any-doesn't-contain" SQL for author/repost).
-  if (op === "excludes") return haystacks.every((h) => !includesCi(h, needle));
-  return true;
 };
 
 export const evaluateNotifications = async (
@@ -456,178 +318,99 @@ export const evaluateNotifications = async (
   seenLinks: string[] = [],
   createdAt?: Date,
   /**
-   * Cap the candidate set this evaluation pulls. Defaults to the full sweep
-   * for production notifications; the test/preview endpoint passes a smaller
-   * value so an interactive UI ping is a single small fetch + hydration
-   * instead of the full two-page walk.
+   * Cap on URL matches returned. Defaults to the AppView max (100); the
+   * test/preview endpoint passes a smaller value for a quick interactive ping.
    */
-  candidateLimit: number = NOTIFICATION_FETCH_LIMIT,
-) => {
-  const start = createdAt
-    ? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
-    : new Date(Date.now() - ONE_DAY_MS);
-  const timeMs = Date.now() - start.getTime();
-  const filters = parseNotificationFilters(queries);
+  candidateLimit: number = NOTIFICATION_DEFAULT_LIMIT,
+): Promise<MostRecentLinkPosts[]> => {
+  if (!appViewEnabled()) return [];
+
+  const bsky = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+  if (!bsky) return [];
+
+  const translated = await translateNotificationQueries(queries);
+  if (translated.length === 0) return [];
+
+  let response: QueryResponse;
+  try {
+    response = await fetchQuery({
+      viewer: bsky.did,
+      hours: hoursSinceCreated(createdAt),
+      limit: Math.min(100, Math.max(1, candidateLimit)),
+      queries: translated,
+    });
+  } catch (e) {
+    console.error("AppView /v1/query failed:", e);
+    return [];
+  }
+  if (response.cold) return [];
+
   const seen = new Set(seenLinks);
+  const matches = response.matches.filter((m) => !seen.has(m.url));
 
-  const appViewPageLimit = Math.min(100, Math.max(10, candidateLimit));
-  // Route text-search notifications to `/v1/search` via `args.query`.
-  const searchQuery = searchQueryFromFilters(filters);
-
-  // Everything routes through the AppView. The list filter becomes
-  // `?sourceId=` inside `getMergedOccurrences` (via `selectedList`), and the
-  // service filter is applied in-memory below on the hydrated posts.
-  const candidates = await getMergedOccurrences({
-    userId,
-    service: filters.serviceEquals ?? "all",
-    selectedList: filters.listIdEquals ?? "all",
-    time: timeMs,
-    hideReposts: "include",
-    sort: "newest",
-    query: searchQuery,
-    page: 1,
-    fetch: false,
-    limit: candidateLimit,
-    minShares: filters.minShares,
-    appViewPageLimit,
-  });
-
-  // Drop links already delivered for this group.
-  let items = candidates.filter(
-    (c) => !!c.link?.url && !seen.has(c.link.url),
-  );
-
-  // Sill mutePhrase in-memory. AppView URLs are already pre-filtered for the
-  // viewer's combined mutes via `/v1/preferences`, but DB-side posts (Mastodon,
-  // Bluesky lists) need them applied here.
+  // Sill mute_phrase safety net (URL/title/description only — post-level
+  // muting is already covered server-side by `/v1/preferences`).
   const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
-  items = applySillMutePhrases(items, mutePhrases);
+  const allowed = mutePhrases.length
+    ? matches.filter(
+        (m) =>
+          !mutePhrases.some(
+            (p) =>
+              includesCi(m.url, p) ||
+              includesCi(m.title, p) ||
+              includesCi(m.description, p),
+          ),
+      )
+    : matches;
 
-  // Post-level service/list filters (shrinks the post set, recomputes counts).
-  items = applyServiceListFilters(items, filters);
-
-  // Text/operator filters (url/link/post/author/repost).
-  for (const q of filters.textQueries) {
-    items = items.filter((c) => matchesTextQuery(c, q));
-  }
-
-  // Re-apply the minShares threshold against the possibly-reduced combined
-  // count — post-level filters can drop posts and lower the count.
-  if (filters.minShares !== undefined && filters.minShares > 0) {
-    const threshold = filters.minShares;
-    items = items.filter((c) => c.uniqueActorsCount >= threshold);
-  }
-
-  // Match the previous SQL ordering: popularity desc, then recency.
-  items.sort((a, b) => {
-    if (b.uniqueActorsCount !== a.uniqueActorsCount) {
-      return b.uniqueActorsCount - a.uniqueActorsCount;
-    }
-    const ad = a.mostRecentPostDate
-      ? new Date(a.mostRecentPostDate).getTime()
-      : 0;
-    const bd = b.mostRecentPostDate
-      ? new Date(b.mostRecentPostDate).getTime()
-      : 0;
-    return bd - ad;
-  });
-
-  return items;
+  return Promise.all(allowed.map((m) => matchToItem(m, userId)));
 };
 
 /**
- * Approximate match count for the `/api/notifications/test` endpoint — same
- * source routing as `evaluateNotifications` but **without hydration**, since
- * the caller (the notification-builder UI) just needs an interactive preview
- * the user explicitly asks for. The preview walks the full 24h window so
- * matches anywhere in the period are reflected, paginating `/v1/latest` to
- * exhaustion (or `PREVIEW_MAX_PAGES`). Post-level filters (post/author/repost
- * text, post-level service/list, mute phrases against post fields) are
- * skipped — the URL items from `/v1/latest` carry no post data, so post-level
- * filters would be a no-op anyway. The real notification firing later runs
- * `evaluateNotifications` (full sweep with hydration), which is the source of
- * truth.
+ * Match-count preview for the `/api/notifications/test` UI. Same `/v1/query`
+ * call as `evaluateNotifications`, sized smaller. The endpoint hydrates
+ * `items` server-side; for a count we only need the URL list.
  */
-// 100 pages × 100 URLs = up to 10k URLs over 24h. Covers all but the heaviest
-// networks; anything above counts as "many" for UI purposes.
-const PREVIEW_MAX_PAGES = 100;
-// `/v1/search` returns a much narrower set, so we cap the page walk lower —
-// 5 × 100 = 500 search hits is more than enough for a count preview.
-const PREVIEW_SEARCH_MAX_PAGES = 5;
-
 export const previewNotificationCount = async (
   userId: string,
   queries: NotificationQuery[],
 ): Promise<number> => {
-  const filters = parseNotificationFilters(queries);
-
   if (!appViewEnabled()) return 0;
   const bsky = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
   });
   if (!bsky) return 0;
 
-  const sourceId = filters.listIdEquals
-    ? await sourceIdForList(filters.listIdEquals)
-    : undefined;
-  const searchQuery = searchQueryFromFilters(filters);
+  const translated = await translateNotificationQueries(queries);
+  if (translated.length === 0) return 0;
 
-  // AppView only — no hydration, no Slingshot. Walk `/v1/search` for
-  // text-contains notifications, `/v1/latest` otherwise.
-  const allItems: Awaited<ReturnType<typeof fetchUrlPage>>["items"] = [];
-  let cursor: string | undefined;
-  const maxPages = searchQuery ? PREVIEW_SEARCH_MAX_PAGES : PREVIEW_MAX_PAGES;
-  for (let page = 0; page < maxPages; page++) {
-    const res = await fetchUrlPage({
+  let response: QueryResponse;
+  try {
+    response = await fetchQuery({
       viewer: bsky.did,
-      window: { days: 1 },
+      hours: 24,
       limit: 100,
-      cursor,
-      sort: "recency",
-      hideReposts: "include",
-      query: searchQuery,
-      minShares: searchQuery ? undefined : filters.minShares,
-      sourceId,
+      queries: translated,
     });
-    allItems.push(...res.items);
-    cursor = res.cursor;
-    if (!cursor || res.items.length === 0) break;
+  } catch (e) {
+    console.error("AppView /v1/query (preview) failed:", e);
+    return 0;
   }
-  let items: { link: Link | null; uniqueActorsCount: number }[] = allItems.map(
-    (item) => ({
-      link: urlItemToLink(item, null),
-      uniqueActorsCount: item.shares ?? 0,
-    }),
-  );
+  if (response.cold) return 0;
 
-  // URL-level mute phrases (post-level mutes skipped — no post data).
   const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
-  if (mutePhrases.length > 0) {
-    items = items.filter(
-      (item) =>
-        !mutePhrases.some(
-          (p) =>
-            includesCi(item.link?.url, p) ||
-            includesCi(item.link?.title, p) ||
-            includesCi(item.link?.description, p),
-        ),
-    );
-  }
-
-  // URL-level text filters only (`url`, `link`). post/author/repost skipped.
-  for (const q of filters.textQueries) {
-    if (q.category.id !== "url" && q.category.id !== "link") continue;
-    items = items.filter((item) =>
-      matchesTextQuery({ link: item.link, posts: [] }, q),
-    );
-  }
-
-  if (filters.minShares !== undefined && filters.minShares > 0) {
-    const threshold = filters.minShares;
-    items = items.filter((c) => c.uniqueActorsCount >= threshold);
-  }
-
-  return items.length;
+  if (mutePhrases.length === 0) return response.matches.length;
+  return response.matches.filter(
+    (m) =>
+      !mutePhrases.some(
+        (p) =>
+          includesCi(m.url, p) ||
+          includesCi(m.title, p) ||
+          includesCi(m.description, p),
+      ),
+  ).length;
 };
 
 export interface TopTenResults {
@@ -687,6 +470,7 @@ const linksFromAppViewItems = async (
     window: DISCOVERY_WINDOW,
     urls: items.map((i) => i.url),
     hideReposts: "include",
+    network: networkFromService("all"),
   });
   shares = await resolveRepostSubjects(shares);
 
@@ -734,6 +518,7 @@ export const findLinksByDomain = async (
     viewer: viewerDid,
     window: DISCOVERY_WINDOW,
     limit: pageSize,
+    network: networkFromService("all"),
   });
   return linksFromAppViewItems(items, viewerDid, userId);
 };
@@ -759,6 +544,7 @@ export const findLinksByAuthor = async (
     viewer: viewerDid,
     window: DISCOVERY_WINDOW,
     limit: pageSize,
+    network: networkFromService("all"),
   });
   return linksFromAppViewItems(items, viewerDid, userId);
 };

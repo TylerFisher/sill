@@ -367,6 +367,13 @@ interface UrlPageOptions {
    * AppView skips the follow-attributed branch entirely.
    */
   sourceId?: string;
+  /**
+   * AppView `network=` filter — comma-separated follow-graph keys (e.g.
+   * `"bsky"`, `"mastodon"`, `"bsky,mastodon"`). Omit to take the AppView
+   * default (`bsky`). Use `networkFromService` to derive this from Sill's
+   * `service` filter.
+   */
+  network?: string;
 }
 
 /**
@@ -388,6 +395,7 @@ export const fetchUrlPage = async (
     params.set("minShares", String(opts.minShares));
   }
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
+  if (opts.network) params.set("network", opts.network);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }
@@ -423,6 +431,7 @@ export const fetchByDomain = async (opts: {
   window?: TimeWindow;
   limit?: number;
   sourceId?: string;
+  network?: string;
 }): Promise<UrlItem[]> => {
   const params = new URLSearchParams();
   params.set("domain", opts.domain);
@@ -430,6 +439,7 @@ export const fetchByDomain = async (opts: {
   if (opts.window) appendWindow(params, opts.window);
   params.set("limit", String(opts.limit ?? 20));
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
+  if (opts.network) params.set("network", opts.network);
   const res = await appViewGet<ListResponse>("/v1/by-domain", params);
   return res.items;
 };
@@ -441,6 +451,7 @@ export const fetchByAuthor = async (opts: {
   window?: TimeWindow;
   limit?: number;
   sourceId?: string;
+  network?: string;
 }): Promise<UrlItem[]> => {
   const params = new URLSearchParams();
   params.set("author", opts.author);
@@ -448,6 +459,7 @@ export const fetchByAuthor = async (opts: {
   if (opts.window) appendWindow(params, opts.window);
   params.set("limit", String(opts.limit ?? 20));
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
+  if (opts.network) params.set("network", opts.network);
   const res = await appViewGet<ListResponse>("/v1/by-author", params);
   return res.items;
 };
@@ -459,6 +471,9 @@ interface HydrationOptions {
   hideReposts: "include" | "exclude" | "only";
   /** Match the read-side scope used by the list call so counts align. */
   sourceId?: string;
+  /** Match the read-side `network=` used by the list call so the share set
+   *  reflects the same follow graphs (otherwise counts and rows can diverge). */
+  network?: string;
 }
 
 /** Fetch the individual shares (who shared what) for a set of canonical URLs. */
@@ -470,12 +485,103 @@ export const fetchHydration = async (
   params.set("viewer", opts.viewer);
   appendWindow(params, opts.window);
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
+  if (opts.network) params.set("network", opts.network);
   for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
     params.append("collection", c);
   }
   for (const url of opts.urls) params.append("urls", url);
   const res = await appViewGet<HydrationResponse>("/v1/hydration", params);
   return res.shares;
+};
+
+/**
+ * Notification-group query (`POST /v1/query`) — AppView evaluates a list of
+ * AND'd predicates against the viewer's last N hours and returns matching URLs
+ * with hydrated ShareRows, already filtered + sorted. Predicates are passed
+ * through verbatim; the caller must rewrite Sill list-ids to canonical
+ * sourceIds (`at://…` / `mastodon-list://…`) before calling — see
+ * `sourceIdForList`. The AppView ignores `category.name`/`type`/`values`.
+ */
+export interface AppViewNotificationQuery {
+  category: { id: string };
+  operator: string;
+  value: string | number;
+}
+
+/**
+ * One URL group returned by `/v1/query`. Mirrors `UrlItem`'s metadata shape
+ * (omits `sharers` — `items` is the full per-share list) plus the hydrated
+ * matching `items`. `mostRecent` and `avatars` are populated server-side, so
+ * the caller doesn't need to derive them from the (possibly capped) items.
+ */
+export interface QueryMatch {
+  url: string;
+  shares: number;
+  mostRecent: string;
+  avatars: string[];
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  siteName?: string;
+  byline?: string;
+  publishedAt?: string;
+  items: ShareRow[];
+}
+
+export interface QueryResponse {
+  matches: QueryMatch[];
+  cold?: true;
+}
+
+export const fetchQuery = async (opts: {
+  viewer: string;
+  hours?: number;
+  limit?: number;
+  queries: AppViewNotificationQuery[];
+}): Promise<QueryResponse> => {
+  const base = process.env.APPVIEW_API_URL;
+  const key = process.env.APPVIEW_API_KEY;
+  if (!base || !key) {
+    throw new Error("AppView is not configured (APPVIEW_API_URL/API_KEY)");
+  }
+  const body: Record<string, unknown> = {
+    viewer: opts.viewer,
+    queries: opts.queries,
+  };
+  if (opts.hours != null) body.hours = opts.hours;
+  if (opts.limit != null) body.limit = opts.limit;
+  const res = await fetch(`${base.replace(/\/$/, "")}/v1/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-API-Key": key },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`AppView /v1/query returned ${res.status}: ${errBody}`);
+  }
+  return (await res.json()) as QueryResponse;
+};
+
+/**
+ * Map Sill's `service` filter onto the AppView's `network=` param. Returns
+ * `undefined` (use AppView default of `bsky`) only when explicitly requested;
+ * `"all"` and absent both yield `bsky,mastodon` so the merged view spans both
+ * follow graphs. Keep this in one place — call sites should never hand-roll
+ * the mapping.
+ */
+export const networkFromService = (
+  service: "mastodon" | "bluesky" | "all" | undefined,
+): string | undefined => {
+  switch (service) {
+    case "mastodon":
+      return "mastodon";
+    case "bluesky":
+      return "bsky";
+    case "all":
+    case undefined:
+      return "bsky,mastodon";
+  }
 };
 
 // --- Slingshot fallback (resolve repost subjects the AppView couldn't) ---

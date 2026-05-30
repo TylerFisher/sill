@@ -17,6 +17,7 @@ import {
   addNewBookmarks,
   appViewEnabled,
   fetchHydration,
+  networkFromService,
   resolveRepostSubjects,
   shareRowToLinkPost,
   distinctActorCount,
@@ -256,6 +257,7 @@ const bookmarks = new Hono()
             urls: [url],
             window: { days: 1 },
             hideReposts: "include",
+            network: networkFromService("all"),
           });
           viewerShares = await resolveRepostSubjects(viewerShares);
         } catch (e) {
