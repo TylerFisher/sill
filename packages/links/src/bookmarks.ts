@@ -5,227 +5,124 @@ import {
   bookmark,
   bookmarkTag,
   tag,
-  link,
+  type Link,
 } from "@sill/schema";
-import { getOrCreateAgent, ONE_DAY_MS } from "./bluesky.js";
 import { eq } from "drizzle-orm";
+import {
+  appViewEnabled,
+  fetchActorActivity,
+  fetchUrlMetadata,
+  type ShareRow,
+  toIso,
+  urlItemToLink,
+  type UrlMetaItem,
+} from "./appview.js";
 
-type BaseSliceResponse = {
-  cid: string;
-  did: string;
-  indexedAt: string;
-  uri: string;
-};
+/**
+ * Build the `Link` snapshot embedded in `bookmark.posts.link`. Uses the
+ * AppView `/v1/url` metadata when available; falls back to a bare stub
+ * (URL only, empty title) for URLs the AppView hasn't scraped yet.
+ */
+const linkFromUrlMeta = (url: string, meta?: UrlMetaItem): Link =>
+  urlItemToLink(meta ?? { url }, null);
 
-export interface ATBookmarkResponse {
-  cursor: string | null;
-  records: ATBookmark[];
-}
-
-export interface ATBookmark extends BaseSliceResponse {
-  collection: "community.lexicon.bookmarks.bookmark";
-  value: ATBookmarkValue;
-}
-
-export interface ATBookmarkValue {
-  $type: "community.lexicon.bookmarks.bookmark";
-  subject: string;
-  tags?: string[];
-  createdAt: string;
-}
-
-export interface ATProfileResponse extends BaseSliceResponse {
-  collection: "app.bsky.actor.profile";
-  value: ATProfileValue;
-}
-
-interface ATProfileImage {
-  $type: "blob";
-  mimeType: "image/jpeg";
-  ref: {
-    $link: "string";
-  };
-  size: number;
-}
-
-export interface ATProfileValue {
-  $type: "app.bsky.actor.profile";
-  avatar: ATProfileImage;
-  banner: ATProfileImage;
-  description: string | null;
-  displayName: string | null;
-}
-
-const BASE_URL = "https://slices-api.fly.dev/xrpc";
-const SLICE =
-  "at://did:plc:2hgmrwevidwsxundvejdeam5/network.slices.slice/3m34awjg6w22z";
-
-export const fetchLatestBookmarks = async (): Promise<ATBookmark[]> => {
-  const response = await fetch(
-    `${BASE_URL}/community.lexicon.bookmarks.bookmark.getRecords`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        slice: SLICE,
-        sortBy: [
-          {
-            field: "createdAt",
-            direction: "desc",
-          },
-        ],
-        where: {
-          subject: { contains: "https://" },
-        },
-        limit: 100,
-      }),
-    }
-  );
-
-  const data: ATBookmarkResponse = await response.json();
-  const yesterday = new Date(Date.now() - ONE_DAY_MS).toISOString();
-  return data.records.filter((f) => f.value.createdAt >= yesterday);
-};
-
-const getProfile = async (did: string): Promise<ATProfileResponse> => {
-  const response = await fetch(
-    `${BASE_URL}/app.bsky.actor.profile.getRecord?slice=${SLICE}&uri=at://${did}/app.bsky.actor.profile/self`
-  );
-
-  return await response.json();
+/**
+ * Pull the `tags` array off a community-bookmark record (the AppView returns
+ * `share.record` as the raw JSON-stringified lexicon body). Returns `[]` for
+ * absent / unparseable / non-array values.
+ */
+const extractBookmarkTags = (raw: string): string[] => {
+  try {
+    const parsed = JSON.parse(raw) as { tags?: unknown };
+    return Array.isArray(parsed.tags)
+      ? parsed.tags.filter((t): t is string => typeof t === "string")
+      : [];
+  } catch {
+    return [];
+  }
 };
 
 /**
- * @deprecated The `ProcessedResult` tuple this returned is gone with the
- * AppView cutover. Retained as a no-op so any historic external callers
- * still resolve to undefined.
+ * Pull the user's new community-bookmark records via the AppView's
+ * `/v1/actor-activity` (open by actor — no Bluesky OAuth agent restore). Stops
+ * paging when it hits the previously-seen newest bookmark (`mostRecentBookmark
+ * Date` checkpoint) or runs out of cursor. Mastodon-only users skip — they
+ * have no atproto repo to walk. AppView caps the window at 90 days; older
+ * bookmarks beyond a 90-day gap won't be picked up here.
  */
-export const formatBookmark = async (
-  _bookmark: ATBookmark,
-  _userId: string,
-): Promise<undefined> => {
-  return undefined;
-};
-
-const getFollows = async (userId: string) => {
+export const getUserBookmarks = async (
+  userId: string,
+): Promise<ShareRow[]> => {
   const bsky = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
   });
-
   if (!bsky) return [];
-
-  const agent = await getOrCreateAgent(bsky);
-  if (!agent) return [];
-
-  const allFollows = [];
-  let cursor: string | undefined = undefined;
-
-  do {
-    const response = await agent.getFollows({
-      actor: bsky.did,
-      limit: 100,
-      cursor,
-    });
-
-    allFollows.push(...response.data.follows);
-    cursor = response.data.cursor;
-  } while (cursor);
-
-  return allFollows;
-};
-
-export const evaluateBookmark = async (
-  bookmark: ATBookmark,
-  userId: string
-) => {
-  const follows = await getFollows(userId);
-  if (follows.length === 0) return false;
-  const followDids = follows.map((f) => f.did);
-  return followDids.includes(bookmark.did);
-};
-
-export const getUserBookmarks = async (userId: string) => {
-  const bsky = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-
-  if (!bsky) return [];
+  if (!appViewEnabled()) return [];
 
   const existingBookmarks = await db.query.bookmark.findMany({
     where: eq(bookmark.userId, userId),
+    columns: { linkUrl: true },
   });
+  const existingUrls = new Set(existingBookmarks.map((b) => b.linkUrl));
 
-  const agent = await getOrCreateAgent(bsky);
-  if (!agent) return [];
+  const checkpoint = bsky.mostRecentBookmarkDate
+    ? new Date(`${bsky.mostRecentBookmarkDate.replace(" ", "T")}Z`)
+    : null;
+  const checkpointMs =
+    checkpoint && !Number.isNaN(checkpoint.getTime())
+      ? checkpoint.getTime()
+      : null;
 
-  const allBookmarks: ATBookmark[] = [];
-  let cursor: string | undefined = undefined;
-  let reachedPreviousBookmark = false;
+  const allItems: ShareRow[] = [];
+  let cursor: string | undefined;
+  let reachedCheckpoint = false;
 
   do {
-    // Use com.atproto.repo.listRecords instead of the custom lexicon query
-    // since the agent doesn't have the community lexicon loaded
-    const response = await agent.com.atproto.repo.listRecords({
-      repo: bsky.did,
-      collection: "community.lexicon.bookmarks.bookmark",
-      limit: 100,
-      cursor,
-    });
-
-    const data = {
-      bookmarks: response.data.records as unknown as ATBookmark[],
-      cursor: response.data.cursor,
-    };
-
-    // Check each bookmark to see if we've reached the most recent one we've seen
-    for (const bookmark of data.bookmarks) {
-      let checkDate: string | null = null;
-
-      if (bsky.mostRecentBookmarkDate) {
-        const dateStr = `${bsky.mostRecentBookmarkDate.replace(" ", "T")}Z`;
-        const parsedDate = new Date(dateStr);
-
-        // Validate the date is valid before using it
-        if (!Number.isNaN(parsedDate.getTime())) {
-          checkDate = parsedDate.toISOString();
-        }
-      }
-
-      if (
-        checkDate &&
-        new Date(bookmark.value.createdAt).toISOString() === checkDate
-      ) {
-        reachedPreviousBookmark = true;
-        break;
-      }
-
-      if (existingBookmarks.find((b) => b.linkUrl === bookmark.value.subject)) {
-        continue;
-      }
-
-      allBookmarks.push(bookmark);
-    }
-
-    if (reachedPreviousBookmark) {
+    let res: Awaited<ReturnType<typeof fetchActorActivity>>;
+    try {
+      res = await fetchActorActivity({
+        actor: bsky.did,
+        collection: ["community.lexicon.bookmarks.bookmark"],
+        days: 90,
+        limit: 100,
+        cursor,
+      });
+    } catch (e) {
+      console.error("AppView /v1/actor-activity failed:", e);
       break;
     }
 
-    cursor = data.cursor;
+    for (const item of res.items) {
+      const itemIso = toIso(item.eventTime);
+      const itemMs = itemIso ? new Date(itemIso).getTime() : null;
+      if (
+        checkpointMs !== null &&
+        itemMs !== null &&
+        itemMs <= checkpointMs
+      ) {
+        reachedCheckpoint = true;
+        break;
+      }
+      if (existingUrls.has(item.url)) continue;
+      allItems.push(item);
+    }
+    if (reachedCheckpoint) break;
+    cursor = res.cursor;
   } while (cursor);
 
-  // Update the most recent bookmark TID if we found new bookmarks
-  if (allBookmarks.length > 0) {
-    await db
-      .update(blueskyAccount)
-      .set({
-        mostRecentBookmarkDate: allBookmarks[0].value.createdAt,
-      })
-      .where(eq(blueskyAccount.userId, userId));
+  // Advance the checkpoint to the newest item we just ingested (items are
+  // returned newest-first, so [0] is the freshest).
+  if (allItems.length > 0) {
+    const newest = toIso(allItems[0].eventTime);
+    if (newest) {
+      await db
+        .update(blueskyAccount)
+        .set({ mostRecentBookmarkDate: newest })
+        .where(eq(blueskyAccount.userId, userId));
+    }
   }
 
-  return allBookmarks;
+  return allItems;
 };
 
 export const upsertTag = async (userId: string, tagName: string) => {
@@ -244,48 +141,37 @@ export const upsertTag = async (userId: string, tagName: string) => {
 
 export const addNewBookmarks = async (userId: string) => {
   // Get all new bookmarks from the user's Bluesky account
-  const newBookmarks = await getUserBookmarks(userId);
+  const newItems = await getUserBookmarks(userId);
 
-  if (newBookmarks.length === 0) {
+  if (newItems.length === 0) {
     return [];
   }
 
+  // One AppView `/v1/url` call for the whole page of new bookmarks; the
+  // helper chunks at 100 URLs so larger backfills still work.
+  const urls = Array.from(new Set(newItems.map((i) => i.url)));
+  const metaByUrl = await fetchUrlMetadata(urls);
+
   const insertedBookmarks = [];
 
-  for (const atBookmark of newBookmarks) {
-    // First, check if link exists and preserve its title
-    let dbLink: typeof link.$inferSelect | undefined =
-      await db.query.link.findFirst({
-        where: eq(link.url, atBookmark.value.subject),
-      });
-
-    if (!dbLink) {
-      const insert = await db
-        .insert(link)
-        .values({
-          id: uuidv7(),
-          url: atBookmark.value.subject,
-          title: "",
-        })
-        .returning();
-
-      dbLink = insert[0];
-    }
-
-    // Insert the bookmark
+  for (const item of newItems) {
+    const url = item.url;
+    const rkey = item.atUri.split("/").pop();
+    const createdAt = toIso(item.eventTime) ?? new Date().toISOString();
+    const tags = extractBookmarkTags(item.record);
     const [insertedBookmark] = await db
       .insert(bookmark)
       .values({
         id: uuidv7(),
-        linkUrl: atBookmark.value.subject,
+        linkUrl: url,
         userId,
-        createdAt: atBookmark.value.createdAt,
+        createdAt,
         posts: {
           uniqueActorsCount: 0,
-          link: dbLink,
+          link: linkFromUrlMeta(url, metaByUrl.get(url)),
           posts: [],
         },
-        atprotoRkey: atBookmark.uri.split("/").pop(),
+        atprotoRkey: rkey,
         published: true,
       })
       .onConflictDoNothing()
@@ -295,8 +181,7 @@ export const addNewBookmarks = async (userId: string) => {
       insertedBookmarks.push(insertedBookmark);
 
       // Process tags for this bookmark
-      const tags = atBookmark.value.tags;
-      if (!Array.isArray(tags)) continue;
+      if (tags.length === 0) continue;
 
       for (const tagName of tags) {
         // Upsert the tag (creates if doesn't exist, does nothing if it does)
@@ -331,4 +216,3 @@ export const addNewBookmarks = async (userId: string) => {
 
   return insertedBookmarks;
 };
-

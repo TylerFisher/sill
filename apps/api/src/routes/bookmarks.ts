@@ -6,21 +6,23 @@ import { z } from "zod";
 import { getUserIdFromSession, createOAuthClient } from "@sill/auth";
 import {
   db,
+  type Link,
   type MostRecentLinkPosts,
   bookmark,
   bookmarkTag,
   tag,
   blueskyAccount,
-  link,
 } from "@sill/schema";
 import {
   addNewBookmarks,
   appViewEnabled,
   fetchHydration,
+  fetchUrlMetadata,
   networkFromService,
   resolveRepostSubjects,
   shareRowToLinkPost,
   distinctActorCount,
+  urlItemToLink,
 } from "@sill/links";
 import { Agent } from "@atproto/api";
 import { TID } from "@atproto/common";
@@ -243,9 +245,9 @@ const bookmarks = new Hono()
       }
 
       // Hydrate the URL's viewer-scoped shares from the AppView. The bookmark
-      // snapshot only carries network-side posts (`linkPostDenormalized` is
-      // gone); URL metadata still comes from Sill's own `link` row (insert a
-      // stub when missing — the scraper backfills it).
+      // snapshot's `link` half is an inline stub now — the `link` table is on
+      // its way out, and URL metadata for bookmarks will route through a
+      // different path (TBD; AppView has no single-URL metadata endpoint).
       const viewerAccount = await db.query.blueskyAccount.findFirst({
         where: eq(blueskyAccount.userId, userId),
       });
@@ -265,20 +267,11 @@ const bookmarks = new Hono()
         }
       }
 
-      let dbLink: typeof link.$inferSelect | undefined =
-        await db.query.link.findFirst({
-          where: eq(link.url, url),
-        });
-      if (!dbLink) {
-        [dbLink] = await db
-          .insert(link)
-          .values({
-            id: uuidv7(),
-            url,
-            title: "",
-          })
-          .returning();
-      }
+      // Fetch URL metadata from the AppView (`/v1/url`); fall back to a bare
+      // shape with `url` only if it hasn't been scraped yet, so `urlItemToLink`
+      // produces a stub.
+      const metaByUrl = await fetchUrlMetadata([url]);
+      const link: Link = urlItemToLink(metaByUrl.get(url) ?? { url }, null);
 
       const sortedShares = viewerShares.sort(
         (a, b) =>
@@ -286,7 +279,7 @@ const bookmarks = new Hono()
       );
       const posts: MostRecentLinkPosts[] = [
         {
-          link: dbLink,
+          link,
           posts: sortedShares.map((s) => shareRowToLinkPost(s, userId)),
           uniqueActorsCount: distinctActorCount(sortedShares),
         },

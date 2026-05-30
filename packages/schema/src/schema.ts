@@ -493,9 +493,10 @@ export const bookmark = pgTable("bookmark", {
   userId: uuid()
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  linkUrl: text()
-    .notNull()
-    .references(() => link.url),
+  // No FK back to the `link` table — that table is being retired and we no
+  // longer guarantee a row per URL (bookmarks now carry an inline `Link`
+  // stub inside `posts.link` for rendering).
+  linkUrl: text().notNull(),
   createdAt: timestamp({ precision: 3, mode: "string" })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),

@@ -258,6 +258,70 @@ GET /v1/hydration?viewer=did:plc:abc&days=1&urls=https://www.nytimes.com/2026/05
 }
 ```
 
+### `GET /v1/actor-activity`
+Per-actor link-share activity, reverse-chronological. Returns one entry per share the actor has made within the window, hydrated as a `ShareRow` — the same shape `/v1/hydration` returns, so the renderer reuses the same path. Open by actor; no `viewer` required. Useful for "show me @reporter's recent link shares" UI like notification cards or profile activity feeds.
+
+- **Required**: `actor` — DID or ActivityPub Actor URI (same accepted shapes as `viewer`; see §2).
+- **`days`**: 1–90, default **7** (wider than feed endpoints — natural use case is "recent activity", not "right now"). Use `hours` for sub-day.
+- **`collection`**: repeated NSID filter — restrict to specific record types (e.g. `?collection=app.bsky.feed.post` for direct posts only, `?collection=app.bsky.feed.repost` for reposts only).
+- **`limit`**: 1–100, default 20.
+- **`cursor`**: opaque pagination cursor (see §2 Pagination).
+- **Returns**: `{ items: ShareRow[]; cursor?: string }` — items ordered by event time desc.
+- **Takedowns** (account + at-URI) apply globally. **No viewer-mute filtering** — that needs a `viewer`.
+
+```
+GET /v1/actor-activity?actor=did:plc:reporter&days=7&collection=app.bsky.feed.post&limit=20
+```
+```json
+{
+  "items": [
+    {
+      "url": "https://www.nytimes.com/2026/05/30/...",
+      "actorDid": "did:plc:reporter",
+      "actorHandle": "reporter.bsky.social",
+      "collection": "app.bsky.feed.post",
+      "atUri": "at://did:plc:reporter/app.bsky.feed.post/...",
+      "eventTime": "2026-05-30 11:24:00.000",
+      "record": "{...post body...}"
+    }
+  ],
+  "cursor": "..."
+}
+```
+
+### `GET /v1/url`
+Bulk URL-metadata lookup. Returns one entry per input URL with the scraped metadata we have (title, description, image, site, byline, publish date) — the same `UrlMetaProjection` shape every URL-keyed item carries on `/v1/trending` et al.
+
+Use this when you need metadata for a list of URLs you already have (e.g. rendering a notification card for a URL Sill is already tracking outside the appview), without going through a viewer-scoped feed query.
+
+- **No `viewer`, no `days`/`hours`** — metadata is per-URL and not viewer-scoped.
+- **`urls`** — repeated param, 1–100 canonical URLs (each ≤2048 chars).
+- **Returns**: `{ urls: Array<{ url: string; title?: string; description?: string; imageUrl?: string; siteName?: string; byline?: string; publishedAt?: string }> }` — **input order preserved**, so callers can pair by index. URLs we haven't scraped yet come back as `{ url }` only (metadata fields omitted, not null).
+
+```
+GET /v1/url?urls=https://www.nytimes.com/2026/05/30/...&urls=https://example.com/x
+```
+```json
+{
+  "urls": [
+    {
+      "url": "https://www.nytimes.com/2026/05/30/...",
+      "title": "Climate Bill Passes Senate",
+      "description": "Landmark emissions legislation",
+      "imageUrl": "https://static01.nyt.com/.../hero.jpg",
+      "siteName": "The New York Times",
+      "byline": "A Reporter",
+      "publishedAt": "2026-05-29T13:00:00.000Z"
+    },
+    {
+      "url": "https://example.com/x"
+    }
+  ]
+}
+```
+
+Backed by an in-process LRU (10-min TTL, 50k entries) shared with trending/hydration, so repeated calls for the same URLs are sub-ms. Cache-Control: public.
+
 ### `POST /v1/seeds`
 Register one or more viewer DIDs as **seeds** — the accounts whose follow graph we index. Call this at signup/login so a user's follows are tracked from the start, rather than waiting for their first feed request to auto-register them (which the cold-start probe also does).
 

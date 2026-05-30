@@ -28,7 +28,9 @@ export { getTimeline, getMergedOccurrences } from "./timeline.js";
 export {
   appViewEnabled,
   distinctActorCount,
+  fetchActorActivity,
   fetchHydration,
+  fetchUrlMetadata,
   networkFromService,
   type PushShareBatch,
   pushShareBatches,
@@ -37,16 +39,12 @@ export {
   type ShareRow,
   shareRowToLinkPost,
   type TimeWindow,
+  type UrlMetaItem,
+  urlItemToLink,
 } from "./appview.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export { conflictUpdateSetAllColumns } from "./db-helpers.js";
-export {
-  fetchLatestBookmarks,
-  formatBookmark,
-  evaluateBookmark,
-  getUserBookmarks,
-  addNewBookmarks,
-} from "./bookmarks.js";
+export { getUserBookmarks, addNewBookmarks } from "./bookmarks.js";
 export { processNotificationGroup } from "./notifications.js";
 export { sendPushNotification } from "./push.js";
 export { clearUrlExpansionCache } from "./normalizeLink.js";

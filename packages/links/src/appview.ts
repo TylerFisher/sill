@@ -444,6 +444,85 @@ export const fetchByDomain = async (opts: {
   return res.items;
 };
 
+interface ActorActivityResponse {
+  items: ShareRow[];
+  cursor?: string;
+}
+
+/**
+ * Per-actor link-share activity from `/v1/actor-activity`, reverse-chronological
+ * (newest `eventTime` first). Same `ShareRow` shape as `/v1/hydration`. Use
+ * for "what has @actor recently shared" feeds — no viewer/auth dance, just
+ * the actor's DID (or ActivityPub Actor URI).
+ *
+ * `collection` is a repeated NSID filter; for community bookmarks pass
+ * `["community.lexicon.bookmarks.bookmark"]`.
+ *
+ * `days` caps at 90 (AppView limit); use `hours` for sub-day windows.
+ */
+export const fetchActorActivity = async (opts: {
+  actor: string;
+  collection?: string[];
+  days?: number;
+  hours?: number;
+  limit?: number;
+  cursor?: string;
+}): Promise<ActorActivityResponse> => {
+  const params = new URLSearchParams();
+  params.set("actor", opts.actor);
+  if (opts.collection) {
+    for (const c of opts.collection) params.append("collection", c);
+  }
+  if (opts.hours != null) params.set("hours", String(opts.hours));
+  else if (opts.days != null) params.set("days", String(opts.days));
+  if (opts.limit != null) params.set("limit", String(opts.limit));
+  if (opts.cursor) params.set("cursor", opts.cursor);
+  return appViewGet<ActorActivityResponse>("/v1/actor-activity", params);
+};
+
+/** One URL's scraped metadata from `/v1/url` — `UrlItem`'s metadata subset. */
+export interface UrlMetaItem {
+  url: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  siteName?: string;
+  byline?: string;
+  publishedAt?: string;
+}
+
+interface UrlMetaResponse {
+  urls: UrlMetaItem[];
+}
+
+/** AppView cap on URLs per `/v1/url` request. */
+const URL_META_PER_REQUEST_CAP = 100;
+
+/**
+ * Bulk URL-metadata lookup via `/v1/url`. Returns a map keyed by the input
+ * URL so callers can resolve in O(1); URLs the AppView hasn't scraped come
+ * back as `{ url }` only and still land in the map (other fields absent).
+ * Chunks any input >100 URLs into multiple requests per the API.md cap.
+ */
+export const fetchUrlMetadata = async (
+  urls: string[],
+): Promise<Map<string, UrlMetaItem>> => {
+  const out = new Map<string, UrlMetaItem>();
+  if (urls.length === 0 || !appViewEnabled()) return out;
+  for (let i = 0; i < urls.length; i += URL_META_PER_REQUEST_CAP) {
+    const chunk = urls.slice(i, i + URL_META_PER_REQUEST_CAP);
+    const params = new URLSearchParams();
+    for (const url of chunk) params.append("urls", url);
+    try {
+      const res = await appViewGet<UrlMetaResponse>("/v1/url", params);
+      for (const item of res.urls) out.set(item.url, item);
+    } catch (e) {
+      console.error("AppView /v1/url failed:", e);
+    }
+  }
+  return out;
+};
+
 /** Top URLs whose article byline matches `author`. `viewer` scopes to that network. */
 export const fetchByAuthor = async (opts: {
   author: string;
