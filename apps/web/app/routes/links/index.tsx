@@ -14,6 +14,7 @@ import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import SortPresetList from "~/components/forms/SortPresetList";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import Layout from "~/components/nav/Layout";
+import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
 import type { SubscriptionStatus } from "@sill/schema";
 import { requireUserFromContext } from "~/utils/context.server";
@@ -240,6 +241,8 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	}, [key, loaderData.key]);
 
 	const layout = useLayout();
+	// Hide just-muted cards immediately, before the server feed converges.
+	const { isMuted } = useOptimisticMutes();
 
 	return (
 		<Layout
@@ -322,26 +325,14 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 								pointerEvents: showPending ? "none" : "auto",
 							}}
 						>
-							{links.map((link) => (
-								// Include the loader key so cards remount when the feed
-								// reloads (e.g. filtering to a list), discarding any posts
-								// hydrated for a URL under the previous filters.
-								<div key={`${loaderData.key}:${link.link?.url}`}>
-									<LinkPost
-										linkPost={link}
-										instance={loaderData.instance}
-										bsky={loaderData.bsky}
-										layout={layout}
-										bookmarks={loaderData.bookmarks}
-										subscribed={loaderData.subscribed}
-									/>
-								</div>
-							))}
-							{fetchedLinks.length > 0 && (
-								<div>
-									{fetchedLinks.map((link) => (
+							{links
+								.filter((link) => !isMuted(link))
+								.map((link) => (
+									// Include the loader key so cards remount when the feed
+									// reloads (e.g. filtering to a list), discarding any posts
+									// hydrated for a URL under the previous filters.
+									<div key={`${loaderData.key}:${link.link?.url}`}>
 										<LinkPost
-											key={link.link?.url}
 											linkPost={link}
 											instance={loaderData.instance}
 											bsky={loaderData.bsky}
@@ -349,7 +340,23 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 											bookmarks={loaderData.bookmarks}
 											subscribed={loaderData.subscribed}
 										/>
-									))}
+									</div>
+								))}
+							{fetchedLinks.length > 0 && (
+								<div>
+									{fetchedLinks
+										.filter((link) => !isMuted(link))
+										.map((link) => (
+											<LinkPost
+												key={link.link?.url}
+												linkPost={link}
+												instance={loaderData.instance}
+												bsky={loaderData.bsky}
+												layout={layout}
+												bookmarks={loaderData.bookmarks}
+												subscribed={loaderData.subscribed}
+											/>
+										))}
 								</div>
 							)}
 							<Box position="absolute" top="90%">

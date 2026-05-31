@@ -1,6 +1,13 @@
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Box, Flex, Heading, IconButton, Separator } from "@radix-ui/themes";
+import {
+	Box,
+	Flex,
+	Heading,
+	IconButton,
+	Separator,
+	Spinner,
+} from "@radix-ui/themes";
 import { X } from "lucide-react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
@@ -41,6 +48,13 @@ export default function ModerationSettings({
 	const { phrases } = loaderData;
 	const deleteFetcher = useFetcher({ key: "delete-mute" });
 	const addFetcher = useFetcher({ key: "add-mute" });
+
+	// One delete fetcher is shared across every row; track which phrase is in
+	// flight so only that row shows its pending state.
+	const deletingPhrase =
+		deleteFetcher.state !== "idle"
+			? deleteFetcher.formData?.get("phrase")
+			: null;
 
 	const [addForm, addFields] = useForm({
 		// @ts-ignore: This can only happen in the case of an error
@@ -91,8 +105,17 @@ export default function ModerationSettings({
 										width: "100%",
 									}}
 								/>
-								<IconButton size="1" variant="soft" aria-label="Delete phrase">
-									<X width="12" height="12" />
+								<IconButton
+									size="1"
+									variant="soft"
+									aria-label="Delete phrase"
+									disabled={deletingPhrase === phrase.phrase}
+								>
+									{deletingPhrase === phrase.phrase ? (
+										<Spinner size="1" />
+									) : (
+										<X width="12" height="12" />
+									)}
 								</IconButton>
 							</Flex>
 						</deleteFetcher.Form>
@@ -113,7 +136,11 @@ export default function ModerationSettings({
 					}}
 					errors={addFields.newPhrase.errors}
 				/>
-				<SubmitButton label="Submit" size="2" />
+				<SubmitButton
+					label="Submit"
+					size="2"
+					pending={addFetcher.state !== "idle"}
+				/>
 			</addFetcher.Form>
 		</Layout>
 	);

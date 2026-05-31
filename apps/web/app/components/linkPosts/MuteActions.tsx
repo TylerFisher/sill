@@ -1,4 +1,4 @@
-import { Button, Flex, IconButton, Popover } from "@radix-ui/themes";
+import { Button, Flex, IconButton, Popover, Spinner } from "@radix-ui/themes";
 import { MessageSquareOff } from "lucide-react";
 import { useFetcher } from "react-router";
 
@@ -14,6 +14,10 @@ const MuteActions = ({
 	layout: "default" | "dense";
 }) => {
 	const fetcher = useFetcher();
+	// Both buttons share one fetcher; disable both while a mute is in flight and
+	// show the spinner on whichever phrase is being submitted.
+	const submitting = fetcher.state !== "idle";
+	const submittingPhrase = fetcher.formData?.get("newPhrase");
 
 	return (
 		<Popover.Root>
@@ -37,10 +41,14 @@ const MuteActions = ({
 						<input type="hidden" name="newPhrase" value={narrowMutePhrase} />
 						<Button
 							type="submit"
+							disabled={submitting}
 							style={{
 								width: "100%",
 							}}
 						>
+							{submitting && submittingPhrase === narrowMutePhrase ? (
+								<Spinner size="1" />
+							) : null}
 							{type === "post" ? "Mute this post" : "Mute this link"}
 						</Button>
 					</fetcher.Form>
@@ -48,10 +56,14 @@ const MuteActions = ({
 						<input type="hidden" name="newPhrase" value={broadMutePhrase} />
 						<Button
 							type="submit"
+							disabled={submitting}
 							style={{
 								width: "100%",
 							}}
 						>
+							{submitting && submittingPhrase === broadMutePhrase ? (
+								<Spinner size="1" />
+							) : null}
 							Mute all {type}s from {broadMutePhrase}
 						</Button>
 					</fetcher.Form>

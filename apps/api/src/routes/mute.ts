@@ -87,7 +87,10 @@ const mute = new Hono()
           createdAt: mutePhrase.createdAt,
         });
 
-      // Push the updated combined mute list to the AppView.
+      // Push the updated combined mute list to the AppView. Fire-and-forget so
+      // the action returns immediately; the client hides the muted card
+      // optimistically (see useOptimisticMutes) while this lands in the
+      // background, and the feed converges on the next load.
       void syncUserMutesToAppView(userId);
 
       return c.json({ success: true, mutePhrase: result[0] });
@@ -130,6 +133,7 @@ const mute = new Hono()
 
       // Push the updated combined mute list to the AppView (a removed phrase
       // must be dropped there too — it's a full last-write-wins list).
+      // Fire-and-forget; the feed converges on the next load.
       void syncUserMutesToAppView(userId);
 
       return c.json({ success: true, deleted: result[0] });
