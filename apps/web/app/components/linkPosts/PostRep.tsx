@@ -13,6 +13,35 @@ interface PostRepProps {
 	layout: "default" | "dense";
 }
 
+type Post = typeof linkPostDenormalized.$inferSelect;
+
+/**
+ * The little source logo in the card corner. Bluesky/Mastodon posts go by
+ * `postType`; everything else arrives as "atbookmark" and is distinguished by
+ * a marker class the mapper embeds in `postText` (or, for Semble, the post
+ * host). First match wins, so order is by specificity.
+ */
+const resolveSourceLogo = (post: Post): string | null => {
+	if (post.postType === "bluesky") return "/bluesky-logo.svg";
+	if (post.postType === "mastodon") return "/mastodon-logo.svg";
+
+	const bodyMarkers: { marker: string; logo: string }[] = [
+		{ marker: "scrobble-card", logo: "/rocksky.png" },
+		{ marker: "offprint-source", logo: "/offprint.svg" },
+		{ marker: "pckt-source", logo: "/pckt.svg" },
+		{ marker: "sill-bookmark", logo: "/sill.svg" },
+		{ marker: "leaflet-source", logo: "/leaflet.svg" },
+	];
+	for (const { marker, logo } of bodyMarkers) {
+		if (post.postText?.includes(marker)) return logo;
+	}
+
+	if (post.postUrl?.includes("semble.so")) return "/semble-logo.svg";
+	if (post.postUrl?.includes("leaflet.pub")) return "/leaflet.svg";
+
+	return null;
+};
+
 const PostRep = ({
 	group,
 	instance,
@@ -26,26 +55,7 @@ const PostRep = ({
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
-	// Source logo shown in the card corner. Semble bookmarks, Sill bookmarks,
-	// Leaflet documents, and Rocksky scrobbles all come through as "atbookmark";
-	// distinguish by the document host (Semble/Leaflet) or a marker class the
-	// card body carries (`sill-bookmark` for Sill's own bookmarks,
-	// `leaflet-source` for Leaflet, `scrobble-card` for Rocksky).
-	const sourceLogo =
-		post.postType === "bluesky"
-			? "/bluesky-logo.svg"
-			: post.postType === "mastodon"
-				? "/mastodon-logo.svg"
-				: post.postText?.includes("scrobble-card")
-					? "/rocksky.png"
-					: post.postUrl?.includes("semble.so")
-						? "/semble-logo.svg"
-						: post.postText?.includes("sill-bookmark")
-							? "/sill.svg"
-							: post.postUrl?.includes("leaflet.pub") ||
-									post.postText?.includes("leaflet-source")
-								? "/leaflet.svg"
-								: null;
+	const sourceLogo = resolveSourceLogo(post);
 
 	return (
 		<Card key={post.postUrl} mt="5" size="1">

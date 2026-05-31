@@ -659,53 +659,6 @@ const findBlueskyLinkFacets = async (
   return null;
 };
 
-export const serializeBlueskyPostToHtml = (post: AppBskyFeedPost.Record) => {
-  const rt = new RichText({
-    text: post.text,
-    facets: post.facets,
-  });
-  const html: string[] = [];
-  for (const segment of rt.segments()) {
-    segment.text = segment.text.replace(/\n/g, "<br />");
-    if (segment.text && !segment.facet && !segment.link) {
-      html.push(segment.text);
-    } else if (segment.link && !segment.facet) {
-      html.push(`<a href="${segment.link.uri}">${segment.text}</a>`);
-    } else if (
-      segment.facet?.features.find((f) => AppBskyRichtextFacet.isLink(f))
-    ) {
-      const linkFacet = segment.facet.features.find((f) =>
-        AppBskyRichtextFacet.isLink(f),
-      );
-      if (linkFacet) {
-        html.push(`<a href=${linkFacet.uri}>${segment.text}</a>`);
-      }
-    } else if (
-      segment.facet?.features.find((f) => AppBskyRichtextFacet.isMention(f))
-    ) {
-      const mentionFacet = segment.facet.features.find((f) =>
-        AppBskyRichtextFacet.isMention(f),
-      );
-      if (mentionFacet) {
-        html.push(
-          `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
-            segment.text
-          }</a>`,
-        );
-      }
-    } else if (segment.isMention()) {
-      html.push(
-        `<a href="https://bsky.app/profile/${segment.text.split("@")[1]}">${
-          segment.text
-        }</a>`,
-      );
-    } else {
-      html.push(segment.text);
-    }
-  }
-  return html.join("");
-};
-
 type BlueskyAccount = typeof blueskyAccount.$inferSelect;
 interface AccountWithLists extends BlueskyAccount {
   lists: (typeof list.$inferSelect)[];
