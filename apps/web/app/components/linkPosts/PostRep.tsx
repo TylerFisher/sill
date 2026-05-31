@@ -26,23 +26,26 @@ const PostRep = ({
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
 
-	// Source logo shown in the card corner. Semble bookmarks, Sill bookmarks, and
-	// Leaflet documents all come through as "atbookmark"; distinguish by the
-	// document host (Semble/Leaflet) or a marker class the card body carries
-	// (`sill-bookmark` for Sill's own bookmarks, `leaflet-source` for Leaflet).
+	// Source logo shown in the card corner. Semble bookmarks, Sill bookmarks,
+	// Leaflet documents, and Rocksky scrobbles all come through as "atbookmark";
+	// distinguish by the document host (Semble/Leaflet) or a marker class the
+	// card body carries (`sill-bookmark` for Sill's own bookmarks,
+	// `leaflet-source` for Leaflet, `scrobble-card` for Rocksky).
 	const sourceLogo =
 		post.postType === "bluesky"
 			? "/bluesky-logo.svg"
 			: post.postType === "mastodon"
 				? "/mastodon-logo.svg"
-				: post.postUrl?.includes("semble.so")
-					? "/semble-logo.svg"
-					: post.postText?.includes("sill-bookmark")
-						? "/sill.svg"
-						: post.postUrl?.includes("leaflet.pub") ||
-								post.postText?.includes("leaflet-source")
-							? "/leaflet.svg"
-							: null;
+				: post.postText?.includes("scrobble-card")
+					? "/rocksky.png"
+					: post.postUrl?.includes("semble.so")
+						? "/semble-logo.svg"
+						: post.postText?.includes("sill-bookmark")
+							? "/sill.svg"
+							: post.postUrl?.includes("leaflet.pub") ||
+									post.postText?.includes("leaflet-source")
+								? "/leaflet.svg"
+								: null;
 
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
