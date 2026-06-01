@@ -87,10 +87,20 @@ const advisoryLockKey = (name: string): string => {
 };
 
 /**
- * Run `fn` while holding a cross-process lock keyed by `name`: a session-level
- * Postgres advisory lock on a dedicated connection. Serializes across every
- * process that shares this database; the lock releases automatically if the
- * holding connection dies, so a crashed process never strands it.
+ * Run `fn` while holding a cross-process lock keyed by `name`: a
+ * transaction-scoped Postgres advisory lock (`pg_advisory_xact_lock`) on a
+ * dedicated connection. Serializes across every process that shares this
+ * database; the lock releases automatically at COMMIT/ROLLBACK (and if the
+ * backend dies), so a crashed process never strands it.
+ *
+ * It MUST be transaction-scoped, not session-scoped: Sill connects through
+ * pgbouncer in `transaction` pool mode, which leases a backend per transaction.
+ * A session-level `pg_advisory_lock`/`pg_advisory_unlock` pair would run on
+ * different backends — the lock leaks onto one backend and later acquisitions
+ * block forever. Wrapping the whole critical section in one BEGIN…COMMIT pins a
+ * single backend for its duration, so the lock and its release stay together.
+ * The lock is held across `fn` (a token refresh), so the transaction stays open
+ * for the refresh; the dedicated pool (small) caps how many backends that pins.
  *
  * This is the cross-process primitive only. Callers that also need in-process
  * serialization should wrap their own in-memory mutex around this (the OAuth
@@ -108,11 +118,15 @@ export async function withAdvisoryLock<T>(
 	const key = advisoryLockKey(name);
 	const client = await getLockPool().connect();
 	try {
-		await client.query("SELECT pg_advisory_lock($1::bigint)", [key]);
+		await client.query("BEGIN");
 		try {
-			return await fn();
-		} finally {
-			await client.query("SELECT pg_advisory_unlock($1::bigint)", [key]);
+			await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [key]);
+			const result = await fn();
+			await client.query("COMMIT");
+			return result;
+		} catch (e) {
+			await client.query("ROLLBACK").catch(() => {});
+			throw e;
 		}
 	} finally {
 		client.release();
