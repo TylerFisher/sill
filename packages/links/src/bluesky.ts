@@ -251,6 +251,7 @@ export const getBlueskyList = async (
   agent: Agent,
   dbList: typeof list.$inferSelect,
   accountHandle: string,
+  opts?: { ignoreCursor?: boolean },
 ) => {
   async function getList(cursor: string | undefined = undefined) {
     // biome-ignore lint/suspicious/noImplicitAnyLet:
@@ -274,11 +275,12 @@ export const getBlueskyList = async (
     }
 
     const list = response.data.feed;
-    const checkDate = dbList.mostRecentPostDate
-      ? new Date(
-          `${dbList.mostRecentPostDate.replace(" ", "T")}Z`,
-        ).toISOString()
-      : new Date(Date.now() - ONE_DAY_MS).toISOString();
+    const checkDate =
+      !opts?.ignoreCursor && dbList.mostRecentPostDate
+        ? new Date(
+            `${dbList.mostRecentPostDate.replace(" ", "T")}Z`,
+          ).toISOString()
+        : new Date(Date.now() - ONE_DAY_MS).toISOString();
 
     let reachedEnd = false;
     const newPosts: AppBskyFeedDefs.FeedViewPost[] = [];
@@ -585,6 +587,7 @@ export const processBlueskyLink = async (
  */
 export const getLinksFromBluesky = async (
   userId: string,
+  opts?: { ignoreCursor?: boolean },
 ): Promise<PushShareBatch | null> => {
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
@@ -605,7 +608,7 @@ export const getLinksFromBluesky = async (
     // pass the at-URI verbatim.
     const source: PushShareSource = { kind: "at-uri", uri: list.uri };
     const listPosts = await Promise.race([
-      getBlueskyList(agent, list, account.handle),
+      getBlueskyList(agent, list, account.handle, opts),
       new Promise<AppBskyFeedDefs.FeedViewPost[]>((_, reject) =>
         setTimeout(
           () =>

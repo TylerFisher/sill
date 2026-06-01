@@ -52,6 +52,15 @@ import { sourceIdForList } from "./timeline.js";
 const PAGE_SIZE = 10;
 
 /**
+ * Options for the share collectors.
+ * - `ignoreCursor`: ignore each list/account's stored `mostRecentPost*` cursor
+ *   and fetch the full default window (last 24h) instead of only what's new
+ *   since the last pass. Used by the one-off AppView backfill to seed history;
+ *   the steady-state worker leaves it unset so it only ships new posts.
+ */
+export type FetchLinksOpts = { ignoreCursor?: boolean };
+
+/**
  * Collect a user's observed Mastodon and/or Bluesky-list/feed shares for the
  * AppView's `POST /v1/shares`. Returns a single `{viewer, shares}` batch with
  * both networks merged (they always have the same viewer DID), or null when
@@ -62,18 +71,19 @@ const PAGE_SIZE = 10;
 export const fetchLinks = async (
   userId: string,
   type?: "mastodon" | "bluesky",
+  opts?: FetchLinksOpts,
 ): Promise<PushShareBatch | null> => {
   let masto: PushShareBatch | null = null;
   let bsky: PushShareBatch | null = null;
 
   if (type === "mastodon") {
-    masto = await getLinksFromMastodon(userId);
+    masto = await getLinksFromMastodon(userId, opts);
   } else if (type === "bluesky") {
-    bsky = await getLinksFromBluesky(userId);
+    bsky = await getLinksFromBluesky(userId, opts);
   } else {
     [masto, bsky] = await Promise.all([
-      getLinksFromMastodon(userId),
-      getLinksFromBluesky(userId),
+      getLinksFromMastodon(userId, opts),
+      getLinksFromBluesky(userId, opts),
     ]);
   }
 

@@ -70,7 +70,8 @@ export const getMastodonList = async (
     mastodonInstance: {
       instance: string;
     };
-  }
+  },
+  opts?: { ignoreCursor?: boolean }
 ): Promise<mastodon.v1.Status[]> => {
   const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
@@ -90,7 +91,7 @@ export const getMastodonList = async (
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
   for await (const statuses of client.v1.timelines.list.$select(listUri).list({
-    sinceId: dbList.mostRecentPostId,
+    sinceId: opts?.ignoreCursor ? undefined : dbList.mostRecentPostId,
     limit: 40,
   })) {
     if (ended) break;
@@ -134,7 +135,8 @@ export const getMastodonTimeline = async (
     mastodonInstance: {
       instance: string;
     };
-  }
+  },
+  opts?: { ignoreCursor?: boolean }
 ): Promise<mastodon.v1.Status[]> => {
   const yesterday = new Date(Date.now() - 86400000); // 24 hours
 
@@ -157,7 +159,7 @@ export const getMastodonTimeline = async (
 
   // Only pass sinceId if it's set - otherwise fetch all recent posts
   const listParams: { limit: number; sinceId?: string } = { limit: 40 };
-  if (account.mostRecentPostId) {
+  if (!opts?.ignoreCursor && account.mostRecentPostId) {
     listParams.sinceId = account.mostRecentPostId;
   }
 
@@ -330,6 +332,7 @@ export const processMastodonLink = async (
  */
 export const getLinksFromMastodon = async (
   userId: string,
+  opts?: { ignoreCursor?: boolean },
 ): Promise<PushShareBatch | null> => {
   const account = await db.query.mastodonAccount.findFirst({
     where: eq(mastodonAccount.userId, userId),
@@ -352,7 +355,7 @@ export const getLinksFromMastodon = async (
 
   try {
     const timeline = await Promise.race([
-      getMastodonTimeline(account),
+      getMastodonTimeline(account, opts),
       new Promise<mastodon.v1.Status[]>((_, reject) =>
         setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
       ),
@@ -374,7 +377,7 @@ export const getLinksFromMastodon = async (
           id: list.uri, // Sill stores the Mastodon list id in `list.uri`
         };
         const listPosts = await Promise.race([
-          getMastodonList(list.uri, account),
+          getMastodonList(list.uri, account, opts),
           new Promise<mastodon.v1.Status[]>((_, reject) =>
             setTimeout(() => reject(new Error("List fetch timeout")), 60000),
           ),
