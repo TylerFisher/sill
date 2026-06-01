@@ -14,27 +14,34 @@ export const cosmikCardToLinkPost = (
 	let recordUrl = share.url; // fall back to the canonical URL
 	let createdAt: string | undefined;
 	try {
+		// The bookmarked URL lives at `content.url` (the raw URL, with its original
+		// trailing slash intact); `createdAt` is top-level. There is no top-level
+		// `record.url` — reading it would always fall back to Sill's canonical URL.
 		const record = JSON.parse(share.record) as {
-			url?: string;
+			content?: { url?: string };
 			createdAt?: string;
 		};
-		if (typeof record.url === "string") recordUrl = record.url;
+		if (typeof record.content?.url === "string") recordUrl = record.content.url;
 		if (typeof record.createdAt === "string") createdAt = record.createdAt;
 	} catch {
 		// keep the canonical URL / share eventTime
 	}
-	const sembleUrl = `https://semble.so/url?id=${encodeURIComponent(recordUrl)}`;
+	// Semble keys its page on the exact bookmarked URL, so pass it raw (NOT
+	// percent-encoded) — the `?id=` value is the verbatim URL, trailing slash and
+	// all. `sembleTab=addedBy` opens the "Added by" tab (who bookmarked it), e.g.
+	// `?id=https://gui.do/post/foo/&sembleTab=addedBy`.
+	const sembleUrl = `https://semble.so/url?id=${recordUrl}&sembleTab=addedBy`;
 	const profileUrl = `https://semble.so/profile/${
 		share.actorHandle || share.actorDid
 	}`;
 	return {
 		...base,
 		postType: postType.enumValues[2], // "atbookmark"
-		// Per-bookmarker URL so two people bookmarking the same link don't collapse
-		// into one card under `groupBy(postUrl)` (the cosmik record is often `{}`,
-		// so every bookmark would otherwise share the same Semble URL). The link to
-		// the Semble page for the URL itself lives in `postText`.
-		postUrl: profileUrl,
+		// Carries the Semble page for the bookmarked URL (built from the *raw*
+		// record URL, not Sill's canonical link). Semble shares roll up into a
+		// single per-link card on the web, where this is the "Semble" link; it is
+		// no longer used for `groupBy` (the rollup keys by collection).
+		postUrl: sembleUrl,
 		// Date by when the bookmark was made (falls back to the share eventTime).
 		postDate: toDbDate(createdAt) ?? base.postDate,
 		postText: `Bookmarked this on <a href="${sembleUrl}">Semble</a>.`,

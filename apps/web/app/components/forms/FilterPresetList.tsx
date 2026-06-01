@@ -5,13 +5,20 @@ import { useNavigation, useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import styles from "./PresetFilterItem.module.css";
 
+interface TimeOption {
+	value: string;
+	label: string;
+}
+
 interface FilterPresetListProps {
 	showService: boolean;
 	lists: (typeof list.$inferSelect)[];
 	hideSort?: boolean;
+	/** Override the time-window options (e.g. wider ranges for discovery pages). */
+	timeOptions?: TimeOption[];
 }
 
-const timeOptions = [
+const DEFAULT_TIME_OPTIONS: TimeOption[] = [
 	{ value: "3h", label: "3 hours" },
 	{ value: "6h", label: "6 hours" },
 	{ value: "12h", label: "12 hours" },
@@ -36,6 +43,7 @@ const FilterPresetList = ({
 	showService,
 	lists,
 	hideSort = false,
+	timeOptions = DEFAULT_TIME_OPTIONS,
 }: FilterPresetListProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { clearFilterFromStorage } = useFilterStorage();

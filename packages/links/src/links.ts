@@ -5,6 +5,7 @@ import {
   blueskyAccount,
   mastodonAccount,
   mutePhrase,
+  type AboutCard,
   type Link,
   type LinkPost,
   type MostRecentLinkPosts,
@@ -27,7 +28,7 @@ import {
   appViewEnabled,
   distinctActorCount,
   fetchByAuthor,
-  fetchByDomain,
+  fetchByPublication,
   fetchHydration,
   fetchNetworkTrending,
   fetchQuery,
@@ -516,22 +517,64 @@ const linksFromAppViewItems = async (
  * @param pageSize Number of results per page (defaults to 10)
  * @param userId Viewer whose network scopes the lookup
  */
+export interface PaginatedLinks {
+  links: MostRecentLinkPosts[];
+  cursor?: string;
+  /** Publisher/journalist summary — first page only (see API.md `about`). */
+  about?: AboutCard;
+}
+
+/**
+ * The same filter set the main `/links` feed exposes, applied to the
+ * by-author / by-domain discovery pages. All optional — omit for the defaults
+ * (whole 90-day window, all networks, with reposts, popularity sort, no list
+ * scope, no minShares).
+ */
+export interface DiscoveryFilters {
+  time?: number; // ms window; omit for the default discovery window
+  service?: "mastodon" | "bluesky" | "all";
+  hideReposts?: "include" | "exclude" | "only";
+  sort?: "popularity" | "recency";
+  minShares?: number;
+  selectedList?: string; // Sill list id; resolved to a canonical sourceId
+  /** by-publication only: a brand on the host (omit → the host's primary). */
+  publication?: string;
+}
+
+/** ms → AppView TimeWindow (hours for sub-day), else the default discovery window. */
+const discoveryWindow = (timeMs?: number): TimeWindow => {
+  if (timeMs == null) return DISCOVERY_WINDOW;
+  return timeMs < ONE_DAY_MS
+    ? { hours: Math.min(23, Math.max(1, Math.ceil(timeMs / ONE_HOUR_MS))) }
+    : { days: Math.min(90, Math.max(1, Math.ceil(timeMs / ONE_DAY_MS))) };
+};
+
 export const findLinksByDomain = async (
   domain: string,
   pageSize = 10,
   userId?: string,
-): Promise<MostRecentLinkPosts[]> => {
-  if (!userId || !appViewEnabled()) return [];
+  cursor?: string,
+  filters?: DiscoveryFilters,
+): Promise<PaginatedLinks> => {
+  if (!userId || !appViewEnabled()) return { links: [] };
   const viewerDid = await viewerDidForUser(userId);
-  if (!viewerDid) return [];
-  const items = await fetchByDomain({
+  if (!viewerDid) return { links: [] };
+  const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
+  const res = await fetchByPublication({
     domain,
+    publication: filters?.publication,
     viewer: viewerDid,
-    window: DISCOVERY_WINDOW,
+    window: discoveryWindow(filters?.time),
     limit: pageSize,
-    network: networkFromService("all"),
+    cursor,
+    sourceId,
+    network: networkFromService(filters?.service ?? "all"),
+    hideReposts: filters?.hideReposts,
+    minShares: filters?.minShares,
+    sort: filters?.sort,
   });
-  return linksFromAppViewItems(items, viewerDid, userId);
+  const links = await linksFromAppViewItems(res.items, viewerDid, userId);
+  return { links, cursor: res.cursor, about: res.about };
 };
 
 /**
@@ -546,16 +589,25 @@ export const findLinksByAuthor = async (
   author: string,
   pageSize = 10,
   userId?: string,
-): Promise<MostRecentLinkPosts[]> => {
-  if (!userId || !appViewEnabled()) return [];
+  cursor?: string,
+  filters?: DiscoveryFilters,
+): Promise<PaginatedLinks> => {
+  if (!userId || !appViewEnabled()) return { links: [] };
   const viewerDid = await viewerDidForUser(userId);
-  if (!viewerDid) return [];
-  const items = await fetchByAuthor({
+  if (!viewerDid) return { links: [] };
+  const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
+  const res = await fetchByAuthor({
     author,
     viewer: viewerDid,
-    window: DISCOVERY_WINDOW,
+    window: discoveryWindow(filters?.time),
     limit: pageSize,
-    network: networkFromService("all"),
+    cursor,
+    sourceId,
+    network: networkFromService(filters?.service ?? "all"),
+    hideReposts: filters?.hideReposts,
+    minShares: filters?.minShares,
+    sort: filters?.sort,
   });
-  return linksFromAppViewItems(items, viewerDid, userId);
+  const links = await linksFromAppViewItems(res.items, viewerDid, userId);
+  return { links, cursor: res.cursor, about: res.about };
 };

@@ -514,12 +514,26 @@ export async function apiFindLinksByAuthor(
   params: {
     author: string;
     pageSize?: number;
+    cursor?: string;
+    time?: number;
+    service?: string;
+    list?: string;
+    reposts?: string;
+    minShares?: number;
+    sort?: string;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     author: params.author,
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
+    ...(params.pageSize != null && { pageSize: String(params.pageSize) }),
+    ...(params.cursor && { cursor: params.cursor }),
+    ...(params.time != null && { time: String(params.time) }),
+    ...(params.service && { service: params.service }),
+    ...(params.list && { list: params.list }),
+    ...(params.reposts && { reposts: params.reposts }),
+    ...(params.minShares != null && { minShares: String(params.minShares) }),
+    ...(params.sort && { sort: params.sort }),
   };
 
   const response = await client.api.links.author.$get({
@@ -546,13 +560,29 @@ export async function apiFindLinksByDomain(
   request: Request,
   params: {
     domain: string;
+    publication?: string;
     pageSize?: number;
+    cursor?: string;
+    time?: number;
+    service?: string;
+    list?: string;
+    reposts?: string;
+    minShares?: number;
+    sort?: string;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     domain: params.domain,
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
+    ...(params.publication && { publication: params.publication }),
+    ...(params.pageSize != null && { pageSize: String(params.pageSize) }),
+    ...(params.cursor && { cursor: params.cursor }),
+    ...(params.time != null && { time: String(params.time) }),
+    ...(params.service && { service: params.service }),
+    ...(params.list && { list: params.list }),
+    ...(params.reposts && { reposts: params.reposts }),
+    ...(params.minShares != null && { minShares: String(params.minShares) }),
+    ...(params.sort && { sort: params.sort }),
   };
 
   const response = await client.api.links.domain.$get({

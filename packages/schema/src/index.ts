@@ -136,10 +136,60 @@ export type NewDeviceToken = typeof deviceToken.$inferInsert;
 export type MobileTokenExchange = typeof mobileTokenExchange.$inferSelect;
 export type NewMobileTokenExchange = typeof mobileTokenExchange.$inferInsert;
 
+/**
+ * Summary card the AppView returns on the first page of `by-author` / `by-domain`
+ * (its `about` field). Drives the header topper on those pages: a publisher
+ * (by-domain) or journalist (by-author) identity plus activity counts scoped to
+ * the same query/window/filters as the listing.
+ */
+export interface AboutCard {
+  /** Publisher site name (by-domain) or scraped byline (by-author); falls back
+   *  to the queried key when none is on file. */
+  name: string;
+  /** Echo of what was queried — the domain, or the normalized author tokens. */
+  query: string;
+  /** Publisher icon — the primary brand's app-icon, by-domain only. */
+  faviconUrl?: string;
+  /** Publisher homepage (by-domain only). */
+  homepageUrl?: string;
+  /** Publisher blurb (by-domain only); empty until the homepage scrape lands. */
+  description?: string;
+  /** The journalist's page on the publication (by-author only). */
+  authorUrl?: string;
+  /** The journalist's social-profile URLs (by-author only). */
+  socials?: string[];
+  /**
+   * Publications under this key, most-prominent first:
+   * - by-author → distinct site names this byline writes for.
+   * - by-domain → the brands hosted on the domain (site_name varies by path);
+   *   `name` is the dominant brand and is the first entry. Omitted when the host
+   *   carries a single brand.
+   */
+  publications?: string[];
+  /** Distinct canonical articles shared in scope over the window. */
+  articleCount: number;
+  /** Share events in scope over the window. */
+  shareCount: number;
+  /** Distinct accounts who shared, in scope over the window. */
+  sharerCount: number;
+}
+
+/**
+ * A `Link` as rendered from an AppView `UrlItem`, plus render-time metadata that
+ * isn't a `link` column:
+ * - `publisherIcon`: the publisher's brand icon (app-icon/favicon) for this URL,
+ *   shown next to the domain on the card (AppView `publisherIcon`).
+ * (`siteName` already prefers the article's own scraped name, falling back to
+ * the AppView's `publisherName` only when the article scrape lacked one.)
+ */
+export type RenderedLink = Link & {
+  publisherIcon?: string | null;
+};
+
 // Composite types
 export interface MostRecentLinkPosts {
   uniqueActorsCount: number;
-  link: Link | null;
+  link: RenderedLink | null;
   posts?: RenderedLinkPost[];
   // Up to a few sharer avatar URLs for a face-pile preview. Lets the list
   // render "shared by" without hydrating every post upfront; posts are loaded

@@ -11,12 +11,16 @@ export const timeParamToMs = (param: string | null): number => {
 			return 21600000;
 		case "12h":
 			return 43200000;
+		case "1d":
+			return 86400000; // 1 day
 		case "2d":
 			return 172800000; // 2 days
 		case "3d":
 			return 259200000; // 3 days
 		case "7d":
 			return 604800000; // 7 days
+		case "14d":
+			return 1209600000; // 14 days
 		default:
 			return 86400000; // 24 hours
 	}

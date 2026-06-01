@@ -1,9 +1,10 @@
 import { Avatar, Box, Card, Flex, Inset } from "@radix-ui/themes";
+import type { RenderedLinkPost } from "@sill/schema";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
-import type { RenderedLinkPost } from "@sill/schema";
 import { useTheme } from "~/routes/resources/theme-switch";
+import BookmarkRollup, { ROLLUP_COLLECTIONS } from "./BookmarkRollup";
 import ParentPost from "./ParentPost";
 import QuotedPost from "./QuotedPost";
 import SourceBadge from "./SourceBadge";
@@ -63,6 +64,38 @@ const PostRep = ({
 		.filter((l) => l !== undefined);
 
 	const sourceLogo = resolveSourceLogo(post);
+	const isRollup = ROLLUP_COLLECTIONS.has(post.collection ?? "");
+
+	const logo = sourceLogo ? (
+		<img
+			src={sourceLogo}
+			alt=""
+			width="24"
+			height="auto"
+			style={{
+				position: "absolute",
+				top: "0",
+				right: "0",
+				opacity: 0.3,
+			}}
+		/>
+	) : null;
+
+	// Bookmark-style collections (Semble / community lexicon) collapse all of a
+	// link's bookmarkers into one card: "{A}, {B}, and {C} bookmarked this …".
+	// No toolbar — the bookmarked link's own actions live on the LinkRep above.
+	if (isRollup) {
+		return (
+			<Card mt="5" size="1">
+				<Box mb="5">
+					<Box position="relative">
+						<BookmarkRollup group={group} layout={layout} />
+						{logo}
+					</Box>
+				</Box>
+			</Card>
+		);
+	}
 
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
@@ -123,20 +156,7 @@ const PostRep = ({
 							/>
 						</Box>
 					</Flex>
-					{sourceLogo && (
-						<img
-							src={sourceLogo}
-							alt=""
-							width="24"
-							height="auto"
-							style={{
-								position: "absolute",
-								top: "0",
-								right: "0",
-								opacity: 0.3,
-							}}
-						/>
-					)}
+					{logo}
 				</Box>
 				<QuotedPost post={post} layout={layout} />
 			</Box>

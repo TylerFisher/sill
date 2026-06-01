@@ -27,7 +27,10 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 			}}
 		>
 			<img
-				src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
+				src={
+					link.publisherIcon ||
+					`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`
+				}
 				loading="lazy"
 				alt=""
 				width="16px"

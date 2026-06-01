@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFetcher, useSearchParams } from "react-router";
 import LinkRep from "~/components/linkPosts/LinkRep";
 import PostRep from "~/components/linkPosts/PostRep";
+import { ROLLUP_COLLECTIONS } from "./BookmarkRollup";
 import SharedByBug from "./SharedByBug";
 export interface LinkPostRepProps {
 	linkPost: MostRecentLinkPosts;
@@ -156,7 +157,14 @@ const LinkPostRep = ({
 		if (fetcher.data?.posts) setPosts(fetcher.data.posts);
 	}, [fetcher.data]);
 
-	const groupedPosts = groupBy(posts ?? [], (l) => l.postUrl);
+	// Group by post permalink, except bookmark-style collections (Semble / the
+	// community lexicon), which roll up all of a link's bookmarkers into one card
+	// keyed by collection so they render as "{A}, {B}, and {C} bookmarked this …".
+	const groupedPosts = groupBy(posts ?? [], (l) =>
+		ROLLUP_COLLECTIONS.has(l.collection ?? "")
+			? `rollup:${l.collection}`
+			: l.postUrl,
+	);
 	// Face pile: avatars provided by the row (AppView) or derived from posts.
 	const uniqueActors =
 		linkPost.avatars && linkPost.avatars.length > 0

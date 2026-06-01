@@ -30,15 +30,30 @@ const FilterLinksSchema = z.object({
 });
 
 // Schema for finding links by author
+// Shared discovery filters (mirrors the main feed) for by-author / by-domain.
+const DiscoveryFilterSchema = {
+  cursor: z.string().optional(),
+  time: z.coerce.number().optional(),
+  service: z.enum(["mastodon", "bluesky", "all"]).optional(),
+  list: z.string().optional(),
+  reposts: z.enum(["include", "exclude", "only"]).optional(),
+  minShares: z.coerce.number().min(1).max(1000).optional(),
+  sort: z.enum(["popularity", "recency"]).optional(),
+};
+
 const FindLinksByAuthorSchema = z.object({
   author: z.string().min(1),
   pageSize: z.coerce.number().min(1).max(100).default(10),
+  ...DiscoveryFilterSchema,
 });
 
-// Schema for finding links by domain
+// Schema for finding links by domain (now publication-scoped — see API.md
+// `/v1/by-publication`). `publication` picks a brand on the host; omit for primary.
 const FindLinksByDomainSchema = z.object({
   domain: z.string().min(1),
   pageSize: z.coerce.number().min(1).max(100).default(10),
+  publication: z.string().optional(),
+  ...DiscoveryFilterSchema,
 });
 
 // Schema for processing links
@@ -69,11 +84,19 @@ const links = new Hono()
   })
   // GET /api/links/author - Find links by author
   .get("/author", zValidator("query", FindLinksByAuthorSchema), async (c) => {
-    const { author, pageSize } = c.req.valid("query");
+    const { author, pageSize, cursor, time, service, list, reposts, minShares, sort } =
+      c.req.valid("query");
     const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByAuthor(author, pageSize, userId);
+      const result = await findLinksByAuthor(author, pageSize, userId, cursor, {
+        time,
+        service,
+        selectedList: list,
+        hideReposts: reposts,
+        minShares,
+        sort,
+      });
       return c.json(result);
     } catch (error) {
       console.error("Find links by author error:", error);
@@ -82,11 +105,30 @@ const links = new Hono()
   })
   // GET /api/links/domain - Find links by domain
   .get("/domain", zValidator("query", FindLinksByDomainSchema), async (c) => {
-    const { domain, pageSize } = c.req.valid("query");
+    const {
+      domain,
+      pageSize,
+      cursor,
+      publication,
+      time,
+      service,
+      list,
+      reposts,
+      minShares,
+      sort,
+    } = c.req.valid("query");
     const userId = (await getUserIdFromSession(c.req.raw)) ?? undefined;
 
     try {
-      const result = await findLinksByDomain(domain, pageSize, userId);
+      const result = await findLinksByDomain(domain, pageSize, userId, cursor, {
+        publication,
+        time,
+        service,
+        selectedList: list,
+        hideReposts: reposts,
+        minShares,
+        sort,
+      });
       return c.json(result);
     } catch (error) {
       console.error("Find links by domain error:", error);

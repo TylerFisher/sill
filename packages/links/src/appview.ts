@@ -1,5 +1,5 @@
 import { uuidv7 } from "uuidv7-js";
-import type { Link } from "@sill/schema";
+import type { AboutCard, Link, RenderedLink } from "@sill/schema";
 import { isEmptyRecord, toDbDate, toIso } from "./record-mappers/shared.js";
 
 /**
@@ -52,6 +52,11 @@ export interface UrlItem {
   siteName?: string;
   byline?: string;
   publishedAt?: string;
+  /** Publisher brand icon (app-icon/favicon) for this URL; show next to the URL. */
+  publisherIcon?: string;
+  /** Fallback publisher name (the domain's primary publisher) for when the
+   *  article's own `siteName` didn't scrape — prefer `siteName` when present. */
+  publisherName?: string;
   // network-trending only: the most-shared post for this URL, hydrated.
   // `shares` here = that post's reposts + quotes ("Most shared").
   topPost?: ShareRow & { shares: number };
@@ -102,6 +107,8 @@ interface ListResponse {
   items: UrlItem[];
   cursor?: string;
   cold?: true;
+  // `by-author` / `by-domain` first page only — a publisher/journalist summary.
+  about?: AboutCard;
 }
 
 interface HydrationResponse {
@@ -410,7 +417,7 @@ export const fetchUrlPage = async (
   }
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
     params.append("collection", c);
   }
 
@@ -438,24 +445,43 @@ export const fetchNetworkTrending = async (
   return res.items;
 };
 
-/** Top URLs from a hostname. `viewer` scopes to that network; omit for whole-index. */
-export const fetchByDomain = async (opts: {
+/**
+ * Top URLs from a single publication on a host (`/v1/by-publication`). `domain`
+ * is the bare hostname; `publication` picks a brand on it (e.g. "The Athletic")
+ * — omit for the host's primary publication. `viewer` scopes to that network;
+ * omit for whole-index. (Replaces the old `/v1/by-domain`, which mixed every
+ * brand on a host into one feed.)
+ */
+export const fetchByPublication = async (opts: {
   domain: string;
+  publication?: string;
   viewer?: string;
   window?: TimeWindow;
   limit?: number;
   sourceId?: string;
   network?: string;
-}): Promise<UrlItem[]> => {
+  cursor?: string;
+  hideReposts?: "include" | "exclude" | "only";
+  minShares?: number;
+  sort?: "popularity" | "recency";
+}): Promise<ListResponse> => {
   const params = new URLSearchParams();
   params.set("domain", opts.domain);
+  if (opts.publication) params.set("publication", opts.publication);
   if (opts.viewer) params.set("viewer", opts.viewer);
   if (opts.window) appendWindow(params, opts.window);
   params.set("limit", String(opts.limit ?? 20));
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  const res = await appViewGet<ListResponse>("/v1/by-domain", params);
-  return res.items;
+  if (opts.cursor) params.set("cursor", opts.cursor);
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+    params.append("collection", c);
+  }
+  if (opts.minShares != null && opts.minShares > 1) {
+    params.set("minShares", String(opts.minShares));
+  }
+  if (opts.sort) params.set("sort", opts.sort);
+  return appViewGet<ListResponse>("/v1/by-publication", params);
 };
 
 interface ActorActivityResponse {
@@ -545,7 +571,11 @@ export const fetchByAuthor = async (opts: {
   limit?: number;
   sourceId?: string;
   network?: string;
-}): Promise<UrlItem[]> => {
+  cursor?: string;
+  hideReposts?: "include" | "exclude" | "only";
+  minShares?: number;
+  sort?: "popularity" | "recency";
+}): Promise<ListResponse> => {
   const params = new URLSearchParams();
   params.set("author", opts.author);
   if (opts.viewer) params.set("viewer", opts.viewer);
@@ -553,8 +583,15 @@ export const fetchByAuthor = async (opts: {
   params.set("limit", String(opts.limit ?? 20));
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  const res = await appViewGet<ListResponse>("/v1/by-author", params);
-  return res.items;
+  if (opts.cursor) params.set("cursor", opts.cursor);
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+    params.append("collection", c);
+  }
+  if (opts.minShares != null && opts.minShares > 1) {
+    params.set("minShares", String(opts.minShares));
+  }
+  if (opts.sort) params.set("sort", opts.sort);
+  return appViewGet<ListResponse>("/v1/by-author", params);
 };
 
 interface HydrationOptions {
@@ -579,7 +616,7 @@ export const fetchHydration = async (
   appendWindow(params, opts.window);
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  for (const c of collectionsForRepostFilter(opts.hideReposts) ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
     params.append("collection", c);
   }
   for (const url of opts.urls) params.append("urls", url);
@@ -714,7 +751,10 @@ const fetchRecordFromSlingshot = async (
  * row is supplied it is preferred (it carries the stable id, topics, metadata,
  * scrape status), with AppView metadata filling any gaps.
  */
-export const urlItemToLink = (item: UrlItem, dbLink?: Link | null): Link => {
+export const urlItemToLink = (
+  item: UrlItem,
+  dbLink?: Link | null
+): RenderedLink => {
   // The AppView is the source of truth for URL metadata. The DB row is only a
   // fallback for URLs the AppView hasn't scraped yet (no title).
   const fromAppView = Boolean(item.title);
@@ -729,8 +769,12 @@ export const urlItemToLink = (item: UrlItem, dbLink?: Link | null): Link => {
     scraped: fromAppView || (dbLink?.scraped ?? false),
     publishedDate: toDbDate(item.publishedAt) ?? dbLink?.publishedDate ?? null,
     authors: item.byline ? [item.byline] : dbLink?.authors ?? null,
-    siteName: item.siteName ?? dbLink?.siteName ?? null,
+    // Prefer the article's own `siteName`; fall back to `publisherName` (the
+    // domain's primary publisher) only when the article scrape didn't yield one.
+    siteName: item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null,
     topics: dbLink?.topics ?? null,
+    // Render-time: the publisher's brand icon for this URL (not a DB column).
+    publisherIcon: item.publisherIcon ?? null,
   };
 };
 

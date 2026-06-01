@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import {
   blueskyAccount,
   type LinkPost,
-  type Link as LinkSchema,
+  type RenderedLink,
   list as listTable,
   mastodonAccount,
   type MostRecentLinkPosts,
@@ -45,7 +45,7 @@ const RANK_MAX = 300;
 const CACHE_TTL_MS = 60000;
 
 type TimelineItem = {
-  link: LinkSchema | null;
+  link: RenderedLink | null;
   uniqueActorsCount: number;
   mostRecentPostDate: Date;
   posts: LinkPost[];

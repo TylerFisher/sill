@@ -62,7 +62,7 @@ Paginated endpoints return an optional `cursor` string. To get the next page, pa
 - Bluesky feed or list: the at-URI verbatim (e.g. `?sourceId=at://did:plc:abc/app.bsky.feed.generator/whats-hot`).
 - Mastodon list: `?sourceId=mastodon-list://<instance>/<id>` (e.g. `?sourceId=mastodon-list://mastodon.social/12345`).
 
-When present, the follow-attributed branch is **skipped entirely** — the viewer is asking "what's trending in THIS feed/list", not "across my whole network", so follow-graph shares would dilute the answer. When absent (default), the response unions follow-attributed shares with ALL of the viewer's feed/list-attributed shares — today's behavior. Applies to `trending`, `latest`, `search`, `by-author`, `by-domain`, and `hydration`; ignored on network-wide (no-`viewer`) requests. The same canonical strings come back round-trip via `POST /v1/shares` — see the `source` discriminator there.
+When present, the follow-attributed branch is **skipped entirely** — the viewer is asking "what's trending in THIS feed/list", not "across my whole network", so follow-graph shares would dilute the answer. When absent (default), the response unions follow-attributed shares with ALL of the viewer's feed/list-attributed shares — today's behavior. Applies to `trending`, `latest`, `search`, `by-author`, `by-publication`, and `hydration`; ignored on network-wide (no-`viewer`) requests. The same canonical strings come back round-trip via `POST /v1/shares` — see the `source` discriminator there.
 
 **Param encoding**: CSV params (`network`, `hideLabels`) use commas. Repeated params (`collection`, `hideUrls`, `hideDids`, `urls`) repeat the key: `?hideDids=did:plc:a&hideDids=did:plc:b`. Keep the total URL under ~16 KB (the caps above are tuned for this).
 
@@ -76,9 +76,14 @@ const d = new Date(ts.replace(" ", "T") + "Z");
 
 ## 3. Response envelopes
 
-**Paginated endpoints** (`trending`, `latest`, `search`, `by-author`, `by-domain`):
+**Paginated endpoints** (`trending`, `latest`, `search`, `by-author`, `by-publication`):
 ```ts
 { items: Item[]; cursor?: string; cold?: true }
+```
+
+`by-author` and `by-publication` additionally include an `about` summary card **on the first page only** (omitted once you paginate with a `cursor`, since it describes the whole result set, not a page):
+```ts
+{ items: Item[]; cursor?: string; cold?: true; about?: AboutCard }
 ```
 
 **Hydration**:
@@ -108,6 +113,13 @@ interface UrlItem {
   siteName?: string;    // e.g. "The New York Times"
   byline?: string;      // article author(s)
   publishedAt?: string; // UTC datetime the article was published
+  publisherIcon?: string; // the publisher's brand icon (app-icon/favicon) for this URL —
+                          //   show it next to the URL for per-item publisher branding.
+                          //   Omitted when the publisher isn't on file yet.
+  publisherName?: string; // best-effort publisher name: the article's siteName when it
+                          //   scraped, else the domain's primary publisher (so a URL whose
+                          //   own scrape failed — paywalls, NYT — still names its publisher).
+                          //   Prefer this over siteName for display.
 }
 
 interface Sharer {
@@ -116,9 +128,36 @@ interface Sharer {
   name?: string;        // profile display name — omitted when unknown
 }
 ```
+
+### AboutCard (returned by `by-author` / `by-publication`, first page only)
+A publication (by-publication) or journalist (by-author) summary, derived from the publisher identity layer plus a rollup over the same scope/window/filters as the listing. Use it to render a header card above the results.
+```ts
+interface AboutCard {
+  name: string;          // publication display name (by-publication) or scraped byline (by-author);
+                         //   falls back to the queried key when none is on file
+  query: string;         // echo of what was queried — the domain, or the normalized author tokens
+  faviconUrl?: string;   // publication icon (by-publication only) — its app-icon
+                         //   (apple-touch-icon ~180px), falling back to its favicon
+  homepageUrl?: string;  // publication homepage (by-publication only), from JSON-LD publisher.url
+  description?: string;   // publication blurb (by-publication only); empty until the homepage-scrape lands
+  authorUrl?: string;    // the journalist's page on the publication (by-author only), from author.url
+  socials?: string[];    // the journalist's social-profile URLs (by-author only), from author.sameAs —
+                         //   X / Bluesky / Mastodon / LinkedIn / personal site, deduped across articles
+  publications?: string[]; // publications under this key, most-prominent first:
+                         //   by-author → distinct site_names this byline writes for;
+                         //   by-publication → the host's SIBLING publications, ranked by shares
+                         //   (nytimes.com → ["The New York Times","The Athletic","Wirecutter",…]);
+                         //   the drill-down menu to the host's other publications.
+                         //   Omitted for by-publication when the host has only one publication.
+  articleCount: number;  // distinct (canonical) articles shared in scope over the window
+  shareCount: number;    // share events in scope over the window
+  sharerCount: number;   // distinct accounts who shared, in scope over the window
+}
+```
+The activity counts (`articleCount`/`shareCount`/`sharerCount`) follow the request's mode exactly: viewer-scoped (with `viewer`) counts within the viewer's network; network-wide (without `viewer`) counts across the whole index. A cold viewer returns the card with zero counts. The identity fields (`name`/`faviconUrl`/`homepageUrl`/`authorUrl`/`socials`/`publications`) describe the publisher/author and are populated from scraped page metadata (app-icon for `faviconUrl`, JSON-LD for the rest) — any of them is omitted when the underlying pages didn't declare it.
 `avatars` holds **up to** 3 bsky.app CDN avatar URLs for accounts who shared the URL — for an avatar-preview face pile. It can be shorter than `shares` (and occasionally empty) because sharers without a set avatar are skipped; the first 3 from the most-recent-share-first ordering. **Exception**: `/v1/latest` items carry `eventTime` (UTC datetime of the most recent share) in place of `mostRecent`; they still include `shares`, `avatars`, and `sharers`, counted over the same `days`/`hours` window. Everything else is identical.
 
-**`sharers`** lists distinct accounts that shared the URL within the window, ordered most-recent-share first, capped at 1000 (the safety belt — viral URLs in very active networks could exceed this). Each entry carries the stable `did`, and `handle`/`name` when known; either can be missing for accounts that haven't been fully indexed yet. **Emitted by `/v1/trending`, `/v1/latest`, `/v1/search`, `/v1/by-author`, and `/v1/by-domain`.** The set it draws from depends on the endpoint's mode: viewer-scoped requests (trending/latest, or search/by-author/by-domain *with* `viewer`) list sharers from the viewer's network; network-wide requests (search/by-author/by-domain *without* `viewer`) list sharers from the whole index. **`/v1/network-trending` deliberately omits this field** — the global feed's per-URL sharer list can run into the millions and isn't a useful UI primitive. For a full per-share render with record bodies + repost/quote subjects, use `/v1/hydration`.
+**`sharers`** lists distinct accounts that shared the URL within the window, ordered most-recent-share first, capped at 1000 (the safety belt — viral URLs in very active networks could exceed this). Each entry carries the stable `did`, and `handle`/`name` when known; either can be missing for accounts that haven't been fully indexed yet. **Emitted by `/v1/trending`, `/v1/latest`, `/v1/search`, `/v1/by-author`, and `/v1/by-publication`.** The set it draws from depends on the endpoint's mode: viewer-scoped requests (trending/latest, or search/by-author/by-publication *with* `viewer`) list sharers from the viewer's network; network-wide requests (search/by-author/by-publication *without* `viewer`) list sharers from the whole index. **`/v1/network-trending` deliberately omits this field** — the global feed's per-URL sharer list can run into the millions and isn't a useful UI primitive. For a full per-share render with record bodies + repost/quote subjects, use `/v1/hydration`.
 
 > Metadata is scraped asynchronously. A freshly-seen URL may come back with only `url` (+ maybe `giftUrl`) and no `title`/`imageUrl` until the scraper catches up. Render a graceful fallback (show the bare URL/domain).
 
@@ -238,12 +277,49 @@ GET /v1/search?viewer=did:plc:abc&q=climate%20policy&days=30
 URLs whose scraped article **byline** matches the given author (whole-token AND match, e.g. `Jane Smith` requires both tokens).
 - **Required**: `author` (2–128 chars).
 - **`viewer` optional** (same viewer/network-wide modes as search).
+- **Optional `minShares`** (int, 1–1000, default 1) — same semantics as `/v1/trending`: drop URLs with fewer than this many distinct sharers. Applied before ranking/pagination.
+- **Optional `sort`** (`popularity` | `recency`, default `popularity`) — `popularity` sorts by shares desc then recency; `recency` sorts by latest-share desc. Keep `sort` constant across a paginated run (the cursor shape is tied to it).
+- **First page** also returns an [`about`](#aboutcard-returned-by-by-author--by-publication-first-page-only) card (the card always describes the **whole** matched set — `minShares`/`sort` only affect the `items` listing, not the card) — the journalist's display byline, the `publications` they write for, and scoped activity counts:
+```jsonc
+{
+  "items": [ /* UrlItem[] */ ],
+  "about": {
+    "name": "Jane Smith",
+    "query": "jane smith",
+    "publications": ["The New York Times", "The Atlantic"],
+    "articleCount": 12, "shareCount": 18, "sharerCount": 9
+  }
+}
+```
 
-### `GET /v1/by-domain`
-URLs from a specific hostname (leading `www.` stripped).
+### `GET /v1/by-publication`
+URLs from a single **publication** on a host. A host can carry several publications (`nytimes.com` → "The New York Times", "The Athletic", "Wirecutter"); this serves one at a time rather than mixing them.
 - **Required**: `domain` — a bare hostname like `nytimes.com` (no scheme/path).
+- **Optional `publication`** — a brand on that host (e.g. `The Athletic`). **Omitted → the domain's PRIMARY publication** (the umbrella brand, ranked by shares).
 - **`viewer` optional** (same modes as search).
 - Matches on each URL's **canonical** domain, so shares posted via link shorteners / redirects (bit.ly, t.co, …) that resolve to this hostname are counted — share counts here line up with what the same URL shows in trending.
+- **Which articles belong to a publication:**
+  - An explicit **sub-brand** (`publication=The Athletic`) is strict — only articles whose `site_name` is that brand.
+  - The **primary** is the host MINUS its sub-brands, so an unbranded / paywalled / not-yet-scraped article (no usable `site_name`) falls to the primary instead of vanishing. Requesting the primary by name behaves the same way. For a single-brand host this is simply the whole host.
+- **Optional `minShares`** (int, 1–1000, default 1) and **`sort`** (`popularity` | `recency`, default `popularity`) — same as `/v1/by-author` above; they affect only the `items` listing.
+- **First page** also returns an [`about`](#aboutcard-returned-by-by-author--by-publication-first-page-only) card — the publication's name + favicon + homepage + blurb (from the `publisher_identity` dict), scoped activity counts, and the host's **sibling publications** in `publications` (the menu to drill into the others), ranked by shares. Omitted (`publications`) when the host has only one publication. (Each item also carries its own per-article `siteName`.)
+
+> **Replaces `GET /v1/by-domain`.** The old endpoint mixed every brand on a host into one feed; this one serves a single publication and exposes the rest via `about.publications`. To reproduce the old "whole host" behaviour, call the primary (omit `publication`) on a single-brand host, or iterate `about.publications`.
+```jsonc
+// GET /v1/by-publication?domain=nytimes.com           → the primary (The New York Times)
+// GET /v1/by-publication?domain=nytimes.com&publication=The%20Athletic → just The Athletic
+{
+  "items": [ /* UrlItem[] */ ],
+  "about": {
+    "name": "The New York Times",
+    "query": "nytimes.com",
+    "faviconUrl": "https://www.nytimes.com/apple-touch-icon.png",
+    "homepageUrl": "https://www.nytimes.com",
+    "publications": ["The New York Times", "The Athletic", "Wirecutter"],
+    "articleCount": 27, "shareCount": 41, "sharerCount": 23
+  }
+}
+```
 
 ### `GET /v1/hydration`
 Given canonical URLs, return the **individual shares** of each by accounts in the viewer's network — the rows you render under a URL card ("shared by @a, @b, …").
@@ -364,7 +440,7 @@ Store a viewer's **muted words** and/or **muted accounts** (DIDs) server-side so
   - At least one of the two must be present.
 - **Muted-words matching.** A share is muted if a muted word appears in the **sharer's post text**, the **link URL** (so muting a domain like `nytimes.com` hides that domain's links), or the **linked article's title/description** — whole-word, case-insensitive — **or** if a muted word **exactly equals the sharer's handle** (an account mute by handle; leading `@` and case ignored, matched against the indexed handle snapshot so it's best-effort).
 - **Muted-DIDs matching.** Shares by a muted DID are dropped at `effective_follows` — exact and instant, no snapshot. Covers direct shares AND repost/quote credit rows from the muted account. The reliable way to mute an account.
-- **Where applied.** All viewer-scoped endpoints (`trending`, `latest`, viewer-mode `search`/`by-author`/`by-domain`, `hydration`). **Not** applied to `network-trending` or network-mode (no-`viewer`) requests — those are shared/global with no viewer to attribute mutes to.
+- **Where applied.** All viewer-scoped endpoints (`trending`, `latest`, viewer-mode `search`/`by-author`/`by-publication`, `hydration`). **Not** applied to `network-trending` or network-mode (no-`viewer`) requests — those are shared/global with no viewer to attribute mutes to.
 - **You no longer send mute lists on read requests** — just `viewer`. (The small `hideUrls`/`hideDids`/`hideLabels` query params still work, and `hideDids` is fine for per-request transient exclusion alongside the persistent muted set.)
 - **Freshness.** Uncached endpoints reflect a change immediately; `trending`'s first page is cached, so a change takes effect on the next revalidation (within ~a minute).
 - **Returns**: `{ "ok": true, "mutedWords": number | null, "mutedDids": number | null }` — the count stored for each field, or `null` for a field you didn't include.
@@ -664,7 +740,7 @@ So a typical URL card shows: the URL's `title`/`imageUrl`/`siteName` (from the t
    - If `cold: true` → show "indexing your network…" and retry shortly.
 2. **Per-share rendering** — if you want to render each sharer's post text / quote / repost subject (not just their identity), `GET /v1/hydration?viewer=<did>&days=1&urls=<u1>&urls=<u2>…` (same `viewer`, time window — `days` or `hours` — `collection`/`network`/prefs as step 1) → returns the full `ShareRow[]` with record bodies + subject posts.
 3. **Pagination** — pass the trending `cursor` back as `?cursor=…` for the next page; stop when no `cursor` is returned.
-4. **Search / filters** — `/v1/search`, `/v1/by-author`, `/v1/by-domain` for discovery; `hideDids`/`hideUrls`/`hideLabels` to honour user mutes/moderation.
+4. **Search / filters** — `/v1/search`, `/v1/by-author`, `/v1/by-publication` for discovery; `hideDids`/`hideUrls`/`hideLabels` to honour user mutes/moderation.
 5. **Pushing non-firehose shares** — for Mastodon timelines/lists/feeds and Bluesky lists/custom-feeds, run a worker that fetches per viewer and `POST /v1/shares` the results. Use `network` and `source` to tell the AppView whether to treat them as follow-attributed (writes implicit follows) or viewer-scoped (no follow inferred). All other endpoints then return a unified view across both Bluesky firehose and your pushed shares.
 
 ---
