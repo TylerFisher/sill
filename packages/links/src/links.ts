@@ -225,23 +225,23 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 // Notification cap. The AppView's `limit` maxes at 100 (URLs); within each
 // match, items are server-capped at 200 ShareRows.
 const NOTIFICATION_DEFAULT_LIMIT = 100;
+/** Default `/v1/query` window. `seenLinks` dedupes across polls, so a 24h
+ *  trailing window is enough to catch new matches. */
+const NOTIFICATION_QUERY_HOURS = 24;
 const ONE_HOUR_MS = 3600000;
 
-/** Smallest hours bucket the AppView accepts for `/v1/query`. */
-const QUERY_MIN_HOURS = 1;
-/** Largest hours bucket (7d). */
-const QUERY_MAX_HOURS = 168;
-
 /**
- * Derive `/v1/query` `hours` from the notification group's `createdAt`. The
- * AppView caps at 7d; we also bound from below at 1h so a freshly-created
- * group still has a window to scan.
+ * The `/v1/query` window for a notification group: 24h, or the time since the
+ * group was created when that's shorter — there's nothing to find before the
+ * group existed, so a brand-new group scans only its short lifetime. Floored at
+ * 1h (the AppView's minimum bucket).
  */
-const hoursSinceCreated = (createdAt?: Date): number => {
-  if (!createdAt) return 24;
-  const ms = Math.max(0, Date.now() - createdAt.getTime());
-  const hours = Math.ceil(ms / ONE_HOUR_MS);
-  return Math.min(QUERY_MAX_HOURS, Math.max(QUERY_MIN_HOURS, hours));
+const queryHours = (createdAt?: Date): number => {
+  if (!createdAt) return NOTIFICATION_QUERY_HOURS;
+  const hours = Math.ceil(
+    Math.max(0, Date.now() - createdAt.getTime()) / ONE_HOUR_MS,
+  );
+  return Math.max(1, Math.min(NOTIFICATION_QUERY_HOURS, hours));
 };
 
 /**
@@ -316,6 +316,7 @@ export const evaluateNotifications = async (
   userId: string,
   queries: NotificationQuery[],
   seenLinks: string[] = [],
+  /** The group's creation time — caps the query window for new groups. */
   createdAt?: Date,
   /**
    * Cap on URL matches returned. Defaults to the AppView max (100); the
@@ -337,7 +338,7 @@ export const evaluateNotifications = async (
   try {
     response = await fetchQuery({
       viewer: bsky.did,
-      hours: hoursSinceCreated(createdAt),
+      hours: queryHours(createdAt),
       limit: Math.min(100, Math.max(1, candidateLimit)),
       queries: translated,
     });
@@ -390,7 +391,7 @@ export const previewNotificationCount = async (
   try {
     response = await fetchQuery({
       viewer: bsky.did,
-      hours: 24,
+      hours: NOTIFICATION_QUERY_HOURS,
       limit: 100,
       queries: translated,
     });

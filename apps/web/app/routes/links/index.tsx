@@ -1,5 +1,7 @@
 import { Box, Card, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
-import { Suspense, useEffect, useRef, useState } from "react";
+import type { SubscriptionStatus } from "@sill/schema";
+import type { MostRecentLinkPosts } from "@sill/schema";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Await,
 	useFetcher,
@@ -7,26 +9,28 @@ import {
 	useNavigation,
 	useSearchParams,
 } from "react-router";
+import { redirect } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import SortPresetList from "~/components/forms/SortPresetList";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
+import {
+	SourceBadgeProvider,
+	buildSourceBadgeValue,
+} from "~/components/linkPosts/SourceBadge";
 import Layout from "~/components/nav/Layout";
 import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
-import type { SubscriptionStatus } from "@sill/schema";
+import {
+	apiCheckBlueskyStatus,
+	apiFilterLinkOccurrences,
+} from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import { timeParamToMs } from "~/utils/timeRange";
-import type { MostRecentLinkPosts } from "@sill/schema";
-import type { Route } from "./+types/index";
-import {
-	apiFilterLinkOccurrences,
-	apiCheckBlueskyStatus,
-} from "~/utils/api-client.server";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
-import { redirect } from "react-router";
+import type { Route } from "./+types/index";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
@@ -91,7 +95,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	} else if (repostsParam === "true") {
 		hideReposts = "exclude";
 		needsRedirect = true;
-	} else if (repostsParam && ["include", "exclude", "only"].includes(repostsParam)) {
+	} else if (
+		repostsParam &&
+		["include", "exclude", "only"].includes(repostsParam)
+	) {
 		hideReposts = repostsParam as "include" | "exclude" | "only";
 	}
 
@@ -180,7 +187,8 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	// The fresh search param being navigated to — used to tell a query update
 	// apart from a sort/service swap when we want a "Searching for X…" label.
 	const pendingQuery = showPending
-		? (new URLSearchParams(navigation.location?.search ?? "").get("query") ?? "")
+		? (new URLSearchParams(navigation.location?.search ?? "").get("query") ??
+			"")
 		: "";
 
 	function setupIntersectionObserver() {
@@ -244,135 +252,154 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	// Hide just-muted cards immediately, before the server feed converges.
 	const { isMuted } = useOptimisticMutes();
 
+	// Source-badge config: map the viewer's feeds/lists to their canonical
+	// sourceIds + names, and the currently-filtered list so its badge is hidden.
+	const sourceBadge = useMemo(
+		() =>
+			buildSourceBadgeValue(
+				loaderData.lists,
+				loaderData.instance,
+				searchParams.get("list"),
+			),
+		[loaderData.lists, loaderData.instance, searchParams],
+	);
+
 	return (
-		<Layout
-			sidebar={
-				<LinkFilters
-					showService={!!(loaderData.bsky && loaderData.instance)}
-					lists={loaderData.lists}
-				/>
-			}
-		>
-			<SortPresetList />
-			<LinkFiltersCollapsible>
-				<LinkFilters
-					showService={!!(loaderData.bsky && loaderData.instance)}
-					lists={loaderData.lists}
-					reverse={true}
-					hideSort={true}
-				/>
-			</LinkFiltersCollapsible>
-			<Box position="relative">
-				{/* Floating overlay indicator. `position: fixed` takes the pill
+		<SourceBadgeProvider value={sourceBadge}>
+			<Layout
+				sidebar={
+					<LinkFilters
+						showService={!!(loaderData.bsky && loaderData.instance)}
+						lists={loaderData.lists}
+					/>
+				}
+			>
+				<SortPresetList />
+				<LinkFiltersCollapsible>
+					<LinkFilters
+						showService={!!(loaderData.bsky && loaderData.instance)}
+						lists={loaderData.lists}
+						reverse={true}
+						hideSort={true}
+					/>
+				</LinkFiltersCollapsible>
+				<Box position="relative">
+					{/* Floating overlay indicator. `position: fixed` takes the pill
 				    completely out of document flow so toggling it never shifts
 				    the cards below — sticky still claims its initial flow slot
 				    before pinning, which produced the residual nudge. Fixed
 				    also keeps the indicator pinned to the viewport so it stays
 				    visible no matter how far down the user has scrolled. */}
-				{showPending && (
-					<Box
-						aria-live="polite"
-						style={{
-							position: "fixed",
-							top: 16,
-							left: "50%",
-							transform: "translateX(-50%)",
-							zIndex: 50,
-							pointerEvents: "none",
-						}}
-					>
-						<Card
-							variant="surface"
-							size="1"
-							style={{ pointerEvents: "auto" }}
-						>
-							<Flex gap="2" align="center" px="2">
-								<Spinner size="2" />
-								<Text size="2" color="gray">
-									{pendingQuery
-										? `Searching for “${pendingQuery}”…`
-										: "Updating results…"}
-								</Text>
-							</Flex>
-						</Card>
-					</Box>
-				)}
-			<Suspense
-				fallback={
-					<Box>
-						<Flex justify="center">
-							<Spinner size="3" />
-						</Flex>
-					</Box>
-				}
-			>
-				<Await
-					resolve={loaderData.links}
-					errorElement={
-						<Box>
-							<Text as="p">
-								Failed to fetch new links. Try refreshing the page.
-							</Text>
-						</Box>
-					}
-				>
-					{(links) => (
+					{showPending && (
 						<Box
-							aria-busy={showPending}
+							aria-live="polite"
 							style={{
-								opacity: showPending ? 0.55 : 1,
-								transition: "opacity 150ms ease",
-								pointerEvents: showPending ? "none" : "auto",
+								position: "fixed",
+								top: 16,
+								left: "50%",
+								transform: "translateX(-50%)",
+								zIndex: 50,
+								pointerEvents: "none",
 							}}
 						>
-							{links
-								.filter((link) => !isMuted(link))
-								.map((link) => (
-									// Include the loader key so cards remount when the feed
-									// reloads (e.g. filtering to a list), discarding any posts
-									// hydrated for a URL under the previous filters.
-									<div key={`${loaderData.key}:${link.link?.url}`}>
-										<LinkPost
-											linkPost={link}
-											instance={loaderData.instance}
-											bsky={loaderData.bsky}
-											layout={layout}
-											bookmarks={loaderData.bookmarks}
-											subscribed={loaderData.subscribed}
-										/>
-									</div>
-								))}
-							{fetchedLinks.length > 0 && (
-								<div>
-									{fetchedLinks
-										.filter((link) => !isMuted(link))
-										.map((link) => (
-											<LinkPost
-												key={link.link?.url}
-												linkPost={link}
-												instance={loaderData.instance}
-												bsky={loaderData.bsky}
-												layout={layout}
-												bookmarks={loaderData.bookmarks}
-												subscribed={loaderData.subscribed}
-											/>
-										))}
-								</div>
-							)}
-							<Box position="absolute" top="90%">
-								<fetcher.Form method="GET" preventScrollReset ref={formRef}>
-									<input type="hidden" name="page" value={nextPage} />
-									{[...searchParams.entries()].map(([key, value]) => (
-										<input key={key} type="hidden" name={key} value={value} />
-									))}
-								</fetcher.Form>
-							</Box>
+							<Card
+								variant="surface"
+								size="1"
+								style={{ pointerEvents: "auto" }}
+							>
+								<Flex gap="2" align="center" px="2">
+									<Spinner size="2" />
+									<Text size="2" color="gray">
+										{pendingQuery
+											? `Searching for “${pendingQuery}”…`
+											: "Updating results…"}
+									</Text>
+								</Flex>
+							</Card>
 						</Box>
 					)}
-				</Await>
-			</Suspense>
-			</Box>
-		</Layout>
+					<Suspense
+						fallback={
+							<Box>
+								<Flex justify="center">
+									<Spinner size="3" />
+								</Flex>
+							</Box>
+						}
+					>
+						<Await
+							resolve={loaderData.links}
+							errorElement={
+								<Box>
+									<Text as="p">
+										Failed to fetch new links. Try refreshing the page.
+									</Text>
+								</Box>
+							}
+						>
+							{(links) => (
+								<Box
+									aria-busy={showPending}
+									style={{
+										opacity: showPending ? 0.55 : 1,
+										transition: "opacity 150ms ease",
+										pointerEvents: showPending ? "none" : "auto",
+									}}
+								>
+									{links
+										.filter((link) => !isMuted(link))
+										.map((link) => (
+											// Include the loader key so cards remount when the feed
+											// reloads (e.g. filtering to a list), discarding any posts
+											// hydrated for a URL under the previous filters.
+											<div key={`${loaderData.key}:${link.link?.url}`}>
+												<LinkPost
+													linkPost={link}
+													instance={loaderData.instance}
+													bsky={loaderData.bsky}
+													layout={layout}
+													bookmarks={loaderData.bookmarks}
+													subscribed={loaderData.subscribed}
+												/>
+											</div>
+										))}
+									{fetchedLinks.length > 0 && (
+										<div>
+											{fetchedLinks
+												.filter((link) => !isMuted(link))
+												.map((link) => (
+													<LinkPost
+														key={link.link?.url}
+														linkPost={link}
+														instance={loaderData.instance}
+														bsky={loaderData.bsky}
+														layout={layout}
+														bookmarks={loaderData.bookmarks}
+														subscribed={loaderData.subscribed}
+													/>
+												))}
+										</div>
+									)}
+									<Box position="absolute" top="90%">
+										<fetcher.Form method="GET" preventScrollReset ref={formRef}>
+											<input type="hidden" name="page" value={nextPage} />
+											{[...searchParams.entries()].map(([key, value]) => (
+												<input
+													key={key}
+													type="hidden"
+													name={key}
+													value={value}
+												/>
+											))}
+										</fetcher.Form>
+									</Box>
+								</Box>
+							)}
+						</Await>
+					</Suspense>
+				</Box>
+			</Layout>
+		</SourceBadgeProvider>
 	);
 };
 

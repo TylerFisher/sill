@@ -1,7 +1,7 @@
 import { JoseKey } from "@atproto/jwk-jose";
 import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import { eq } from "drizzle-orm";
-import { blueskyAccount, db } from "@sill/schema";
+import { blueskyAccount, db, withAdvisoryLock } from "@sill/schema";
 import { SessionStore, StateStore } from "./storage.js";
 
 export type AuthVariant = "v1" | "v2";
@@ -35,6 +35,85 @@ const V2_SCOPE = [
 const isProduction = process.env.NODE_ENV === "production";
 
 const oauthClients: Partial<Record<AuthVariant, NodeOAuthClient>> = {};
+
+/**
+ * Token-refresh lock for the OAuth client (atproto's `runtime.usingLock`).
+ *
+ * Bluesky refresh tokens are single-use: refreshing rotates the token and
+ * invalidates the previous one. Sill runs api, worker, and web as separate
+ * processes against one database, so two of them refreshing the same account
+ * concurrently revoke each other's session — surfacing as
+ * "The session was deleted by another process" (TokenRefreshError) at the next
+ * use. atproto's default lock (`requestLocalLock`) only serializes within one
+ * process, so it can't prevent the worker and the api from colliding.
+ *
+ * `@atproto/oauth-client` wraps *every* token read (not just refreshes) in this
+ * lock, and the worker makes many Bluesky calls per batch, so taking a Postgres
+ * lock on every call would be far too heavy. Instead:
+ *   - An in-process mutex serializes every read per DID (matches the default).
+ *   - The cross-process Postgres advisory lock (`withAdvisoryLock`, on a
+ *     dedicated pool so it can't starve the app pool) is taken only when a
+ *     refresh is plausible — within `REFRESH_MARGIN_MS` of the cached token
+ *     expiry, or when the expiry is unknown (first read after start, or right
+ *     after a failed refresh). A still-fresh token pays only the in-memory lock.
+ *
+ * The cached expiry is a lower bound learned from each read's result; another
+ * process's refresh only extends expiry, so a stale cache makes us take the
+ * lock too eagerly (safe), never too late.
+ */
+const REFRESH_MARGIN_MS = 120_000;
+
+// Per-DID in-process mutex chain (same shape as atproto's requestLocalLock) so
+// same-account token reads never overlap within this process.
+const localChains = new Map<string, Promise<unknown>>();
+
+// Lower bound on each DID's access-token expiry (epoch ms), learned from reads.
+const expiryByName = new Map<string, number>();
+
+const tokenSetExpiry = (value: unknown): number | undefined => {
+  const exp = (value as { tokenSet?: { expires_at?: unknown } } | undefined)
+    ?.tokenSet?.expires_at;
+  if (typeof exp === "number") return exp;
+  if (typeof exp === "string") {
+    const n = Date.parse(exp);
+    if (!Number.isNaN(n)) return n;
+  }
+  return undefined;
+};
+
+const requestLock = <T>(
+  name: string,
+  fn: () => T | PromiseLike<T>,
+): Promise<T> => {
+  const prev = localChains.get(name) ?? Promise.resolve();
+  const run = prev.then(
+    () => runWithRefreshLock(name, fn),
+    () => runWithRefreshLock(name, fn),
+  );
+  // Keep the chain alive regardless of outcome; clean up when we're the tail.
+  const tracked = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  localChains.set(name, tracked);
+  tracked.then(() => {
+    if (localChains.get(name) === tracked) localChains.delete(name);
+  });
+  return run;
+};
+
+const runWithRefreshLock = async <T>(
+  name: string,
+  fn: () => T | PromiseLike<T>,
+): Promise<T> => {
+  const expiry = expiryByName.get(name);
+  const mayRefresh =
+    expiry === undefined || Date.now() >= expiry - REFRESH_MARGIN_MS;
+  const result = mayRefresh ? await withAdvisoryLock(name, fn) : await fn();
+  const nextExpiry = tokenSetExpiry(result);
+  if (nextExpiry !== undefined) expiryByName.set(name, nextExpiry);
+  return result;
+};
 
 const scopeFor = (variant: AuthVariant) =>
   variant === "v1" ? V1_SCOPE : V2_SCOPE;
@@ -116,6 +195,7 @@ export const createOAuthClient = async (
     keyset: [privateKey],
     stateStore: new StateStore(clientId),
     sessionStore: new SessionStore(clientId),
+    requestLock,
   });
 
   oauthClients[variant] = client;

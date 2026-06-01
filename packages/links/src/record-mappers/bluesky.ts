@@ -1,8 +1,9 @@
-import type { LinkPost } from "@sill/schema";
+import type { LinkPost, RenderedLinkPost } from "@sill/schema";
 import type { ShareRow } from "../appview.js";
 import {
 	extractImagesFromRecord,
 	isEmptyRecord,
+	parentFields,
 	parseRecord,
 	postUrlFromAtUri,
 	profileUrl,
@@ -55,10 +56,10 @@ export const blueskyRepostToLinkPost = (
  */
 export const blueskyPostToLinkPost = (
 	share: ShareRow,
-	base: LinkPost,
-): LinkPost => {
+	base: RenderedLinkPost,
+): RenderedLinkPost => {
 	const record = parseRecord(share.record);
-	const post: LinkPost = {
+	const post: RenderedLinkPost = {
 		...base,
 		postUrl: postUrlFromAtUri(share.atUri, share.actorHandle),
 		postText: serializeRecord(record),
@@ -68,6 +69,10 @@ export const blueskyPostToLinkPost = (
 
 	if (share.subject && !isEmptyRecord(share.subject.record)) {
 		Object.assign(post, quotedFields(share.subject));
+	}
+	// A reply carries its replied-to post in `parent` (shown above the reply).
+	if (share.parent && !isEmptyRecord(share.parent.record)) {
+		post.parent = parentFields(share.parent);
 	}
 	return post;
 };

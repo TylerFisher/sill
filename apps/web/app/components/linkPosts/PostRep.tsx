@@ -1,45 +1,52 @@
-import { Avatar, Box, Card, Flex, Inset, Separator } from "@radix-ui/themes";
+import { Avatar, Box, Card, Flex, Inset } from "@radix-ui/themes";
 import PostAuthor from "~/components/linkPosts/PostAuthor";
 import PostContent from "~/components/linkPosts/PostContent";
 import RepostActor from "~/components/linkPosts/RepostActor";
-import type { linkPostDenormalized } from "@sill/schema";
+import type { RenderedLinkPost } from "@sill/schema";
 import { useTheme } from "~/routes/resources/theme-switch";
+import ParentPost from "./ParentPost";
+import QuotedPost from "./QuotedPost";
+import SourceBadge from "./SourceBadge";
 import Toolbar from "./Toolbar";
 interface PostRepProps {
-	group: (typeof linkPostDenormalized.$inferSelect)[];
+	group: RenderedLinkPost[];
 	instance: string | undefined;
 	bsky: string | undefined;
 	toolbar?: boolean;
 	layout: "default" | "dense";
 }
 
-type Post = typeof linkPostDenormalized.$inferSelect;
+type Post = RenderedLinkPost;
 
 /**
- * The little source logo in the card corner. Bluesky/Mastodon posts go by
- * `postType`; everything else arrives as "atbookmark" and is distinguished by
- * a marker class the mapper embeds in `postText` (or, for Semble, the post
- * host). First match wins, so order is by specificity.
+ * The little source logo in the card corner, keyed off the share's `collection`
+ * NSID. `site.standard.document` shares (Leaflet/Offprint/Pckt) carry their
+ * content NSID here instead of the shared envelope, so each publisher resolves
+ * directly.
  */
 const resolveSourceLogo = (post: Post): string | null => {
-	if (post.postType === "bluesky") return "/bluesky-logo.svg";
-	if (post.postType === "mastodon") return "/mastodon-logo.svg";
-
-	const bodyMarkers: { marker: string; logo: string }[] = [
-		{ marker: "scrobble-card", logo: "/rocksky.png" },
-		{ marker: "offprint-source", logo: "/offprint.svg" },
-		{ marker: "pckt-source", logo: "/pckt.svg" },
-		{ marker: "sill-bookmark", logo: "/sill.svg" },
-		{ marker: "leaflet-source", logo: "/leaflet.svg" },
-	];
-	for (const { marker, logo } of bodyMarkers) {
-		if (post.postText?.includes(marker)) return logo;
+	switch (post.collection) {
+		case "app.bsky.feed.post":
+		case "app.bsky.feed.repost":
+			return "/bluesky-logo.svg";
+		case "mastodon.status":
+		case "mastodon.repost":
+			return "/mastodon-logo.svg";
+		case "network.cosmik.card":
+			return "/semble-logo.svg";
+		case "community.lexicon.bookmarks.bookmark":
+			return "/sill.svg";
+		case "app.rocksky.scrobble":
+			return "/rocksky.png";
+		case "pub.leaflet.content":
+			return "/leaflet.svg";
+		case "app.offprint.content":
+			return "/offprint.svg";
+		case "blog.pckt.content":
+			return "/pckt.svg";
+		default:
+			return null;
 	}
-
-	if (post.postUrl?.includes("semble.so")) return "/semble-logo.svg";
-	if (post.postUrl?.includes("leaflet.pub")) return "/leaflet.svg";
-
-	return null;
 };
 
 const PostRep = ({
@@ -60,108 +67,78 @@ const PostRep = ({
 	return (
 		<Card key={post.postUrl} mt="5" size="1">
 			<Box mb="5">
-				<Flex
-					gap={{
-						initial: "2",
-						sm: "3",
-					}}
-					align="start"
-					mb="1"
-					mr="5"
-				>
-					<a
-						href={post.actorUrl}
-						target="_blank"
-						rel="noreferrer"
-						aria-label={`Link to ${post.actorName}'s profile page`}
+				{post.parent && <ParentPost parent={post.parent} />}
+				{/* Relative wrapper so the source logo anchors to the reply itself,
+				    not the card corner — where it would sit over the parent card. */}
+				<Box position="relative">
+					<Flex
+						gap={{
+							initial: "2",
+							sm: "3",
+						}}
+						align="start"
+						mb="1"
+						mr="5"
 					>
-						<Avatar
-							size={{
-								initial: layout === "dense" ? "1" : "2",
-								sm: layout === "dense" ? "2" : "3",
-							}}
-							src={post.actorAvatarUrl || undefined}
-							radius="full"
-							fallback={post.actorHandle[0]}
-							mt={reposters.length > 0 ? "4" : "1"}
-							loading="lazy"
-							decoding="async"
-						/>
-					</a>
-					<Box>
-						{reposters.length > 0 && <RepostActor posts={reposters} />}
-						<PostAuthor
-							actor={{
-								actorUrl: post.actorUrl,
-								actorName: post.actorName,
-								actorHandle: post.actorHandle,
-								actorAvatarUrl: post.actorAvatarUrl,
-							}}
-							postUrl={post.postUrl}
-							postDate={post.postDate}
-							layout={layout}
-						/>
-						<PostContent
-							post={{
-								postText: post.postText,
-								postType: post.postType,
-								postImages: post.postImages,
-							}}
-							layout={layout}
-						/>
-					</Box>
-				</Flex>
-				{post.quotedPostUrl &&
-					post.quotedActorHandle &&
-					post.quotedPostDate && (
-						<Card
-							ml={{
-								initial: "6",
-								sm: "8",
-							}}
-							mt="2"
-							size="1"
+						<a
+							href={post.actorUrl}
+							target="_blank"
+							rel="noreferrer"
+							aria-label={`Link to ${post.actorName}'s profile page`}
 						>
-							<Flex gap="1" mb="1" align="center">
-								<a
-									href={post.quotedActorUrl || ""}
-									target="_blank"
-									rel="noreferrer"
-									aria-label={`Link to ${post.quotedActorName}'s profile page`}
-								>
-									<Avatar
-										src={post.quotedActorAvatarUrl || undefined}
-										radius="full"
-										fallback={post.quotedActorHandle[0]}
-										style={{
-											width: "20px",
-											height: "20px",
-											verticalAlign: "text-bottom",
-										}}
-									/>
-								</a>
-								<PostAuthor
-									actor={{
-										actorUrl: post.quotedActorUrl || "",
-										actorName: post.quotedActorName,
-										actorHandle: post.quotedActorHandle,
-										actorAvatarUrl: post.quotedActorAvatarUrl,
-									}}
-									postUrl={post.quotedPostUrl}
-									postDate={post.quotedPostDate}
-									layout={layout}
-								/>
-							</Flex>
+							<Avatar
+								size={{
+									initial: layout === "dense" ? "1" : "2",
+									sm: layout === "dense" ? "2" : "3",
+								}}
+								src={post.actorAvatarUrl || undefined}
+								radius="full"
+								fallback={post.actorHandle[0]}
+								mt={reposters.length > 0 ? "4" : "1"}
+								loading="lazy"
+								decoding="async"
+							/>
+						</a>
+						<Box>
+							{reposters.length > 0 && <RepostActor posts={reposters} />}
+							<PostAuthor
+								actor={{
+									actorUrl: post.actorUrl,
+									actorName: post.actorName,
+									actorHandle: post.actorHandle,
+									actorAvatarUrl: post.actorAvatarUrl,
+								}}
+								postUrl={post.postUrl}
+								postDate={post.postDate}
+								layout={layout}
+							/>
+							<SourceBadge sources={post.sources} />
 							<PostContent
 								post={{
-									postText: post.quotedPostText || "",
-									postType: post.quotedPostType || "bluesky",
-									postImages: post.quotedPostImages,
+									postText: post.postText,
+									postType: post.postType,
+									postImages: post.postImages,
 								}}
 								layout={layout}
 							/>
-						</Card>
+						</Box>
+					</Flex>
+					{sourceLogo && (
+						<img
+							src={sourceLogo}
+							alt=""
+							width="24"
+							height="auto"
+							style={{
+								position: "absolute",
+								top: "0",
+								right: "0",
+								opacity: 0.3,
+							}}
+						/>
 					)}
+				</Box>
+				<QuotedPost post={post} layout={layout} />
 			</Box>
 
 			{toolbar && (
@@ -192,22 +169,6 @@ const PostRep = ({
 						/>
 					</Box>
 				</Inset>
-			)}
-
-			{sourceLogo && (
-				<img
-					src={sourceLogo}
-					alt=""
-					width="24"
-					height="auto"
-					style={{
-						display: "inline",
-						position: "absolute",
-						top: "10px",
-						right: "10px",
-						opacity: "0.3",
-					}}
-				/>
 			)}
 		</Card>
 	);

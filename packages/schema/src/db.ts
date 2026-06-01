@@ -54,3 +54,67 @@ export async function runMigrations() {
 	const migrationsFolder = join(__dirname, "migrations");
 	await migrate(db, { migrationsFolder });
 }
+
+// Dedicated pool for advisory locks, kept separate from the app `pool` on
+// purpose. An advisory lock is held for the whole duration of `fn` (e.g. an
+// OAuth token refresh, which does network I/O), and `fn` itself runs queries
+// against the app pool. If the lock borrowed from the app pool, many concurrent
+// lock holders could occupy every app connection while their inner queries wait
+// for a connection that never frees — a self-deadlock. A small separate pool
+// caps concurrent lock holders and leaves the app pool untouched. Lazily
+// created so non-locking processes never open it.
+let lockPool: Pool | undefined;
+const getLockPool = (): Pool => {
+	if (!lockPool) {
+		lockPool = new Pool({
+			connectionString: process.env.DATABASE_URL!,
+			max: Number.parseInt(process.env.ADVISORY_LOCK_POOL_SIZE || "8", 10),
+			idleTimeoutMillis: 30000,
+			connectionTimeoutMillis: 10000,
+		});
+	}
+	return lockPool;
+};
+
+// Folds a lock name into Postgres's signed 64-bit bigint range via FNV-1a.
+// Collisions only over-serialize unrelated names, which is harmless.
+const advisoryLockKey = (name: string): string => {
+	let h = 0xcbf29ce484222325n;
+	for (let i = 0; i < name.length; i++) {
+		h = BigInt.asUintN(64, (h ^ BigInt(name.charCodeAt(i))) * 0x100000001b3n);
+	}
+	return BigInt.asIntN(64, h).toString();
+};
+
+/**
+ * Run `fn` while holding a cross-process lock keyed by `name`: a session-level
+ * Postgres advisory lock on a dedicated connection. Serializes across every
+ * process that shares this database; the lock releases automatically if the
+ * holding connection dies, so a crashed process never strands it.
+ *
+ * This is the cross-process primitive only. Callers that also need in-process
+ * serialization should wrap their own in-memory mutex around this (the OAuth
+ * client does — it must serialize *every* token read in-process but only take
+ * this DB lock when a refresh is actually imminent).
+ *
+ * Used to serialize Bluesky OAuth token refreshes per account: refresh tokens
+ * are single-use, so two processes refreshing the same account at once revoke
+ * each other ("session was deleted by another process").
+ */
+export async function withAdvisoryLock<T>(
+	name: string,
+	fn: () => T | PromiseLike<T>,
+): Promise<T> {
+	const key = advisoryLockKey(name);
+	const client = await getLockPool().connect();
+	try {
+		await client.query("SELECT pg_advisory_lock($1::bigint)", [key]);
+		try {
+			return await fn();
+		} finally {
+			await client.query("SELECT pg_advisory_unlock($1::bigint)", [key]);
+		}
+	} finally {
+		client.release();
+	}
+}

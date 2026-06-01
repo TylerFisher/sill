@@ -1,4 +1,4 @@
-import type { LinkPost } from "@sill/schema";
+import type { RenderedLinkPost } from "@sill/schema";
 import type { ShareRow } from "../appview.js";
 import { blueskyPostToLinkPost, blueskyRepostToLinkPost } from "./bluesky.js";
 import { communityBookmarkToLinkPost } from "./community-bookmark.js";
@@ -30,7 +30,7 @@ import { standardSiteDocumentToLinkPost } from "./standard-site.js";
 export const shareRowToLinkPost = (
 	share: ShareRow,
 	userId: string,
-): LinkPost => {
+): RenderedLinkPost => {
 	const base = emptyDenormalized(share, userId);
 
 	switch (share.collection) {

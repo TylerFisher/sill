@@ -1,4 +1,4 @@
-import { type LinkPost, postType } from "@sill/schema";
+import { type RenderedLinkPost, postType } from "@sill/schema";
 import type { ShareRow } from "../appview.js";
 import {
 	escapeAttr,
@@ -36,8 +36,9 @@ interface ContentSource {
 	/** Fallback publication name when the publication record didn't resolve. */
 	defaultName: string;
 	/**
-	 * Marker class added to the card body so PostRep can pick the source logo
-	 * (`leaflet-source` → Leaflet, `offprint-source` → Offprint).
+	 * CSS class on the card's source line (`.leaflet-source` is styled in
+	 * PostContent.module.css). The source logo is now keyed off the rendered
+	 * post's `collection` (the content NSID), not this class.
 	 */
 	marker: string;
 }
@@ -310,8 +311,8 @@ const findLinkParagraph = (
  */
 export const standardSiteDocumentToLinkPost = (
 	share: ShareRow,
-	base: LinkPost,
-): LinkPost => {
+	base: RenderedLinkPost,
+): RenderedLinkPost => {
 	let record: StandardSiteRecord = null;
 	try {
 		record = JSON.parse(share.record);
@@ -319,7 +320,8 @@ export const standardSiteDocumentToLinkPost = (
 		// leave record null → bare fallback below
 	}
 
-	const source = contentSourceFor(record?.content?.$type);
+	const contentType = record?.content?.$type;
+	const source = contentSourceFor(contentType);
 	const docUrl = buildStandardDocUrl(record, share.publicationUrl);
 	const title =
 		typeof record?.title === "string" && record.title ? record.title : "a post";
@@ -340,6 +342,10 @@ export const standardSiteDocumentToLinkPost = (
 	return {
 		...base,
 		postType: postType.enumValues[2], // "atbookmark" (non-bsky/mastodon collection)
+		// Surface the content NSID (pub.leaflet.content / app.offprint.content /
+		// blog.pckt.content) rather than the shared `site.standard.document`
+		// envelope, so the source logo resolves per-publisher off `collection`.
+		collection: typeof contentType === "string" ? contentType : base.collection,
 		// The card timestamp links to the document. Falls back to the author's
 		// profile only when the document URL can't be resolved.
 		postUrl: docUrl ?? base.actorUrl,

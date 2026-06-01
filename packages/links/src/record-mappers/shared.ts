@@ -3,7 +3,12 @@ import {
 	AppBskyRichtextFacet,
 	RichText,
 } from "@atproto/api";
-import { type LinkPost, postType } from "@sill/schema";
+import {
+	type LinkPost,
+	type RenderedLinkPost,
+	type RenderedParentPost,
+	postType,
+} from "@sill/schema";
 import { uuidv7 } from "uuidv7-js";
 import type { ShareRow, SubjectPost } from "../appview.js";
 
@@ -244,11 +249,12 @@ export const extractImagesFromRecord = (
 	);
 };
 
-/** The neutral base `LinkPost` every collection mapper starts from. */
+/** The neutral base `LinkPost` every collection mapper starts from. Carries the
+ *  share's `sources` so every mapped post inherits it via the `...base` spread. */
 export const emptyDenormalized = (
 	share: ShareRow,
 	userId: string,
-): LinkPost => ({
+): RenderedLinkPost => ({
 	id: uuidv7(),
 	linkUrl: share.url,
 	postUrl: "",
@@ -276,6 +282,8 @@ export const emptyDenormalized = (
 	repostActorAvatarUrl: null,
 	userId,
 	listId: null,
+	sources: share.sources ?? null,
+	collection: share.collection,
 });
 
 type QuotedFields = Pick<
@@ -315,4 +323,39 @@ export const quotedFields = (subject: SubjectPost): QuotedFields => {
 			? extractImagesFromRecord(quoted, subject.actorDid)
 			: [],
 	};
+};
+
+/**
+ * Build the `parent` (replied-to) post from a hydrated share's reply `parent`
+ * (a SubjectPost). Bluesky only — reply parents are always atproto posts. When
+ * the parent is itself a quote post, its referenced post (`parent.subject`)
+ * fills the `quoted*` fields so the parent card renders its quote too.
+ */
+export const parentFields = (parent: SubjectPost): RenderedParentPost => {
+	const record = parseRecord(parent.record);
+	const handleOrDid = parent.actorHandle || parent.actorDid;
+	const fields: RenderedParentPost = {
+		actorUrl: profileUrl(handleOrDid),
+		actorName: parent.actorName ?? null,
+		actorHandle: handleOrDid,
+		actorAvatarUrl: parent.actorAvatar ?? null,
+		postUrl: postUrlFromAtUri(parent.atUri, parent.actorHandle),
+		postDate: toDbDate(record?.createdAt) ?? "",
+		postText: serializeRecord(record),
+		postType: postType.enumValues[0], // "bluesky"
+		postImages: extractImagesFromRecord(record, parent.actorDid),
+		quotedActorUrl: null,
+		quotedActorHandle: null,
+		quotedActorName: null,
+		quotedActorAvatarUrl: null,
+		quotedPostUrl: null,
+		quotedPostText: null,
+		quotedPostDate: null,
+		quotedPostType: null,
+		quotedPostImages: null,
+	};
+	if (parent.subject && !isEmptyRecord(parent.subject.record)) {
+		Object.assign(fields, quotedFields(parent.subject));
+	}
+	return fields;
 };

@@ -138,6 +138,8 @@ interface ShareRow {
   actorAvatar?: string; // ready-to-use avatar image URL (already constructed); may be absent
   giftUrl?: string;     // this sharer's gift link, if any
   subject?: SubjectPost; // for reposts & quotes: the referenced post (see below)
+  parent?: SubjectPost;  // for replies: the post being replied to (same shape; see below)
+  sources?: string[];   // how this share reached the viewer — see "Source attribution" below
 }
 
 // The post a repost/quote points at, resolved server-side. Present only when
@@ -156,6 +158,19 @@ interface SubjectPost {
                          // post, so you can render the quoted content inside the reposted card.
 }
 ```
+
+**Reply parent (`parent`).** When the share is a reply (`app.bsky.feed.post` with a `reply.parent`), `parent` is the post it replies to — resolved server-side into the same `SubjectPost` shape as `subject` (the immediate parent, not the thread root). If the parent is itself a quote/repost, its own referenced post is nested at `parent.subject` (one hop deep, same as `subject.subject`), so a reply to a quote post renders the quoted content too. It's **independent of `subject`**: a reply that also quotes carries both. Present only when the parent post is indexed (in-network or backfilled author); absent otherwise — fall back to rendering just the reply. Bluesky only; Mastodon reply parents aren't ingested, so `parent` is never set for `mastodon.*` collections. Appears on every per-share endpoint (`/v1/hydration`, `/v1/query` items, `/v1/actor-activity`) since it's intrinsic to the post, not viewer-relative.
+
+**Source attribution (`sources`).** Each share carries the canonical source identifier(s) it reached the **requesting viewer** through — the *same strings* `?sourceId=` accepts, so you can map them straight back to your own feed/list records by string equality:
+- `"follows"` — the follow graph / home timeline (includes Mastodon `source.kind: "follows"` shares).
+- a Bluesky feed/list at-URI verbatim, e.g. `at://did:plc:abc/app.bsky.feed.generator/whats-hot`.
+- `mastodon-list://<instance>/<id>`.
+
+It's an **array** because the default (no-`sourceId`) response unions follow-attributed shares with all of the viewer's feed/list-attributed shares, and one share can be surfaced by more than one source — e.g. someone you follow whose post also appears in a list you subscribe to comes back as `["at://…", "follows"]` (distinct, sorted). Render one card and badge it with every source.
+
+- **Where it appears**: `/v1/hydration` and `/v1/query` items (both viewer-scoped). **Omitted on `/v1/actor-activity`** (no viewer → no per-viewer attribution).
+- With `?sourceId=` supplied it's redundant (every row is that source) but still populated.
+- Additive/optional — existing consumers that ignore it are unaffected.
 
 ---
 

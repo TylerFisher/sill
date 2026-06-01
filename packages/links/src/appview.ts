@@ -83,6 +83,14 @@ export interface ShareRow {
   actorAvatar?: string;
   giftUrl?: string;
   subject?: SubjectPost; // resolved referenced post for reposts & quotes
+  // For replies (`app.bsky.feed.post` with a reply.parent): the post being
+  // replied to, resolved server-side. Bluesky only. Shown above the reply.
+  parent?: SubjectPost;
+  // Canonical source attribution: which feed/list/follows surfaced this share
+  // to the viewer. `"follows"`, a Bluesky feed/list at-URI, or
+  // `mastodon-list://<instance>/<id>` — same strings as the `?sourceId=` filter.
+  // Present on /v1/hydration + /v1/query; absent on /v1/actor-activity.
+  sources?: string[];
   // Resolved by `resolveLeafletPublications`: the base URL and display name of a
   // `site.standard.document`'s publication, used to build the document link and
   // label the card ("From {title} on {publicationName}").
