@@ -33,6 +33,20 @@ interface ScrobbleRecord {
 	youtubeLink?: string;
 }
 
+/**
+ * Permalink to a scrobble on rocksky.app, built from the record's at:// URI:
+ * `https://rocksky.app/<url-encoded did>/scrobble/<rkey>`. Returns null if the
+ * URI isn't a well-formed `at://<did>/<collection>/<rkey>`.
+ */
+const scrobbleUrl = (atUri: string): string | null => {
+	const parts = atUri.replace("at://", "").split("/");
+	if (parts.length < 3) return null;
+	const did = parts[0];
+	const rkey = parts[parts.length - 1];
+	if (!did || !rkey) return null;
+	return `https://rocksky.app/${encodeURIComponent(did)}/scrobble/${rkey}`;
+};
+
 export const scrobbleToLinkPost = (
 	share: ShareRow,
 	base: LinkPost,
@@ -82,9 +96,10 @@ export const scrobbleToLinkPost = (
 	return {
 		...base,
 		postType: postType.enumValues[2], // "atbookmark" (non-bsky/mastodon collection)
-		// Per-scrobbler URL so repeat listens by one person collapse into one card
-		// while different listeners stay distinct (mirrors the bookmark handling).
-		postUrl: profile,
+		// Link the post to the scrobble record on rocksky.app. This is unique per
+		// listen (the rkey), so repeat listens by one person no longer collapse —
+		// each scrobble is its own entry, consistent with linking the exact record.
+		postUrl: scrobbleUrl(share.atUri) ?? profile,
 		postDate: toDbDate(record.createdAt) ?? base.postDate,
 		postText,
 		actorUrl: profile,
