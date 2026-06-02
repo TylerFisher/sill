@@ -110,18 +110,8 @@ export const safeHref = (uri: string): string | null =>
 
 // --- Record parsing / serialization ---
 
-/**
- * Serialize a Bluesky post record (text + richtext facets) to HTML. Pure —
- * only depends on `@atproto/api`'s RichText. The mapper layer is its sole
- * consumer, so it lives here rather than in the social `bluesky.ts` module.
- */
-export const serializeBlueskyPostToHtml = (
-	post: AppBskyFeedPost.Record,
-): string => {
-	const rt = new RichText({
-		text: post.text,
-		facets: post.facets,
-	});
+/** Serialize a RichText's segments (links + mentions → anchors) to HTML. */
+const richTextToHtml = (rt: RichText): string => {
 	const html: string[] = [];
 	for (const segment of rt.segments()) {
 		segment.text = segment.text.replace(/\n/g, "<br />");
@@ -162,6 +152,26 @@ export const serializeBlueskyPostToHtml = (
 		}
 	}
 	return html.join("");
+};
+
+/**
+ * Serialize a Bluesky post record (text + richtext facets) to HTML. Pure —
+ * only depends on `@atproto/api`'s RichText. The mapper layer is its sole
+ * consumer, so it lives here rather than in the social `bluesky.ts` module.
+ */
+export const serializeBlueskyPostToHtml = (
+	post: AppBskyFeedPost.Record,
+): string => richTextToHtml(new RichText({ text: post.text, facets: post.facets }));
+
+/**
+ * Serialize a Bluesky profile bio to HTML. Profile descriptions are plain text
+ * (no stored facets), so we detect link/mention facets first (without resolving
+ * mentions to DIDs — the anchors link by handle from the text, no network call).
+ */
+export const serializeProfileDescriptionToHtml = (text: string): string => {
+	const rt = new RichText({ text });
+	rt.detectFacetsWithoutResolution();
+	return richTextToHtml(rt);
 };
 
 export const parseRecord = (raw: string): AppBskyFeedPost.Record | null => {

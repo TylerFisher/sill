@@ -12,6 +12,7 @@ import { apiFindLinksByAuthor } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
 	DISCOVERY_TIME_OPTIONS,
+	discoveryTimeLabel,
 	parseDiscoveryFilters,
 } from "~/utils/discoveryFilters";
 import type { Route } from "./+types/author";
@@ -55,6 +56,7 @@ export const loader = async ({
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		author,
+		timeLabel: discoveryTimeLabel(url.searchParams),
 	};
 };
 
@@ -63,7 +65,8 @@ export const meta: Route.MetaFunction = ({ data }) => [
 ];
 
 const LinksByAuthor = ({ loaderData }: Route.ComponentProps) => {
-	const { result, instance, bsky, lists, bookmarks, subscribed } = loaderData;
+	const { result, instance, bsky, lists, bookmarks, subscribed, timeLabel } =
+		loaderData;
 	const showService = !!(bsky && instance);
 
 	return (
@@ -105,7 +108,13 @@ const LinksByAuthor = ({ loaderData }: Route.ComponentProps) => {
 				>
 					{(res) => (
 						<>
-							{res.about && <AboutTopper about={res.about} kind="author" />}
+							{res.about && (
+								<AboutTopper
+									about={res.about}
+									kind="author"
+									timeLabel={timeLabel}
+								/>
+							)}
 							<PaginatedLinksList
 								links={res.links}
 								cursor={res.cursor}

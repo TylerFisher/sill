@@ -154,6 +154,21 @@ export interface AboutCard {
   homepageUrl?: string;
   /** Publisher blurb (by-domain only); empty until the homepage scrape lands. */
   description?: string;
+  /** A Bluesky DID to link to an account — the publication's (by-publication
+   *  primary; domain-as-handle or a verified brand match) or the journalist's
+   *  (by-author; a verified, uniquely-corroborated match). Omitted when there's
+   *  no safe match. */
+  did?: string;
+  /** The resolved account's full Bluesky profile — present alongside `did`.
+   *  Render the card as a profile card when this is set. */
+  account?: {
+    did: string;
+    handle?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bannerUrl?: string;
+    description?: string;
+  };
   /** The journalist's page on the publication (by-author only). */
   authorUrl?: string;
   /** The journalist's social-profile URLs (by-author only). */

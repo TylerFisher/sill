@@ -15,6 +15,14 @@ export const DISCOVERY_TIME_OPTIONS = [
 	{ value: "", label: "14 days" },
 ];
 
+/** The active time-filter's human label (e.g. "14 days"), for copy. */
+export const discoveryTimeLabel = (sp: URLSearchParams): string => {
+	const value = sp.get("time") || "";
+	return (
+		DISCOVERY_TIME_OPTIONS.find((o) => o.value === value)?.label ?? "14 days"
+	);
+};
+
 /**
  * The main-feed filters that the by-author / by-domain discovery pages support,
  * parsed from the URL search params. Shared by both loaders so they map the

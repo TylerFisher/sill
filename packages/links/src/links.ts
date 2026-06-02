@@ -48,9 +48,26 @@ import {
   type UrlItem,
   urlItemToLink,
 } from "./appview.js";
+import { serializeProfileDescriptionToHtml } from "./record-mappers/shared.js";
 import { sourceIdForList } from "./timeline.js";
 
 const PAGE_SIZE = 10;
+
+/**
+ * Resolve the matched Bluesky account's bio (`about.account.description`) into
+ * HTML server-side: profile bios are plain text, so we detect their link/mention
+ * facets and linkify them for the profile card.
+ */
+const resolveAboutAccount = (about?: AboutCard): AboutCard | undefined => {
+  if (!about?.account?.description) return about;
+  return {
+    ...about,
+    account: {
+      ...about.account,
+      description: serializeProfileDescriptionToHtml(about.account.description),
+    },
+  };
+};
 
 /**
  * Options for the share collectors.
@@ -574,7 +591,7 @@ export const findLinksByDomain = async (
     sort: filters?.sort,
   });
   const links = await linksFromAppViewItems(res.items, viewerDid, userId);
-  return { links, cursor: res.cursor, about: res.about };
+  return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };
 
 /**
@@ -609,5 +626,5 @@ export const findLinksByAuthor = async (
     sort: filters?.sort,
   });
   const links = await linksFromAppViewItems(res.items, viewerDid, userId);
-  return { links, cursor: res.cursor, about: res.about };
+  return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };

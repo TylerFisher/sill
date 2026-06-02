@@ -140,6 +140,19 @@ interface AboutCard {
                          //   (apple-touch-icon ~180px), falling back to its favicon
   homepageUrl?: string;  // publication homepage (by-publication only), from JSON-LD publisher.url
   description?: string;   // publication blurb (by-publication only); empty until the homepage-scrape lands
+  did?: string;           // a Bluesky DID to link to an account:
+                          //   by-publication (PRIMARY only) → the outlet's account (domain-as-handle,
+                          //     else a verified brand match). Omitted for sub-brands / no match.
+                          //   by-author → the journalist's account — a VERIFIED, uniquely-corroborated
+                          //     match. Safe to present as "their account"; risky matches are withheld.
+  account?: {             // the resolved account's full profile (present with `did`) — render directly
+    did: string;
+    handle?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bannerUrl?: string;
+    description?: string;
+  };
   authorUrl?: string;    // the journalist's page on the publication (by-author only), from author.url
   socials?: string[];    // the journalist's social-profile URLs (by-author only), from author.sameAs —
                          //   X / Bluesky / Mastodon / LinkedIn / personal site, deduped across articles

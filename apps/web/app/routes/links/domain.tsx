@@ -12,6 +12,7 @@ import { apiFindLinksByDomain } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
 	DISCOVERY_TIME_OPTIONS,
+	discoveryTimeLabel,
 	parseDiscoveryFilters,
 } from "~/utils/discoveryFilters";
 import type { Route } from "./+types/domain";
@@ -58,6 +59,7 @@ export const loader = async ({
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		domain,
+		timeLabel: discoveryTimeLabel(url.searchParams),
 	};
 };
 
@@ -68,7 +70,8 @@ export const meta: Route.MetaFunction = ({ data }) => [
 ];
 
 const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
-	const { result, instance, bsky, lists, bookmarks, subscribed } = loaderData;
+	const { result, instance, bsky, lists, bookmarks, subscribed, timeLabel } =
+		loaderData;
 	const showService = !!(bsky && instance);
 
 	return (
@@ -110,7 +113,13 @@ const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
 				>
 					{(res) => (
 						<>
-							{res.about && <AboutTopper about={res.about} kind="domain" />}
+							{res.about && (
+								<AboutTopper
+									about={res.about}
+									kind="domain"
+									timeLabel={timeLabel}
+								/>
+							)}
 							<PaginatedLinksList
 								links={res.links}
 								cursor={res.cursor}

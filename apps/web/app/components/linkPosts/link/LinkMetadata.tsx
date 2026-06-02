@@ -35,7 +35,11 @@ const LinkMetadata = ({
 				<Text as="p" size="1" color="gray" mt="1">
 					{layout === "dense" && (
 						<Text>
-							{displayHost}
+							{displayHost && (
+								<Link href={`/links/domain/${host}`} color="gray">
+									{displayHost}
+								</Link>
+							)}
 							{displayHost && (authors || publishDate) && (
 								<Text as="span" mx="1">
 									•
