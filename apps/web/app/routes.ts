@@ -54,6 +54,9 @@ export default [
     index("routes/digest/index.tsx"),
   ]),
   route("download", "routes/download.tsx"),
+  // Dev-only synthetic RSS feed exercising every share type. Uncomment locally to
+  // test in an RSS reader (http://localhost:3000/rss-test); keep commented for prod.
+  // route("rss-test", "routes/rss-test.ts"),
   ...prefix("email", [
     route("add", "routes/email/add.tsx"),
     route("delete", "routes/email/delete.tsx"),

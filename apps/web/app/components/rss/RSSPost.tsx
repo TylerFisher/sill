@@ -1,6 +1,7 @@
 import { Blockquote, Box, Heading, Link, Text } from "@radix-ui/themes";
-import RSSRepost from "./RSSRepost";
 import type { MostRecentLinkPosts } from "@sill/schema";
+import { postViewLabel } from "~/utils/postSource";
+import RSSRepost from "./RSSRepost";
 
 const RSSPost = ({
 	postUrl,
@@ -8,6 +9,12 @@ const RSSPost = ({
 }: { postUrl: string; group: MostRecentLinkPosts["posts"] }) => {
 	if (!group) return null;
 	const post = group[0];
+	const viewLabel = postViewLabel(post.postType, post.collection, post.postUrl);
+	// Quoted posts are always a Bluesky/Mastodon post (no atbookmark collection),
+	// so the noun comes from quotedPostType.
+	const quotedViewLabel = post.quotedPostType
+		? postViewLabel(post.quotedPostType, null, post.quotedPostUrl)
+		: null;
 	return (
 		<Box key={postUrl}>
 			<Blockquote>
@@ -48,28 +55,22 @@ const RSSPost = ({
 								))}
 							</Box>
 						)}
-						{post.quotedPostType && post.quotedPostUrl && (
+						{quotedViewLabel && post.quotedPostUrl && (
 							<Text as="p">
 								<Link href={post.quotedPostUrl}>
-									<small>
-										View post on{" "}
-										{post.quotedPostType.charAt(0).toUpperCase() +
-											post.quotedPostType.slice(1)}{" "}
-										→
-									</small>
+									<small>{quotedViewLabel}</small>
 								</Link>
 							</Text>
 						)}
 					</Blockquote>
 				)}
-				<Text as="p">
-					<Link href={post.postUrl}>
-						<small>
-							View post on{" "}
-							{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
-						</small>
-					</Link>
-				</Text>
+				{viewLabel && (
+					<Text as="p">
+						<Link href={post.postUrl}>
+							<small>{viewLabel}</small>
+						</Link>
+					</Text>
+				)}
 			</Blockquote>
 		</Box>
 	);
