@@ -23,6 +23,7 @@ import {
   processMastodonLink,
   isQuote,
 } from "./mastodon.js";
+import { mastodonActorUri, resolveViewer } from "./viewer.js";
 import {
   type AppViewNotificationQuery,
   appViewEnabled,
@@ -163,10 +164,17 @@ export const fetchSingleList = async (
     if (account.userId !== userId) {
       throw new Error("Unauthorized: list does not belong to this user");
     }
+    // Viewer key: the user's Bluesky DID, or their Mastodon actor URI when
+    // they're Mastodon-only (see resolveViewer / getLinksFromMastodon).
     const viewerAccount = await db.query.blueskyAccount.findFirst({
       where: eq(blueskyAccount.userId, userId),
     });
-    if (!viewerAccount) return null; // see getLinksFromMastodon
+    const viewer =
+      viewerAccount?.did ??
+      (account.username
+        ? mastodonActorUri(account.mastodonInstance.instance, account.username)
+        : null);
+    if (!viewer) return null;
 
     const listPosts = await getMastodonList(dbList.uri, account);
     // Mastodon list source carries (instance, id) — canonicalised AppView-side
@@ -190,7 +198,7 @@ export const fetchSingleList = async (
       const share = await processMastodonLink(post, source);
       if (share) shares.push(share);
     }
-    return shares.length > 0 ? { viewer: viewerAccount.did, shares } : null;
+    return shares.length > 0 ? { viewer, shares } : null;
   }
 
   throw new Error(`List ${listId} has no associated account`);
@@ -354,10 +362,8 @@ export const evaluateNotifications = async (
 ): Promise<MostRecentLinkPosts[]> => {
   if (!appViewEnabled()) return [];
 
-  const bsky = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-  if (!bsky) return [];
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return [];
 
   const translated = await translateNotificationQueries(queries);
   if (translated.length === 0) return [];
@@ -365,7 +371,7 @@ export const evaluateNotifications = async (
   let response: QueryResponse;
   try {
     response = await fetchQuery({
-      viewer: bsky.did,
+      viewer,
       hours: queryHours(createdAt),
       limit: Math.min(100, Math.max(1, candidateLimit)),
       queries: translated,
@@ -407,10 +413,8 @@ export const previewNotificationCount = async (
   queries: NotificationQuery[],
 ): Promise<number> => {
   if (!appViewEnabled()) return 0;
-  const bsky = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-  if (!bsky) return 0;
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return 0;
 
   const translated = await translateNotificationQueries(queries);
   if (translated.length === 0) return 0;
@@ -418,7 +422,7 @@ export const previewNotificationCount = async (
   let response: QueryResponse;
   try {
     response = await fetchQuery({
-      viewer: bsky.did,
+      viewer,
       hours: NOTIFICATION_QUERY_HOURS,
       limit: 100,
       queries: translated,
@@ -476,26 +480,19 @@ export const networkTopTen = async (): Promise<TopTenResults[]> => {
 const DISCOVERY_WINDOW: TimeWindow = { days: 90 };
 
 /** A viewer's Bluesky DID, or null if they have no Bluesky account. */
-const viewerDidForUser = async (userId: string): Promise<string | null> => {
-  const account = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-  return account?.did ?? null;
-};
-
 /**
  * Hydrate AppView UrlItems (from by-domain/by-author) into the renderable shape,
  * eagerly loading each URL's posts for the viewer's network.
  */
 const linksFromAppViewItems = async (
   items: UrlItem[],
-  viewerDid: string,
+  viewer: string,
   userId: string,
 ): Promise<MostRecentLinkPosts[]> => {
   if (items.length === 0) return [];
 
   let shares = await fetchHydration({
-    viewer: viewerDid,
+    viewer,
     window: DISCOVERY_WINDOW,
     urls: items.map((i) => i.url),
     hideReposts: "include",
@@ -574,13 +571,13 @@ export const findLinksByDomain = async (
   filters?: DiscoveryFilters,
 ): Promise<PaginatedLinks> => {
   if (!userId || !appViewEnabled()) return { links: [] };
-  const viewerDid = await viewerDidForUser(userId);
-  if (!viewerDid) return { links: [] };
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return { links: [] };
   const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
   const res = await fetchByPublication({
     domain,
     publication: filters?.publication,
-    viewer: viewerDid,
+    viewer,
     window: discoveryWindow(filters?.time),
     limit: pageSize,
     cursor,
@@ -590,7 +587,7 @@ export const findLinksByDomain = async (
     minShares: filters?.minShares,
     sort: filters?.sort,
   });
-  const links = await linksFromAppViewItems(res.items, viewerDid, userId);
+  const links = await linksFromAppViewItems(res.items, viewer, userId);
   return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };
 
@@ -610,12 +607,12 @@ export const findLinksByAuthor = async (
   filters?: DiscoveryFilters,
 ): Promise<PaginatedLinks> => {
   if (!userId || !appViewEnabled()) return { links: [] };
-  const viewerDid = await viewerDidForUser(userId);
-  if (!viewerDid) return { links: [] };
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return { links: [] };
   const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
   const res = await fetchByAuthor({
     author,
-    viewer: viewerDid,
+    viewer,
     window: discoveryWindow(filters?.time),
     limit: pageSize,
     cursor,
@@ -625,6 +622,6 @@ export const findLinksByAuthor = async (
     minShares: filters?.minShares,
     sort: filters?.sort,
   });
-  const links = await linksFromAppViewItems(res.items, viewerDid, userId);
+  const links = await linksFromAppViewItems(res.items, viewer, userId);
   return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };

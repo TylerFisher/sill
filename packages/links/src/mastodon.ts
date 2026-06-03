@@ -14,6 +14,7 @@ import type {
   PushShareBatch,
   PushShareSource,
 } from "./appview.js";
+import { mastodonActorUri } from "./viewer.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -327,8 +328,9 @@ export const processMastodonLink = async (
 /**
  * Collect observed Mastodon timeline + list shares for a viewer. Returns a
  * single `{viewer, shares}` batch, or null when nothing was observed.
- * Requires the user to have a Bluesky DID (the AppView's `viewer` key) —
- * Mastodon-only users are skipped (AppView is keyed on Bluesky DIDs).
+ * The AppView `viewer` key is the user's Bluesky DID when they have one, else
+ * their Mastodon ActivityPub actor URI (so Mastodon-only users are ingested
+ * too). Returns null only when neither identity is available.
  */
 export const getLinksFromMastodon = async (
   userId: string,
@@ -343,8 +345,12 @@ export const getLinksFromMastodon = async (
   const bskyAccount = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
   });
-  if (!bskyAccount) return null;
-  const viewer = bskyAccount.did;
+  const viewer =
+    bskyAccount?.did ??
+    (account.username
+      ? mastodonActorUri(account.mastodonInstance.instance, account.username)
+      : null);
+  if (!viewer) return null;
 
   const hasCard = (t: mastodon.v1.Status): boolean =>
     !!t.card ||

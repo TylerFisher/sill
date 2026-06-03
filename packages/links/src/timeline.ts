@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
 import {
-  blueskyAccount,
   type LinkPost,
   type RenderedLink,
   list as listTable,
@@ -25,6 +24,7 @@ import {
   urlItemToLink,
 } from "./appview.js";
 import type { FilterArgs } from "./links.js";
+import { resolveViewer } from "./viewer.js";
 
 /**
  * The `/links` read path, served entirely by the AppView. The worker pushes
@@ -219,19 +219,17 @@ export const getTimeline = async (
 
   if (!appViewEnabled()) return [];
 
-  const account = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-  if (!account) return [];
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return [];
 
   const sourceId = await sourceIdForList(selectedList);
 
   // On-demand expansion: hydrate one URL's posts when the card opens.
-  if (url) return getPostsForUrl(args, account.did, sourceId);
+  if (url) return getPostsForUrl(args, viewer, sourceId);
 
   let ranked: RankedEntry[];
   try {
-    ranked = await getRankedEntries(args, account.did, page * limit, sourceId);
+    ranked = await getRankedEntries(args, viewer, page * limit, sourceId);
   } catch (e) {
     console.error("AppView timeline fetch failed:", e);
     return [];
@@ -260,16 +258,14 @@ export const getMergedOccurrences = async (
 
   if (!appViewEnabled()) return [];
 
-  const account = await db.query.blueskyAccount.findFirst({
-    where: eq(blueskyAccount.userId, userId),
-  });
-  if (!account) return [];
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return [];
 
   const sourceId = await sourceIdForList(selectedList);
 
   let ranked: RankedEntry[];
   try {
-    ranked = await getRankedEntries(args, account.did, page * limit, sourceId);
+    ranked = await getRankedEntries(args, viewer, page * limit, sourceId);
   } catch (e) {
     console.error("AppView merged occurrences failed:", e);
     return [];
@@ -279,7 +275,7 @@ export const getMergedOccurrences = async (
   const slice = ranked.slice(offset, offset + limit);
   if (slice.length === 0) return [];
 
-  return hydratePage(slice, args, account.did, sourceId);
+  return hydratePage(slice, args, viewer, sourceId);
 };
 
 /**

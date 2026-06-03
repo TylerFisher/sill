@@ -111,7 +111,10 @@ interface UrlItem {
   description?: string;
   imageUrl?: string;    // preview/OG image URL
   siteName?: string;    // e.g. "The New York Times"
-  byline?: string;      // article author(s)
+  byline?: string;      // article author(s) as one display string (e.g. "Jane Doe, John Smith")
+  authors?: string[];   // the same authors split into individual names — render each as its
+                        //   own link to /v1/by-author (which now matches any one co-author).
+                        //   Omitted when none scraped; fall back to `byline` when absent.
   publishedAt?: string; // UTC datetime the article was published
   publisherIcon?: string; // the publisher's brand icon (app-icon/favicon) for this URL —
                           //   show it next to the URL for per-item publisher branding.
@@ -133,7 +136,8 @@ interface Sharer {
 A publication (by-publication) or journalist (by-author) summary, derived from the publisher identity layer plus a rollup over the same scope/window/filters as the listing. Use it to render a header card above the results.
 ```ts
 interface AboutCard {
-  name: string;          // publication display name (by-publication) or scraped byline (by-author);
+  name: string;          // publication display name (by-publication) or the matched author's name
+                         //   (by-author — the individual co-author you searched, NOT the full byline);
                          //   falls back to the queried key when none is on file
   query: string;         // echo of what was queried — the domain, or the normalized author tokens
   faviconUrl?: string;   // publication icon (by-publication only) — its app-icon
@@ -250,7 +254,8 @@ GET /v1/trending?viewer=did:plc:abc&days=1&limit=25
       "description": "Standfirst...",
       "imageUrl": "https://static01.nyt.com/....jpg",
       "siteName": "The New York Times",
-      "byline": "Jane Smith",
+      "byline": "Jane Smith, John Doe",
+      "authors": ["Jane Smith", "John Doe"],
       "publishedAt": "2026-05-20 11:00:00.000",
       "giftUrl": "https://www.nytimes.com/2026/05/20/...?unlocked_article_code=..."
     }
@@ -287,7 +292,7 @@ GET /v1/search?viewer=did:plc:abc&q=climate%20policy&days=30
 ```
 
 ### `GET /v1/by-author`
-URLs whose scraped article **byline** matches the given author (whole-token AND match, e.g. `Jane Smith` requires both tokens).
+URLs whose scraped article **byline** matches the given author (whole-token AND match, e.g. `Jane Smith` requires both tokens). Matches a **single** author on co-authored pieces too — searching one writer of a "Jane Smith and John Doe" byline returns it, attributed to the searched author.
 - **Required**: `author` (2–128 chars).
 - **`viewer` optional** (same viewer/network-wide modes as search).
 - **Optional `minShares`** (int, 1–1000, default 1) — same semantics as `/v1/trending`: drop URLs with fewer than this many distinct sharers. Applied before ranking/pagination.
@@ -394,13 +399,13 @@ GET /v1/actor-activity?actor=did:plc:reporter&days=7&collection=app.bsky.feed.po
 ```
 
 ### `GET /v1/url`
-Bulk URL-metadata lookup. Returns one entry per input URL with the scraped metadata we have (title, description, image, site, byline, publish date) — the same `UrlMetaProjection` shape every URL-keyed item carries on `/v1/trending` et al.
+Bulk URL-metadata lookup. Returns one entry per input URL with the scraped metadata we have (title, description, image, site, byline/authors, publish date) — the same `UrlMetaProjection` shape every URL-keyed item carries on `/v1/trending` et al.
 
 Use this when you need metadata for a list of URLs you already have (e.g. rendering a notification card for a URL Sill is already tracking outside the appview), without going through a viewer-scoped feed query.
 
 - **No `viewer`, no `days`/`hours`** — metadata is per-URL and not viewer-scoped.
 - **`urls`** — repeated param, 1–100 canonical URLs (each ≤2048 chars).
-- **Returns**: `{ urls: Array<{ url: string; title?: string; description?: string; imageUrl?: string; siteName?: string; byline?: string; publishedAt?: string }> }` — **input order preserved**, so callers can pair by index. URLs we haven't scraped yet come back as `{ url }` only (metadata fields omitted, not null).
+- **Returns**: `{ urls: Array<{ url: string; title?: string; description?: string; imageUrl?: string; siteName?: string; byline?: string; authors?: string[]; publishedAt?: string }> }` — **input order preserved**, so callers can pair by index. URLs we haven't scraped yet come back as `{ url }` only (metadata fields omitted, not null).
 
 ```
 GET /v1/url?urls=https://www.nytimes.com/2026/05/30/...&urls=https://example.com/x
@@ -414,7 +419,8 @@ GET /v1/url?urls=https://www.nytimes.com/2026/05/30/...&urls=https://example.com
       "description": "Landmark emissions legislation",
       "imageUrl": "https://static01.nyt.com/.../hero.jpg",
       "siteName": "The New York Times",
-      "byline": "A Reporter",
+      "byline": "A Reporter, Another Reporter",
+      "authors": ["A Reporter", "Another Reporter"],
       "publishedAt": "2026-05-29T13:00:00.000Z"
     },
     {
@@ -661,6 +667,7 @@ The `category` object also accepts `name`, `type`, and `values` fields (Sill's c
     imageUrl?: string;
     siteName?: string;
     byline?: string;
+    authors?: string[];
     publishedAt?: string;
     items: ShareRow[];          // hydrated, same shape as /v1/hydration
   }>;

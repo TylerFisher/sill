@@ -47,42 +47,23 @@ const LinkMetadata = ({
 							)}
 						</Text>
 					)}
-					{authors && (
+					{authors && authors.length > 0 && (
 						<>
 							by{" "}
-							{authors.length === 2 ? (
-								authors.map((author, index) => (
-									<Text key={author}>
-										<Link
-											href={`/links/author/${encodeURIComponent(author)}`}
-											color="gray"
-										>
-											{author}
-										</Link>
-										{index === 0 && " and "}
-									</Text>
-								))
-							) : authors.length > 2 ? (
-								authors.map((author, index) => (
-									<Text key={author}>
-										<Link
-											href={`/links/author/${encodeURIComponent(author)}`}
-											color="gray"
-										>
-											{author}
-										</Link>
-										{index < authors.length - 1 &&
-											(index === authors.length - 2 ? " and " : ", ")}
-									</Text>
-								))
-							) : (
-								<Link
-									href={`/links/author/${encodeURIComponent(authors[0])}`}
-									color="gray"
-								>
-									{authors[0]}
-								</Link>
-							)}
+							{authors.map((author, index) => (
+								<Text key={author}>
+									<Link
+										href={`/links/author/${encodeURIComponent(author)}`}
+										color="gray"
+									>
+										{author}
+									</Link>
+									{/* Separator after this author: nothing on the last, " and "
+									    before the final one ("A and B", "A, B and C"), else ", ". */}
+									{index < authors.length - 1 &&
+										(index === authors.length - 2 ? " and " : ", ")}
+								</Text>
+							))}
 						</>
 					)}
 					{authors && publishDate && <Text mx="1">•</Text>}

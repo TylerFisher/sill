@@ -50,7 +50,11 @@ export interface UrlItem {
   description?: string;
   imageUrl?: string;
   siteName?: string;
+  /** Article author(s) as one display string (e.g. "Jane Doe, John Smith"). */
   byline?: string;
+  /** The same authors split into individual names — link each separately.
+   *  Omitted when none scraped; fall back to `byline`. */
+  authors?: string[];
   publishedAt?: string;
   /** Publisher brand icon (app-icon/favicon) for this URL; show next to the URL. */
   publisherIcon?: string;
@@ -768,7 +772,9 @@ export const urlItemToLink = (
     metadata: dbLink?.metadata ?? (fromAppView ? { source: "appview" } : null),
     scraped: fromAppView || (dbLink?.scraped ?? false),
     publishedDate: toDbDate(item.publishedAt) ?? dbLink?.publishedDate ?? null,
-    authors: item.byline ? [item.byline] : dbLink?.authors ?? null,
+    // Prefer the AppView's split `authors` (each links individually); fall back
+    // to the single `byline` string, then the DB row.
+    authors: item.authors ?? (item.byline ? [item.byline] : dbLink?.authors ?? null),
     // Prefer the article's own `siteName`; fall back to `publisherName` (the
     // domain's primary publisher) only when the article scrape didn't yield one.
     siteName: item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null,
