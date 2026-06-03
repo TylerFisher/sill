@@ -233,6 +233,38 @@ export const list = pgTable("list", {
   }),
 });
 
+/**
+ * A muted word from a Bluesky account's preferences (app.bsky.actor
+ * `mutedWordsPref`), synced via getPreferences. This is the user's own Bluesky
+ * mutes and is SEPARATE from Sill's `mutePhrase` table.
+ */
+export const blueskyMutedWord = pgTable(
+  "bluesky_muted_word",
+  {
+    id: uuid().primaryKey().notNull(),
+    blueskyAccountId: uuid()
+      .notNull()
+      .references(() => blueskyAccount.id, { onDelete: "cascade" }),
+    // The muted word's own id from Bluesky (optional in the lexicon).
+    bskyId: text(),
+    value: text().notNull(),
+    // Bluesky `MutedWordTarget[]` — "content" | "tag" (extensible).
+    targets: json().$type<string[]>().notNull().default([]),
+    // "all" | "exclude-following".
+    actorTarget: text().notNull().default("all"),
+    expiresAt: timestamp({ precision: 3, mode: "string" }),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index("bluesky_muted_word_account_id_idx").using(
+      "btree",
+      table.blueskyAccountId.asc().nullsLast(),
+    ),
+  ],
+);
+
 export const link = pgTable(
   "link",
   {
@@ -461,9 +493,10 @@ export const bookmark = pgTable("bookmark", {
   userId: uuid()
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  linkUrl: text()
-    .notNull()
-    .references(() => link.url),
+  // No FK back to the `link` table — that table is being retired and we no
+  // longer guarantee a row per URL (bookmarks now carry an inline `Link`
+  // stub inside `posts.link` for rendering).
+  linkUrl: text().notNull(),
   createdAt: timestamp({ precision: 3, mode: "string" })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -597,6 +630,17 @@ export const blueskyAccountRelations = relations(
       references: [user.id],
     }),
     lists: many(list),
+    mutedWords: many(blueskyMutedWord),
+  }),
+);
+
+export const blueskyMutedWordRelations = relations(
+  blueskyMutedWord,
+  ({ one }) => ({
+    blueskyAccount: one(blueskyAccount, {
+      fields: [blueskyMutedWord.blueskyAccountId],
+      references: [blueskyAccount.id],
+    }),
   }),
 );
 

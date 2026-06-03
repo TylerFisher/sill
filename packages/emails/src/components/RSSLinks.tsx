@@ -2,7 +2,6 @@ import type { MostRecentLinkPosts } from "@sill/schema";
 import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
 import { truncateDescription } from "../utils/misc.js";
 import { renderToString } from "react-dom/server";
-import { getUniqueAvatarUrls } from "./LinkPost.js";
 
 interface RSSLinksProps {
 	links: MostRecentLinkPosts[];
@@ -53,8 +52,6 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 			const urlHost = new URL(link.url).host;
 			const displayHost = link.siteName || urlHost;
 
-			const uniqueAvatars = getUniqueAvatarUrls(linkPost.posts);
-
 			const displayTitle = link.title.endsWith(".pdf")
 				? `PDF from ${displayHost}`
 				: link.title;
@@ -66,7 +63,7 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				${link.description ? `<p style="color: #666;">${truncateDescription(link.description)}</p>` : ""}
         ${authors ? `<p style="font-size: 12px; color: #999;">by ${authors}</p>` : ""}
 				<p style="font-size: 12px; color: #999;">
-					Shared by ${uniqueAvatars?.length || 0} ${(uniqueAvatars?.length || 0) === 1 ? "person" : "people"}
+					Shared by ${linkPost.uniqueActorsCount} ${linkPost.uniqueActorsCount === 1 ? "person" : "people"}
 				</p>
         <hr />
 			</div>

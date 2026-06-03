@@ -1,35 +1,14 @@
-import {
-  type SQL,
-  and,
-  desc,
-  eq,
-  getTableColumns,
-  gte,
-  ilike,
-  isNotNull,
-  isNull,
-  ne,
-  notIlike,
-  notInArray,
-  or,
-  sql,
-} from "drizzle-orm";
-import {
-  type PgTable,
-  type PgUpdateSetSource,
-  getTableConfig,
-} from "drizzle-orm/pg-core";
+import { type SQL, and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
-  getUniqueActorsCountSql,
-  link,
-  linkPostDenormalized,
   list,
   blueskyAccount,
   mastodonAccount,
   mutePhrase,
-  networkTopTenView,
-  postType,
+  type AboutCard,
+  type Link,
+  type LinkPost,
+  type MostRecentLinkPosts,
   type NotificationQuery,
 } from "@sill/schema";
 import {
@@ -44,127 +23,189 @@ import {
   processMastodonLink,
   isQuote,
 } from "./mastodon.js";
+import { mastodonActorUri, resolveViewer } from "./viewer.js";
+import {
+  type AppViewNotificationQuery,
+  appViewEnabled,
+  distinctActorCount,
+  fetchByAuthor,
+  fetchByPublication,
+  fetchHydration,
+  fetchNetworkTrending,
+  fetchQuery,
+  networkFromService,
+  type PushShare,
+  type PushShareBatch,
+  type PushShareSource,
+  pushShareBatches,
+  type QueryMatch,
+  type QueryResponse,
+  resolveLeafletPublications,
+  resolveRepostSubjects,
+  type ShareRow,
+  shareRowToLinkPost,
+  type TimeWindow,
+  toIso,
+  type UrlItem,
+  urlItemToLink,
+} from "./appview.js";
+import { serializeProfileDescriptionToHtml } from "./record-mappers/shared.js";
+import { sourceIdForList } from "./timeline.js";
 
 const PAGE_SIZE = 10;
-export interface ProcessedResult {
-  link: typeof link.$inferInsert;
-  denormalized: typeof linkPostDenormalized.$inferInsert;
-}
 
 /**
- * Fetches links from Mastodon and/or Bluesky
- * @param userId ID for logged in user
- * @param type Optional service type filter
- * @returns All fetched links from specified service(s)
+ * Resolve the matched Bluesky account's bio (`about.account.description`) into
+ * HTML server-side: profile bios are plain text, so we detect their link/mention
+ * facets and linkify them for the profile card.
+ */
+const resolveAboutAccount = (about?: AboutCard): AboutCard | undefined => {
+  if (!about?.account?.description) return about;
+  return {
+    ...about,
+    account: {
+      ...about.account,
+      description: serializeProfileDescriptionToHtml(about.account.description),
+    },
+  };
+};
+
+/**
+ * Options for the share collectors.
+ * - `ignoreCursor`: ignore each list/account's stored `mostRecentPost*` cursor
+ *   and fetch the full default window (last 24h) instead of only what's new
+ *   since the last pass. Used by the one-off AppView backfill to seed history;
+ *   the steady-state worker leaves it unset so it only ships new posts.
+ * - `skipListNames`: list/feed names to skip (matched case-sensitively on the
+ *   `list.name`). Used by the backfill to drop slow algorithmic feeds (e.g.
+ *   "Best of Follows") that take too long to page; the steady-state worker
+ *   leaves it unset.
+ */
+export type FetchLinksOpts = {
+  ignoreCursor?: boolean;
+  skipListNames?: string[];
+};
+
+/**
+ * Collect a user's observed Mastodon and/or Bluesky-list/feed shares for the
+ * AppView's `POST /v1/shares`. Returns a single `{viewer, shares}` batch with
+ * both networks merged (they always have the same viewer DID), or null when
+ * nothing was observed. Callers push to the AppView — workers should
+ * accumulate across users and flush once via `pushShareBatches`; one-off
+ * callers can pass the result as `[batch]` directly.
  */
 export const fetchLinks = async (
   userId: string,
   type?: "mastodon" | "bluesky",
-): Promise<ProcessedResult[]> => {
+  opts?: FetchLinksOpts,
+): Promise<PushShareBatch | null> => {
+  let masto: PushShareBatch | null = null;
+  let bsky: PushShareBatch | null = null;
+
   if (type === "mastodon") {
-    return await getLinksFromMastodon(userId);
-  }
-  if (type === "bluesky") {
-    return await getLinksFromBluesky(userId);
+    masto = await getLinksFromMastodon(userId, opts);
+  } else if (type === "bluesky") {
+    bsky = await getLinksFromBluesky(userId, opts);
+  } else {
+    [masto, bsky] = await Promise.all([
+      getLinksFromMastodon(userId, opts),
+      getLinksFromBluesky(userId, opts),
+    ]);
   }
 
-  // Fetch from both services if no type specified
-  const results = await Promise.all([
-    getLinksFromMastodon(userId),
-    getLinksFromBluesky(userId),
-  ]);
-  return results[1].concat(results[0]);
+  const viewer = masto?.viewer ?? bsky?.viewer;
+  if (!viewer) return null;
+  const shares = [...(masto?.shares ?? []), ...(bsky?.shares ?? [])];
+  return shares.length > 0 ? { viewer, shares } : null;
 };
 
 /**
- * Fetches links from a single list only
- * @param userId ID for logged in user
- * @param listId ID of the list to fetch
- * @returns Processed links from the specified list
+ * Collect shares from a single Bluesky/Mastodon list for the AppView. Returns
+ * a `{viewer, shares}` batch (or null when nothing's there). Caller pushes —
+ * one-off API routes typically just wrap the result as `[batch]`.
  */
 export const fetchSingleList = async (
   userId: string,
   listId: string,
-): Promise<ProcessedResult[]> => {
-  // Find the list and determine its type
+): Promise<PushShareBatch | null> => {
   const dbList = await db.query.list.findFirst({
     where: eq(list.id, listId),
   });
-
   if (!dbList) {
     throw new Error(`List not found: ${listId}`);
   }
 
-  // Determine if this is a Bluesky or Mastodon list
   if (dbList.blueskyAccountId) {
-    // Fetch Bluesky list
     const account = await db.query.blueskyAccount.findFirst({
       where: eq(blueskyAccount.id, dbList.blueskyAccountId),
     });
-
     if (!account) {
       throw new Error(`Bluesky account not found for list: ${listId}`);
     }
-
-    // Verify the account belongs to this user
     if (account.userId !== userId) {
       throw new Error("Unauthorized: list does not belong to this user");
     }
-
     const agent = await getOrCreateAgent(account);
     if (!agent) {
       throw new Error("Failed to authenticate with Bluesky");
     }
+    // Bluesky list/feed at-URI is passed verbatim under the `at-uri` kind.
+    const source: PushShareSource = { kind: "at-uri", uri: dbList.uri };
     const listPosts = await getBlueskyList(agent, dbList, account.handle);
-
-    const processedResults = (
-      await Promise.all(
-        listPosts.map(async (post) =>
-          processBlueskyLink(userId, post, dbList.id),
-        ),
-      )
-    ).filter((p) => p !== null);
-
-    return processedResults;
+    const shares: PushShare[] = [];
+    for (const post of listPosts) {
+      const share = await processBlueskyLink(post, source);
+      if (share) shares.push(share);
+    }
+    return shares.length > 0 ? { viewer: account.did, shares } : null;
   }
 
   if (dbList.mastodonAccountId) {
-    // Fetch Mastodon list
     const account = await db.query.mastodonAccount.findFirst({
       where: eq(mastodonAccount.id, dbList.mastodonAccountId),
-      with: {
-        mastodonInstance: true,
-      },
+      with: { mastodonInstance: true },
     });
-
     if (!account) {
       throw new Error(`Mastodon account not found for list: ${listId}`);
     }
-
-    // Verify the account belongs to this user
     if (account.userId !== userId) {
       throw new Error("Unauthorized: list does not belong to this user");
     }
+    // Viewer key: the user's Bluesky DID, or their Mastodon actor URI when
+    // they're Mastodon-only (see resolveViewer / getLinksFromMastodon).
+    const viewerAccount = await db.query.blueskyAccount.findFirst({
+      where: eq(blueskyAccount.userId, userId),
+    });
+    const viewer =
+      viewerAccount?.did ??
+      (account.username
+        ? mastodonActorUri(account.mastodonInstance.instance, account.username)
+        : null);
+    if (!viewer) return null;
 
     const listPosts = await getMastodonList(dbList.uri, account);
-
-    // Filter for posts with cards (links)
-    const linksOnly = listPosts.filter(
-      (t) =>
-        t.card ||
-        t.reblog?.card ||
-        (isQuote(t.quote) && t.quote.quotedStatus?.card),
-    );
-
-    const processedResults = (
-      await Promise.all(
-        linksOnly.map(async (post) =>
-          processMastodonLink(userId, post, dbList.id),
-        ),
-      )
-    ).filter((p) => p !== null);
-
-    return processedResults;
+    // Mastodon list source carries (instance, id) — canonicalised AppView-side
+    // to `mastodon-list://<instance>/<id>` for the `?sourceId=` filter.
+    const source: PushShareSource = {
+      kind: "mastodon-list",
+      instance: account.mastodonInstance.instance,
+      id: dbList.uri,
+    };
+    const shares: PushShare[] = [];
+    for (const post of listPosts) {
+      if (
+        !(
+          post.card ||
+          post.reblog?.card ||
+          (isQuote(post.quote) && post.quote.quotedStatus?.card)
+        )
+      ) {
+        continue;
+      }
+      const share = await processMastodonLink(post, source);
+      if (share) shares.push(share);
+    }
+    return shares.length > 0 ? { viewer, shares } : null;
   }
 
   throw new Error(`List ${listId} has no associated account`);
@@ -181,112 +222,7 @@ export const getMutePhrases = async (userId: string) => {
   });
 };
 
-/**
- * Dedupe and insert new links into the database
- * @param processedResults All processed results to insert
- * @param userId ID for logged in user
- */
-export const insertNewLinks = async (processedResults: ProcessedResult[]) => {
-  // Process in chunks of 1000
-  for (let i = 0; i < processedResults.length; i += 1000) {
-    const chunk = processedResults.slice(i, i + 1000);
-
-    const MAX_URL_LENGTH = 2712;
-    const links = Object.values(
-      chunk.reduce((acc, p) => {
-        // Remove null bytes from URL and other string fields
-        p.link.url = p.link.url.replace(/\0/g, "");
-        if (p.link.title) p.link.title = p.link.title.replace(/\0/g, "");
-        if (p.link.description)
-          p.link.description = p.link.description.replace(/\0/g, "");
-        if (p.link.imageUrl)
-          p.link.imageUrl = p.link.imageUrl.replace(/\0/g, "");
-        if (p.link.giftUrl) p.link.giftUrl = p.link.giftUrl.replace(/\0/g, "");
-
-        // Check if URL is too long and warn
-        if (p.link.url.length > MAX_URL_LENGTH) {
-          console.warn(
-            `URL too long for index (${p.link.url.length} bytes): ${p.link.url}`,
-          );
-          delete acc[p.link.url]; // Remove the link from accumulator if it exists
-          return acc;
-        }
-
-        const existing = acc[p.link.url];
-        if (
-          !existing ||
-          (p.link.title && !existing.title) ||
-          (p.link.title && existing.title === "Main link in OG tweet") || // handle news-feed.bsky.social bs
-          (p.link.description && !existing.description) ||
-          (p.link.imageUrl && !existing.imageUrl) ||
-          (p.link.giftUrl && !existing.giftUrl)
-        ) {
-          acc[p.link.url] = {
-            ...p.link,
-            title: p.link.title ?? existing?.title,
-            description: p.link.description ?? existing?.description,
-            imageUrl: p.link.imageUrl ?? existing?.imageUrl,
-            giftUrl: existing?.giftUrl || p.link.giftUrl,
-          };
-        }
-        return acc;
-      }, {} as Record<string, (typeof processedResults)[0]["link"]>),
-    );
-
-    const denormalized = chunk
-      .map((p) => p.denormalized)
-      .filter((p) => p.linkUrl.length <= MAX_URL_LENGTH)
-      .filter((p) => new Date(p.postDate) >= new Date(Date.now() - ONE_DAY_MS));
-
-    await db.transaction(async (tx) => {
-      if (links.length > 0)
-        await tx
-          .insert(link)
-          .values(links)
-          .onConflictDoUpdate({
-            target: [link.url],
-            set: {
-              ...conflictUpdateSetAllColumns(link),
-              giftUrl: sql`CASE
-                WHEN ${link.giftUrl} IS NULL THEN excluded."giftUrl"
-                ELSE ${link.giftUrl}
-              END`,
-              scraped: sql`CASE
-                WHEN ${link.scraped} = true THEN true
-                ELSE COALESCE(excluded."scraped", false)
-              END`,
-            },
-          });
-
-      if (denormalized.length > 0)
-        await tx
-          .insert(linkPostDenormalized)
-          .values(denormalized)
-          .onConflictDoNothing();
-    });
-  }
-};
-
-export function conflictUpdateSetAllColumns<TTable extends PgTable>(
-  table: TTable,
-): PgUpdateSetSource<TTable> {
-  const columns = getTableColumns(table);
-  const { name: tableName } = getTableConfig(table);
-  const conflictUpdateSet = Object.entries(columns).reduce(
-    (acc, [columnName, columnInfo]) => {
-      if (!columnInfo.default && columnInfo.name !== "id") {
-        // @ts-ignore
-        acc[columnName] = sql.raw(
-          `COALESCE(excluded."${columnInfo.name}", ${tableName}."${columnInfo.name}")`,
-        );
-      }
-      return acc;
-    },
-    {},
-  ) as PgUpdateSetSource<TTable>;
-  return conflictUpdateSet;
-}
-interface FilterArgs {
+export interface FilterArgs {
   userId: string;
   time?: number;
   hideReposts?: "include" | "exclude" | "only";
@@ -299,6 +235,18 @@ interface FilterArgs {
   limit?: number;
   url?: string;
   minShares?: number;
+  /**
+   * The DB sources to merge alongside the AppView's Bluesky timeline: Mastodon
+   * (all) + Bluesky list posts, never the Bluesky following timeline (which the
+   * AppView already serves). Overrides the `service` postType filter.
+   */
+  appViewMerge?: boolean;
+  /**
+   * Override the per-AppView-call page size (default 10, the feed value;
+   * AppView caps at 100). Heavier sweeps (notifications) pass 100 to cover
+   * their larger candidate set in fewer round trips.
+   */
+  appViewPageLimit?: number;
 }
 
 const DEFAULT_HIDE_REPOSTS = "include";
@@ -307,595 +255,380 @@ const DEFAULT_QUERY = undefined;
 const DEFAULT_FETCH = false;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
+// --- Notification evaluation ---
+//
+// One `POST /v1/query` per evaluation. The AppView AND's the predicate set
+// (url/link/post/author/repost/service/shares/list) and returns matching URLs
+// with hydrated ShareRows already filtered+sorted. We only post-process two
+// things in-memory:
+//   - `seenLinks` dedupe (group-local, no server state).
+//   - Sill's `mute_phrase` URL-level safety net (in case Sill mutes aren't
+//     synced into AppView preferences — defensive only).
+//
+// Notification cap. The AppView's `limit` maxes at 100 (URLs); within each
+// match, items are server-capped at 200 ShareRows.
+const NOTIFICATION_DEFAULT_LIMIT = 100;
+/** Default `/v1/query` window. `seenLinks` dedupes across polls, so a 24h
+ *  trailing window is enough to catch new matches. */
+const NOTIFICATION_QUERY_HOURS = 24;
+const ONE_HOUR_MS = 3600000;
+
 /**
- * Retrieves most recent link posts for a user in a given time frame
- * @param userId ID for logged in user
- * @param time Time in milliseconds to get most recent link posts
- * @returns Most recent link posts for a user in a given time frame
+ * The `/v1/query` window for a notification group: 24h, or the time since the
+ * group was created when that's shorter — there's nothing to find before the
+ * group existed, so a brand-new group scans only its short lifetime. Floored at
+ * 1h (the AppView's minimum bucket).
  */
-export const filterLinkOccurrences = async ({
-  userId,
-  time = ONE_DAY_MS,
-  hideReposts = DEFAULT_HIDE_REPOSTS,
-  sort = DEFAULT_SORT,
-  query = DEFAULT_QUERY,
-  service = "all",
-  page = 1,
-  fetch = DEFAULT_FETCH,
-  selectedList = "all",
-  limit = PAGE_SIZE,
-  url = undefined,
-  minShares = undefined,
-}: FilterArgs) => {
-  if (fetch) {
-    try {
-      const results = await fetchLinks(userId);
-      await insertNewLinks(results);
-    } catch (e) {
-      console.error(e);
+const queryHours = (createdAt?: Date): number => {
+  if (!createdAt) return NOTIFICATION_QUERY_HOURS;
+  const hours = Math.ceil(
+    Math.max(0, Date.now() - createdAt.getTime()) / ONE_HOUR_MS,
+  );
+  return Math.max(1, Math.min(NOTIFICATION_QUERY_HOURS, hours));
+};
+
+/**
+ * Rewrite Sill list-ids to canonical AppView sourceIds and validate the
+ * query shape so we don't ship malformed predicates. Unknown predicates are
+ * dropped (forward-compatible with future categories the server doesn't yet
+ * recognise).
+ */
+const translateNotificationQueries = async (
+  queries: NotificationQuery[],
+): Promise<AppViewNotificationQuery[]> => {
+  const out: AppViewNotificationQuery[] = [];
+  for (const q of queries) {
+    const id = q.category.id;
+    if (id === "list" && typeof q.value === "string") {
+      const sourceId = await sourceIdForList(q.value);
+      if (!sourceId) continue;
+      out.push({
+        category: { id },
+        operator: q.operator,
+        value: sourceId,
+      });
+    } else if (
+      id === "service" ||
+      id === "url" ||
+      id === "link" ||
+      id === "post" ||
+      id === "author" ||
+      id === "repost" ||
+      id === "shares"
+    ) {
+      out.push({ category: { id }, operator: q.operator, value: q.value });
     }
   }
+  return out;
+};
 
-  let listRecord: typeof list.$inferSelect | undefined;
-  if (selectedList !== "all") {
-    listRecord = await db.query.list.findFirst({
-      where: eq(list.id, selectedList),
-    });
+const includesCi = (h: string | null | undefined, n: string): boolean =>
+  !!h && h.toLowerCase().includes(n.toLowerCase());
+
+/**
+ * Convert one `/v1/query` match into the `MostRecentLinkPosts`-shaped item the
+ * notifier and email/RSS renderers expect. The match shape mirrors `UrlItem`
+ * for the link half, so `urlItemToLink` maps it cleanly.
+ */
+const matchToItem = async (
+  match: QueryMatch,
+  userId: string,
+): Promise<MostRecentLinkPosts> => {
+  let shares = match.items;
+  try {
+    shares = await resolveRepostSubjects(shares);
+    shares = await resolveLeafletPublications(shares);
+  } catch (e) {
+    console.error("notification subject resolution failed:", e);
   }
-
-  const offset = (page - 1) * PAGE_SIZE;
-  const start = new Date(Date.now() - time);
-  const mutePhrases = await getMutePhrases(userId);
-  const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-    notIlike(link.url, `%${phrase.phrase}%`),
-    notIlike(link.title, `%${phrase.phrase}%`),
-    notIlike(link.description, `%${phrase.phrase}%`),
-  ]);
-  const postMuteCondition =
-    mutePhrases.length > 0
-      ? sql`CASE WHEN ${or(
-          ...mutePhrases.flatMap((phrase) => [
-            ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-          ]),
-        )} THEN NULL ELSE 1 END`
-      : sql`1`;
-
-  return await db
-    .select({
-      link,
-      // Count unique actors based on similar handles or names, excluding duplicates from different networks
-      uniqueActorsCount:
-        getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(
-      and(
-        eq(linkPostDenormalized.userId, userId),
-        gte(linkPostDenormalized.postDate, start.toISOString()),
-        url ? eq(link.url, url) : undefined,
-        listRecord ? eq(linkPostDenormalized.listId, listRecord.id) : undefined,
-        ...urlMuteClauses,
-        service !== "all"
-          ? eq(linkPostDenormalized.postType, service)
-          : undefined,
-        hideReposts === "exclude"
-          ? isNull(linkPostDenormalized.repostActorHandle)
-          : hideReposts === "only"
-          ? isNotNull(linkPostDenormalized.repostActorHandle)
-          : undefined,
-        query
-          ? or(
-              ilike(link.title, `%${query}%`),
-              ilike(link.description, `%${query}%`),
-              ilike(link.url, `%${query}%`),
-              ilike(linkPostDenormalized.postText, `%${query}%`),
-              ilike(linkPostDenormalized.actorName, `%${query}%`),
-              ilike(linkPostDenormalized.actorHandle, `%${query}%`),
-              ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
-              ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
-              ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
-              ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-              ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
-            )
-          : undefined,
-      ),
-    )
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(
-      and(
-        sql`count(*) > 0`,
-        minShares
-          ? sql`${getUniqueActorsCountSql(postMuteCondition)} >= ${minShares}`
-          : undefined,
-      ),
-    )
-    .orderBy(
-      sort === "popularity"
-        ? desc(sql`"uniqueActorsCount"`)
-        : desc(sql`"mostRecentPostDate"`),
-      desc(sql`"mostRecentPostDate"`),
-    )
-    .limit(limit)
-    .offset(offset)
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(
-            and(
-              eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start.toISOString()),
-              sql`${postMuteCondition} = 1`,
-              listRecord
-                ? eq(linkPostDenormalized.listId, listRecord.id)
-                : undefined,
-              service !== "all"
-                ? eq(linkPostDenormalized.postType, service)
-                : undefined,
-              hideReposts === "exclude"
-                ? isNull(linkPostDenormalized.repostActorHandle)
-                : hideReposts === "only"
-                ? isNotNull(linkPostDenormalized.repostActorHandle)
-                : undefined,
-              query
-                ? or(
-                    ilike(linkPostDenormalized.postText, `%${query}%`),
-                    ilike(linkPostDenormalized.actorName, `%${query}%`),
-                    ilike(linkPostDenormalized.actorHandle, `%${query}%`),
-                    ilike(linkPostDenormalized.quotedPostText, `%${query}%`),
-                    ilike(linkPostDenormalized.quotedActorName, `%${query}%`),
-                    ilike(linkPostDenormalized.quotedActorHandle, `%${query}%`),
-                    ilike(linkPostDenormalized.repostActorName, `%${query}%`),
-                    ilike(linkPostDenormalized.repostActorHandle, `%${query}%`),
-                  )
-                : undefined,
-            ),
-          )
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
-    });
+  const posts = shares
+    .map((s) => shareRowToLinkPost(s, userId))
+    .sort(
+      (a, b) =>
+        new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+    );
+  return {
+    link: urlItemToLink(match, null),
+    uniqueActorsCount: match.shares,
+    posts,
+    avatars: match.avatars,
+  };
 };
 
 export const evaluateNotifications = async (
   userId: string,
   queries: NotificationQuery[],
   seenLinks: string[] = [],
+  /** The group's creation time — caps the query window for new groups. */
   createdAt?: Date,
-) => {
-  const start = createdAt
-    ? new Date(Math.max(createdAt.getTime(), Date.now() - ONE_DAY_MS))
-    : new Date(Date.now() - ONE_DAY_MS);
-  const mutePhrases = await getMutePhrases(userId);
-  const urlMuteClauses = mutePhrases.flatMap((phrase) => [
-    notIlike(link.url, `%${phrase.phrase}%`),
-    notIlike(link.title, `%${phrase.phrase}%`),
-    notIlike(link.description, `%${phrase.phrase}%`),
-  ]);
-  const postMuteCondition =
-    mutePhrases.length > 0
-      ? sql`CASE WHEN ${or(
-          ...mutePhrases.flatMap((phrase) => [
-            ilike(linkPostDenormalized.postText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.postUrl, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedPostText, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.quotedActorHandle, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorName, `%${phrase.phrase}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${phrase.phrase}%`),
-          ]),
-        )} THEN NULL ELSE 1 END`
-      : sql`1`;
+  /**
+   * Cap on URL matches returned. Defaults to the AppView max (100); the
+   * test/preview endpoint passes a smaller value for a quick interactive ping.
+   */
+  candidateLimit: number = NOTIFICATION_DEFAULT_LIMIT,
+): Promise<MostRecentLinkPosts[]> => {
+  if (!appViewEnabled()) return [];
 
-  const linkSQLQueries: (SQL | undefined)[] = [];
-  const postSQLQueries: (SQL | undefined)[] = [];
-  for (const query of queries) {
-    if (query.category.id === "url" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        linkSQLQueries.push(eq(link.url, query.value));
-      }
-      if (query.operator === "contains") {
-        linkSQLQueries.push(ilike(link.url, `%${query.value}%`));
-      }
-      if (query.operator === "excludes") {
-        linkSQLQueries.push(notIlike(link.url, `%${query.value}%`));
-      }
-    }
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return [];
 
-    if (query.category.id === "link" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        linkSQLQueries.push(
-          or(eq(link.title, query.value), eq(link.description, query.value)),
-        );
-      }
-      if (query.operator === "contains") {
-        linkSQLQueries.push(
-          or(
-            ilike(link.title, `%${query.value}%`),
-            ilike(link.description, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        linkSQLQueries.push(
-          and(
-            notIlike(link.title, `%${query.value}%`),
-            notIlike(link.description, `%${query.value}%`),
-          ),
-        );
-      }
-    }
+  const translated = await translateNotificationQueries(queries);
+  if (translated.length === 0) return [];
 
-    if (query.category.id === "post" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(eq(linkPostDenormalized.postText, query.value));
-      }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          ilike(linkPostDenormalized.postText, `%${query.value}%`),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          notIlike(linkPostDenormalized.postText, `%${query.value}%`),
-        );
-      }
-    }
-
-    if (query.category.id === "author" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(
-          or(
-            eq(linkPostDenormalized.actorName, query.value),
-            eq(linkPostDenormalized.actorHandle, query.value),
-          ),
-        );
-      }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          or(
-            ilike(linkPostDenormalized.actorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.actorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          or(
-            notIlike(linkPostDenormalized.actorName, `%${query.value}%`),
-            notIlike(linkPostDenormalized.actorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-    }
-
-    if (query.category.id === "list" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(eq(linkPostDenormalized.listId, query.value));
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          or(
-            ne(linkPostDenormalized.listId, query.value),
-            isNull(linkPostDenormalized.listId),
-          ),
-        );
-      }
-    }
-    if (query.category.id === "repost" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        postSQLQueries.push(
-          or(
-            eq(linkPostDenormalized.repostActorName, query.value),
-            eq(linkPostDenormalized.repostActorHandle, query.value),
-          ),
-        );
-      }
-      if (query.operator === "contains") {
-        postSQLQueries.push(
-          or(
-            ilike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            ilike(linkPostDenormalized.repostActorHandle, `%${query.value}%`),
-          ),
-        );
-      }
-      if (query.operator === "excludes") {
-        postSQLQueries.push(
-          and(
-            notIlike(linkPostDenormalized.repostActorName, `%${query.value}%`),
-            notIlike(
-              linkPostDenormalized.repostActorHandle,
-              `%${query.value}%`,
-            ),
-          ),
-        );
-      }
-    }
-    if (query.category.id === "service" && typeof query.value === "string") {
-      if (query.operator === "equals") {
-        const value = postType.enumValues.find((v) => v === query.value);
-        if (value) {
-          postSQLQueries.push(eq(linkPostDenormalized.postType, value));
-        }
-      }
-      if (query.operator === "excludes") {
-        const value = postType.enumValues.find((v) => v === query.value);
-        if (value) {
-          postSQLQueries.push(ne(linkPostDenormalized.postType, value));
-        }
-      }
-    }
-  }
-
-  const sharesQuery = queries.find(
-    (query) =>
-      query.category.id === "shares" && typeof query.value === "number",
-  );
-
-  return await db
-    .select({
-      link,
-      uniqueActorsCount:
-        getUniqueActorsCountSql(postMuteCondition).as("uniqueActorsCount"),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(
-      and(
-        eq(linkPostDenormalized.userId, userId),
-        gte(linkPostDenormalized.postDate, start.toISOString()),
-        notInArray(link.url, seenLinks),
-        ...urlMuteClauses,
-        ...linkSQLQueries,
-        ...postSQLQueries,
-      ),
-    )
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(
-      sharesQuery
-        ? gte(getUniqueActorsCountSql(postMuteCondition), sharesQuery.value)
-        : sql`count(*) > 0`,
-    )
-    .orderBy(desc(sql`"uniqueActorsCount"`), desc(sql`"mostRecentPostDate"`))
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(
-            and(
-              eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              eq(linkPostDenormalized.userId, userId),
-              gte(linkPostDenormalized.postDate, start.toISOString()),
-              sql`${postMuteCondition} = 1`,
-            ),
-          )
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
+  let response: QueryResponse;
+  try {
+    response = await fetchQuery({
+      viewer,
+      hours: queryHours(createdAt),
+      limit: Math.min(100, Math.max(1, candidateLimit)),
+      queries: translated,
     });
+  } catch (e) {
+    console.error("AppView /v1/query failed:", e);
+    return [];
+  }
+  if (response.cold) return [];
+
+  const seen = new Set(seenLinks);
+  const matches = response.matches.filter((m) => !seen.has(m.url));
+
+  // Sill mute_phrase safety net (URL/title/description only — post-level
+  // muting is already covered server-side by `/v1/preferences`).
+  const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
+  const allowed = mutePhrases.length
+    ? matches.filter(
+        (m) =>
+          !mutePhrases.some(
+            (p) =>
+              includesCi(m.url, p) ||
+              includesCi(m.title, p) ||
+              includesCi(m.description, p),
+          ),
+      )
+    : matches;
+
+  return Promise.all(allowed.map((m) => matchToItem(m, userId)));
+};
+
+/**
+ * Match-count preview for the `/api/notifications/test` UI. Same `/v1/query`
+ * call as `evaluateNotifications`, sized smaller. The endpoint hydrates
+ * `items` server-side; for a count we only need the URL list.
+ */
+export const previewNotificationCount = async (
+  userId: string,
+  queries: NotificationQuery[],
+): Promise<number> => {
+  if (!appViewEnabled()) return 0;
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return 0;
+
+  const translated = await translateNotificationQueries(queries);
+  if (translated.length === 0) return 0;
+
+  let response: QueryResponse;
+  try {
+    response = await fetchQuery({
+      viewer,
+      hours: NOTIFICATION_QUERY_HOURS,
+      limit: 100,
+      queries: translated,
+    });
+  } catch (e) {
+    console.error("AppView /v1/query (preview) failed:", e);
+    return 0;
+  }
+  if (response.cold) return 0;
+
+  const mutePhrases = (await getMutePhrases(userId)).map((p) => p.phrase);
+  if (mutePhrases.length === 0) return response.matches.length;
+  return response.matches.filter(
+    (m) =>
+      !mutePhrases.some(
+        (p) =>
+          includesCi(m.url, p) ||
+          includesCi(m.title, p) ||
+          includesCi(m.description, p),
+      ),
+  ).length;
 };
 
 export interface TopTenResults {
   uniqueActorsCount: number;
-  link: typeof link.$inferSelect | null;
-  posts?: (typeof linkPostDenormalized.$inferSelect & { count: number })[];
+  link: Link | null;
+  posts?: (LinkPost & { count: number })[];
   mostRecentPostDate: Date;
 }
 
+/**
+ * Global trending for the discovery page. Comes from the AppView's
+ * `/v1/network-trending` (whole-index, fresh); empty when the AppView is
+ * unreachable.
+ */
 export const networkTopTen = async (): Promise<TopTenResults[]> => {
-  const start = new Date(Date.now() - 10800000);
+  if (!appViewEnabled()) return [];
+  const items = await fetchNetworkTrending({ limit: 10 });
+  return items.map((item) => {
+    // The AppView supplies the most-shared post for the URL (topPost); map it
+    // to Sill's post shape. `count` is that post's reposts + quotes.
+    const posts = item.topPost
+      ? [{ ...shareRowToLinkPost(item.topPost, ""), count: item.topPost.shares }]
+      : undefined;
+    return {
+      uniqueActorsCount: item.shares ?? 0,
+      link: urlItemToLink(item, null),
+      mostRecentPostDate: new Date(toIso(item.mostRecent) ?? Date.now()),
+      posts,
+    };
+  });
+};
 
-  const topTen = await db
-    .select()
-    .from(networkTopTenView)
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const post = await db
-          .select({
-            ...getTableColumns(linkPostDenormalized),
-            count:
-              sql<number>`count(*) OVER (PARTITION BY ${linkPostDenormalized.postUrl})`.as(
-                "count",
-              ),
-          })
-          .from(linkPostDenormalized)
-          .where(
-            and(
-              eq(linkPostDenormalized.linkUrl, result.link?.url || ""),
-              gte(linkPostDenormalized.postDate, start.toISOString()),
-            ),
-          )
-          .orderBy(desc(sql`count`))
-          .limit(1)
-          .then((posts) => posts[0]);
-        return {
-          ...result,
-          posts: [post],
-        };
-      });
-      return Promise.all(postsPromise);
-    });
-  return topTen;
+// Broad window for the by-domain / by-author discovery pages.
+const DISCOVERY_WINDOW: TimeWindow = { days: 90 };
+
+/** A viewer's Bluesky DID, or null if they have no Bluesky account. */
+/**
+ * Hydrate AppView UrlItems (from by-domain/by-author) into the renderable shape,
+ * eagerly loading each URL's posts for the viewer's network.
+ */
+const linksFromAppViewItems = async (
+  items: UrlItem[],
+  viewer: string,
+  userId: string,
+): Promise<MostRecentLinkPosts[]> => {
+  if (items.length === 0) return [];
+
+  let shares = await fetchHydration({
+    viewer,
+    window: DISCOVERY_WINDOW,
+    urls: items.map((i) => i.url),
+    hideReposts: "include",
+    network: networkFromService("all"),
+  });
+  shares = await resolveRepostSubjects(shares);
+
+  const sharesByUrl = new Map<string, ShareRow[]>();
+  for (const s of shares) {
+    const list = sharesByUrl.get(s.url);
+    if (list) list.push(s);
+    else sharesByUrl.set(s.url, [s]);
+  }
+
+  return items.map((item) => {
+    const urlShares = sharesByUrl.get(item.url) ?? [];
+    const posts = urlShares
+      .map((s) => shareRowToLinkPost(s, userId))
+      .sort(
+        (a, b) =>
+          new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
+      );
+    return {
+      uniqueActorsCount: item.shares ?? distinctActorCount(urlShares),
+      link: urlItemToLink(item, null),
+      posts,
+    };
+  });
 };
 
 /**
- * Finds all link objects that have a URL matching the specified domain
+ * Finds links from a hostname (viewer-scoped) via the AppView's `/v1/by-domain`.
+ * Returns an empty list if the AppView is unavailable or the viewer has no
+ * Bluesky account.
  * @param domain Domain to match against (e.g., "example.com")
- * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with URLs from the specified domain, including linkPostDenormalized objects and total share count
+ * @param userId Viewer whose network scopes the lookup
  */
+export interface PaginatedLinks {
+  links: MostRecentLinkPosts[];
+  cursor?: string;
+  /** Publisher/journalist summary — first page only (see API.md `about`). */
+  about?: AboutCard;
+}
+
+/**
+ * The same filter set the main `/links` feed exposes, applied to the
+ * by-author / by-domain discovery pages. All optional — omit for the defaults
+ * (whole 90-day window, all networks, with reposts, popularity sort, no list
+ * scope, no minShares).
+ */
+export interface DiscoveryFilters {
+  time?: number; // ms window; omit for the default discovery window
+  service?: "mastodon" | "bluesky" | "all";
+  hideReposts?: "include" | "exclude" | "only";
+  sort?: "popularity" | "recency";
+  minShares?: number;
+  selectedList?: string; // Sill list id; resolved to a canonical sourceId
+  /** by-publication only: a brand on the host (omit → the host's primary). */
+  publication?: string;
+}
+
+/** ms → AppView TimeWindow (hours for sub-day), else the default discovery window. */
+const discoveryWindow = (timeMs?: number): TimeWindow => {
+  if (timeMs == null) return DISCOVERY_WINDOW;
+  return timeMs < ONE_DAY_MS
+    ? { hours: Math.min(23, Math.max(1, Math.ceil(timeMs / ONE_HOUR_MS))) }
+    : { days: Math.min(90, Math.max(1, Math.ceil(timeMs / ONE_DAY_MS))) };
+};
+
 export const findLinksByDomain = async (
   domain: string,
-  page = 1,
   pageSize = 10,
-) => {
-  const offset = (page - 1) * pageSize;
-
-  return await db
-    .select({
-      link,
-      uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount",
-      ),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(and(ilike(link.url, `%${domain}%`), isNotNull(link.publishedDate)))
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(sql`count(*) > 0`)
-    .orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
-    .limit(pageSize)
-    .offset(offset)
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
-    });
+  userId?: string,
+  cursor?: string,
+  filters?: DiscoveryFilters,
+): Promise<PaginatedLinks> => {
+  if (!userId || !appViewEnabled()) return { links: [] };
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return { links: [] };
+  const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
+  const res = await fetchByPublication({
+    domain,
+    publication: filters?.publication,
+    viewer,
+    window: discoveryWindow(filters?.time),
+    limit: pageSize,
+    cursor,
+    sourceId,
+    network: networkFromService(filters?.service ?? "all"),
+    hideReposts: filters?.hideReposts,
+    minShares: filters?.minShares,
+    sort: filters?.sort,
+  });
+  const links = await linksFromAppViewItems(res.items, viewer, userId);
+  return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };
 
 /**
- * Finds all link objects that have an author matching the specified name
+ * Finds links whose article byline matches `author` (viewer-scoped) via the
+ * AppView's `/v1/by-author`. Returns an empty list if the AppView is
+ * unavailable or the viewer has no Bluesky account.
  * @param author Author name to match against
- * @param page Page number (1-based, defaults to 1)
  * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with the specified author, including linkPostDenormalized objects and total share count
+ * @param userId Viewer whose network scopes the lookup
  */
 export const findLinksByAuthor = async (
   author: string,
-  page = 1,
   pageSize = 10,
-) => {
-  const offset = (page - 1) * pageSize;
-
-  return await db
-    .select({
-      link,
-      uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount",
-      ),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(
-      and(
-        sql`${link.authors}::text ILIKE ${`%${author}%`}`,
-        isNotNull(link.publishedDate),
-      ),
-    )
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(sql`count(*) > 0`)
-    .orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
-    .limit(pageSize)
-    .offset(offset)
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
-    });
-};
-
-/**
- * Finds all link objects that have a topic matching the specified name
- * @param topic Topic name to match against
- * @param page Page number (1-based, defaults to 1)
- * @param pageSize Number of results per page (defaults to 10)
- * @returns Array of link objects with the specified topic, including linkPostDenormalized objects and total share count
- */
-export const findLinksByTopic = async (
-  topic: string,
-  page = 1,
-  pageSize = 10,
-) => {
-  const offset = (page - 1) * pageSize;
-
-  return await db
-    .select({
-      link,
-      uniqueActorsCount: getUniqueActorsCountSql(sql`1`).as(
-        "uniqueActorsCount",
-      ),
-      mostRecentPostDate: sql<Date>`max(${linkPostDenormalized.postDate})`.as(
-        "mostRecentPostDate",
-      ),
-    })
-    .from(linkPostDenormalized)
-    .leftJoin(link, eq(linkPostDenormalized.linkUrl, link.url))
-    .where(
-      and(
-        sql`${link.topics}::text ILIKE ${`%${topic}%`}`,
-        isNotNull(link.publishedDate),
-      ),
-    )
-    .groupBy(linkPostDenormalized.linkUrl, link.id)
-    .having(sql`count(*) > 0`)
-    .orderBy(desc(link.publishedDate), desc(sql`"uniqueActorsCount"`))
-    .limit(pageSize)
-    .offset(offset)
-    .then(async (results) => {
-      const postsPromise = results.map(async (result) => {
-        const posts = await db
-          .select()
-          .from(linkPostDenormalized)
-          .where(and(eq(linkPostDenormalized.linkUrl, result.link?.url || "")))
-          .orderBy(desc(linkPostDenormalized.postDate));
-        return {
-          ...result,
-          posts,
-        };
-      });
-      return Promise.all(postsPromise);
-    });
+  userId?: string,
+  cursor?: string,
+  filters?: DiscoveryFilters,
+): Promise<PaginatedLinks> => {
+  if (!userId || !appViewEnabled()) return { links: [] };
+  const viewer = await resolveViewer(userId);
+  if (!viewer) return { links: [] };
+  const sourceId = await sourceIdForList(filters?.selectedList ?? "all");
+  const res = await fetchByAuthor({
+    author,
+    viewer,
+    window: discoveryWindow(filters?.time),
+    limit: pageSize,
+    cursor,
+    sourceId,
+    network: networkFromService(filters?.service ?? "all"),
+    hideReposts: filters?.hideReposts,
+    minShares: filters?.minShares,
+    sort: filters?.sort,
+  });
+  const links = await linksFromAppViewItems(res.items, viewer, userId);
+  return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };

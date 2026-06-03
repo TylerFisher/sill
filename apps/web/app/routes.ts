@@ -26,7 +26,6 @@ export default [
     route("bluesky/status", "routes/api/bluesky.status.ts"),
     route("email/send-verification", "routes/api/email.send-verification.ts"),
     route("email/verify", "routes/api/email.verify.ts"),
-    route("link/update-metadata", "routes/api/link.update-metadata.ts"),
     route("list/subscribe", "routes/api/list.subscribe.ts"),
     route("lists/bluesky", "routes/api/lists.bluesky.ts"),
     route("lists/mastodon", "routes/api/lists.mastodon.ts"),
@@ -55,6 +54,9 @@ export default [
     index("routes/digest/index.tsx"),
   ]),
   route("download", "routes/download.tsx"),
+  // Dev-only synthetic RSS feed exercising every share type. Uncomment locally to
+  // test in an RSS reader (http://localhost:3000/rss-test); keep commented for prod.
+  // route("rss-test", "routes/rss-test.ts"),
   ...prefix("email", [
     route("add", "routes/email/add.tsx"),
     route("delete", "routes/email/delete.tsx"),
@@ -66,7 +68,6 @@ export default [
     route("trending", "routes/links/trending.tsx"),
     route("domain/:domain", "routes/links/domain.tsx"),
     route("author/:author", "routes/links/author.tsx"),
-    route("topic/:topic", "routes/links/topic.tsx"),
   ]),
   ...prefix("mastodon", [
     route("auth", "routes/mastodon/auth.ts"),
@@ -83,6 +84,7 @@ export default [
   ...prefix("resources", [
     route("layout-switch", "routes/resources/layout-switch.tsx"),
     route("theme-switch", "routes/resources/theme-switch.tsx"),
+    route("link-posts", "routes/resources/link-posts.tsx"),
   ]),
   ...prefix("settings", [
     index("routes/settings/index.tsx"),

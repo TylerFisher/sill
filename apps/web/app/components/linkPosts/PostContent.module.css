@@ -3,6 +3,21 @@
 	white-space: pre-line;
 }
 
+.post-content blockquote {
+	margin: var(--space-3) 0;
+	padding: var(--space-1) 0 var(--space-1) var(--space-3);
+	border-left: 3px solid var(--gray-a6);
+	color: var(--gray-11);
+	overflow-wrap: anywhere;
+}
+
+.post-content .leaflet-source {
+	margin-top: var(--space-2);
+	margin-bottom: 0;
+	color: var(--gray-11);
+	font-size: var(--font-size-1);
+}
+
 .post-content a {
 	text-decoration: none;
 	color: var(--accent-11);

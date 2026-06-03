@@ -5,7 +5,7 @@ import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
 import { getUserIdFromSession } from "@sill/auth";
 import { db, list } from "@sill/schema";
-import { fetchSingleList, insertNewLinks } from "@sill/links";
+import { fetchSingleList, pushShareBatches } from "@sill/links";
 
 // Schema for creating a list
 const CreateListSchema = z.object({
@@ -137,12 +137,12 @@ const lists = new Hono()
     const { listId } = c.req.valid("json");
 
     try {
-      const results = await fetchSingleList(userId, listId);
-      await insertNewLinks(results);
+      // Collect this one list's shares and POST as a single batch.
+      const batch = await fetchSingleList(userId, listId);
+      if (batch) await pushShareBatches([batch]);
 
       return c.json({
         success: true,
-        processed: results.length,
         listId,
       });
     } catch (error) {

@@ -2,29 +2,23 @@ import { asc, eq, sql } from "drizzle-orm";
 import {
   db,
   accountUpdateQueue,
-  networkTopTenView,
+  notificationGroup,
   user,
-  type bookmark,
-  type notificationGroup,
 } from "@sill/schema";
 import {
-  type ProcessedResult,
-  insertNewLinks,
   dequeueJobs,
   enqueueJob,
-  processUrl,
-  updateBookmarkPosts,
   processJob,
   processNotificationGroup,
-  getHighActivityUrls,
   clearUrlExpansionCache,
   flushCacheReport,
+  type PushShareBatch,
+  pushShareBatches,
 } from "@sill/links";
 
 // Constants
 const MAX_ERRORS_PER_BATCH = 50;
 const JOB_TIMEOUT_MS = 2 * 60 * 1000; // 3 minutes
-const CLOUDFLARE_RATE_LIMIT_MS = 1000; // 1 second between URL scrapes (Cloudflare requirement)
 const QUEUE_POLL_INTERVAL_MS = 10 * 1000; // 10 seconds between batches
 const SLOW_QUEUE_DELAY_MS = 120 * 1000; // 2 minute delay when few users
 
@@ -50,9 +44,8 @@ process.on("SIGINT", () => {
  */
 async function processJobWithTimeout(
   job: typeof accountUpdateQueue.$inferSelect,
-  allLinks: ProcessedResult[],
-  notificationGroups: (typeof notificationGroup.$inferSelect)[],
-  bookmarks: (typeof bookmark.$inferSelect)[]
+  shareBatches: PushShareBatch[],
+  notificationGroups: (typeof notificationGroup.$inferSelect)[]
 ): Promise<JobResult> {
   const jobStart = Date.now();
   let timeoutId: NodeJS.Timeout | undefined;
@@ -66,10 +59,10 @@ async function processJobWithTimeout(
 
     const result = await Promise.race([timeoutPromise, processJob(job)]);
 
-    // Only push results if we got here (didn't timeout)
-    allLinks.push(...result.links);
+    // Per-job shares accumulate here; the batch flushes once at the end via
+    // `pushShareBatches` so the whole worker pass is one HTTP request.
+    if (result.shareBatch) shareBatches.push(result.shareBatch);
     notificationGroups.push(...result.notificationGroups);
-    bookmarks.push(...result.bookmarks);
 
     return { status: "success", duration: Date.now() - jobStart };
   } catch (error) {
@@ -102,19 +95,22 @@ async function processBatch(
   console.log(`[Queue] Processing batch of ${jobs.length} jobs`);
   const batchStart = Date.now();
 
-  const allLinks: ProcessedResult[] = [];
+  const shareBatches: PushShareBatch[] = [];
   const notificationGroups: (typeof notificationGroup.$inferSelect)[] = [];
-  const bookmarks: (typeof bookmark.$inferSelect)[] = [];
 
-  // Process all jobs in parallel
+  // Process all jobs in parallel. Each job collects its viewer's shares; we
+  // POST `/v1/shares` once for the whole batch in the AppView's batched form.
   const results = await Promise.all(
     jobs.map((job) =>
-      processJobWithTimeout(job, allLinks, notificationGroups, bookmarks)
+      processJobWithTimeout(job, shareBatches, notificationGroups)
     )
   );
 
-  // Insert all new links
-  await insertNewLinks(allLinks);
+  // Single batched POST per worker pass — saves ~200 ms / pass vs. one POST
+  // per viewer (API.md §POST /v1/shares "Batched form").
+  if (shareBatches.length > 0) {
+    await pushShareBatches(shareBatches);
+  }
 
   // Process notifications sequentially
   for (const group of notificationGroups) {
@@ -122,15 +118,6 @@ async function processBatch(
       await processNotificationGroup(group);
     } catch (error) {
       console.error("[Queue] Error processing notification group:", error);
-    }
-  }
-
-  // Update bookmarks sequentially
-  for (const bookmark of bookmarks) {
-    try {
-      await updateBookmarkPosts(bookmark);
-    } catch (error) {
-      console.error("[Queue] Error updating bookmark:", error);
     }
   }
 
@@ -173,47 +160,32 @@ async function processBatch(
  * Handles idle queue state
  */
 async function handleIdleQueue(batchSize: number): Promise<void> {
-  // Refresh materialized view
-  await db.refreshMaterializedView(networkTopTenView);
-
-  // Scrape high-activity URLs with Cloudflare rate limiting
-  const highActivityUrls = await getHighActivityUrls();
-  if (highActivityUrls.length > 0) {
-    console.log(`[BROWSER RENDER] scraping ${highActivityUrls.length} urls`);
-
-    // Create promises with 1-second intervals between starts (Cloudflare requirement)
-    const promises = highActivityUrls.map(
-      (url, index) =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve(
-                processUrl(url).catch((error) => {
-                  console.error(
-                    `[BROWSER RENDER] Failed to process ${url}:`,
-                    error
-                  );
-                  return null;
-                })
-              ),
-            index * CLOUDFLARE_RATE_LIMIT_MS
-          )
-        )
-    );
-
-    await Promise.all(promises);
-  }
-
   const usersWithAccounts = await db.query.user.findMany({
     with: {
-      blueskyAccounts: true,
+      blueskyAccounts: { with: { lists: true } },
       mastodonAccounts: true,
     },
     orderBy: asc(user.createdAt),
   });
 
+  // Users with notification groups must be ingested every cycle so their
+  // notifications evaluate against fresh data (notifications read the DB).
+  const notificationUserIds = new Set(
+    (
+      await db
+        .selectDistinct({ userId: notificationGroup.userId })
+        .from(notificationGroup)
+    ).map((row) => row.userId)
+  );
+
+  // The AppView now serves the Bluesky following timeline, so the worker only
+  // needs to fetch for users with something it doesn't cover: Bluesky lists
+  // (custom feeds), a Mastodon account, or notification groups to evaluate.
   const users = usersWithAccounts.filter(
-    (u) => u.blueskyAccounts.length > 0 || u.mastodonAccounts.length > 0
+    (u) =>
+      u.mastodonAccounts.length > 0 ||
+      u.blueskyAccounts.some((account) => account.lists.length > 0) ||
+      notificationUserIds.has(u.id)
   );
 
   // Delete completed jobs

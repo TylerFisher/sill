@@ -3,12 +3,12 @@ import { uuidv7 } from "uuidv7-js";
 import {
   db,
   accountUpdateQueue,
+  blueskyAccount,
+  list,
+  mastodonAccount,
   notificationGroup,
-  bookmark,
 } from "@sill/schema";
 import { fetchLinks } from "./links.js";
-import { addNewBookmarks } from "./bookmarks.js";
-import { clearOAuthSessionCache } from "./bluesky.js";
 
 export async function enqueueJob(userId: string) {
   return await db
@@ -28,8 +28,8 @@ export async function dequeueJobs(batchSize: number) {
       .where(
         and(
           eq(accountUpdateQueue.status, "pending"),
-          sql`${accountUpdateQueue.retries} < 3`,
-        ),
+          sql`${accountUpdateQueue.retries} < 3`
+        )
       )
       .limit(batchSize)
       .for("update", { skipLocked: true });
@@ -41,8 +41,8 @@ export async function dequeueJobs(batchSize: number) {
         .where(
           inArray(
             accountUpdateQueue.id,
-            jobs.map((j) => j.id),
-          ),
+            jobs.map((j) => j.id)
+          )
         );
     }
 
@@ -51,30 +51,41 @@ export async function dequeueJobs(batchSize: number) {
 }
 
 interface ProcessJobResult {
-  links: Awaited<ReturnType<typeof import("./links.js").fetchLinks>>;
+  shareBatch: Awaited<ReturnType<typeof import("./links.js").fetchLinks>>;
   notificationGroups: Awaited<
     ReturnType<typeof db.query.notificationGroup.findMany>
   >;
-  bookmarks: Awaited<ReturnType<typeof db.query.bookmark.findMany>>;
 }
 
 /**
- * Processes a single job by fetching links, notification groups, and bookmarks for a user.
+ * Processes a single job by fetching links and notification groups for a user.
  * Marks the job as completed upon success.
  */
+async function hasIngestionSources(userId: string): Promise<boolean> {
+  const [mastodon, blueskyList] = await Promise.all([
+    db
+      .select({ id: mastodonAccount.id })
+      .from(mastodonAccount)
+      .where(eq(mastodonAccount.userId, userId))
+      .limit(1),
+    db
+      .select({ id: list.id })
+      .from(list)
+      .innerJoin(blueskyAccount, eq(list.blueskyAccountId, blueskyAccount.id))
+      .where(eq(blueskyAccount.userId, userId))
+      .limit(1),
+  ]);
+  return mastodon.length > 0 || blueskyList.length > 0;
+}
+
 export async function processJob(
-  job: typeof accountUpdateQueue.$inferSelect,
+  job: typeof accountUpdateQueue.$inferSelect
 ): Promise<ProcessJobResult> {
-  const links = await fetchLinks(job.userId);
-  // get new bookmarks from ATProto repo
-  // await addNewBookmarks(job.userId);
+  const needsIngestion = await hasIngestionSources(job.userId);
+  const shareBatch = needsIngestion ? await fetchLinks(job.userId) : null;
 
   const groups = await db.query.notificationGroup.findMany({
     where: eq(notificationGroup.userId, job.userId),
-  });
-
-  const userBookmarks = await db.query.bookmark.findMany({
-    where: eq(bookmark.userId, job.userId),
   });
 
   await db
@@ -86,8 +97,7 @@ export async function processJob(
     .where(eq(accountUpdateQueue.id, job.id));
 
   return {
-    links,
+    shareBatch,
     notificationGroups: groups,
-    bookmarks: userBookmarks,
   };
 }

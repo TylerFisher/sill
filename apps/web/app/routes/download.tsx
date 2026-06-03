@@ -23,11 +23,27 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const syncId = service || "initial-sync";
 	const label = service || "social media";
 
-	await apiStartSync(request, { syncId, label }).catch(() => {});
-
 	const digestSettingsPromise = apiGetDigestSettings(request).catch(() => ({
 		settings: undefined,
 	}));
+
+	// Bluesky data is served by the AppView (the DID is registered as a seed at
+	// auth time), so a Bluesky signup has no DB sync to run — show the welcome
+	// screen without one. Mastodon still syncs its links from the DB.
+	const skipSync = service === "Bluesky";
+	if (skipSync) {
+		return {
+			service,
+			syncId,
+			subscribed,
+			syncPromise: Promise.resolve("success" as const),
+			skipSync,
+			user: existingUser,
+			digestSettingsPromise,
+		};
+	}
+
+	await apiStartSync(request, { syncId, label }).catch(() => {});
 
 	const syncPromise = apiFilterLinkOccurrences(request, {
 		time: 86400000,
@@ -52,6 +68,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		syncId,
 		subscribed,
 		syncPromise,
+		skipSync,
 		user: existingUser,
 		digestSettingsPromise,
 	};
@@ -63,6 +80,7 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 		syncId,
 		subscribed,
 		syncPromise,
+		skipSync,
 		user,
 		digestSettingsPromise,
 	} = loaderData;
@@ -71,12 +89,14 @@ const Download = ({ loaderData }: Route.ComponentProps) => {
 	const syncStarted = useRef(false);
 
 	useEffect(() => {
-		if (!syncStarted.current) {
+		// No sync runs for a Bluesky signup (AppView-backed), so don't surface a
+		// sync indicator — just show the welcome screen.
+		if (!skipSync && !syncStarted.current) {
 			syncStarted.current = true;
 			const label = service || "social media";
 			startSync(syncPromise, { id: syncId, label });
 		}
-	}, [syncPromise, syncId, service, startSync]);
+	}, [syncPromise, syncId, service, startSync, skipSync]);
 
 	return (
 		<Layout hideNav>

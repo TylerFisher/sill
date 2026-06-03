@@ -6,17 +6,26 @@ import { z } from "zod";
 import { getUserIdFromSession, createOAuthClient } from "@sill/auth";
 import {
   db,
+  type Link,
   type MostRecentLinkPosts,
   bookmark,
   bookmarkTag,
   tag,
   blueskyAccount,
-  link,
 } from "@sill/schema";
-import { filterLinkOccurrences } from "@sill/links";
+import {
+  addNewBookmarks,
+  appViewEnabled,
+  fetchHydration,
+  fetchUrlMetadata,
+  networkFromService,
+  resolveRepostSubjects,
+  shareRowToLinkPost,
+  distinctActorCount,
+  urlItemToLink,
+} from "@sill/links";
 import { Agent } from "@atproto/api";
 import { TID } from "@atproto/common";
-import { addNewBookmarks } from "@sill/links";
 
 /**
  * Get an ATProto agent for a user's Bluesky account
@@ -235,37 +244,46 @@ const bookmarks = new Hono()
         return c.json({ error: "Bookmark already exists" }, 409);
       }
 
-      // Get link posts data
-      let posts: MostRecentLinkPosts[] = await filterLinkOccurrences({
-        userId,
-        url,
+      // Hydrate the URL's viewer-scoped shares from the AppView. The bookmark
+      // snapshot's `link` half is an inline stub now — the `link` table is on
+      // its way out, and URL metadata for bookmarks will route through a
+      // different path (TBD; AppView has no single-URL metadata endpoint).
+      const viewerAccount = await db.query.blueskyAccount.findFirst({
+        where: eq(blueskyAccount.userId, userId),
       });
-
-      if (posts.length === 0) {
-        let dbLink: typeof link.$inferSelect | undefined =
-          await db.query.link.findFirst({
-            where: eq(link.url, url),
+      let viewerShares = [] as Awaited<ReturnType<typeof fetchHydration>>;
+      if (viewerAccount && appViewEnabled()) {
+        try {
+          viewerShares = await fetchHydration({
+            viewer: viewerAccount.did,
+            urls: [url],
+            window: { days: 1 },
+            hideReposts: "include",
+            network: networkFromService("all"),
           });
-
-        if (!dbLink) {
-          [dbLink] = await db
-            .insert(link)
-            .values({
-              id: uuidv7(),
-              url,
-              title: "",
-            })
-            .returning();
+          viewerShares = await resolveRepostSubjects(viewerShares);
+        } catch (e) {
+          console.error("AppView hydration failed for bookmark URL:", e);
         }
-
-        posts = [
-          {
-            link: dbLink,
-            posts: [],
-            uniqueActorsCount: 0,
-          },
-        ];
       }
+
+      // Fetch URL metadata from the AppView (`/v1/url`); fall back to a bare
+      // shape with `url` only if it hasn't been scraped yet, so `urlItemToLink`
+      // produces a stub.
+      const metaByUrl = await fetchUrlMetadata([url]);
+      const link: Link = urlItemToLink(metaByUrl.get(url) ?? { url }, null);
+
+      const sortedShares = viewerShares.sort(
+        (a, b) =>
+          new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime(),
+      );
+      const posts: MostRecentLinkPosts[] = [
+        {
+          link,
+          posts: sortedShares.map((s) => shareRowToLinkPost(s, userId)),
+          uniqueActorsCount: distinctActorCount(sortedShares),
+        },
+      ];
 
       // Publish to ATProto first if requested, so we have the rkey
       let atprotoRkey: string | undefined;

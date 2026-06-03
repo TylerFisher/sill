@@ -2,21 +2,19 @@ import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
 import { isSubscribed } from "@sill/auth";
 import {
+  blueskyAccount,
   db,
   list,
   mastodonAccount,
-  postType,
   type AccountWithInstance,
   type ListOption,
 } from "@sill/schema";
-import { uuidv7 } from "uuidv7-js";
-import type { ProcessedResult } from "./links.js";
-import {
-  getFullUrl,
-  isGiftLink,
-  isShortenedLink,
-  normalizeLink,
-} from "./normalizeLink.js";
+import type {
+  PushShare,
+  PushShareBatch,
+  PushShareSource,
+} from "./appview.js";
+import { mastodonActorUri } from "./viewer.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
@@ -73,7 +71,8 @@ export const getMastodonList = async (
     mastodonInstance: {
       instance: string;
     };
-  }
+  },
+  opts?: { ignoreCursor?: boolean }
 ): Promise<mastodon.v1.Status[]> => {
   const yesterday = new Date(Date.now() - ONE_DAY_MS);
 
@@ -93,7 +92,7 @@ export const getMastodonList = async (
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
   for await (const statuses of client.v1.timelines.list.$select(listUri).list({
-    sinceId: dbList.mostRecentPostId,
+    sinceId: opts?.ignoreCursor ? undefined : dbList.mostRecentPostId,
     limit: 40,
   })) {
     if (ended) break;
@@ -137,7 +136,8 @@ export const getMastodonTimeline = async (
     mastodonInstance: {
       instance: string;
     };
-  }
+  },
+  opts?: { ignoreCursor?: boolean }
 ): Promise<mastodon.v1.Status[]> => {
   const yesterday = new Date(Date.now() - 86400000); // 24 hours
 
@@ -160,7 +160,7 @@ export const getMastodonTimeline = async (
 
   // Only pass sinceId if it's set - otherwise fetch all recent posts
   const listParams: { limit: number; sinceId?: string } = { limit: 40 };
-  if (account.mostRecentPostId) {
+  if (!opts?.ignoreCursor && account.mostRecentPostId) {
     listParams.sinceId = account.mostRecentPostId;
   }
 
@@ -232,164 +232,180 @@ export const isQuote = (
   );
 };
 
-/**
- * Processes a post from Mastodon timeline to detect links and prepares data for database insertion
- * @param userId ID for logged in user
- * @param t Status object from Mastodon timeline
- * @returns Actors, post, link, and new link post to insert into database
- */
-export const processMastodonLink = async (
-  userId: string,
-  t: mastodon.v1.Status,
-  listId?: string
-) => {
-  const original = t.reblog || t;
-  const url = original.url;
-  const quote = isQuote(t.quote) ? t.quote : null;
-  const card = quote?.quotedStatus?.card || original.card;
-
-  if (!url || !card) {
-    return null;
-  }
-
-  if (card.url === "https://www.youtube.com/undefined") {
-    const youtubeUrl = await getYoutubeUrl(original.content);
-    if (youtubeUrl) {
-      card.url = youtubeUrl;
-    }
-  }
-
-  if (card.url.includes(".gif")) {
-    return null;
-  }
-
-  if (await isShortenedLink(card.url)) {
-    card.url = await getFullUrl(card.url);
-  }
-
-  const link = {
-    id: uuidv7(),
-    url: await normalizeLink(card.url),
-    title: card.title,
-    description: card.description,
-    imageUrl: card.image,
-    giftUrl: (await isGiftLink(card.url)) ? card.url : undefined,
-  };
-
-  const denormalized = {
-    id: uuidv7(),
-    linkUrl: link.url,
-    postText: original.content,
-    postDate: original.createdAt,
-    postType: postType.enumValues[1],
-    postUrl: url,
-    actorHandle: original.account.acct,
-    actorName: original.account.displayName,
-    actorUrl: original.account.url,
-    actorAvatarUrl: original.account.avatar,
-    repostActorHandle: t.reblog ? t.account.acct : undefined,
-    repostActorName: t.reblog ? t.account.displayName : undefined,
-    repostActorUrl: t.reblog ? t.account.url : undefined,
-    repostActorAvatarUrl: t.reblog ? t.account.avatar : undefined,
-    quotedActorHandle: quote ? quote.quotedStatus?.account.acct : undefined,
-    quotedActorName: quote
-      ? quote.quotedStatus?.account.displayName
-      : undefined,
-    quotedActorUrl: quote ? quote.quotedStatus?.account.url : undefined,
-    quotedActorAvatarUrl: quote
-      ? quote.quotedStatus?.account.avatar
-      : undefined,
-    quotedPostUrl: quote ? quote.quotedStatus?.url : undefined,
-    quotedPostText: quote ? quote.quotedStatus?.content : undefined,
-    quotedPostDate: quote ? quote.quotedStatus?.createdAt : undefined,
-    quotedPostType: quote ? postType.enumValues[1] : undefined,
-    userId,
-    listId,
-  };
-
-  return {
-    link,
-    denormalized,
-  };
+/** Defensive clip for actor.handle (AppView rejects > 512 chars). */
+const HANDLE_MAX = 512;
+const clipHandle = (h: string | null | undefined): string | null => {
+  if (!h) return null;
+  return h.length > HANDLE_MAX ? h.slice(0, HANDLE_MAX) : h;
 };
 
 /**
- * Gets Mastodon timeline and processes posts
- * @param userId ID for logged in user
- * @returns Processed results for database insertion
+ * Build the `/v1/shares` payload for one Mastodon timeline/list entry. Returns
+ * null when there's no card (no link) or the card points to a gif. URL is
+ * normalised (shortener expansion); the AppView re-canonicalises.
+ */
+export const processMastodonLink = async (
+  t: mastodon.v1.Status,
+  source: PushShareSource,
+): Promise<PushShare | null> => {
+  const original = t.reblog || t;
+  const postUrl = original.url;
+  const quote = isQuote(t.quote) ? t.quote : null;
+  const card = quote?.quotedStatus?.card || original.card;
+  if (!postUrl || !card) return null;
+
+  if (card.url === "https://www.youtube.com/undefined") {
+    const youtubeUrl = await getYoutubeUrl(original.content);
+    if (youtubeUrl) card.url = youtubeUrl;
+  }
+  if (card.url.includes(".gif")) return null;
+  // AppView canonicalises (shortener expansion, tracking-param strip, etc.).
+  const url = card.url;
+
+  // `actor.id` is required and must be a non-empty string. Skip the share
+  // entirely if the upstream is missing the actor URL.
+  if (!original.account.url) return null;
+
+  const share: PushShare = {
+    url,
+    network: "mastodon",
+    source,
+    post: {
+      uri: postUrl,
+      // Mastodon's `content` is already HTML (the form Sill's renderer expects
+      // via `dangerouslySetInnerHTML`). Send it through unchanged — the
+      // AppView's `/v1/search` tokenizer ignores tag noise.
+      text: original.content,
+      createdAt: original.createdAt,
+    },
+    actor: {
+      // ActivityPub Actor URI: `account.url` is the canonical profile URL,
+      // which doubles as the actor identifier on the federated graph.
+      id: original.account.url,
+      handle: clipHandle(original.account.acct),
+      displayName: original.account.displayName ?? null,
+      avatarUrl: original.account.avatar ?? null,
+    },
+  };
+
+  if (t.reblog && t.account.url) {
+    share.repost = {
+      actor: {
+        id: t.account.url,
+        handle: clipHandle(t.account.acct),
+        displayName: t.account.displayName ?? null,
+        avatarUrl: t.account.avatar ?? null,
+      },
+      createdAt: t.createdAt,
+    };
+  }
+
+  // Skip the quoted block entirely when we can't supply a real post URI or
+  // actor URI — the AppView's validator rejects empty/missing strings on
+  // those required fields.
+  if (quote && quote.quotedStatus) {
+    const q = quote.quotedStatus;
+    if (q.url && q.account.url) {
+      share.quoted = {
+        actor: {
+          id: q.account.url,
+          handle: clipHandle(q.account.acct),
+          displayName: q.account.displayName ?? null,
+          avatarUrl: q.account.avatar ?? null,
+        },
+        post: {
+          uri: q.url,
+          text: q.content,
+          createdAt: q.createdAt,
+        },
+      };
+    }
+  }
+
+  return share;
+};
+
+/**
+ * Collect observed Mastodon timeline + list shares for a viewer. Returns a
+ * single `{viewer, shares}` batch, or null when nothing was observed.
+ * The AppView `viewer` key is the user's Bluesky DID when they have one, else
+ * their Mastodon ActivityPub actor URI (so Mastodon-only users are ingested
+ * too). Returns null only when neither identity is available.
  */
 export const getLinksFromMastodon = async (
-  userId: string
-): Promise<ProcessedResult[]> => {
+  userId: string,
+  opts?: { ignoreCursor?: boolean; skipListNames?: string[] },
+): Promise<PushShareBatch | null> => {
   const account = await db.query.mastodonAccount.findFirst({
     where: eq(mastodonAccount.userId, userId),
-    with: {
-      mastodonInstance: true,
-      lists: true,
-    },
+    with: { mastodonInstance: true, lists: true },
   });
+  if (!account) return null;
 
-  if (!account) return [];
+  const bskyAccount = await db.query.blueskyAccount.findFirst({
+    where: eq(blueskyAccount.userId, userId),
+  });
+  const viewer =
+    bskyAccount?.did ??
+    (account.username
+      ? mastodonActorUri(account.mastodonInstance.instance, account.username)
+      : null);
+  if (!viewer) return null;
+
+  const hasCard = (t: mastodon.v1.Status): boolean =>
+    !!t.card ||
+    !!t.reblog?.card ||
+    (isQuote(t.quote) && !!t.quote.quotedStatus?.card);
+
+  const shares: PushShare[] = [];
 
   try {
-    const timelinePromise = getMastodonTimeline(account);
-
     const timeline = await Promise.race([
-      timelinePromise,
+      getMastodonTimeline(account, opts),
       new Promise<mastodon.v1.Status[]>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000)
+        setTimeout(() => reject(new Error("Timeline fetch timeout")), 90000),
       ),
     ]);
-
-    const linksOnly = timeline.filter(
-      (t) =>
-        t.card ||
-        t.reblog?.card ||
-        (isQuote(t.quote) && t.quote.quotedStatus?.card)
-    );
-
-    const processedResults = (
-      await Promise.all(
-        linksOnly.map(async (t) => processMastodonLink(userId, t))
-      )
-    ).filter((p) => p !== null);
+    const followsSource: PushShareSource = { kind: "follows" };
+    for (const t of timeline) {
+      if (!hasCard(t)) continue;
+      const share = await processMastodonLink(t, followsSource);
+      if (share) shares.push(share);
+    }
 
     const subscribed = await isSubscribed(userId);
     if (subscribed !== "free") {
+      const instance = account.mastodonInstance.instance;
       for (const list of account.lists) {
+        // Skip slow feeds the caller opted out of (see getLinksFromBluesky).
+        if (opts?.skipListNames?.includes(list.name)) continue;
+        const listSource: PushShareSource = {
+          kind: "mastodon-list",
+          instance,
+          id: list.uri, // Sill stores the Mastodon list id in `list.uri`
+        };
         const listPosts = await Promise.race([
-          getMastodonList(list.uri, account),
+          getMastodonList(list.uri, account, opts),
           new Promise<mastodon.v1.Status[]>((_, reject) =>
-            setTimeout(() => reject(new Error("List fetch timeout")), 60000)
+            setTimeout(() => reject(new Error("List fetch timeout")), 60000),
           ),
         ]);
-
-        const linksOnly = listPosts.filter(
-          (t) =>
-            t.card ||
-            t.reblog?.card ||
-            (isQuote(t.quote) && t.quote.quotedStatus?.card)
-        );
-        processedResults.push(
-          ...(
-            await Promise.all(
-              linksOnly.map(async (t) =>
-                processMastodonLink(userId, t, list.id)
-              )
-            )
-          ).filter((p) => p !== null)
-        );
+        for (const t of listPosts) {
+          if (!hasCard(t)) continue;
+          const share = await processMastodonLink(t, listSource);
+          if (share) shares.push(share);
+        }
       }
     }
-    return processedResults;
   } catch (e) {
     console.error(
       "Error getting links from Mastodon:",
-      e?.constructor?.name,
-      account.mastodonInstance.instance
+      e instanceof Error ? e.constructor.name : e,
+      account.mastodonInstance.instance,
     );
-    return [];
   }
+
+  return shares.length > 0 ? { viewer, shares } : null;
 };
 
 export const getMastodonLists = async (account: AccountWithInstance) => {

@@ -10,7 +10,7 @@ import {
   notificationItem,
   type NotificationQuery,
 } from "@sill/schema";
-import { evaluateNotifications } from "@sill/links";
+import { evaluateNotifications, previewNotificationCount } from "@sill/links";
 import { and, desc, isNotNull, lt } from "drizzle-orm";
 
 // Schema for deleting a notification group
@@ -113,11 +113,14 @@ const notifications = new Hono()
     }
 
     try {
-      const links = await evaluateNotifications(
+      // Preview path: no hydration, no Slingshot, URL-level filters only.
+      // Approximate count for the notification-builder UI; the real
+      // notification firing later runs the full evaluation.
+      const count = await previewNotificationCount(
         userId,
-        queries as NotificationQuery[]
+        queries as NotificationQuery[],
       );
-      return c.json({ count: links.length });
+      return c.json({ count });
     } catch (error) {
       console.error("Test notifications error:", error);
       return c.json({ error: "Internal server error" }, 500);

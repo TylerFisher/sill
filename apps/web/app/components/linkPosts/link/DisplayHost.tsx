@@ -1,4 +1,4 @@
-import { Flex, Text } from "@radix-ui/themes";
+import { Flex, Link, Text } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "@sill/schema";
 
 interface DisplayHostProps {
@@ -27,7 +27,10 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 			}}
 		>
 			<img
-				src={`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`}
+				src={
+					link.publisherIcon ||
+					`https://s2.googleusercontent.com/s2/favicons?domain=${host}&sz=32`
+				}
 				loading="lazy"
 				alt=""
 				width="16px"
@@ -40,13 +43,13 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 				}}
 			/>
 			<Text size="1" color="gray" as="span" style={{ lineHeight: "16px" }}>
-				{/* <Link
+				<Link
 					href={`/links/domain/${host}`}
 					style={{ lineHeight: "16px" }}
 					color="gray"
-				> */}
-				{link.siteName || host}
-				{/* </Link> */}
+				>
+					{link.siteName || host}
+				</Link>
 			</Text>
 		</Flex>
 	);

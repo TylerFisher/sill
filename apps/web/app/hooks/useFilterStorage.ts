@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useLocation, useSearchParams } from "react-router";
 
 export interface FilterState {
 	time?: string;
@@ -12,36 +12,61 @@ export interface FilterState {
 
 const STORAGE_KEY = "sill-filter-preferences";
 
+/**
+ * Filters are only remembered on the main feed. The nested by-author /
+ * by-publication discovery pages deliberately don't persist (or restore) filter
+ * state: someone may open one of those pages weeks apart and would be surprised
+ * to find a stale filter from an earlier visit applied. On those pages the hook
+ * is a no-op.
+ */
+const shouldPersist = (pathname: string): boolean =>
+	!(
+		pathname.startsWith("/links/author/") ||
+		pathname.startsWith("/links/domain/")
+	);
+
 export const useFilterStorage = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
+	const { pathname } = useLocation();
 	const hasLoadedOnMount = useRef(false);
 
-	const saveFiltersToStorage = useCallback((filters: FilterState) => {
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
-		} catch (error) {
-			console.warn("Failed to save filters to localStorage:", error);
-		}
-	}, []);
+	const persist = useMemo(() => shouldPersist(pathname), [pathname]);
 
-	const clearFilterFromStorage = useCallback((key: keyof FilterState) => {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				const filters = JSON.parse(stored);
-				delete filters[key];
-				if (Object.keys(filters).length === 0) {
-					localStorage.removeItem(STORAGE_KEY);
-				} else {
-					localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
-				}
+	const saveFiltersToStorage = useCallback(
+		(filters: FilterState) => {
+			if (!persist) return;
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+			} catch (error) {
+				console.warn("Failed to save filters to localStorage:", error);
 			}
-		} catch (error) {
-			console.warn("Failed to update filter preferences:", error);
-		}
-	}, []);
+		},
+		[persist],
+	);
+
+	const clearFilterFromStorage = useCallback(
+		(key: keyof FilterState) => {
+			if (!persist) return;
+			try {
+				const stored = localStorage.getItem(STORAGE_KEY);
+				if (stored) {
+					const filters = JSON.parse(stored);
+					delete filters[key];
+					if (Object.keys(filters).length === 0) {
+						localStorage.removeItem(STORAGE_KEY);
+					} else {
+						localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+					}
+				}
+			} catch (error) {
+				console.warn("Failed to update filter preferences:", error);
+			}
+		},
+		[persist],
+	);
 
 	const loadFiltersFromStorage = useCallback((): FilterState | null => {
+		if (!persist) return null;
 		try {
 			const stored = localStorage.getItem(STORAGE_KEY);
 			if (!stored) return null;
@@ -60,7 +85,7 @@ export const useFilterStorage = () => {
 			console.warn("Failed to load filters from localStorage:", error);
 			return null;
 		}
-	}, []);
+	}, [persist]);
 
 	const getCurrentFilters = useCallback((): FilterState => {
 		return {
@@ -75,19 +100,24 @@ export const useFilterStorage = () => {
 
 	const applyFiltersToUrl = useCallback(
 		(filters: FilterState) => {
-			setSearchParams((prev) => {
-				const newParams = new URLSearchParams(prev);
+			setSearchParams(
+				(prev) => {
+					const newParams = new URLSearchParams(prev);
 
-				for (const [key, value] of Object.entries(filters)) {
-					if (value && value !== "") {
-						newParams.set(key, value);
-					} else {
-						newParams.delete(key);
+					for (const [key, value] of Object.entries(filters)) {
+						if (value && value !== "") {
+							newParams.set(key, value);
+						} else {
+							newParams.delete(key);
+						}
 					}
-				}
 
-				return newParams;
-			});
+					return newParams;
+				},
+				// Restoring saved filters shouldn't add a history entry — otherwise the
+				// back button would step through the auto-applied filter state.
+				{ replace: true },
+			);
 		},
 		[setSearchParams],
 	);
@@ -96,18 +126,19 @@ export const useFilterStorage = () => {
 		return searchParams.size > 0;
 	}, [searchParams]);
 
-	// Load saved filters only on mount
+	// Restore saved filters on mount (main feed only — see `shouldPersist`).
 	useEffect(() => {
-		if (!hasLoadedOnMount.current && searchParams.size === 0) {
+		if (persist && !hasLoadedOnMount.current && searchParams.size === 0) {
 			const savedFilters = loadFiltersFromStorage();
 			if (savedFilters) {
 				applyFiltersToUrl(savedFilters);
 			}
 			hasLoadedOnMount.current = true;
 		}
-	}, [searchParams.size, loadFiltersFromStorage, applyFiltersToUrl]);
+	}, [persist, searchParams.size, loadFiltersFromStorage, applyFiltersToUrl]);
 
 	useEffect(() => {
+		if (!persist) return;
 		const currentFilters = getCurrentFilters();
 		const hasActiveFilters = Object.values(currentFilters).some(
 			(value) => value && value !== "",
@@ -116,7 +147,7 @@ export const useFilterStorage = () => {
 		if (hasActiveFilters) {
 			saveFiltersToStorage(currentFilters);
 		}
-	}, [getCurrentFilters, saveFiltersToStorage]);
+	}, [persist, getCurrentFilters, saveFiltersToStorage]);
 
 	return {
 		saveFiltersToStorage,

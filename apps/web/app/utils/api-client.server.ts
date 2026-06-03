@@ -1,7 +1,6 @@
 import { redirect } from "react-router";
 import { hc } from "hono/client";
 import type { AppType } from "@sill/api";
-import type { link } from "@sill/schema";
 
 // API URL for server-to-server communication
 // Defaults to localhost for local development, Docker service name for containerized
@@ -514,15 +513,27 @@ export async function apiFindLinksByAuthor(
   request: Request,
   params: {
     author: string;
-    page?: number;
     pageSize?: number;
+    cursor?: string;
+    time?: number;
+    service?: string;
+    list?: string;
+    reposts?: string;
+    minShares?: number;
+    sort?: string;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     author: params.author,
-    ...(params.page && { page: String(params.page) }),
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
+    ...(params.pageSize != null && { pageSize: String(params.pageSize) }),
+    ...(params.cursor && { cursor: params.cursor }),
+    ...(params.time != null && { time: String(params.time) }),
+    ...(params.service && { service: params.service }),
+    ...(params.list && { list: params.list }),
+    ...(params.reposts && { reposts: params.reposts }),
+    ...(params.minShares != null && { minShares: String(params.minShares) }),
+    ...(params.sort && { sort: params.sort }),
   };
 
   const response = await client.api.links.author.$get({
@@ -549,15 +560,29 @@ export async function apiFindLinksByDomain(
   request: Request,
   params: {
     domain: string;
-    page?: number;
+    publication?: string;
     pageSize?: number;
+    cursor?: string;
+    time?: number;
+    service?: string;
+    list?: string;
+    reposts?: string;
+    minShares?: number;
+    sort?: string;
   },
 ) {
   const client = createApiClient(request);
   const queryParams = {
     domain: params.domain,
-    ...(params.page && { page: String(params.page) }),
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
+    ...(params.publication && { publication: params.publication }),
+    ...(params.pageSize != null && { pageSize: String(params.pageSize) }),
+    ...(params.cursor && { cursor: params.cursor }),
+    ...(params.time != null && { time: String(params.time) }),
+    ...(params.service && { service: params.service }),
+    ...(params.list && { list: params.list }),
+    ...(params.reposts && { reposts: params.reposts }),
+    ...(params.minShares != null && { minShares: String(params.minShares) }),
+    ...(params.sort && { sort: params.sort }),
   };
 
   const response = await client.api.links.domain.$get({
@@ -566,41 +591,6 @@ export async function apiFindLinksByDomain(
 
   if (!response.ok) {
     throw new Error(`Failed to find links by domain: ${response.status}`);
-  }
-
-  const json = await response.json();
-
-  if ("error" in json) {
-    throw new Error(json.error as string);
-  }
-
-  return json;
-}
-
-/**
- * Find links by topic via API
- */
-export async function apiFindLinksByTopic(
-  request: Request,
-  params: {
-    topic: string;
-    page?: number;
-    pageSize?: number;
-  },
-) {
-  const client = createApiClient(request);
-  const queryParams = {
-    topic: params.topic,
-    ...(params.page && { page: String(params.page) }),
-    ...(params.pageSize && { pageSize: String(params.pageSize) }),
-  };
-
-  const response = await client.api.links.topic.$get({
-    query: queryParams,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to find links by topic: ${response.status}`);
   }
 
   const json = await response.json();
@@ -1480,20 +1470,67 @@ export async function apiGetBlueskyLists(request: Request) {
 }
 
 /**
- * Check Bluesky OAuth status and trigger re-authorization if needed via API
+ * GA-style "visit" gate for the Bluesky status check: a 30-min sliding TTL
+ * cache keyed by the Sill session cookie. While a session is actively browsing
+ * (any check within 30 min) the cached "connected" response is returned and the
+ * expiry slides forward, so multiple page loads in one visit hit the API once.
+ * Only happy-path (`status: "connected"`) responses are cached — failure states
+ * (`needs_reauth`/`not_connected`/errors) re-check on every navigation so the
+ * user sees the state change immediately and can act on it.
  */
-export async function apiCheckBlueskyStatus(request: Request) {
+const BLUESKY_STATUS_TTL_MS = 30 * 60 * 1000;
+
+const getSessionIdFromCookie = (request: Request): string | null => {
+  const header = request.headers.get("cookie");
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [name, value] = part.trim().split("=");
+    if (name === "sessionId" && value) return decodeURIComponent(value);
+  }
+  return null;
+};
+
+async function performBlueskyStatusCheck(request: Request) {
   const client = createApiClient(request);
   const response = await client.api.bluesky.auth.status.$get();
-
   if (!response.ok) {
     throw new Error(`Failed to check Bluesky status: ${response.status}`);
   }
-
   const json = await response.json();
-
   if ("error" in json) {
     throw new Error(json.error as string);
+  }
+  return json;
+}
+
+type BlueskyStatusValue = Awaited<
+  ReturnType<typeof performBlueskyStatusCheck>
+>;
+const blueskyStatusCache = new Map<
+  string,
+  { expiresAt: number; value: BlueskyStatusValue }
+>();
+
+export async function apiCheckBlueskyStatus(request: Request) {
+  const sessionId = getSessionIdFromCookie(request);
+  const now = Date.now();
+
+  if (sessionId) {
+    const cached = blueskyStatusCache.get(sessionId);
+    if (cached && cached.expiresAt > now) {
+      // Slide the expiry — the visit extends with continued activity.
+      cached.expiresAt = now + BLUESKY_STATUS_TTL_MS;
+      return cached.value;
+    }
+  }
+
+  const json = await performBlueskyStatusCheck(request);
+
+  if (sessionId && "status" in json && json.status === "connected") {
+    blueskyStatusCache.set(sessionId, {
+      expiresAt: now + BLUESKY_STATUS_TTL_MS,
+      value: json,
+    });
   }
 
   return json;
@@ -1539,33 +1576,6 @@ export async function apiGetNetworkTopTen(request: Request) {
   return json;
 }
 
-/**
- * Update link metadata via API
- */
-export async function apiUpdateLinkMetadata(
-  request: Request,
-  data: {
-    url: string;
-    metadata: Partial<Omit<typeof link.$inferSelect, "id" | "url" | "giftUrl">>;
-  },
-) {
-  const client = createApiClient(request);
-  const response = await client.api.links.metadata.$post({
-    json: data,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update link metadata: ${response.status}`);
-  }
-
-  const json = await response.json();
-
-  if ("error" in json) {
-    throw new Error(json.error as string);
-  }
-
-  return json;
-}
 
 /**
  * Start a sync job via API

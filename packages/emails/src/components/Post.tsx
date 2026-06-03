@@ -1,4 +1,3 @@
-import React from "react";
 import {
 	Column,
 	Img,
@@ -8,13 +7,16 @@ import {
 	Section,
 	Text,
 } from "@react-email/components";
+import type { MostRecentLinkPosts } from "@sill/schema";
 import { NodeHtmlMarkdown } from "node-html-markdown";
-import type { linkPostDenormalized } from "@sill/schema";
+import React from "react";
+import { postViewLabel } from "../utils/postSource.js";
 
 const Post = ({
 	group,
-}: { group: (typeof linkPostDenormalized.$inferSelect)[] }) => {
+}: { group: NonNullable<MostRecentLinkPosts["posts"]> }) => {
 	const post = group[0];
+	const viewLabel = postViewLabel(post.postType, post.collection, post.postUrl);
 	const reposters = group
 		.filter((l) => l.repostActorHandle !== l.actorHandle && l.repostActorHandle)
 		.filter((l) => l !== undefined);
@@ -127,12 +129,13 @@ const Post = ({
 							</Row>
 						</Section>
 					)}
-					<Text style={viewPost}>
-						<Link href={post.postUrl} style={viewPostLink}>
-							View post on{" "}
-							{post.postType.charAt(0).toUpperCase() + post.postType.slice(1)} →
-						</Link>
-					</Text>
+					{viewLabel && (
+						<Text style={viewPost}>
+							<Link href={post.postUrl} style={viewPostLink}>
+								{viewLabel}
+							</Link>
+						</Text>
+					)}
 				</Row>
 			</Section>
 		</div>

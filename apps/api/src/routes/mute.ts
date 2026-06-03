@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
 import { getUserIdFromSession } from "@sill/auth";
+import { syncUserMutesToAppView } from "@sill/links";
 import { db, mutePhrase } from "@sill/schema";
 
 // Schema for adding a new mute phrase
@@ -86,6 +87,12 @@ const mute = new Hono()
           createdAt: mutePhrase.createdAt,
         });
 
+      // Push the updated combined mute list to the AppView. Fire-and-forget so
+      // the action returns immediately; the client hides the muted card
+      // optimistically (see useOptimisticMutes) while this lands in the
+      // background, and the feed converges on the next load.
+      void syncUserMutesToAppView(userId);
+
       return c.json({ success: true, mutePhrase: result[0] });
     } catch (error) {
       console.error("Add mute phrase error:", error);
@@ -123,6 +130,11 @@ const mute = new Hono()
           404
         );
       }
+
+      // Push the updated combined mute list to the AppView (a removed phrase
+      // must be dropped there too — it's a full last-write-wins list).
+      // Fire-and-forget; the feed converges on the next load.
+      void syncUserMutesToAppView(userId);
 
       return c.json({ success: true, deleted: result[0] });
     } catch (error) {

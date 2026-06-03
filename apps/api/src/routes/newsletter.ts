@@ -9,7 +9,7 @@ import {
   type MostRecentLinkPosts,
 } from "@sill/schema";
 import { isSubscribed } from "@sill/auth";
-import { filterLinkOccurrences } from "@sill/links";
+import { getMergedOccurrences } from "@sill/links";
 import { preview, subject } from "../utils/digestText.server.js";
 import { sendDigestEmail, renderDigestRSS } from "@sill/emails";
 
@@ -69,7 +69,7 @@ const newsletter = new Hono()
 
         let links: MostRecentLinkPosts[] = [];
         try {
-          links = await filterLinkOccurrences({
+          links = await getMergedOccurrences({
             userId: dbUser.id,
             hideReposts: digest.hideReposts,
             limit: digest.topAmount,
@@ -78,7 +78,7 @@ const newsletter = new Hono()
           console.error("Failed to fetch links:", error);
           // Retry once
           try {
-            links = await filterLinkOccurrences({
+            links = await getMergedOccurrences({
               userId: dbUser.id,
               hideReposts: digest.hideReposts,
               limit: digest.topAmount,
