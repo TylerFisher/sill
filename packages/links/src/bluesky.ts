@@ -587,7 +587,7 @@ export const processBlueskyLink = async (
  */
 export const getLinksFromBluesky = async (
   userId: string,
-  opts?: { ignoreCursor?: boolean },
+  opts?: { ignoreCursor?: boolean; skipListNames?: string[] },
 ): Promise<PushShareBatch | null> => {
   const account = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
@@ -603,6 +603,9 @@ export const getLinksFromBluesky = async (
 
   const shares: PushShare[] = [];
   for (const list of account.lists) {
+    // Skip slow feeds the caller opted out of (e.g. the backfill drops large
+    // algorithmic feeds like "Best of Follows").
+    if (opts?.skipListNames?.includes(list.name)) continue;
     // The AppView canonicalises both `app.bsky.graph.list` and
     // `app.bsky.feed.generator` at-URIs to the same `at-uri` source kind —
     // pass the at-URI verbatim.

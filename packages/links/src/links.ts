@@ -76,8 +76,15 @@ const resolveAboutAccount = (about?: AboutCard): AboutCard | undefined => {
  *   and fetch the full default window (last 24h) instead of only what's new
  *   since the last pass. Used by the one-off AppView backfill to seed history;
  *   the steady-state worker leaves it unset so it only ships new posts.
+ * - `skipListNames`: list/feed names to skip (matched case-sensitively on the
+ *   `list.name`). Used by the backfill to drop slow algorithmic feeds (e.g.
+ *   "Best of Follows") that take too long to page; the steady-state worker
+ *   leaves it unset.
  */
-export type FetchLinksOpts = { ignoreCursor?: boolean };
+export type FetchLinksOpts = {
+  ignoreCursor?: boolean;
+  skipListNames?: string[];
+};
 
 /**
  * Collect a user's observed Mastodon and/or Bluesky-list/feed shares for the

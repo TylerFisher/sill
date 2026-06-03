@@ -15,9 +15,13 @@
  *   - Bluesky lists/feeds (Bluesky home-timeline follows are native to the
  *     AppView, so `getLinksFromBluesky` never fetches them).
  *   - Mastodon home timeline (source `follows`) + Mastodon lists.
- * The viewer is the user's Bluesky DID, so users without a Bluesky account
- * contribute nothing — the same constraint the live pipeline already has
- * (`getLinksFromMastodon` returns null without the user's Bluesky DID).
+ * Candidate set: Bluesky accounts active in the last 24h (a recent
+ * `mostRecentPostDate` ⇒ live OAuth token + recent data) UNION all Mastodon
+ * accounts (Mastodon-only users included — `fetchLinks`/`getLinksFromMastodon`
+ * key them by their actor URI). The Bluesky recency filter skips the large pool
+ * of dead-OAuth accounts (issuer migrations / expired refresh) that would fetch
+ * nothing; Mastodon isn't filtered (it uses long-lived tokens and has no
+ * timestamp cursor).
  *
  * Env (point at PRODUCTION):
  *   DATABASE_URL, APPVIEW_API_URL, APPVIEW_API_KEY   required (unless DRY_RUN)
@@ -38,98 +42,142 @@
  */
 
 import {
-	fetchLinks,
-	type PushShareBatch,
-	pushShareBatches,
+  type PushShareBatch,
+  clearOAuthSessionCache,
+  fetchLinks,
+  pushShareBatches,
 } from "@sill/links";
-import { blueskyAccount, db } from "@sill/schema";
+import { blueskyAccount, db, list, mastodonAccount } from "@sill/schema";
+import { eq, sql } from "drizzle-orm";
 
 const DRY_RUN = process.env.DRY_RUN === "1" || process.env.DRY_RUN === "true";
 const CONCURRENCY = Math.max(
-	1,
-	Number.parseInt(process.env.CONCURRENCY || "15", 10),
+  1,
+  Number.parseInt(process.env.CONCURRENCY || "15", 10)
 );
 const USER_LIMIT = process.env.USER_LIMIT
-	? Number.parseInt(process.env.USER_LIMIT, 10)
-	: undefined;
+  ? Number.parseInt(process.env.USER_LIMIT, 10)
+  : undefined;
 
 const stats = {
-	candidateUsers: 0,
-	usersFetched: 0,
-	usersWithShares: 0,
-	totalShares: 0,
-	errors: 0,
-	batchesPushed: 0,
+  candidateUsers: 0,
+  usersFetched: 0,
+  usersWithShares: 0,
+  totalShares: 0,
+  errors: 0,
+  batchesPushed: 0,
 };
 
 const chunk = <T>(arr: T[], size: number): T[][] => {
-	const out: T[][] = [];
-	for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-	return out;
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 };
 
 async function main(): Promise<void> {
-	if (
-		!DRY_RUN &&
-		(!process.env.APPVIEW_API_URL || !process.env.APPVIEW_API_KEY)
-	) {
-		console.error(
-			"[backfill] APPVIEW_API_URL/APPVIEW_API_KEY are required (or set DRY_RUN=1).",
-		);
-		process.exit(1);
-	}
+  if (
+    !DRY_RUN &&
+    (!process.env.APPVIEW_API_URL || !process.env.APPVIEW_API_KEY)
+  ) {
+    console.error(
+      "[backfill] APPVIEW_API_URL/APPVIEW_API_KEY are required (or set DRY_RUN=1)."
+    );
+    process.exit(1);
+  }
 
-	// The viewer is always a Bluesky DID, so the candidate set is users with a
-	// Bluesky account. `fetchLinks` internally pulls their Bluesky lists and (if
-	// they also have a Mastodon account) their Mastodon timeline + lists, and
-	// returns null when there's nothing to push.
-	const accounts = await db
-		.select({ userId: blueskyAccount.userId })
-		.from(blueskyAccount);
-	let userIds = [...new Set(accounts.map((a) => a.userId))];
-	if (USER_LIMIT) userIds = userIds.slice(0, USER_LIMIT);
-	stats.candidateUsers = userIds.length;
+  // Candidate set, unioned + deduped across both networks:
+  //   - Bluesky accounts that are active in the last 24h AND have a connected
+  //     list/feed. A recent `mostRecentPostDate` means the home-timeline fetch
+  //     (same OAuth token the list fetch uses) succeeded recently, so the token
+  //     is alive — this skips the large pool of dead-OAuth accounts (issuer
+  //     migrations / expired refresh). The list requirement (inner join) skips
+  //     Bluesky users with nothing to fetch: `getLinksFromBluesky` only pulls
+  //     lists/feeds (the following timeline is native to the AppView), so a
+  //     listless account contributes zero and just wastes an OAuth session
+  //     restore.
+  //   - ALL Mastodon accounts. Mastodon uses long-lived access tokens, not the
+  //     atproto OAuth refresh that's broken broadly, so those fetch fine; and
+  //     `mastodonAccount` has no timestamp cursor (only `mostRecentPostId`), so
+  //     it can't be recency-filtered the same way. This also picks up
+  //     Mastodon-only users, who `fetchLinks` keys by their actor URI.
+  // `fetchLinks` pulls each user's Bluesky lists + (if present) Mastodon
+  // timeline + lists, and returns null when there's nothing to push.
+  const [bsky, masto] = await Promise.all([
+    db
+      .select({ userId: blueskyAccount.userId })
+      .from(blueskyAccount)
+      .innerJoin(list, eq(list.blueskyAccountId, blueskyAccount.id))
+      .where(
+        sql`${blueskyAccount.mostRecentPostDate} > now() - interval '24 hours'`
+      ),
+    db.select({ userId: mastodonAccount.userId }).from(mastodonAccount),
+  ]);
+  let userIds = [...new Set([...bsky, ...masto].map((a) => a.userId))];
+  if (USER_LIMIT) userIds = userIds.slice(0, USER_LIMIT);
+  stats.candidateUsers = userIds.length;
 
-	console.log(
-		`[backfill] ${userIds.length} candidate users  concurrency=${CONCURRENCY}  dryRun=${DRY_RUN}`,
-	);
+  console.log(
+    `[backfill] ${userIds.length} candidate users  concurrency=${CONCURRENCY}  dryRun=${DRY_RUN}`
+  );
 
-	let done = 0;
-	for (const group of chunk(userIds, CONCURRENCY)) {
-		const results = await Promise.all(
-			group.map((userId) =>
-				fetchLinks(userId, undefined, { ignoreCursor: true }).catch((e) => {
-					stats.errors++;
-					console.error(`[backfill] fetch failed for ${userId}:`, e);
-					return null;
-				}),
-			),
-		);
-		stats.usersFetched += group.length;
+  let done = 0;
+  for (const group of chunk(userIds, CONCURRENCY)) {
+    const results = await Promise.all(
+      group.map((userId) =>
+        fetchLinks(userId, undefined, {
+          ignoreCursor: true,
+          // Slow algorithmic feeds that take too long to page in the backfill;
+          // the live worker still ingests them (it leaves this unset).
+          skipListNames: [
+            "Best of Follows",
+            "Steam pc",
+            "ATmosphere Dwellers",
+            "News & Writing",
+            "Art: What's Hot",
+            "Popular en Español",
+          ],
+        }).catch((e) => {
+          stats.errors++;
+          console.error(`[backfill] fetch failed for ${userId}:`, e);
+          return null;
+        })
+      )
+    );
+    stats.usersFetched += group.length;
 
-		const batches: PushShareBatch[] = results.filter(
-			(b): b is PushShareBatch => b != null && b.shares.length > 0,
-		);
-		stats.usersWithShares += batches.length;
-		stats.totalShares += batches.reduce((n, b) => n + b.shares.length, 0);
+    const batches: PushShareBatch[] = results.filter(
+      (b): b is PushShareBatch => b != null && b.shares.length > 0
+    );
+    stats.usersWithShares += batches.length;
+    stats.totalShares += batches.reduce((n, b) => n + b.shares.length, 0);
 
-		if (batches.length > 0 && !DRY_RUN) {
-			await pushShareBatches(batches);
-			stats.batchesPushed += batches.length;
-		}
+    if (batches.length > 0 && !DRY_RUN) {
+      await pushShareBatches(batches);
+      stats.batchesPushed += batches.length;
+    }
 
-		done += group.length;
-		console.log(
-			`[backfill] ${done}/${userIds.length} users · ${stats.totalShares} shares · ${stats.usersWithShares} viewers${DRY_RUN ? " (dry-run)" : " pushed"}`,
-		);
-	}
+    // Release the per-account Bluesky Agent + OAuth session objects this group
+    // cached. They're keyed per DID and never reused across the run, so without
+    // this the cache grows unbounded and OOMs over thousands of users (the live
+    // worker clears it every tick; the backfill must do the same per group).
+    clearOAuthSessionCache();
 
-	console.log(`[backfill] done: ${JSON.stringify(stats, null, 2)}`);
-	process.exit(0);
+    done += group.length;
+    console.log(
+      `[backfill] ${done}/${userIds.length} users · ${
+        stats.totalShares
+      } shares · ${stats.usersWithShares} viewers${
+        DRY_RUN ? " (dry-run)" : " pushed"
+      }`
+    );
+  }
+
+  console.log(`[backfill] done: ${JSON.stringify(stats, null, 2)}`);
+  process.exit(0);
 }
 
 main().catch((e) => {
-	console.error("[backfill] aborted:", e);
-	console.error(`[backfill] stats: ${JSON.stringify(stats, null, 2)}`);
-	process.exit(1);
+  console.error("[backfill] aborted:", e);
+  console.error(`[backfill] stats: ${JSON.stringify(stats, null, 2)}`);
+  process.exit(1);
 });

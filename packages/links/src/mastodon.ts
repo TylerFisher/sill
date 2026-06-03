@@ -334,7 +334,7 @@ export const processMastodonLink = async (
  */
 export const getLinksFromMastodon = async (
   userId: string,
-  opts?: { ignoreCursor?: boolean },
+  opts?: { ignoreCursor?: boolean; skipListNames?: string[] },
 ): Promise<PushShareBatch | null> => {
   const account = await db.query.mastodonAccount.findFirst({
     where: eq(mastodonAccount.userId, userId),
@@ -377,6 +377,8 @@ export const getLinksFromMastodon = async (
     if (subscribed !== "free") {
       const instance = account.mastodonInstance.instance;
       for (const list of account.lists) {
+        // Skip slow feeds the caller opted out of (see getLinksFromBluesky).
+        if (opts?.skipListNames?.includes(list.name)) continue;
         const listSource: PushShareSource = {
           kind: "mastodon-list",
           instance,

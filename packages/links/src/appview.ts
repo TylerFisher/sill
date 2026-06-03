@@ -314,6 +314,42 @@ export type PushShareBatch = { viewer: string; shares: PushShare[] };
 const SHARES_PER_VIEWER_CAP = 2000;
 /** Per-request batches cap (batched form) per API.md. */
 const BATCHES_PER_REQUEST_CAP = 1000;
+/** Max single-share drops per request before giving up (self-heal backstop). */
+const MAX_DROP_RETRIES = 50;
+/**
+ * The AppView rejects the whole request if any `post.text` exceeds this (a very
+ * long Mastodon status, say). Truncate so one verbose post can't drop an entire
+ * batch — the link + identity are what matter, not the full body.
+ */
+const MAX_POST_TEXT = 8192;
+const clampText = (text: string): string =>
+  text.length > MAX_POST_TEXT ? text.slice(0, MAX_POST_TEXT) : text;
+/** The AppView requires `share.url` to be http(s); drop anything else
+ *  (mailto:, at://, custom schemes, malformed) so it can't reject the batch. */
+const isHttpUrl = (url: string): boolean => {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+const clampShareText = (s: PushShare): PushShare => {
+  const overLong =
+    s.post.text.length > MAX_POST_TEXT ||
+    (s.quoted ? s.quoted.post.text.length > MAX_POST_TEXT : false);
+  if (!overLong) return s;
+  return {
+    ...s,
+    post: { ...s.post, text: clampText(s.post.text) },
+    quoted: s.quoted
+      ? {
+          ...s.quoted,
+          post: { ...s.quoted.post, text: clampText(s.quoted.post.text) },
+        }
+      : s.quoted,
+  };
+};
 
 /**
  * Push observed shares to the AppView in the **batched form**
@@ -336,14 +372,19 @@ export const pushShareBatches = async (
   if (!base || !key) return;
   const target = `${base.replace(/\/$/, "")}/v1/shares`;
 
-  // Per-viewer cap: split any 2000-share viewer into multiple entries.
+  // Per-viewer cap: split any 2000-share viewer into multiple entries. Sanitize
+  // first so one bad share can't get the whole request rejected: drop shares
+  // whose `url` isn't http(s) (mailto:/at://, etc. — unsalvageable) and clamp
+  // over-long post text.
   const split: PushShareBatch[] = [];
   for (const b of batches) {
-    if (!b.viewer || b.shares.length === 0) continue;
-    for (let i = 0; i < b.shares.length; i += SHARES_PER_VIEWER_CAP) {
+    if (!b.viewer) continue;
+    const cleaned = b.shares.filter((s) => isHttpUrl(s.url)).map(clampShareText);
+    if (cleaned.length === 0) continue;
+    for (let i = 0; i < cleaned.length; i += SHARES_PER_VIEWER_CAP) {
       split.push({
         viewer: b.viewer,
-        shares: b.shares.slice(i, i + SHARES_PER_VIEWER_CAP),
+        shares: cleaned.slice(i, i + SHARES_PER_VIEWER_CAP),
       });
     }
   }
@@ -351,23 +392,48 @@ export const pushShareBatches = async (
 
   // Per-request cap: up to 1000 batches per POST.
   for (let i = 0; i < split.length; i += BATCHES_PER_REQUEST_CAP) {
-    const chunk = split.slice(i, i + BATCHES_PER_REQUEST_CAP);
-    try {
-      const res = await fetch(target, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": key },
-        body: JSON.stringify({ batches: chunk }),
-        signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
-      });
-      if (!res.ok) {
+    let payload = split.slice(i, i + BATCHES_PER_REQUEST_CAP);
+    // Self-heal: the AppView validates the whole request, so one bad share the
+    // sanitize step didn't anticipate rejects everything. When it 400s naming a
+    // `batches.B.shares.S` field, drop that share and retry, so the rest still
+    // land. Capped to avoid a runaway loop.
+    for (let attempt = 0; payload.length > 0; attempt++) {
+      try {
+        const res = await fetch(target, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": key },
+          body: JSON.stringify({ batches: payload }),
+          signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+        });
+        if (res.ok) break;
         const body = await res.text().catch(() => "");
-        const totalShares = chunk.reduce((n, b) => n + b.shares.length, 0);
+        const m =
+          res.status === 400 && attempt < MAX_DROP_RETRIES
+            ? body.match(/batches\.(\d+)\.shares\.(\d+)/)
+            : null;
+        if (m) {
+          const [bi, si] = [Number(m[1]), Number(m[2])];
+          console.warn(
+            `AppView /v1/shares: dropping invalid share batches.${bi}.shares.${si} and retrying (${body})`,
+          );
+          payload = payload
+            .map((b, idx) =>
+              idx === bi
+                ? { ...b, shares: b.shares.filter((_, j) => j !== si) }
+                : b,
+            )
+            .filter((b) => b.shares.length > 0);
+          continue;
+        }
+        const totalShares = payload.reduce((n, b) => n + b.shares.length, 0);
         console.error(
-          `AppView /v1/shares returned ${res.status} for ${chunk.length} batches / ${totalShares} shares: ${body}`,
+          `AppView /v1/shares returned ${res.status} for ${payload.length} batches / ${totalShares} shares: ${body}`,
         );
+        break;
+      } catch (e) {
+        console.error("AppView /v1/shares failed:", e);
+        break;
       }
-    } catch (e) {
-      console.error("AppView /v1/shares failed:", e);
     }
   }
 };
