@@ -43,6 +43,13 @@ const APPVIEW_PAGE_LIMIT = 10;
 const RANK_MAX = 300;
 /** TTL for the cached ranking (raw items + cursor) used for pagination. */
 const CACHE_TTL_MS = 60000;
+/**
+ * Much shorter TTL when the AppView says the viewer is `cold` (seed still
+ * warming after onboarding, so the feed is empty). We must NOT hold an empty
+ * cold result for the full minute — the seed can warm within seconds, and the
+ * client polls — so we re-probe the AppView almost immediately instead.
+ */
+const COLD_CACHE_TTL_MS = 3000;
 
 type TimelineItem = {
   link: RenderedLink | null;
@@ -50,6 +57,16 @@ type TimelineItem = {
   mostRecentPostDate: Date;
   posts: LinkPost[];
   avatars?: string[];
+};
+
+/**
+ * `getTimeline` result. `cold` is the AppView's signal that the viewer's seed is
+ * still warming (an empty feed right after onboarding is expected, not "no
+ * links"); the client uses it to show a seeding state and keep polling.
+ */
+export type TimelineResult = {
+  items: TimelineItem[];
+  cold: boolean;
 };
 
 interface RankedEntry {
@@ -69,6 +86,8 @@ interface CachedRanking {
   sort: "popularity" | "recency";
   minShares: number;
   expires: number;
+  /** The AppView reported the viewer as cold (seed still warming). */
+  cold: boolean;
 }
 
 const rankingCache = new Map<string, CachedRanking>();
@@ -194,7 +213,7 @@ const buildEntries = (c: CachedRanking): RankedEntry[] => {
  */
 export const getTimeline = async (
   args: FilterArgs,
-): Promise<TimelineItem[]> => {
+): Promise<TimelineResult> => {
   const {
     userId,
     selectedList = "all",
@@ -217,29 +236,38 @@ export const getTimeline = async (
     }
   }
 
-  if (!appViewEnabled()) return [];
+  if (!appViewEnabled()) return { items: [], cold: false };
 
   const viewer = await resolveViewer(userId);
-  if (!viewer) return [];
+  if (!viewer) return { items: [], cold: false };
 
   const sourceId = await sourceIdForList(selectedList);
 
-  // On-demand expansion: hydrate one URL's posts when the card opens.
-  if (url) return getPostsForUrl(args, viewer, sourceId);
+  // On-demand expansion: hydrate one URL's posts when the card opens. The
+  // expand path is never cold (it only runs once the feed has rendered).
+  if (url) {
+    return { items: await getPostsForUrl(args, viewer, sourceId), cold: false };
+  }
 
   let ranked: RankedEntry[];
+  let cold: boolean;
   try {
-    ranked = await getRankedEntries(args, viewer, page * limit, sourceId);
+    ({ entries: ranked, cold } = await getRankedEntries(
+      args,
+      viewer,
+      page * limit,
+      sourceId,
+    ));
   } catch (e) {
     console.error("AppView timeline fetch failed:", e);
-    return [];
+    return { items: [], cold: false };
   }
 
   const offset = (page - 1) * limit;
   const slice = ranked.slice(offset, offset + limit);
-  if (slice.length === 0) return [];
+  if (slice.length === 0) return { items: [], cold };
 
-  return assemblePage(slice, args);
+  return { items: await assemblePage(slice, args), cold };
 };
 
 /**
@@ -265,7 +293,12 @@ export const getMergedOccurrences = async (
 
   let ranked: RankedEntry[];
   try {
-    ranked = await getRankedEntries(args, viewer, page * limit, sourceId);
+    ({ entries: ranked } = await getRankedEntries(
+      args,
+      viewer,
+      page * limit,
+      sourceId,
+    ));
   } catch (e) {
     console.error("AppView merged occurrences failed:", e);
     return [];
@@ -349,7 +382,7 @@ const getRankedEntries = async (
   viewerDid: string,
   needed: number,
   sourceId: string | undefined,
-): Promise<RankedEntry[]> => {
+): Promise<{ entries: RankedEntry[]; cold: boolean }> => {
   const sort: "popularity" | "recency" =
     args.sort === "newest" || args.sort === "recency"
       ? "recency"
@@ -388,17 +421,20 @@ const getRankedEntries = async (
       sourceId,
       network,
     });
+    const cold = firstPage.cold === true;
     cached = {
       items: firstPage.items,
       cursor:
-        firstPage.cold || !firstPage.cursor || firstPage.items.length === 0
+        cold || !firstPage.cursor || firstPage.items.length === 0
           ? undefined
           : firstPage.cursor,
-      exhausted:
-        firstPage.cold || !firstPage.cursor || firstPage.items.length === 0,
+      exhausted: cold || !firstPage.cursor || firstPage.items.length === 0,
       sort,
       minShares,
-      expires: Date.now() + CACHE_TTL_MS,
+      // Cold results expire fast so the next poll re-probes the warming seed
+      // rather than serving the blank feed for the full minute.
+      expires: Date.now() + (cold ? COLD_CACHE_TTL_MS : CACHE_TTL_MS),
+      cold,
     };
     rankingCache.set(key, cached);
   }
@@ -430,7 +466,7 @@ const getRankedEntries = async (
     ranked = buildEntries(cached);
   }
 
-  return ranked;
+  return { entries: ranked, cold: cached.cold };
 };
 
 /**

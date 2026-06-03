@@ -76,7 +76,10 @@ const links = new Hono()
         userId,
         ...params,
       });
-      return c.json(result);
+      // `cold` = the viewer's AppView seed is still warming (empty feed right
+      // after onboarding is expected, not "no links"). Clients show a seeding
+      // state and keep polling.
+      return c.json({ links: result.items, cold: result.cold });
     } catch (error) {
       console.error("Filter links error:", error);
       return c.json({ error: "Internal server error" }, 500);

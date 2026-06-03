@@ -36,7 +36,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			limit: 1,
 			fetch: false,
 		});
-		return { posts: result[0]?.posts ?? [] };
+		return { posts: result.links[0]?.posts ?? [] };
 	} catch (error) {
 		console.error("link-posts hydration error:", error);
 		return { posts: [] as MostRecentLinkPosts["posts"] };

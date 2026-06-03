@@ -7,6 +7,7 @@ import {
 	useFetcher,
 	useLocation,
 	useNavigation,
+	useRevalidator,
 	useSearchParams,
 } from "react-router";
 import { redirect } from "react-router";
@@ -148,6 +149,44 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	};
 };
 
+// How often the seeding state re-checks the feed while the AppView seed warms.
+const SEEDING_POLL_MS = 5000;
+
+/**
+ * Shown when the AppView reports the viewer as `cold`: their network seed is
+ * still warming after onboarding, so the feed is empty for now. We revalidate
+ * every 5s so links appear on their own once the seed warms (the server caps
+ * the cold cache at a few seconds, so each poll re-probes the AppView). When
+ * `cold` clears, this unmounts and the interval is torn down.
+ */
+const SeedingState = () => {
+	const revalidator = useRevalidator();
+	// Hold the latest revalidate in a ref so the interval effect can run once
+	// (empty deps) without capturing a stale closure.
+	const revalidate = useRef(revalidator.revalidate);
+	revalidate.current = revalidator.revalidate;
+
+	useEffect(() => {
+		const id = setInterval(() => revalidate.current(), SEEDING_POLL_MS);
+		return () => clearInterval(id);
+	}, []);
+
+	return (
+		<Card mt="4">
+			<Flex direction="column" align="center" gap="3" py="6" px="4">
+				<Spinner size="3" />
+				<Text as="p" size="3" weight="bold">
+					Setting up your network
+				</Text>
+				<Text as="p" size="2" color="gray" align="center">
+					Sill is gathering the links your network is sharing. This can take a
+					minute. New links will appear here automatically.
+				</Text>
+			</Flex>
+		</Card>
+	);
+};
+
 const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [searchParams] = useSearchParams();
 	const page = Number.parseInt(searchParams.get("page") || "1");
@@ -231,9 +270,9 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
-			fetcher.data.links.then((links) => {
-				if (links.length > 0) {
-					setFetchedLinks(fetchedLinks.concat(links));
+			fetcher.data.links.then((data) => {
+				if (data.links.length > 0) {
+					setFetchedLinks(fetchedLinks.concat(data.links));
 					setupIntersectionObserver();
 				}
 			});
@@ -337,39 +376,26 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 								</Box>
 							}
 						>
-							{(links) => (
-								<Box
-									aria-busy={showPending}
-									style={{
-										opacity: showPending ? 0.55 : 1,
-										transition: "opacity 150ms ease",
-										pointerEvents: showPending ? "none" : "auto",
-									}}
-								>
-									{links
-										.filter((link) => !isMuted(link))
-										.map((link) => (
-											// Include the loader key so cards remount when the feed
-											// reloads (e.g. filtering to a list), discarding any posts
-											// hydrated for a URL under the previous filters.
-											<div key={`${loaderData.key}:${link.link?.url}`}>
-												<LinkPost
-													linkPost={link}
-													instance={loaderData.instance}
-													bsky={loaderData.bsky}
-													layout={layout}
-													bookmarks={loaderData.bookmarks}
-													subscribed={loaderData.subscribed}
-												/>
-											</div>
-										))}
-									{fetchedLinks.length > 0 && (
-										<div>
-											{fetchedLinks
-												.filter((link) => !isMuted(link))
-												.map((link) => (
+							{(data) =>
+								data.cold && data.links.length === 0 ? (
+									<SeedingState />
+								) : (
+									<Box
+										aria-busy={showPending}
+										style={{
+											opacity: showPending ? 0.55 : 1,
+											transition: "opacity 150ms ease",
+											pointerEvents: showPending ? "none" : "auto",
+										}}
+									>
+										{data.links
+											.filter((link) => !isMuted(link))
+											.map((link) => (
+												// Include the loader key so cards remount when the feed
+												// reloads (e.g. filtering to a list), discarding any posts
+												// hydrated for a URL under the previous filters.
+												<div key={`${loaderData.key}:${link.link?.url}`}>
 													<LinkPost
-														key={link.link?.url}
 														linkPost={link}
 														instance={loaderData.instance}
 														bsky={loaderData.bsky}
@@ -377,24 +403,45 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 														bookmarks={loaderData.bookmarks}
 														subscribed={loaderData.subscribed}
 													/>
-												))}
-										</div>
-									)}
-									<Box position="absolute" top="90%">
-										<fetcher.Form method="GET" preventScrollReset ref={formRef}>
-											<input type="hidden" name="page" value={nextPage} />
-											{[...searchParams.entries()].map(([key, value]) => (
-												<input
-													key={key}
-													type="hidden"
-													name={key}
-													value={value}
-												/>
+												</div>
 											))}
-										</fetcher.Form>
+										{fetchedLinks.length > 0 && (
+											<div>
+												{fetchedLinks
+													.filter((link) => !isMuted(link))
+													.map((link) => (
+														<LinkPost
+															key={link.link?.url}
+															linkPost={link}
+															instance={loaderData.instance}
+															bsky={loaderData.bsky}
+															layout={layout}
+															bookmarks={loaderData.bookmarks}
+															subscribed={loaderData.subscribed}
+														/>
+													))}
+											</div>
+										)}
+										<Box position="absolute" top="90%">
+											<fetcher.Form
+												method="GET"
+												preventScrollReset
+												ref={formRef}
+											>
+												<input type="hidden" name="page" value={nextPage} />
+												{[...searchParams.entries()].map(([key, value]) => (
+													<input
+														key={key}
+														type="hidden"
+														name={key}
+														value={value}
+													/>
+												))}
+											</fetcher.Form>
+										</Box>
 									</Box>
-								</Box>
-							)}
+								)
+							}
 						</Await>
 					</Suspense>
 				</Box>
