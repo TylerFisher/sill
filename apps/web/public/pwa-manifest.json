@@ -1,6 +1,8 @@
 {
 	"name": "Sill",
 	"short_name": "Sill",
+	"start_url": "/",
+	"scope": "/",
 	"icons": [
 		{
 			"src": "/android-icon-36x36.png",
@@ -41,5 +43,14 @@
 	],
 	"theme_color": "#9E6C00",
 	"background_color": "#FFFAB8",
-	"display": "standalone"
+	"display": "standalone",
+	"share_target": {
+		"action": "/bookmarks/popup",
+		"method": "GET",
+		"params": {
+			"url": "url",
+			"text": "text",
+			"title": "title"
+		}
+	}
 }
