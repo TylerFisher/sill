@@ -22,6 +22,7 @@ import {
 	buildSourceBadgeValue,
 } from "~/components/linkPosts/SourceBadge";
 import Layout from "~/components/nav/Layout";
+import { useFilterStorage } from "~/hooks/useFilterStorage";
 import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
 import {
@@ -110,16 +111,26 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		throw redirect(newUrl.toString());
 	}
 
+	const serviceParam = ["mastodon", "bluesky", "all"].includes(
+		url.searchParams.get("service") || "",
+	)
+		? (url.searchParams.get("service") as "mastodon" | "bluesky" | "all")
+		: "all";
+	// Coerce a service filter that points at a disconnected account (e.g. a saved
+	// `service=mastodon` after the user disconnects Mastodon) to "all", so a stale
+	// preference can't leave the feed permanently empty. The client also clears
+	// the stale param/pref (see the component) so the URL heals too.
+	const service =
+		(serviceParam === "mastodon" && !mastodon) ||
+		(serviceParam === "bluesky" && !bsky)
+			? "all"
+			: serviceParam;
+
 	const options = {
 		hideReposts,
 		sort: url.searchParams.get("sort") || "popularity",
 		query: url.searchParams.get("query") || undefined,
-		// eugh, clean this up
-		service: ["mastodon", "bluesky", "all"].includes(
-			url.searchParams.get("service") || "",
-		)
-			? (url.searchParams.get("service") as "mastodon" | "bluesky" | "all")
-			: "all",
+		service,
 		page: Number.parseInt(url.searchParams.get("page") || "1"),
 		selectedList: url.searchParams.get("list") || "all",
 		minShares: minShares && minShares > 0 ? minShares : undefined,
@@ -188,7 +199,8 @@ const SeedingState = () => {
 };
 
 const Links = ({ loaderData }: Route.ComponentProps) => {
-	const [searchParams] = useSearchParams();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const { clearFilterFromStorage } = useFilterStorage();
 	const page = Number.parseInt(searchParams.get("page") || "1");
 	const [nextPage, setNextPage] = useState(page + 1);
 	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
@@ -198,6 +210,35 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	const formRef = useRef<HTMLFormElement>(null);
 	const navigation = useNavigation();
 	const location = useLocation();
+
+	// Heal a stale `service` filter that targets a disconnected account. Such a
+	// saved pref (e.g. `service=mastodon` after disconnecting Mastodon) keeps
+	// getting re-applied and empties the feed, and the service toggle is hidden
+	// unless both networks are connected — so the user can't clear it themselves.
+	// Drop it from the URL and saved prefs; the loader also coerces it to "all"
+	// for the query so the feed isn't empty in the meantime.
+	useEffect(() => {
+		const service = searchParams.get("service");
+		const stale =
+			(service === "mastodon" && !loaderData.instance) ||
+			(service === "bluesky" && !loaderData.bsky);
+		if (!stale) return;
+		clearFilterFromStorage("service");
+		setSearchParams(
+			(prev) => {
+				const next = new URLSearchParams(prev);
+				next.delete("service");
+				return next;
+			},
+			{ replace: true },
+		);
+	}, [
+		searchParams,
+		loaderData.instance,
+		loaderData.bsky,
+		clearFilterFromStorage,
+		setSearchParams,
+	]);
 
 	// Pending state for any in-flight filter navigation on this page — covers
 	// the search box, the sort/service/list filters, and the minShares input.
