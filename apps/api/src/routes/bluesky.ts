@@ -60,6 +60,7 @@ const completeV2Migration = async (did: string, request: Request) => {
 import {
   clearOAuthSessionCache,
   getBlueskyLists,
+  linkBlueskyIdentity,
   seedViewer,
   syncMutes,
 } from "@sill/links";
@@ -456,6 +457,11 @@ const bluesky = new Hono()
         // adding Bluesky later first reaches the AppView here. Idempotent, so
         // re-connects of an already-known DID are a no-op server-side.
         void seedViewer(oauthSession.did);
+
+        // Mastodon-first users: link the new DID to their existing Mastodon
+        // identity so reads under the DID include their pre-Bluesky history.
+        // No-op for Bluesky-only users. Best-effort.
+        void linkBlueskyIdentity(userId!, oauthSession.did);
 
         return c.json({
           success: true,

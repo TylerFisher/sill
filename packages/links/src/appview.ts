@@ -169,6 +169,39 @@ export const seedViewer = async (did: string): Promise<void> => {
 };
 
 /**
+ * Link a user's multiple viewer identities — a Bluesky DID and/or Mastodon
+ * ActivityPub actor URIs — into one AppView account (`POST /v1/identities/link`),
+ * so a read with any of them returns the union of all their data (follows,
+ * viewer_shares, prefs). Call when a user connects a second account (e.g. a
+ * Mastodon-first user adds Bluesky); otherwise the new identity's reads won't
+ * see the old one's history. Idempotent and best-effort — never throws. No-op
+ * with fewer than 2 distinct ids (the AppView requires 2–10).
+ */
+export const linkIdentities = async (ids: string[]): Promise<void> => {
+  const base = process.env.APPVIEW_API_URL;
+  const key = process.env.APPVIEW_API_KEY;
+  if (!base || !key) return;
+  const unique = Array.from(new Set(ids.filter(Boolean))).slice(0, 10);
+  if (unique.length < 2) return;
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/v1/identities/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": key },
+      body: JSON.stringify({ ids: unique }),
+      signal: AbortSignal.timeout(APPVIEW_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(
+        `AppView /v1/identities/link returned ${res.status}: ${body}`,
+      );
+    }
+  } catch (e) {
+    console.error("AppView /v1/identities/link failed:", unique, e);
+  }
+};
+
+/**
  * Store a viewer's mute lists on the AppView (`POST /v1/preferences`), so mutes
  * are applied before ranking. Each field is **per-field last-write-wins**:
  * include `mutedWords` and/or `mutedDids` to replace that list; omit a field to

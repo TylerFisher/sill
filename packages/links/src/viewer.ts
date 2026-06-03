@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { blueskyAccount, db, mastodonAccount } from "@sill/schema";
+import { linkIdentities } from "./appview.js";
 
 /**
  * The ActivityPub actor URI for a Mastodon account (e.g.
@@ -40,4 +41,32 @@ export const resolveViewer = async (
     return mastodonActorUri(masto.mastodonInstance.instance, masto.username);
   }
   return null;
+};
+
+/**
+ * Link a just-connected Bluesky DID to the user's existing Mastodon identity in
+ * the AppView, so reads under the DID include the Mastodon-keyed history. This
+ * is the Mastodon-first-then-Bluesky case: before they had a DID, their shares
+ * were keyed under the Mastodon actor URI (see resolveViewer), which reads would
+ * otherwise orphan once they switch to the preferred DID.
+ *
+ * No-op when the user has no usable Mastodon identity (nothing to union). The
+ * reverse direction (Bluesky-first, later adds Mastodon) needs no linking: that
+ * user's Mastodon shares are ingested under the DID from the start, since
+ * resolveViewer/getLinksFromMastodon already prefer it. Best-effort.
+ */
+export const linkBlueskyIdentity = async (
+  userId: string,
+  did: string,
+): Promise<void> => {
+  const masto = await db.query.mastodonAccount.findFirst({
+    where: eq(mastodonAccount.userId, userId),
+    with: { mastodonInstance: true },
+  });
+  if (!masto?.username || !masto.mastodonInstance?.instance) return;
+  const actorUri = mastodonActorUri(
+    masto.mastodonInstance.instance,
+    masto.username,
+  );
+  await linkIdentities([did, actorUri]);
 };

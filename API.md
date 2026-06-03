@@ -30,7 +30,9 @@ The `viewer` is one of:
 - A `did:` URI (e.g. `did:plc:abc…`) — for Bluesky users (and users who have both Bluesky and Mastodon — use the Bluesky DID).
 - An ActivityPub Actor URI (e.g. `https://mastodon.social/users/alice`) — for Mastodon-only users.
 
-The AppView treats `viewer` as an opaque stable identifier; it's used as a key in caches, `viewer_shares`, `viewer_prefs`, etc. Pick one form per user at signup and keep it. The format also determines whether the cold-viewer path tries to enqueue a Bluesky firehose backfill: only `did:plc:…` viewers do, since they're the only ones with an atproto repo to walk.
+The AppView treats `viewer` as an opaque stable identifier; it's used as a key in caches, `viewer_shares`, `viewer_prefs`, etc. Pick one form per user and use it consistently. The format also determines whether the cold-viewer path tries to enqueue a Bluesky firehose backfill: only `did:plc:…` viewers do, since they're the only ones with an atproto repo to walk.
+
+**Linking identities (multi-account users).** A user can have more than one identity — e.g. they connect Mastodon first (keyed by their ActivityPub URI) and later add Bluesky (keyed by their DID). Each identity's data (follows, `viewer_shares`, prefs) is stored under its own key, so switching which one you send as `viewer` would otherwise hide the other's history. Call [`POST /v1/identities/link`](#post-v1identitieslink) when a user connects a second account: after that, a read with **any** linked identity returns the **union** of all of them — you can keep sending whichever `viewer` is convenient. (Cross-network users should still pass `network=bsky,mastodon` to include both follow graphs — see [Networks](#networks).)
 
 ### Networks
 The `network` param selects which follow graph(s) define "my network". Default is `bsky`. Comma-separated. Valid keys:
@@ -448,6 +450,25 @@ X-API-Key: …
 ```
 ```json
 { "registered": 1, "total": 2 }
+```
+
+### `POST /v1/identities/link`
+Link a user's multiple viewer identities (a Bluesky DID and/or one or more ActivityPub Actor URIs) into one account, so a read with **any** of them returns the **union** of all their data — follows, `viewer_shares`, and prefs. Call this when a user connects a second account (e.g. a Mastodon-first user adds Bluesky); otherwise the new identity's reads won't see the old one's history.
+
+- **Body** (JSON): `{ "ids": [...] }` — 2–10 viewer identifiers (the same opaque strings you pass as `viewer` — DIDs or ActivityPub Actor URIs, each ≤2048 chars).
+- **Idempotent**, and merges pre-existing groups: linking `{A,B}` then `{B,C}` puts A/B/C in one account. The canonical `account` prefers an existing account, else the `did:plc:` among the ids.
+- **Effect is immediate**, no data migration — the session expands a viewer to its full link set at query time (`viewer_did IN (set)`, `actor_did IN (set)`). A cached page for an already-warm viewer refreshes within the cache TTL (~60s).
+- **Returns**: `{ "account": string, "linked": number }` — the shared account id and how many ids were in the request.
+
+```
+POST /v1/identities/link
+Content-Type: application/json
+X-API-Key: …
+
+{ "ids": ["did:plc:abc", "https://mastodon.social/users/alice"] }
+```
+```json
+{ "account": "did:plc:abc", "linked": 2 }
 ```
 
 ### `POST /v1/preferences`

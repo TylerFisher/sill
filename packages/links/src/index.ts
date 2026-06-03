@@ -46,6 +46,7 @@ export {
   type UrlMetaItem,
   urlItemToLink,
 } from "./appview.js";
+export { linkBlueskyIdentity } from "./viewer.js";
 export { dequeueJobs, enqueueJob, processJob } from "./queue.js";
 export { conflictUpdateSetAllColumns } from "./db-helpers.js";
 export { getUserBookmarks, addNewBookmarks } from "./bookmarks.js";
