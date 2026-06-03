@@ -1,5 +1,9 @@
 import { uuidv7 } from "uuidv7-js";
 import type { AboutCard, Link, RenderedLink } from "@sill/schema";
+import {
+  decodeHtmlEntities,
+  decodeHtmlEntitiesMaybe,
+} from "./html-entities.js";
 import { isEmptyRecord, toDbDate, toIso } from "./record-mappers/shared.js";
 
 /**
@@ -864,19 +868,29 @@ export const urlItemToLink = (
   return {
     id: dbLink?.id ?? uuidv7(),
     url: item.url,
-    title: item.title ?? dbLink?.title ?? "",
-    description: item.description ?? dbLink?.description ?? null,
+    // Scraped metadata can carry raw HTML entities (e.g. `Tom &amp; Jerry`,
+    // `&#39;`); decode for display.
+    title: decodeHtmlEntities(item.title ?? dbLink?.title ?? ""),
+    description: decodeHtmlEntitiesMaybe(
+      item.description ?? dbLink?.description ?? null,
+    ),
     imageUrl: item.imageUrl ?? dbLink?.imageUrl ?? null,
     giftUrl: item.giftUrl ?? dbLink?.giftUrl ?? null,
     metadata: dbLink?.metadata ?? (fromAppView ? { source: "appview" } : null),
     scraped: fromAppView || (dbLink?.scraped ?? false),
     publishedDate: toDbDate(item.publishedAt) ?? dbLink?.publishedDate ?? null,
     // Prefer the AppView's split `authors` (each links individually); fall back
-    // to the single `byline` string, then the DB row.
-    authors: item.authors ?? (item.byline ? [item.byline] : dbLink?.authors ?? null),
+    // to the single `byline` string, then the DB row. Decode entities in names.
+    authors:
+      (
+        item.authors ??
+        (item.byline ? [item.byline] : dbLink?.authors ?? null)
+      )?.map(decodeHtmlEntities) ?? null,
     // Prefer the article's own `siteName`; fall back to `publisherName` (the
     // domain's primary publisher) only when the article scrape didn't yield one.
-    siteName: item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null,
+    siteName: decodeHtmlEntitiesMaybe(
+      item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null,
+    ),
     topics: dbLink?.topics ?? null,
     // Render-time: the publisher's brand icon for this URL (not a DB column).
     publisherIcon: item.publisherIcon ?? null,
