@@ -420,6 +420,10 @@ const getRankedEntries = async (
       hideReposts,
       sourceId,
       network,
+      // Pre-filter server-side (AppView applies it when >1) so pages come back
+      // already above threshold instead of `buildEntries` thinning each page and
+      // forcing extra page-walks; `buildEntries` still filters as a backstop.
+      minShares,
     });
     const cold = firstPage.cold === true;
     cached = {
@@ -455,6 +459,7 @@ const getRankedEntries = async (
       hideReposts,
       sourceId,
       network,
+      minShares,
     });
     cached.items.push(...next.items);
     if (!next.cursor || next.items.length === 0) {
