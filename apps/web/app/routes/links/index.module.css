@@ -1,0 +1,141 @@
+/*
+ * The feed, read through Christopher Alexander's "quality without a name" —
+ * the seven aspects he names as alive, whole, comfortable, free, exact,
+ * egoless, and eternal. Each rule below serves one of them, noted inline.
+ *
+ * The governing idea: a feed is a place you sit and read in, not a panel you
+ * operate. So the work here is mostly subtraction — fewer hard lines, gentler
+ * state changes, a calmer empty center — so the links and the people sharing
+ * them carry the page, and nothing here draws attention to itself.
+ */
+
+/*
+ * ALIVE — cards settle into place rather than snapping in, so the feed has the
+ * feeling of arriving rather than being switched on. The resting state is fully
+ * visible: anyone with reduced motion, or no CSS animation at all, reads the
+ * feed unharmed. The entrance is layered on only as an enhancement below, so a
+ * failed animation can never leave a card invisible.
+ */
+.settle {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.settle {
+		opacity: 0;
+		transform: translateY(10px);
+		animation: settle 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+		/*
+		 * EXACT — a small, even stagger, one card just behind the last, so the
+		 * feed reads top to bottom as it lands. The caller caps the index, so the
+		 * tail of a long feed still finishes settling inside a beat.
+		 *
+		 * EGOLESS — the same cubic-bezier the dialogs already use (override.css),
+		 * so this motion echoes the rest of the app instead of inventing its own.
+		 */
+		animation-delay: calc(var(--settle-index, 0) * 45ms);
+	}
+}
+
+@keyframes settle {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/*
+ * THE VOID — Alexander's calm, open center that the rest of a composition holds
+ * around. While the network seed warms there is genuinely nothing to show, so
+ * this state offers stillness and room rather than a busy, churning spinner.
+ */
+.seeding {
+	/* COMFORTABLE — generous, unhurried space to rest the eye while waiting. */
+	padding-top: var(--space-8);
+	padding-bottom: var(--space-8);
+}
+
+/*
+ * WHOLE — the feed's three "nothing to show" states (seeding, empty, error)
+ * share one calm, centered language so they read as the same room in different
+ * weather rather than three unrelated screens. This is the quieter sibling of
+ * .seeding: the same centered stillness with a little less height, since these
+ * are resting points rather than an active wait.
+ */
+.notice {
+	padding-top: var(--space-7);
+	padding-bottom: var(--space-7);
+}
+
+/*
+ * ALIVE — the first paint of a fresh feed rests in the same open, centered
+ * space as the other states, so the page reads as settling rather than
+ * flashing a bare spinner against the top edge.
+ */
+.loading {
+	padding-top: var(--space-8);
+	padding-bottom: var(--space-8);
+}
+
+/*
+ * ALIVE — a single mark that breathes and sends a slow ripple outward, like a
+ * beacon reaching into the network. One quiet gesture, not a mechanical spin.
+ */
+.beacon {
+	position: relative;
+	width: 12px;
+	height: 12px;
+}
+
+.beacon::before,
+.beacon::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 9999px;
+}
+
+.beacon::before {
+	background-color: var(--accent-9);
+	animation: beacon-breath 2.8s ease-in-out infinite;
+}
+
+.beacon::after {
+	background-color: var(--accent-a6);
+	animation: beacon-ripple 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes beacon-breath {
+	0%,
+	100% {
+		opacity: 0.7;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+@keyframes beacon-ripple {
+	0% {
+		transform: scale(1);
+		opacity: 0.55;
+	}
+	100% {
+		transform: scale(4.5);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.beacon::before,
+	.beacon::after {
+		animation: none;
+	}
+	.beacon::after {
+		display: none;
+	}
+}

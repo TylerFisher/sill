@@ -19,6 +19,20 @@ const SharedByBug = ({
 	const ref = useRef<HTMLButtonElement>(null);
 	const theme = useTheme();
 
+	// The pill's own background. Reused as the avatar ring color below, so the
+	// faces read as a row of distinct people rather than one merged blob — the
+	// human center of the card, given a little positive space between heads.
+	const pillBackground =
+		layout === "dense" && !open
+			? "inherit"
+			: theme === "dark"
+				? "var(--gray-3)"
+				: "var(--accent-3)";
+	// When the pill inherits (dense, closed), fall back to the card panel so the
+	// ring still separates the faces from each other.
+	const ringColor =
+		pillBackground === "inherit" ? "var(--color-panel-solid)" : pillBackground;
+
 	const executeScroll = () =>
 		setTimeout(() => {
 			if (ref.current && ref.current.getBoundingClientRect().top < 0) {
@@ -39,12 +53,7 @@ const SharedByBug = ({
 				style={{
 					position: open ? "sticky" : "static",
 					zIndex: open ? 5 : 0,
-					backgroundColor:
-						layout === "dense" && !open
-							? "inherit"
-							: theme === "dark"
-								? "var(--gray-3)"
-								: "var(--accent-3)",
+					backgroundColor: pillBackground,
 					width: open ? "100%" : layout === "dense" ? "inherit" : "270px",
 					borderRadius: open ? "0" : "1rem",
 					transition: "all 0.3s",
@@ -62,7 +71,8 @@ const SharedByBug = ({
 						radius="full"
 						size="1"
 						style={{
-							marginLeft: i > 0 ? "-12px" : "0",
+							marginLeft: i > 0 ? "-10px" : "0",
+							boxShadow: `0 0 0 2px ${ringColor}`,
 						}}
 					/>
 				))}

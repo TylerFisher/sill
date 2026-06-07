@@ -80,3 +80,36 @@
 		animation: rt-dialog-content-hide 100ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 	}
 }
+
+/*
+ * WHOLE / EXACT — the room knows where its top edge is. On small screens the
+ * header is fixed over the content (Header.tsx), so anything scrolled to — a
+ * hash-expanded card, the "shared by" pile pinning itself — must land below it
+ * rather than tucked underneath. 56px matches the fixed header height, the same
+ * offset SharedByBug already uses. At md the header returns to normal flow, so
+ * the room needs no offset.
+ */
+html {
+	scroll-padding-top: 56px;
+}
+
+@media (min-width: 768px) {
+	html {
+		scroll-padding-top: 0;
+	}
+}
+
+/*
+ * COMFORTABLE / EGOLESS — honor a reader who asks for less motion everywhere,
+ * not only in the feed. The dialog backdrop and content above arrive with a
+ * fade by default; under reduced motion they simply appear. Nothing about what
+ * the dialog does changes, only how it gets there. The blur on the backdrop is
+ * a property, not the animation, so it stays.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.rt-BaseDialogOverlay,
+	.rt-BaseDialogOverlay::before,
+	.rt-BaseDialogContent {
+		animation: none !important;
+	}
+}

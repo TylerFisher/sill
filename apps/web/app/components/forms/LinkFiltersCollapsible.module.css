@@ -26,6 +26,15 @@
 	animation: slideUp 200ms ease-out;
 }
 
+/* EGOLESS — the mobile filter panel opens with a slide by default; under
+   reduced motion it snaps open and shut, matching the rest of the app. */
+@media (prefers-reduced-motion: reduce) {
+	.content[data-state="open"],
+	.content[data-state="closed"] {
+		animation: none;
+	}
+}
+
 @keyframes slideDown {
 	from {
 		height: 0;

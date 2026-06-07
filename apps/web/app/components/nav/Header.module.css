@@ -77,3 +77,12 @@
 .dialog-content[data-state="closed"] {
 	animation: fadeOut 150ms ease-in;
 }
+
+/* EGOLESS — the nav drawer slides in by default; for a reader who asks for less
+   motion it simply appears, in step with the rest of the app's motion. */
+@media (prefers-reduced-motion: reduce) {
+	.dialog-content[data-state="open"],
+	.dialog-content[data-state="closed"] {
+		animation: none;
+	}
+}

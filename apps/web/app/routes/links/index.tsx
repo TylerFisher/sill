@@ -33,6 +33,7 @@ import { requireUserFromContext } from "~/utils/context.server";
 import { timeParamToMs } from "~/utils/timeRange";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
 import type { Route } from "./+types/index";
+import styles from "./index.module.css";
 
 export const meta: Route.MetaFunction = () => [{ title: "Sill" }];
 
@@ -184,19 +185,88 @@ const SeedingState = () => {
 
 	return (
 		<Card mt="4">
-			<Flex direction="column" align="center" gap="3" py="6" px="4">
-				<Spinner size="3" />
-				<Text as="p" size="3" weight="bold">
-					Setting up your network
-				</Text>
-				<Text as="p" size="2" color="gray" align="center">
-					Sill is gathering the links your network is sharing. This can take a
-					minute. New links will appear here automatically.
-				</Text>
+			<Flex
+				className={styles.seeding}
+				direction="column"
+				align="center"
+				gap="5"
+				px="4"
+			>
+				<span className={styles.beacon} aria-hidden="true" />
+				<Flex direction="column" align="center" gap="2">
+					<Text as="p" size="3" weight="bold">
+						Gathering your network
+					</Text>
+					<Text as="p" size="2" color="gray" align="center">
+						Sill is collecting the links the people you follow are sharing. This
+						takes a minute. New links appear here on their own.
+					</Text>
+				</Flex>
 			</Flex>
 		</Card>
 	);
 };
+
+/**
+ * The shared calm-notice surface for the feed's resting states (empty, error).
+ * THE VOID — a quiet, centered card that holds the same stillness as the
+ * seeding state, so an empty or failed feed still reads as the same room.
+ * EGOLESS — plain language and no illustration; it says what is true and steps
+ * back. A title alone is enough; the body is optional.
+ */
+const FeedNotice = ({
+	title,
+	children,
+}: {
+	title: string;
+	children?: React.ReactNode;
+}) => (
+	<Card mt="4">
+		<Flex
+			className={styles.notice}
+			direction="column"
+			align="center"
+			gap="2"
+			px="4"
+		>
+			<Text as="p" size="3" weight="bold">
+				{title}
+			</Text>
+			{children && (
+				<Text
+					as="p"
+					size="2"
+					color="gray"
+					align="center"
+					// COMFORTABLE — hold the body to a readable measure instead of
+					// letting it stretch across the full card width.
+					style={{ maxWidth: "38ch" }}
+				>
+					{children}
+				</Text>
+			)}
+		</Flex>
+	</Card>
+);
+
+/**
+ * Shown when the feed resolves with nothing to show and the viewer is warm (so
+ * it is genuinely empty, not still seeding). The copy answers the most likely
+ * cause: a search with no matches, or filters narrowed past what the network
+ * shared in this window.
+ */
+const EmptyState = ({ query }: { query: string | null }) =>
+	query ? (
+		<FeedNotice title="No links match your search">
+			Nothing your network shared matches “{query}”. Try a different search or
+			clear it to see everything.
+		</FeedNotice>
+	) : (
+		<FeedNotice title="Nothing here right now">
+			Your network has not shared any links that fit these filters. Try a longer
+			time range or fewer filters.
+		</FeedNotice>
+	);
 
 const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -400,66 +470,103 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 					)}
 					<Suspense
 						fallback={
-							<Box>
-								<Flex justify="center">
-									<Spinner size="3" />
-								</Flex>
-							</Box>
+							<Flex className={styles.loading} justify="center">
+								<Spinner size="3" />
+							</Flex>
 						}
 					>
 						<Await
 							resolve={loaderData.links}
 							errorElement={
-								<Box>
-									<Text as="p">
-										Failed to fetch new links. Try refreshing the page.
-									</Text>
-								</Box>
+								<FeedNotice title="The feed could not load">
+									Something went wrong fetching your links. Refresh the page to
+									try again.
+								</FeedNotice>
 							}
 						>
-							{(data) =>
-								data.cold && data.links.length === 0 ? (
-									<SeedingState />
-								) : (
+							{(data) => {
+								const visibleLinks = data.links.filter(
+									(link) => !isMuted(link),
+								);
+								if (data.cold && visibleLinks.length === 0) {
+									return <SeedingState />;
+								}
+								// THE VOID — a warm viewer with nothing to show gets a calm,
+								// meaningful center instead of a blank page. Guard on the
+								// paged-in links too, so muting the whole first page mid-scroll
+								// doesn't flip a populated feed to "empty".
+								if (visibleLinks.length === 0 && fetchedLinks.length === 0) {
+									return <EmptyState query={searchParams.get("query")} />;
+								}
+								return (
 									<Box
 										aria-busy={showPending}
 										style={{
-											opacity: showPending ? 0.55 : 1,
-											transition: "opacity 150ms ease",
-											pointerEvents: showPending ? "none" : "auto",
+											// FREE — a refresh dims the feed a touch so the floating
+											// indicator reads, but it never locks the page. The reader
+											// keeps scrolling and reading the current links while the
+											// next set loads; the pointer is not trapped and the fade
+											// is gentle. Echoes the app's shared easing curve.
+											opacity: showPending ? 0.72 : 1,
+											transition: "opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)",
 										}}
 									>
-										{data.links
-											.filter((link) => !isMuted(link))
-											.map((link) => (
-												// Include the loader key so cards remount when the feed
-												// reloads (e.g. filtering to a list), discarding any posts
-												// hydrated for a URL under the previous filters.
-												<div key={`${loaderData.key}:${link.link?.url}`}>
-													<LinkPost
-														linkPost={link}
-														instance={loaderData.instance}
-														bsky={loaderData.bsky}
-														layout={layout}
-														bookmarks={loaderData.bookmarks}
-														subscribed={loaderData.subscribed}
-													/>
-												</div>
-											))}
+										{visibleLinks.map((link, i) => (
+											// Include the loader key so cards remount when the feed
+											// reloads (e.g. filtering to a list), discarding any posts
+											// hydrated for a URL under the previous filters. The remount
+											// also replays the settle entrance, so the feed visibly
+											// arrives again each time it responds to a filter (alive).
+											<div
+												key={`${loaderData.key}:${link.link?.url}`}
+												className={styles.settle}
+												// Cap the stagger so a long feed still finishes
+												// settling within a beat (exact).
+												style={
+													{
+														"--settle-index": Math.min(i, 12),
+													} as React.CSSProperties
+												}
+											>
+												<LinkPost
+													linkPost={link}
+													instance={loaderData.instance}
+													bsky={loaderData.bsky}
+													layout={layout}
+													bookmarks={loaderData.bookmarks}
+													subscribed={loaderData.subscribed}
+													trailing="space"
+												/>
+											</div>
+										))}
 										{fetchedLinks.length > 0 && (
 											<div>
 												{fetchedLinks
 													.filter((link) => !isMuted(link))
-													.map((link) => (
-														<LinkPost
+													.map((link, i) => (
+														// Newly paged-in links settle in too, so an appended
+														// page reads as the feed continuing to arrive rather
+														// than blinking into existence (alive). A short stagger
+														// keeps the scroll responsive.
+														<div
 															key={link.link?.url}
-															linkPost={link}
-															instance={loaderData.instance}
-															bsky={loaderData.bsky}
-															layout={layout}
-															bookmarks={loaderData.bookmarks}
-															subscribed={loaderData.subscribed}
-														/>
+															className={styles.settle}
+															style={
+																{
+																	"--settle-index": Math.min(i, 6),
+																} as React.CSSProperties
+															}
+														>
+															<LinkPost
+																linkPost={link}
+																instance={loaderData.instance}
+																bsky={loaderData.bsky}
+																layout={layout}
+																bookmarks={loaderData.bookmarks}
+																subscribed={loaderData.subscribed}
+																trailing="space"
+															/>
+														</div>
 													))}
 											</div>
 										)}
@@ -481,8 +588,8 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 											</fetcher.Form>
 										</Box>
 									</Box>
-								)
-							}
+								);
+							}}
 						</Await>
 					</Suspense>
 				</Box>
@@ -498,6 +605,7 @@ export const LinkPost = ({
 	layout,
 	bookmarks,
 	subscribed,
+	trailing = "rule",
 }: {
 	linkPost: MostRecentLinkPosts;
 	instance: string | undefined;
@@ -505,6 +613,14 @@ export const LinkPost = ({
 	layout: "dense" | "default";
 	bookmarks: BookmarkWithLinkPosts[];
 	subscribed: SubscriptionStatus;
+	// WHOLE — in the default layout each link is already a bounded card, so the
+	// shadow is its boundary. A full-width rule between cards is a second
+	// boundary stacked on the first, and it chops the feed into slabs. "space"
+	// drops the rule for quiet positive space, letting the feed read as one
+	// calm field. The main feed opts in; other surfaces keep the rule ("rule"
+	// default) so their look is unchanged. Dense has no card, so it always
+	// keeps its thin separating space regardless.
+	trailing?: "rule" | "space";
 }) => {
 	const location = useLocation();
 	return (
@@ -519,7 +635,11 @@ export const LinkPost = ({
 				subscribed={subscribed}
 			/>
 			{layout === "default" ? (
-				<Separator my="7" size="4" orientation="horizontal" />
+				trailing === "space" ? (
+					<Box my="6" />
+				) : (
+					<Separator my="7" size="4" orientation="horizontal" />
+				)
 			) : (
 				<Box my="5" />
 			)}
