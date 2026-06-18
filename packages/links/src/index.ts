@@ -13,6 +13,8 @@ export {
   getMastodonList,
   processMastodonLink,
   isQuote,
+  type MastodonProbe,
+  probeMastodonAccount,
 } from "./mastodon.js";
 export {
   type FilterArgs,

@@ -225,6 +225,87 @@ export const getMastodonTimeline = async (
   return timeline;
 };
 
+export interface MastodonProbe {
+  userId: string;
+  instance: string | null;
+  username: string | null;
+  /** verifyCredentials + one home-timeline page both succeeded. */
+  ok: boolean;
+  /** Error class + message when the probe failed (dead token, instance down…). */
+  error: string | null;
+  /** Statuses on the first home-timeline page. 0 with ok=true means an empty feed. */
+  statuses: number;
+  /** ISO time of the newest status seen — what a real fetch's cursor would advance toward. */
+  newestStatusAt: string | null;
+  /** The currently-stored cursor, for context. */
+  cursor: string | null;
+}
+
+/**
+ * Read-only diagnosis of one Mastodon account: does the token still work, and
+ * does the home timeline return anything? Unlike the ingestion path
+ * (`getLinksFromMastodon`), this does NOT swallow errors and does NOT mutate the
+ * cursor — it surfaces exactly why an account can or can't be fetched, so a
+ * frozen cursor can be classified as dead-token vs dead-instance vs empty-feed.
+ */
+export const probeMastodonAccount = async (
+  userId: string,
+): Promise<MastodonProbe> => {
+  const account = await db.query.mastodonAccount.findFirst({
+    where: eq(mastodonAccount.userId, userId),
+    with: { mastodonInstance: true },
+  });
+  if (!account) {
+    return {
+      userId,
+      instance: null,
+      username: null,
+      ok: false,
+      error: "no_mastodon_account",
+      statuses: 0,
+      newestStatusAt: null,
+      cursor: null,
+    };
+  }
+
+  const base = {
+    userId,
+    instance: account.mastodonInstance.instance,
+    username: account.username,
+    cursor: account.mostRecentPostId,
+  };
+
+  try {
+    const client = createRestAPIClient({
+      url: `https://${account.mastodonInstance.instance}`,
+      accessToken: account.accessToken,
+    });
+    await client.v1.accounts.verifyCredentials(); // throws on a revoked/expired token
+
+    let statuses = 0;
+    let newestStatusAt: string | null = null;
+    for await (const page of client.v1.timelines.home.list({ limit: 40 })) {
+      for (const status of page) {
+        if (newestStatusAt === null) newestStatusAt = status.createdAt;
+        statuses++;
+      }
+      break; // one page is enough to tell "can fetch" from "empty/broken"
+    }
+
+    return { ...base, ok: true, error: null, statuses, newestStatusAt };
+  } catch (e) {
+    const error =
+      e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e);
+    return {
+      ...base,
+      ok: false,
+      error: error.slice(0, 300),
+      statuses: 0,
+      newestStatusAt: null,
+    };
+  }
+};
+
 /**
  * Searches for YouTube URLs in the content of a Mastodon post
  * Mastodon returns broken preview cards for YouTube URLs, so this is a workaround

@@ -28,6 +28,8 @@
  *   CONCURRENCY   users fetched in parallel, default 15
  *   USER_LIMIT    cap candidate users (for a smoke test), default all
  *   DRY_RUN=1     fetch + count, do not POST anything
+ *   DIAGNOSE=1    read-only: probe each candidate and classify why its cursor is
+ *                 stuck (fetchable / empty-feed / errored), no fetch or writes
  *
  * Run locally (dev deps present), from apps/worker:
  *   DRY_RUN=1 pnpm tsx --env-file ../../.env.production src/reseed-mastodon-cursors.ts
@@ -40,15 +42,22 @@
  */
 
 import {
+  type MastodonProbe,
   type PushShareBatch,
   clearOAuthSessionCache,
   fetchLinks,
+  probeMastodonAccount,
   pushShareBatches,
 } from "@sill/links";
 import { db, mastodonAccount } from "@sill/schema";
 import { sql } from "drizzle-orm";
 
 const DRY_RUN = process.env.DRY_RUN === "1" || process.env.DRY_RUN === "true";
+// Read-only classification: probe each candidate (token alive? feed non-empty?)
+// and print a per-account line + summary, without fetching links or touching any
+// cursor. Use this to find out *why* the frozen accounts won't advance.
+const DIAGNOSE =
+  process.env.DIAGNOSE === "1" || process.env.DIAGNOSE === "true";
 const CONCURRENCY = Math.max(
   1,
   Number.parseInt(process.env.CONCURRENCY || "15", 10)
@@ -72,9 +81,90 @@ const chunk = <T>(arr: T[], size: number): T[][] => {
   return out;
 };
 
+// Mastodon Snowflake → ISO time (id >> 16 ms). Numeric (Mastodon-core) IDs only.
+const decodeSnowflake = (id: string | null): string | null => {
+  if (!id || !/^[0-9]+$/.test(id)) return null;
+  try {
+    return new Date(Number(BigInt(id) >> 16n)).toISOString();
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Read-only: probe each account and classify why its cursor is or isn't fetchable.
+ *   fetchable  — token works and the feed has statuses; a real re-seed WOULD
+ *                advance the cursor (so if it's still frozen, the run never
+ *                reached it, or ran without ignoreCursor/the cap).
+ *   empty-feed — token works but the home timeline is empty; nothing to advance.
+ *   errored    — verifyCredentials/timeline threw (dead token, dead instance).
+ *                These can't be re-seeded by anything.
+ */
+async function diagnose(userIds: string[]): Promise<void> {
+  console.log(
+    `[diag] probing ${userIds.length} accounts read-only (no fetch, no cursor changes)`
+  );
+  let fetchable = 0;
+  let emptyFeed = 0;
+  let errored = 0;
+  const errorKinds = new Map<string, number>();
+
+  for (const group of chunk(userIds, CONCURRENCY)) {
+    const probes = await Promise.all(
+      group.map((userId) =>
+        probeMastodonAccount(userId).catch(
+          (e): MastodonProbe => ({
+            userId,
+            instance: null,
+            username: null,
+            ok: false,
+            error:
+              e instanceof Error
+                ? `${e.constructor.name}: ${e.message}`
+                : String(e),
+            statuses: 0,
+            newestStatusAt: null,
+            cursor: null,
+          })
+        )
+      )
+    );
+
+    for (const p of probes) {
+      const cursorAt = decodeSnowflake(p.cursor) ?? "-";
+      if (!p.ok) {
+        errored++;
+        const kind = (p.error ?? "unknown").split(":")[0];
+        errorKinds.set(kind, (errorKinds.get(kind) ?? 0) + 1);
+        console.log(
+          `[diag] ERR  ${p.instance ?? "?"}  cursor=${cursorAt}  ${p.error}`
+        );
+      } else if (p.statuses === 0) {
+        emptyFeed++;
+        console.log(
+          `[diag] ok   ${p.instance ?? "?"}  cursor=${cursorAt}  statuses=0 (empty feed)`
+        );
+      } else {
+        fetchable++;
+        console.log(
+          `[diag] ok   ${p.instance ?? "?"}  cursor=${cursorAt}  statuses=${p.statuses}  newest=${p.newestStatusAt ?? "-"}`
+        );
+      }
+    }
+  }
+
+  console.log(
+    `[diag] summary: ${fetchable} fetchable · ${emptyFeed} empty-feed · ${errored} errored`
+  );
+  console.log(
+    `[diag] error kinds: ${JSON.stringify(Object.fromEntries(errorKinds))}`
+  );
+}
+
 async function main(): Promise<void> {
   if (
     !DRY_RUN &&
+    !DIAGNOSE &&
     (!process.env.APPVIEW_API_URL || !process.env.APPVIEW_API_KEY)
   ) {
     console.error(
@@ -106,6 +196,11 @@ async function main(): Promise<void> {
   let userIds = [...new Set(rows.map((r) => r.userId))];
   if (USER_LIMIT) userIds = userIds.slice(0, USER_LIMIT);
   stats.candidateUsers = userIds.length;
+
+  if (DIAGNOSE) {
+    await diagnose(userIds);
+    process.exit(0);
+  }
 
   console.log(
     `[reseed] ${userIds.length} users with a Mastodon account  concurrency=${CONCURRENCY}  dryRun=${DRY_RUN}`
