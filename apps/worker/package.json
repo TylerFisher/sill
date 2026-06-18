@@ -8,6 +8,7 @@
     "dev:local": "tsx watch --env-file ../../.env ./src/process-queue.tsx",
     "start": "node ./build/worker.js",
     "backfill:appview": "tsx src/migrate-appview-backfill.ts",
+    "reseed:mastodon": "tsx src/reseed-mastodon-cursors.ts",
     "notify:test": "tsx --env-file ../../.env src/send-test-notification.ts",
     "typecheck": "tsc --noEmit"
   },

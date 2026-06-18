@@ -16,6 +16,13 @@ const entries: { in: string; out: string }[] = [
 		in: "./src/migrate-appview-backfill.ts",
 		out: "./build/migrate-appview-backfill.js",
 	},
+	// One-off re-seed for Mastodon-only accounts whose cursor froze at the
+	// AppView cutover (see reseed-mastodon-cursors.ts). Run in prod via
+	// `node build/reseed-mastodon-cursors.js` with the worker's env.
+	{
+		in: "./src/reseed-mastodon-cursors.ts",
+		out: "./build/reseed-mastodon-cursors.js",
+	},
 ];
 
 Promise.all(
