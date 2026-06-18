@@ -29,6 +29,22 @@ const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 const MAX_TIMELINE_STATUSES = 1000;
 
 /**
+ * Epoch-ms a Mastodon status was created, from its Snowflake ID (`id >> 16`).
+ * For a reblog the ID is the *boost's* — i.e. when it entered the timeline — so
+ * this reflects timeline position, which is what we page by. Returns null for
+ * non-Mastodon instances (Pleroma / GoToSocial) whose IDs aren't numeric
+ * Snowflakes; callers fall back to the post's own `createdAt`.
+ */
+const snowflakeMs = (id: string): number | null => {
+  if (!/^[0-9]+$/.test(id)) return null;
+  try {
+    return Number(BigInt(id) >> 16n);
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Constructs the authorization URL for a given Mastodon instance
  * @param instance Mastodon instance URL
  * @returns Authorization URL for the Mastodon instance
@@ -117,12 +133,21 @@ export const getMastodonList = async (
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
-      // Don't use flipboard or reposts as yesterday check
-      if (
-        new Date(status.createdAt) <= yesterday &&
-        status.account.acct.split("@")[1] !== "flipboard.com" &&
-        !status.reblog
-      ) {
+      // Stop once we reach posts older than the 24h window. Page by the status
+      // ID's Snowflake time (when it entered the timeline — the boost time for a
+      // reblog), so a reblog-heavy feed stops here instead of paging back almost
+      // without end. The old `!status.reblog` guard let those feeds run away,
+      // which is what froze cursors at the AppView cutover. Non-Mastodon
+      // instances have non-numeric IDs, so fall back to the post's own createdAt,
+      // still skipping reblogs/flipboard whose createdAt misleads.
+      const statusMs = snowflakeMs(status.id);
+      const tooOld =
+        statusMs !== null
+          ? statusMs <= yesterday.getTime()
+          : new Date(status.createdAt) <= yesterday &&
+            status.account.acct.split("@")[1] !== "flipboard.com" &&
+            !status.reblog;
+      if (tooOld) {
         ended = true;
         break;
       }
@@ -195,12 +220,21 @@ export const getMastodonTimeline = async (
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
-      // Don't use flipboard or reposts as yesterday check
-      if (
-        new Date(status.createdAt) <= yesterday &&
-        status.account.acct.split("@")[1] !== "flipboard.com" &&
-        !status.reblog
-      ) {
+      // Stop once we reach posts older than the 24h window. Page by the status
+      // ID's Snowflake time (when it entered the timeline — the boost time for a
+      // reblog), so a reblog-heavy feed stops here instead of paging back almost
+      // without end. The old `!status.reblog` guard let those feeds run away,
+      // which is what froze cursors at the AppView cutover. Non-Mastodon
+      // instances have non-numeric IDs, so fall back to the post's own createdAt,
+      // still skipping reblogs/flipboard whose createdAt misleads.
+      const statusMs = snowflakeMs(status.id);
+      const tooOld =
+        statusMs !== null
+          ? statusMs <= yesterday.getTime()
+          : new Date(status.createdAt) <= yesterday &&
+            status.account.acct.split("@")[1] !== "flipboard.com" &&
+            !status.reblog;
+      if (tooOld) {
         ended = true;
         break;
       }
