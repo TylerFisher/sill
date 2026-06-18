@@ -18,6 +18,15 @@ import { mastodonActorUri } from "./viewer.js";
 
 const REDIRECT_URI = process.env.MASTODON_REDIRECT_URI as string;
 const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
+// Hard cap on how many statuses we page through in a single timeline pull. The
+// 24h stop condition below ignores reblogs (it only stops on an older *original*
+// post), so a reblog-heavy feed — or a cursor that fell behind during a gap —
+// can otherwise paginate backwards almost without end, blow past the fetch
+// timeout, and leave the cursor un-advanced. That is how Mastodon-only digests
+// got frozen at the June 3 AppView cutover. We keep the most recent N and stop;
+// the cursor still advances to the newest status, so the next pass is small and
+// the feed un-sticks itself.
+const MAX_TIMELINE_STATUSES = 1000;
 
 /**
  * Constructs the authorization URL for a given Mastodon instance
@@ -91,12 +100,20 @@ export const getMastodonList = async (
 
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
+  let seen = 0;
   for await (const statuses of client.v1.timelines.list.$select(listUri).list({
     sinceId: opts?.ignoreCursor ? undefined : dbList.mostRecentPostId,
     limit: 40,
   })) {
     if (ended) break;
     for await (const status of statuses) {
+      // Bounded pagination: never run away on a reblog-heavy feed or a stale
+      // cursor (see MAX_TIMELINE_STATUSES).
+      if (seen >= MAX_TIMELINE_STATUSES) {
+        ended = true;
+        break;
+      }
+      seen++;
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
@@ -157,6 +174,7 @@ export const getMastodonTimeline = async (
 
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
+  let seen = 0;
 
   // Only pass sinceId if it's set - otherwise fetch all recent posts
   const listParams: { limit: number; sinceId?: string } = { limit: 40 };
@@ -167,6 +185,13 @@ export const getMastodonTimeline = async (
   for await (const statuses of client.v1.timelines.home.list(listParams)) {
     if (ended) break;
     for await (const status of statuses) {
+      // Bounded pagination: never run away on a reblog-heavy feed or a stale
+      // cursor (see MAX_TIMELINE_STATUSES).
+      if (seen >= MAX_TIMELINE_STATUSES) {
+        ended = true;
+        break;
+      }
+      seen++;
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
