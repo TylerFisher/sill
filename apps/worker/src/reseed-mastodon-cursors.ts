@@ -14,13 +14,13 @@
  * accounts on their next worker pass. This script does it immediately for the
  * already-frozen ones: it re-runs the worker ingestion path with
  * `ignoreCursor: true` (drop the stuck cursor, pull a fresh 24h window, advance
- * the cursor) for every user with a Mastodon account, scoped to Mastodon
- * (`type: "mastodon"`) so a dual-account user's Bluesky lists aren't needlessly
- * re-fetched (their Bluesky data is already fresh from the firehose).
- * Mastodon-only users are where the freeze was visible, but dual-account users'
- * Mastodon cursor froze the same way — it was just masked by fresh Bluesky data.
- * Re-seeding a non-stuck user is harmless (it re-pushes the recent window, which
- * the AppView ingests idempotently).
+ * the cursor) for the accounts whose cursor is actually stale, scoped to
+ * Mastodon (`type: "mastodon"`) so a dual-account user's Bluesky lists aren't
+ * needlessly re-fetched (their Bluesky data is already fresh from the firehose).
+ * Mastodon-only users are where the freeze was visible, but the stale-cursor
+ * filter catches dual-account users too — their Mastodon cursor froze the same
+ * way, it was just masked by fresh Bluesky data. Healthy accounts are left
+ * alone; they self-heal via the pagination cap on their next worker pass.
  *
  * Env (point at PRODUCTION): same as the backfill —
  *   DATABASE_URL, APPVIEW_API_URL, APPVIEW_API_KEY   required (unless DRY_RUN)
@@ -46,6 +46,7 @@ import {
   pushShareBatches,
 } from "@sill/links";
 import { db, mastodonAccount } from "@sill/schema";
+import { sql } from "drizzle-orm";
 
 const DRY_RUN = process.env.DRY_RUN === "1" || process.env.DRY_RUN === "true";
 const CONCURRENCY = Math.max(
@@ -82,12 +83,25 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Every user with a Mastodon account. Mastodon-only users are where the freeze
-  // was visible, but dual-account users' Mastodon cursor is frozen the same way —
-  // it was just masked by their fresh Bluesky firehose data. Re-seed both.
+  // Only accounts whose cursor is actually stale — frozen at the June 3 cutover
+  // (or otherwise stuck) — across both Mastodon-only and dual-account users.
+  // Re-seeding the whole pool is wasteful: most accounts are healthy (they
+  // self-heal via the pagination cap on their next worker pass) or dormant (a
+  // live fetch with no links to push), so it just churns and surfaces dead-token
+  // errors for no gain.
+  //
+  // Mastodon status IDs are Snowflakes, so the cursor's time is id >> 16 (ms);
+  // here as floor(id / 65536). Only Mastodon-core uses numeric IDs — Pleroma /
+  // GoToSocial use non-numeric IDs we can't decode, so their stuck accounts are
+  // left to the pagination cap rather than re-seeded here.
   const rows = await db
     .select({ userId: mastodonAccount.userId })
-    .from(mastodonAccount);
+    .from(mastodonAccount)
+    .where(
+      sql`${mastodonAccount.mostRecentPostId} ~ '^[0-9]+$'
+          AND to_timestamp(floor(${mastodonAccount.mostRecentPostId}::numeric / 65536) / 1000.0)
+              < now() - interval '3 days'`,
+    );
 
   let userIds = [...new Set(rows.map((r) => r.userId))];
   if (USER_LIMIT) userIds = userIds.slice(0, USER_LIMIT);
