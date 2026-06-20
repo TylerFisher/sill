@@ -44,7 +44,6 @@
 import {
   type MastodonProbe,
   type PushShareBatch,
-  clearOAuthSessionCache,
   fetchLinks,
   probeMastodonAccount,
   pushShareBatches,
@@ -152,7 +151,6 @@ async function verify(userIds: string[]): Promise<void> {
         );
       })
     );
-    clearOAuthSessionCache();
   }
 
   console.log(
@@ -311,10 +309,6 @@ async function main(): Promise<void> {
       await pushShareBatches(batches);
       stats.batchesPushed += batches.length;
     }
-
-    // Scoping to Mastodon caches no Bluesky agents, but keep this in step with
-    // the backfill/worker so the run stays flat on memory regardless.
-    clearOAuthSessionCache();
 
     done += group.length;
     console.log(

@@ -58,7 +58,6 @@ const completeV2Migration = async (did: string, request: Request) => {
   });
 };
 import {
-  clearOAuthSessionCache,
   getBlueskyLists,
   linkBlueskyIdentity,
   seedViewer,
@@ -260,14 +259,6 @@ const bluesky = new Hono()
         const { session: oauthSession } = await oauthClient.callback(
           searchParams,
         );
-
-        // A re-auth mints a new DPoP key + token (written to the session store
-        // by callback() above). Any Agent still cached from a previous restore
-        // is bound to the OLD DPoP key, so it would sign proofs with the wrong
-        // key against the new token — "Invalid DPoP key binding". Drop the
-        // cached agent/session for this DID so the next getOrCreateAgent
-        // rebuilds against the fresh session.
-        clearOAuthSessionCache(oauthSession.did);
 
         const agent = new Agent(oauthSession);
         const profile = await agent.getProfile({

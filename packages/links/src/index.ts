@@ -6,7 +6,6 @@ export {
   getOrCreateAgent,
   syncMutes,
   syncUserMutesToAppView,
-  clearOAuthSessionCache,
 } from "./bluesky.js";
 export {
   getMastodonLists,
@@ -55,4 +54,3 @@ export { getUserBookmarks, addNewBookmarks } from "./bookmarks.js";
 export { processNotificationGroup } from "./notifications.js";
 export { sendPushNotification } from "./push.js";
 export { clearUrlExpansionCache } from "./normalizeLink.js";
-export { flushCacheReport } from "./cache-report.js";
