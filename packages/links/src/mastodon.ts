@@ -247,6 +247,12 @@ export const getMastodonTimeline = async (
   if (!opts?.ignoreCursor && cursorIsFresh && account.mostRecentPostId) {
     listParams.sinceId = account.mostRecentPostId;
   }
+  const DBG = !!process.env.MT_DEBUG;
+  if (DBG) {
+    console.error(
+      `[mt-debug] ${account.mastodonInstance.instance} cursor=${account.mostRecentPostId} cursorMs=${cursorMs} fresh=${cursorIsFresh} ignoreCursor=${!!opts?.ignoreCursor} sinceId=${listParams.sinceId ?? "(none)"}`
+    );
+  }
 
   for await (const statuses of client.v1.timelines.home.list(listParams)) {
     if (ended) break;
@@ -289,6 +295,12 @@ export const getMastodonTimeline = async (
     }
   }
 
+  if (DBG) {
+    console.error(
+      `[mt-debug] ${account.mastodonInstance.instance} seen=${seen} timeline=${timeline.length} newestSeenId=${newestSeenId} willUpdate=${!!(newestSeenId && newestSeenId !== account.mostRecentPostId)}`
+    );
+  }
+
   // Advance the cursor to the newest status SEEN, decoupled from whether any
   // were accepted for ingestion. Gating on `timeline.length > 0` (the filtered,
   // in-window set) is what froze accounts: when the newest statuses were all
@@ -296,10 +308,24 @@ export const getMastodonTimeline = async (
   // cursor never moved, so every later pass re-fetched the same gap forever.
   // Only write when it actually moves forward.
   if (newestSeenId && newestSeenId !== account.mostRecentPostId) {
-    await db
-      .update(mastodonAccount)
-      .set({ mostRecentPostId: newestSeenId })
-      .where(eq(mastodonAccount.id, account.id));
+    try {
+      const res = await db
+        .update(mastodonAccount)
+        .set({ mostRecentPostId: newestSeenId })
+        .where(eq(mastodonAccount.id, account.id))
+        .returning({ id: mastodonAccount.id });
+      if (DBG) {
+        console.error(
+          `[mt-debug] ${account.mastodonInstance.instance} UPDATE ok rows=${res.length} (accountId=${account.id})`
+        );
+      }
+    } catch (e) {
+      console.error(
+        `[mt-debug] ${account.mastodonInstance.instance} UPDATE THREW:`,
+        e
+      );
+      throw e;
+    }
   }
 
   return timeline;
