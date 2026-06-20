@@ -45,6 +45,21 @@ const snowflakeMs = (id: string): number | null => {
 };
 
 /**
+ * The newer of two status IDs. For numeric (Mastodon-core) IDs that's the larger
+ * Snowflake, regardless of the order the API returned the page in; otherwise keep
+ * the one already held (the first seen — the page head under the API's default
+ * newest-first order). Tracks the true timeline head so the cursor can advance to
+ * it independent of which statuses we accept for ingestion.
+ */
+const newerStatusId = (held: string | null, next: string): string => {
+  if (held === null) return next;
+  const a = snowflakeMs(held);
+  const b = snowflakeMs(next);
+  if (a !== null && b !== null) return b > a ? next : held;
+  return held;
+};
+
+/**
  * Constructs the authorization URL for a given Mastodon instance
  * @param instance Mastodon instance URL
  * @returns Authorization URL for the Mastodon instance
@@ -117,8 +132,20 @@ export const getMastodonList = async (
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
   let seen = 0;
+  let newestSeenId: string | null = null;
+
+  // Same stale-cursor handling as getMastodonTimeline: only use sinceId when the
+  // list cursor is fresh; otherwise fetch newest-first and advance to the newest
+  // status seen.
+  const cursorMs = dbList.mostRecentPostId
+    ? snowflakeMs(dbList.mostRecentPostId)
+    : null;
+  const cursorIsFresh = cursorMs !== null && cursorMs > yesterday.getTime();
   for await (const statuses of client.v1.timelines.list.$select(listUri).list({
-    sinceId: opts?.ignoreCursor ? undefined : dbList.mostRecentPostId,
+    sinceId:
+      !opts?.ignoreCursor && cursorIsFresh
+        ? (dbList.mostRecentPostId ?? undefined)
+        : undefined,
     limit: 40,
   })) {
     if (ended) break;
@@ -130,6 +157,7 @@ export const getMastodonList = async (
         break;
       }
       seen++;
+      newestSeenId = newerStatusId(newestSeenId, status.id);
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
@@ -160,12 +188,12 @@ export const getMastodonList = async (
     }
   }
 
-  if (timeline.length > 0) {
+  // Advance to the newest status seen (decoupled from the filtered set), so an
+  // all-out-of-window page can't freeze the list cursor. See getMastodonTimeline.
+  if (newestSeenId && newestSeenId !== dbList.mostRecentPostId) {
     await db
       .update(list)
-      .set({
-        mostRecentPostId: timeline[0].id,
-      })
+      .set({ mostRecentPostId: newestSeenId })
       .where(
         and(eq(list.mastodonAccountId, account.id), eq(list.uri, listUri))
       );
@@ -200,10 +228,23 @@ export const getMastodonTimeline = async (
   const timeline: mastodon.v1.Status[] = [];
   let ended = false;
   let seen = 0;
+  // The newest status we lay eyes on, before any filtering. The cursor advances
+  // to THIS, not to the newest *accepted* status — see the update below.
+  let newestSeenId: string | null = null;
 
-  // Only pass sinceId if it's set - otherwise fetch all recent posts
+  // Use the stored cursor as `sinceId` only when it's fresh (within the 24h
+  // window). A stale cursor makes Mastodon return a huge gap of statuses and, in
+  // practice, an empty *accepted* timeline (the page comes back such that the
+  // first in-window check stops the loop), so the cursor never advanced and the
+  // account froze — confirmed via the VERIFY path. For a stale (or non-numeric,
+  // or absent) cursor we drop sinceId and fetch newest-first, the path that
+  // reliably returns fresh statuses, then advance to the newest one seen.
+  const cursorMs = account.mostRecentPostId
+    ? snowflakeMs(account.mostRecentPostId)
+    : null;
+  const cursorIsFresh = cursorMs !== null && cursorMs > yesterday.getTime();
   const listParams: { limit: number; sinceId?: string } = { limit: 40 };
-  if (!opts?.ignoreCursor && account.mostRecentPostId) {
+  if (!opts?.ignoreCursor && cursorIsFresh && account.mostRecentPostId) {
     listParams.sinceId = account.mostRecentPostId;
   }
 
@@ -217,6 +258,7 @@ export const getMastodonTimeline = async (
         break;
       }
       seen++;
+      newestSeenId = newerStatusId(newestSeenId, status.id);
       if (status.account.username === profile.username) continue;
       if (status.reblog?.account.username === profile.username) continue;
 
@@ -247,12 +289,16 @@ export const getMastodonTimeline = async (
     }
   }
 
-  if (timeline.length > 0) {
+  // Advance the cursor to the newest status SEEN, decoupled from whether any
+  // were accepted for ingestion. Gating on `timeline.length > 0` (the filtered,
+  // in-window set) is what froze accounts: when the newest statuses were all
+  // out-of-window / own / self-reblogs, the filtered set was empty and the
+  // cursor never moved, so every later pass re-fetched the same gap forever.
+  // Only write when it actually moves forward.
+  if (newestSeenId && newestSeenId !== account.mostRecentPostId) {
     await db
       .update(mastodonAccount)
-      .set({
-        mostRecentPostId: timeline[0].id,
-      })
+      .set({ mostRecentPostId: newestSeenId })
       .where(eq(mastodonAccount.id, account.id));
   }
 
@@ -386,7 +432,7 @@ export const probeMastodonAccount = async (
           }
           if (firstAccepted === null) firstAccepted = status; // = timeline[0]
         }
-        break pages; // first page is enough to see the outcome
+        break; // first page is enough to see the outcome
       }
     } else {
       stopReason = "noCursor";
