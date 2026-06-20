@@ -273,6 +273,20 @@ export interface MastodonProbe {
   newestStatusAt: string | null;
   /** The currently-stored cursor, for context. */
   cursor: string | null;
+  // --- Real-path replay: fetch WITH the stored sinceId, exactly like
+  // getMastodonTimeline, read-only. This is what actually runs in the worker and
+  // where the freeze hides (the plain probe above omits sinceId, so it can't see
+  // it). `cursorPageFirstAt`/`cursorPageLastAt` reveal the order the API returns
+  // statuses for a stale sinceId (newest-first vs oldest-first).
+  /** Raw statuses the API returned on the first page when queried with sinceId. */
+  cursorPageCount: number;
+  /** createdAt of the first and last status on that page (to read the ordering). */
+  cursorPageFirstAt: string | null;
+  cursorPageLastAt: string | null;
+  /** Would the real loop produce a non-empty timeline → advance the cursor? */
+  cursorWouldAdvance: boolean;
+  /** If so, to when (decoded from the new cursor id); else why it stayed empty. */
+  cursorOutcome: string;
 }
 
 /**
@@ -289,6 +303,15 @@ export const probeMastodonAccount = async (
     where: eq(mastodonAccount.userId, userId),
     with: { mastodonInstance: true },
   });
+  const empty = {
+    statuses: 0,
+    newestStatusAt: null,
+    cursorPageCount: 0,
+    cursorPageFirstAt: null,
+    cursorPageLastAt: null,
+    cursorWouldAdvance: false,
+    cursorOutcome: "-",
+  };
   if (!account) {
     return {
       userId,
@@ -296,9 +319,8 @@ export const probeMastodonAccount = async (
       username: null,
       ok: false,
       error: "no_mastodon_account",
-      statuses: 0,
-      newestStatusAt: null,
       cursor: null,
+      ...empty,
     };
   }
 
@@ -314,8 +336,9 @@ export const probeMastodonAccount = async (
       url: `https://${account.mastodonInstance.instance}`,
       accessToken: account.accessToken,
     });
-    await client.v1.accounts.verifyCredentials(); // throws on a revoked/expired token
+    const profile = await client.v1.accounts.verifyCredentials(); // throws on a revoked/expired token
 
+    // (1) Plain fetch, no sinceId — proves the token works and the feed has data.
     let statuses = 0;
     let newestStatusAt: string | null = null;
     for await (const page of client.v1.timelines.home.list({ limit: 40 })) {
@@ -323,20 +346,73 @@ export const probeMastodonAccount = async (
         if (newestStatusAt === null) newestStatusAt = status.createdAt;
         statuses++;
       }
-      break; // one page is enough to tell "can fetch" from "empty/broken"
+      break;
     }
 
-    return { ...base, ok: true, error: null, statuses, newestStatusAt };
+    // (2) Real-path replay: fetch the FIRST page WITH the stored sinceId, and
+    // run the same accept/stop logic getMastodonTimeline uses, read-only. This
+    // is the experiment — it shows whether a stale sinceId yields a non-empty
+    // timeline (cursor advances) or an empty one (frozen), and the page order.
+    const yesterday = Date.now() - 86400000;
+    let cursorPageCount = 0;
+    let cursorPageFirstAt: string | null = null;
+    let cursorPageLastAt: string | null = null;
+    let firstAccepted: mastodon.v1.Status | null = null;
+    let stopReason = "endOfPage";
+    if (account.mostRecentPostId) {
+      pages: for await (const page of client.v1.timelines.home.list({
+        limit: 40,
+        sinceId: account.mostRecentPostId,
+      })) {
+        for (const status of page) {
+          cursorPageCount++;
+          if (cursorPageFirstAt === null) cursorPageFirstAt = status.createdAt;
+          cursorPageLastAt = status.createdAt;
+          if (status.account.username === profile.username) continue;
+          if (status.reblog?.account.username === profile.username) continue;
+          const ms = snowflakeMs(status.id);
+          const tooOld =
+            ms !== null
+              ? ms <= yesterday
+              : new Date(status.createdAt).getTime() <= yesterday &&
+                !status.reblog;
+          if (tooOld) {
+            stopReason = "tooOld";
+            break pages;
+          }
+          if (status.id === account.mostRecentPostId) {
+            stopReason = "matchedCursor";
+            break pages;
+          }
+          if (firstAccepted === null) firstAccepted = status; // = timeline[0]
+        }
+        break pages; // first page is enough to see the outcome
+      }
+    } else {
+      stopReason = "noCursor";
+    }
+
+    const cursorWouldAdvance = firstAccepted !== null;
+    const cursorOutcome = firstAccepted
+      ? `advance→${new Date(Number(BigInt(firstAccepted.id) >> 16n)).toISOString()}`
+      : `frozen (${stopReason}, page=${cursorPageCount})`;
+
+    return {
+      ...base,
+      ok: true,
+      error: null,
+      statuses,
+      newestStatusAt,
+      cursorPageCount,
+      cursorPageFirstAt,
+      cursorPageLastAt,
+      cursorWouldAdvance,
+      cursorOutcome,
+    };
   } catch (e) {
     const error =
       e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e);
-    return {
-      ...base,
-      ok: false,
-      error: error.slice(0, 300),
-      statuses: 0,
-      newestStatusAt: null,
-    };
+    return { ...base, ok: false, error: error.slice(0, 300), ...empty };
   }
 };
 

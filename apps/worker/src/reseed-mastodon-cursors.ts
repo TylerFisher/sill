@@ -93,18 +93,22 @@ const decodeSnowflake = (id: string | null): string | null => {
 
 /**
  * Read-only: probe each account and classify why its cursor is or isn't fetchable.
- *   fetchable  — token works and the feed has statuses; a real re-seed WOULD
- *                advance the cursor (so if it's still frozen, the run never
- *                reached it, or ran without ignoreCursor/the cap).
- *   empty-feed — token works but the home timeline is empty; nothing to advance.
- *   errored    — verifyCredentials/timeline threw (dead token, dead instance).
- *                These can't be re-seeded by anything.
+ *   would-advance       — with the stored sinceId the loop accepts ≥1 status, so
+ *                          the real worker pass WOULD advance the cursor.
+ *   frozen-with-cursor  — token works and the feed has data, but fetching WITH
+ *                          the stored sinceId yields an empty timeline (every
+ *                          status too-old / own / matched), so the cursor never
+ *                          advances. THIS is the silent freeze; the per-line
+ *                          page order (first vs last createdAt) shows why.
+ *   empty-feed          — token works but the home timeline is empty.
+ *   errored             — verifyCredentials/timeline threw (dead token/instance).
  */
 async function diagnose(userIds: string[]): Promise<void> {
   console.log(
     `[diag] probing ${userIds.length} accounts read-only (no fetch, no cursor changes)`
   );
-  let fetchable = 0;
+  let advancing = 0;
+  let frozenReal = 0;
   let emptyFeed = 0;
   let errored = 0;
   const errorKinds = new Map<string, number>();
@@ -125,6 +129,11 @@ async function diagnose(userIds: string[]): Promise<void> {
             statuses: 0,
             newestStatusAt: null,
             cursor: null,
+            cursorPageCount: 0,
+            cursorPageFirstAt: null,
+            cursorPageLastAt: null,
+            cursorWouldAdvance: false,
+            cursorOutcome: "-",
           })
         )
       )
@@ -145,16 +154,23 @@ async function diagnose(userIds: string[]): Promise<void> {
           `[diag] ok   ${p.instance ?? "?"}  cursor=${cursorAt}  statuses=0 (empty feed)`
         );
       } else {
-        fetchable++;
+        // The real-path replay (with sinceId) is what matters. `noCursor=N` page
+        // order tells direction: first==newest → newest-first; first==oldest →
+        // the API paged forward from a stale cursor (oldest-first), which trips
+        // the 24h stop and freezes.
+        if (p.cursorWouldAdvance) advancing++;
+        else frozenReal++;
         console.log(
-          `[diag] ok   ${p.instance ?? "?"}  cursor=${cursorAt}  statuses=${p.statuses}  newest=${p.newestStatusAt ?? "-"}`
+          `[diag] ok   ${p.instance ?? "?"}  cursor=${cursorAt}  feed=${p.statuses}` +
+            `  withCursor: page=${p.cursorPageCount} first=${p.cursorPageFirstAt ?? "-"} last=${p.cursorPageLastAt ?? "-"}` +
+            `  ${p.cursorOutcome}`
         );
       }
     }
   }
 
   console.log(
-    `[diag] summary: ${fetchable} fetchable · ${emptyFeed} empty-feed · ${errored} errored`
+    `[diag] summary: ${advancing} would-advance · ${frozenReal} frozen-with-cursor · ${emptyFeed} empty-feed · ${errored} errored`
   );
   console.log(
     `[diag] error kinds: ${JSON.stringify(Object.fromEntries(errorKinds))}`
