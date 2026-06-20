@@ -50,7 +50,7 @@ import {
   pushShareBatches,
 } from "@sill/links";
 import { db, mastodonAccount } from "@sill/schema";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const DRY_RUN = process.env.DRY_RUN === "1" || process.env.DRY_RUN === "true";
 // Read-only classification: probe each candidate (token alive? feed non-empty?)
@@ -58,6 +58,13 @@ const DRY_RUN = process.env.DRY_RUN === "1" || process.env.DRY_RUN === "true";
 // cursor. Use this to find out *why* the frozen accounts won't advance.
 const DIAGNOSE =
   process.env.DIAGNOSE === "1" || process.env.DIAGNOSE === "true";
+// End-to-end write test: run the EXACT worker path (fetchLinks with the stored
+// cursor, real DB write) for each candidate and report the cursor before/after.
+// This is decisive — it shows whether the real ingestion path actually advances
+// the cursor (so the freeze is the worker not reaching these accounts) or not
+// (so the write/fetch path itself is broken). Mutates cursors (which is also the
+// fix if it works). Use USER_LIMIT to test a small sample first.
+const VERIFY = process.env.VERIFY === "1" || process.env.VERIFY === "true";
 const CONCURRENCY = Math.max(
   1,
   Number.parseInt(process.env.CONCURRENCY || "15", 10)
@@ -103,6 +110,56 @@ const decodeSnowflake = (id: string | null): string | null => {
  *   empty-feed          — token works but the home timeline is empty.
  *   errored             — verifyCredentials/timeline threw (dead token/instance).
  */
+const cursorOf = async (userId: string): Promise<string | null> => {
+  const row = await db.query.mastodonAccount.findFirst({
+    where: eq(mastodonAccount.userId, userId),
+    columns: { mostRecentPostId: true },
+  });
+  return row?.mostRecentPostId ?? null;
+};
+
+/**
+ * Run the exact worker ingestion path (fetchLinks with the stored cursor, real
+ * write) and report whether the DB cursor actually moved. Decisive: "moved" means
+ * the fetch/write works and the worker simply isn't reaching these accounts;
+ * "unchanged" with no error means the real write path is broken.
+ */
+async function verify(userIds: string[]): Promise<void> {
+  console.log(
+    `[verify] running the real fetchLinks path for ${userIds.length} accounts (mutates cursors)`
+  );
+  let moved = 0;
+  let unchanged = 0;
+  let errored = 0;
+
+  for (const group of chunk(userIds, CONCURRENCY)) {
+    await Promise.all(
+      group.map(async (userId) => {
+        const before = await cursorOf(userId);
+        let err: string | null = null;
+        try {
+          await fetchLinks(userId, "mastodon"); // exact worker path, real write
+        } catch (e) {
+          err = e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e);
+        }
+        const after = await cursorOf(userId);
+        const changed = before !== after;
+        if (err) errored++;
+        else if (changed) moved++;
+        else unchanged++;
+        console.log(
+          `[verify] ${changed ? "MOVED  " : "stuck  "} before=${decodeSnowflake(before) ?? before ?? "-"} after=${decodeSnowflake(after) ?? after ?? "-"}${err ? `  ERR ${err}` : ""}`
+        );
+      })
+    );
+    clearOAuthSessionCache();
+  }
+
+  console.log(
+    `[verify] summary: ${moved} moved · ${unchanged} unchanged · ${errored} errored`
+  );
+}
+
 async function diagnose(userIds: string[]): Promise<void> {
   console.log(
     `[diag] probing ${userIds.length} accounts read-only (no fetch, no cursor changes)`
@@ -181,6 +238,7 @@ async function main(): Promise<void> {
   if (
     !DRY_RUN &&
     !DIAGNOSE &&
+    !VERIFY &&
     (!process.env.APPVIEW_API_URL || !process.env.APPVIEW_API_KEY)
   ) {
     console.error(
@@ -215,6 +273,11 @@ async function main(): Promise<void> {
 
   if (DIAGNOSE) {
     await diagnose(userIds);
+    process.exit(0);
+  }
+
+  if (VERIFY) {
+    await verify(userIds);
     process.exit(0);
   }
 
