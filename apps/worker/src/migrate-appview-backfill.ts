@@ -43,7 +43,6 @@
 
 import {
   type PushShareBatch,
-  clearOAuthSessionCache,
   fetchLinks,
   pushShareBatches,
 } from "@sill/links";
@@ -155,12 +154,6 @@ async function main(): Promise<void> {
       await pushShareBatches(batches);
       stats.batchesPushed += batches.length;
     }
-
-    // Release the per-account Bluesky Agent + OAuth session objects this group
-    // cached. They're keyed per DID and never reused across the run, so without
-    // this the cache grows unbounded and OOMs over thousands of users (the live
-    // worker clears it every tick; the backfill must do the same per group).
-    clearOAuthSessionCache();
 
     done += group.length;
     console.log(

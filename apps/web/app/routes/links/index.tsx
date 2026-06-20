@@ -25,10 +25,7 @@ import Layout from "~/components/nav/Layout";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
-import {
-	apiCheckBlueskyStatus,
-	apiFilterLinkOccurrences,
-} from "~/utils/api-client.server";
+import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import { timeParamToMs } from "~/utils/timeRange";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
@@ -47,33 +44,10 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	// Use the social accounts from the API response
 	const bsky = userProfile.blueskyAccounts[0] || null;
 
-	// Check if we need to reauthenticate with Bluesky
-	if (bsky) {
-		try {
-			const statusResult = await apiCheckBlueskyStatus(request);
-
-			// If re-authorization is needed, redirect to the OAuth URL
-			if (
-				statusResult.needsAuth &&
-				"redirectUrl" in statusResult &&
-				statusResult.redirectUrl
-			) {
-				return redirect(statusResult.redirectUrl);
-			}
-
-			// If there's an error with resolver, redirect to settings
-			if (
-				statusResult.status === "error" &&
-				"error" in statusResult &&
-				statusResult.error === "resolver"
-			) {
-				return redirect("/settings?tab=connect&error=resolver");
-			}
-		} catch (error) {
-			console.error("Bluesky status check error:", error);
-			// Continue loading the page even if status check fails
-		}
-	}
+	// No per-load Bluesky status check here. It ran on every feed view and could
+	// force an OAuth redirect mid-browse; the AppView serves the Bluesky timeline
+	// and the worker keeps tokens healthy during ingestion, so the feed doesn't
+	// need it. Reauth is surfaced on the settings/connections page instead.
 
 	// Use the Mastodon account from the API response
 	const mastodon = userProfile.mastodonAccounts[0] || null;

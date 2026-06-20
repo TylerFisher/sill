@@ -37,11 +37,6 @@ import {
 } from "./appview.js";
 import { createOAuthClient } from "@sill/auth";
 import { sendBlueskyAuthErrorEmail } from "@sill/emails";
-import {
-  recordCacheHit,
-  recordCacheMiss,
-  recordCacheError,
-} from "./cache-report.js";
 
 interface BskyDetectedLink {
   uri: string;
@@ -59,29 +54,6 @@ const clipHandle = (h: string | null | undefined): string | null => {
 
 export const ONE_DAY_MS = 86400000; // 24 hours in milliseconds
 
-/**
- * OAuth session cache to prevent duplicate restore attempts within a single operation.
- * Keyed by `${did}::${authVariant}` so that when an account migrates from v1 to v2
- * the worker's next tick misses cache and fetches a fresh session via the right client.
- */
-interface OAuthSessionCacheEntry {
-  session: OAuthSession | null;
-  expiresAt: Date | undefined;
-}
-
-const oauthSessionCache = new Map<string, OAuthSessionCacheEntry>();
-
-/**
- * Agent cache to reuse the same Agent instance for all calls within a single job.
- * Same keying as oauthSessionCache — `${did}::${authVariant}`.
- */
-interface AgentCacheEntry {
-  agent: Agent;
-  expiresAt: Date | undefined;
-}
-
-const agentCache = new Map<string, AgentCacheEntry>();
-
 type BlueskyAccountForAuth = {
   did: string;
   handle: string;
@@ -90,38 +62,24 @@ type BlueskyAccountForAuth = {
   authVariant?: string;
 };
 
-const cacheKey = (account: BlueskyAccountForAuth): string =>
-  `${account.did}::${(account.authVariant ?? "v1") as AuthVariant}`;
-
 /**
- * Restores Bluesky OAuth session based on account did.
- * Handles OAuthResponseError (for DPoP nonce) by attempting to restore session again.
- * Uses caching to prevent duplicate restore attempts within a short time window.
- * Sends email notification to user if authentication fails (only once until re-auth succeeds).
- * @param account Account object with did, handle, userId, authErrorNotificationSent, and authVariant
+ * Restores a Bluesky OAuth session for an account's did. Always does a fresh
+ * restore — no session/agent caching. The cache it replaced kept stale sessions
+ * alive across worker ticks (and across the v1→v2 client migration), which
+ * caused more auth problems than the restore calls it saved.
+ * Handles OAuthResponseError (for DPoP nonce) by attempting to restore again.
+ * @param account Account object with did, handle, userId, and authVariant
  * @returns Bluesky OAuth session
  */
 export const handleBlueskyOAuth = async (account: BlueskyAccountForAuth) => {
   const variant = (account.authVariant ?? "v1") as AuthVariant;
-  const key = cacheKey(account);
-
-  // Check cache first — reuse if token hasn't expired
-  const cached = oauthSessionCache.get(key);
-  if (
-    cached &&
-    (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())
-  ) {
-    return cached.session;
-  }
 
   let oauthSession: OAuthSession | null = null;
-  let expiresAt: Date | undefined;
   let shouldSendEmail = false;
 
   try {
     const client = await createOAuthClient(variant);
     oauthSession = await client.restore(account.did);
-    expiresAt = (await oauthSession.getTokenInfo()).expiresAt;
   } catch (error) {
     if (error instanceof OAuthResponseError) {
       const client = await createOAuthClient(variant);
@@ -184,67 +142,24 @@ export const handleBlueskyOAuth = async (account: BlueskyAccountForAuth) => {
   //   }
   // }
 
-  // Only cache successful sessions — failed restores may be transient
-  if (oauthSession) {
-    oauthSessionCache.set(key, {
-      session: oauthSession,
-      expiresAt,
-    });
-  }
-
   return oauthSession;
 };
 
 /**
- * Clears the OAuth session cache and agent cache for a specific account or all accounts.
- * Prefix-scans because cache keys are `${did}::${authVariant}` — a single DID may
- * have stale v1 and v2 entries during the migration window.
- */
-export const clearOAuthSessionCache = (did?: string) => {
-  if (did) {
-    const prefix = `${did}::`;
-    for (const key of oauthSessionCache.keys()) {
-      if (key.startsWith(prefix)) oauthSessionCache.delete(key);
-    }
-    for (const key of agentCache.keys()) {
-      if (key.startsWith(prefix)) agentCache.delete(key);
-    }
-  } else {
-    oauthSessionCache.clear();
-    agentCache.clear();
-  }
-};
-
-/**
- * Gets or creates a reusable Agent for a Bluesky account.
- * Reuses the same Agent instance across all calls for the same account within a job.
- * @param account Account object with did, handle, userId, and authErrorNotificationSent flag
+ * Creates a fresh Agent for a Bluesky account from a freshly restored OAuth
+ * session. No caching — see handleBlueskyOAuth.
+ * @param account Account object with did, handle, userId, and authVariant
  * @returns Agent instance or null if OAuth fails
  */
 export const getOrCreateAgent = async (
   account: BlueskyAccountForAuth,
 ): Promise<Agent | null> => {
-  const key = cacheKey(account);
-  const cached = agentCache.get(key);
-  if (
-    cached &&
-    (!cached.expiresAt || cached.expiresAt.getTime() > Date.now())
-  ) {
-    recordCacheHit(account.handle);
-    return cached.agent;
-  }
-
   const oauthSession = await handleBlueskyOAuth(account);
   if (!oauthSession) {
-    recordCacheError(account.handle);
     return null;
   }
 
-  recordCacheMiss(account.handle);
-  const expiresAt = (await oauthSession.getTokenInfo()).expiresAt;
-  const agent = new Agent(oauthSession);
-  agentCache.set(key, { agent, expiresAt });
-  return agent;
+  return new Agent(oauthSession);
 };
 
 export const getBlueskyList = async (
