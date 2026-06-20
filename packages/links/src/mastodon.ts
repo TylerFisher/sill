@@ -247,12 +247,6 @@ export const getMastodonTimeline = async (
   if (!opts?.ignoreCursor && cursorIsFresh && account.mostRecentPostId) {
     listParams.sinceId = account.mostRecentPostId;
   }
-  const DBG = !!process.env.MT_DEBUG;
-  if (DBG) {
-    console.error(
-      `[mt-debug] ${account.mastodonInstance.instance} cursor=${account.mostRecentPostId} cursorMs=${cursorMs} fresh=${cursorIsFresh} ignoreCursor=${!!opts?.ignoreCursor} sinceId=${listParams.sinceId ?? "(none)"}`
-    );
-  }
 
   for await (const statuses of client.v1.timelines.home.list(listParams)) {
     if (ended) break;
@@ -295,37 +289,16 @@ export const getMastodonTimeline = async (
     }
   }
 
-  if (DBG) {
-    console.error(
-      `[mt-debug] ${account.mastodonInstance.instance} seen=${seen} timeline=${timeline.length} newestSeenId=${newestSeenId} willUpdate=${!!(newestSeenId && newestSeenId !== account.mostRecentPostId)}`
-    );
-  }
-
   // Advance the cursor to the newest status SEEN, decoupled from whether any
   // were accepted for ingestion. Gating on `timeline.length > 0` (the filtered,
-  // in-window set) is what froze accounts: when the newest statuses were all
-  // out-of-window / own / self-reblogs, the filtered set was empty and the
-  // cursor never moved, so every later pass re-fetched the same gap forever.
+  // in-window set) froze accounts whose newest statuses were all out-of-window /
+  // own / self-reblogs: the filtered set was empty so the cursor never moved.
   // Only write when it actually moves forward.
   if (newestSeenId && newestSeenId !== account.mostRecentPostId) {
-    try {
-      const res = await db
-        .update(mastodonAccount)
-        .set({ mostRecentPostId: newestSeenId })
-        .where(eq(mastodonAccount.id, account.id))
-        .returning({ id: mastodonAccount.id });
-      if (DBG) {
-        console.error(
-          `[mt-debug] ${account.mastodonInstance.instance} UPDATE ok rows=${res.length} (accountId=${account.id})`
-        );
-      }
-    } catch (e) {
-      console.error(
-        `[mt-debug] ${account.mastodonInstance.instance} UPDATE THREW:`,
-        e
-      );
-      throw e;
-    }
+    await db
+      .update(mastodonAccount)
+      .set({ mostRecentPostId: newestSeenId })
+      .where(eq(mastodonAccount.id, account.id));
   }
 
   return timeline;
@@ -620,6 +593,44 @@ export const processMastodonLink = async (
  * their Mastodon ActivityPub actor URI (so Mastodon-only users are ingested
  * too). Returns null only when neither identity is available.
  */
+/**
+ * Recover a missing Mastodon `username` from the live profile and persist it.
+ *
+ * Some accounts were stored with an empty `username` (a signup/migration data
+ * gap). That left them un-ingestable: the AppView viewer key for a Mastodon-only
+ * user is their actor URI, which needs the username, so `getLinksFromMastodon`
+ * resolved `viewer` to null and bailed *before fetching* — the cursor never
+ * advanced and the account's digest froze. `verifyCredentials` returns the
+ * username whenever the token is alive, so we read it from there and write it
+ * back, which unblocks both ingestion and the AppView read path (resolveViewer).
+ * Returns the recovered username, or null if the token is dead / the call fails.
+ */
+const recoverMastodonUsername = async (
+  account: typeof mastodonAccount.$inferSelect & {
+    mastodonInstance: { instance: string };
+  },
+): Promise<string | null> => {
+  try {
+    const client = createRestAPIClient({
+      url: `https://${account.mastodonInstance.instance}`,
+      accessToken: account.accessToken,
+    });
+    const profile = await client.v1.accounts.verifyCredentials();
+    const username = profile.username?.trim();
+    if (!username) return null;
+    await db
+      .update(mastodonAccount)
+      .set({ username })
+      .where(eq(mastodonAccount.id, account.id));
+    console.log(
+      `[mastodon] recovered username "${username}" for ${account.mastodonInstance.instance} (was empty)`
+    );
+    return username;
+  } catch {
+    return null;
+  }
+};
+
 export const getLinksFromMastodon = async (
   userId: string,
   opts?: { ignoreCursor?: boolean; skipListNames?: string[] },
@@ -633,10 +644,21 @@ export const getLinksFromMastodon = async (
   const bskyAccount = await db.query.blueskyAccount.findFirst({
     where: eq(blueskyAccount.userId, userId),
   });
+
+  // A Mastodon-only account with an empty username can't be keyed for the
+  // AppView (its viewer is the actor URI, which needs the username). Recover it
+  // from the live profile instead of silently skipping — this is what froze the
+  // June-3 cohort. Dual-account users key off the Bluesky DID, so they don't
+  // need this.
+  let username = account.username?.trim() || null;
+  if (!bskyAccount?.did && !username) {
+    username = await recoverMastodonUsername(account);
+  }
+
   const viewer =
     bskyAccount?.did ??
-    (account.username
-      ? mastodonActorUri(account.mastodonInstance.instance, account.username)
+    (username
+      ? mastodonActorUri(account.mastodonInstance.instance, username)
       : null);
   if (!viewer) return null;
 
