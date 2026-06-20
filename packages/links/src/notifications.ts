@@ -27,10 +27,9 @@ export async function processNotificationGroup(
     return;
   }
 
+  // Plus is no longer required to receive notifications; `subscribed` is still
+  // read so the email/RSS can show the right supporter messaging.
   const subscribed = await isSubscribed(groupUser.id);
-  if (subscribed === "free") {
-    return;
-  }
 
   const newItems = await evaluateNotifications(
     group.userId,

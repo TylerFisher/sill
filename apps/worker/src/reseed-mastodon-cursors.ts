@@ -27,6 +27,9 @@
  *   plus the provider credentials the worker already needs.
  *   CONCURRENCY   users fetched in parallel, default 15
  *   USER_LIMIT    cap candidate users (for a smoke test), default all
+ *   USER_IDS      comma-separated userIds to target explicitly, bypassing the
+ *                 stale-cursor filter (re-fetch + push a specific account whose
+ *                 cursor is already fresh, e.g. after a VERIFY run that didn't push)
  *   DRY_RUN=1     fetch + count, do not POST anything
  *   DIAGNOSE=1    read-only: probe each candidate and classify why its cursor is
  *                 stuck (fetchable / empty-feed / errored), no fetch or writes
@@ -258,16 +261,30 @@ async function main(): Promise<void> {
   // here as floor(id / 65536). Only Mastodon-core uses numeric IDs — Pleroma /
   // GoToSocial use non-numeric IDs we can't decode, so their stuck accounts are
   // left to the pagination cap rather than re-seeded here.
-  const rows = await db
-    .select({ userId: mastodonAccount.userId })
-    .from(mastodonAccount)
-    .where(
-      sql`${mastodonAccount.mostRecentPostId} ~ '^[0-9]+$'
-          AND to_timestamp(floor(${mastodonAccount.mostRecentPostId}::numeric / 65536) / 1000.0)
-              < now() - interval '3 days'`,
-    );
+  // USER_IDS overrides the stale-cursor candidate query with an explicit list,
+  // so a specific account can be re-fetched and pushed regardless of how fresh
+  // its cursor is. Needed because once an account advances it drops out of the
+  // stale-cursor set — and because a VERIFY run advances the cursor WITHOUT
+  // pushing, leaving the AppView empty for an account that now looks "fixed".
+  const explicitUserIds = (process.env.USER_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-  let userIds = [...new Set(rows.map((r) => r.userId))];
+  let userIds: string[];
+  if (explicitUserIds.length > 0) {
+    userIds = explicitUserIds;
+  } else {
+    const rows = await db
+      .select({ userId: mastodonAccount.userId })
+      .from(mastodonAccount)
+      .where(
+        sql`${mastodonAccount.mostRecentPostId} ~ '^[0-9]+$'
+            AND to_timestamp(floor(${mastodonAccount.mostRecentPostId}::numeric / 65536) / 1000.0)
+                < now() - interval '3 days'`,
+      );
+    userIds = [...new Set(rows.map((r) => r.userId))];
+  }
   if (USER_LIMIT) userIds = userIds.slice(0, USER_LIMIT);
   stats.candidateUsers = userIds.length;
 

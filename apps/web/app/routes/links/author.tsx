@@ -43,10 +43,7 @@ export const loader = async ({
 
 	const bsky = existingUser.blueskyAccounts[0] || null;
 	const mastodon = existingUser.mastodonAccounts[0] || null;
-	const lists =
-		subscribed !== "free"
-			? [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])]
-			: [];
+	const lists = [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])];
 
 	return {
 		result,

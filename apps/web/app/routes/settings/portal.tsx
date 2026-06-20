@@ -9,5 +9,5 @@ export const loader = CustomerPortal({
 		// We already checked that it isn't null
 		return dbUser.customerId as string;
 	},
-	server: "sandbox",
+	server: process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
 });

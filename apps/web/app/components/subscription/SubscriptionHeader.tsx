@@ -1,4 +1,4 @@
-import { Box, Heading, Text } from "@radix-ui/themes";
+import { Box, Text } from "@radix-ui/themes";
 
 export default function SubscriptionHeader() {
 	return (
@@ -14,7 +14,7 @@ export default function SubscriptionHeader() {
 				color="yellow"
 				style={{ maxWidth: "600px", margin: "0 auto" }}
 			>
-				Stop doomscrolling. Get{" "}
+				Support Sill with{" "}
 				<Text
 					color="yellow"
 					style={{
@@ -25,6 +25,16 @@ export default function SubscriptionHeader() {
 					sill+
 				</Text>
 				.
+			</Text>
+			<Text
+				as="p"
+				size="3"
+				color="gray"
+				align="center"
+				style={{ maxWidth: "520px", margin: "var(--space-3) auto 0" }}
+			>
+				sill+ is a pay-what-you-want way to support the project and get the iOS
+				app early. More for supporters may follow.
 			</Text>
 		</Box>
 	);

@@ -144,10 +144,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		...options,
 	});
 
-	const lists =
-		subscribed !== "free"
-			? [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])]
-			: [];
+	const lists = [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])];
 
 	return {
 		links,

@@ -153,9 +153,6 @@ export async function signup({
         email: email.toLowerCase(),
         name,
         emailConfirmed: true,
-        freeTrialEnd: new Date(
-          Date.now() + 1000 * 60 * 60 * 24 * 14
-        ).toISOString(),
       })
       .returning({
         id: user.id,
@@ -306,18 +303,10 @@ export const isSubscribed = async (
   });
   if (!dbUser) return "free";
 
-  // const subscribed = dbUser.subscriptions.length > 0;
-  // if (!subscribed && dbUser.freeTrialEnd) {
-  //   if (new Date() < new Date(dbUser.freeTrialEnd)) {
-  //     return "trial";
-  //   }
-  // }
-
-  // if (!subscribed) {
-  //   return "free";
-  // }
-
-  return "plus";
+  // Plus is granted by an active subscription row (written by the Polar
+  // webhook). There is no trial: Plus unlocks the iOS beta (handled in Polar),
+  // not web features, so a non-subscriber is simply "free".
+  return dbUser.subscriptions.length > 0 ? "plus" : "free";
 };
 
 export const hasAgreed = async (userId: string) => {
@@ -384,18 +373,10 @@ export const getUserProfile = async (userId: string) => {
   });
   const hasPassword = !!passwordRecord;
 
-  // Calculate subscription status
-  const subscribed = userWithAccounts.subscriptions.length > 0;
-  const subscriptionStatus: SubscriptionStatus = "plus";
-
-  // if (subscribed) {
-  //   subscriptionStatus = "plus";
-  // } else if (
-  //   userWithAccounts.freeTrialEnd &&
-  //   new Date() < new Date(userWithAccounts.freeTrialEnd)
-  // ) {
-  //   subscriptionStatus = "plus";
-  // }
+  // Calculate subscription status. Plus comes from an active subscription row;
+  // everyone else is free. No trial (see isSubscribed).
+  const subscriptionStatus: SubscriptionStatus =
+    userWithAccounts.subscriptions.length > 0 ? "plus" : "free";
 
   // Return user with subscription status
   return {

@@ -45,8 +45,8 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 const CheckoutContent = () => (
 	<>
 		<PageHeading
-			title="Congratulations!"
-			dek="Thank you for signing up for Sill+. Here's what you can expect."
+			title="Thank you for backing Sill"
+			dek="Your sill+ support helps keep Sill running and growing. Early access to the iOS app is on the way."
 		/>
 
 		<Box mb="6">
@@ -56,14 +56,14 @@ const CheckoutContent = () => (
 			<DataList.Root>
 				<DataList.Item align="center">
 					<DataList.Label>Plan</DataList.Label>
-					<DataList.Value>Sill+ monthly</DataList.Value>
+					<DataList.Value>sill+ supporter</DataList.Value>
 				</DataList.Item>
 			</DataList.Root>
 		</Box>
 
 		<Box>
 			<Heading as="h3" size="4" mb="4">
-				Get started with your new features
+				Make the most of Sill
 			</Heading>
 			<Grid
 				columns={{
@@ -76,28 +76,24 @@ const CheckoutContent = () => (
 					icon={<Mail size={24} />}
 					title="Daily Digests"
 					description="Get a daily curated email or RSS feed of the most popular links from your network, delivered at your preferred time."
-					benefit="Never miss trending stories again"
 					url="/digest"
 				/>
 				<FeatureCard
 					icon={<Bell size={24} />}
 					title="Notifications"
 					description="Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords."
-					benefit="Stay ahead of the conversation"
 					url="/notifications"
 				/>
 				<FeatureCard
 					icon={<List size={24} />}
 					title="Lists & Feeds"
 					description="Track links from your favorite custom lists and feeds on Bluesky or Mastodon."
-					benefit="Follow your interests precisely"
 					url="/settings/connections"
 				/>
 				<FeatureCard
 					icon={<Bookmark size={24} />}
 					title="Bookmarks"
 					description="Save links to your bookmarks for easy access and organization."
-					benefit="Never lose important stories"
 					url="/bookmarks"
 				/>
 			</Grid>

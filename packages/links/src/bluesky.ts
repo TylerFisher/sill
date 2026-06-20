@@ -18,7 +18,7 @@ import {
 } from "@atproto/oauth-client-node";
 import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7-js";
-import { type AuthVariant, isSubscribed } from "@sill/auth";
+import type { AuthVariant } from "@sill/auth";
 import {
   db,
   blueskyAccount,
@@ -597,9 +597,6 @@ export const getLinksFromBluesky = async (
 
   const agent = await getOrCreateAgent(account);
   if (!agent) return null;
-
-  const subscribed = await isSubscribed(userId);
-  if (subscribed === "free") return null;
 
   const shares: PushShare[] = [];
   for (const list of account.lists) {

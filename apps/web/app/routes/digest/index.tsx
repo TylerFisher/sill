@@ -27,13 +27,6 @@ export const loader = async ({ context, request }: Route.LoaderArgs) => {
 		});
 	}
 
-	if (subscribed === "free") {
-		throw new Response(null, {
-			status: 403,
-			statusText: "Forbidden - Upgrade required",
-		});
-	}
-
 	// Get digest settings via API
 	const settingsResult = await apiGetDigestSettings(request);
 	const currentSettings = settingsResult.settings;

@@ -294,9 +294,6 @@ const mastodon = new Hono()
                 email: null,
                 name: accountInfo.display_name || accountInfo.username,
                 emailConfirmed: false,
-                freeTrialEnd: new Date(
-                  Date.now() + 1000 * 60 * 60 * 24 * 14
-                ).toISOString(),
               })
               .returning({ id: user.id });
 

@@ -20,7 +20,7 @@ const Nav = ({
 	themeFormId,
 }: { layoutFormId: string; themeFormId: string }) => {
 	const location = useLocation();
-	let navLinks = [
+	const navLinks = [
 		{
 			to: "/links",
 			label: "Links",
@@ -64,9 +64,6 @@ const Nav = ({
 		},
 	];
 	const data = useRouteLoaderData<typeof loader>("root");
-	if (data?.subscribed === "free") {
-		navLinks = navLinks.filter((link) => !link.plus);
-	}
 
 	return (
 		<>

@@ -21,7 +21,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 	const listOptions: ListOption[] = [];
 
-	if (existingUser.blueskyAccounts.length > 0 && subscribed) {
+	if (existingUser.blueskyAccounts.length > 0) {
 		try {
 			const response = await apiGetBlueskyLists(request);
 			listOptions.push(...response.lists);
@@ -30,7 +30,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 		}
 	}
 
-	if (existingUser.mastodonAccounts.length > 0 && subscribed !== "free") {
+	if (existingUser.mastodonAccounts.length > 0) {
 		try {
 			const response = await apiGetMastodonLists(request);
 			listOptions.push(...response.lists);

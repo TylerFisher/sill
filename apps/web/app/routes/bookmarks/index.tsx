@@ -11,7 +11,7 @@ import {
 } from "@radix-ui/themes";
 import { Bookmark } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { redirect, useFetcher, useSearchParams } from "react-router";
+import { useFetcher, useSearchParams } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import AddBookmarkDialog from "~/components/forms/AddBookmarkDialog";
@@ -52,10 +52,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const existingUser = await requireUserFromContext(context);
   invariantResponse(existingUser, "User not found", { status: 404 });
   const subscribed = existingUser.subscriptionStatus;
-
-  if (subscribed === "free") {
-    return redirect("/settings/subscription");
-  }
 
   const bsky = existingUser.blueskyAccounts[0] || null;
   const mastodon = existingUser.mastodonAccounts[0] || null;

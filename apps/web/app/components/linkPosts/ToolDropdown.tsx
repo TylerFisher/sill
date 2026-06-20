@@ -31,7 +31,6 @@ const ToolDropdown = ({
 	narrowMutePhrase,
 	broadMutePhrase,
 	isBookmarked = false,
-	subscribed,
 }: ToolDropdownProps) => {
 	const fetcher = useFetcher();
 
@@ -49,23 +48,21 @@ const ToolDropdown = ({
 							<Text>Copy</Text>
 						</CopyToClipboard>
 					</DropdownMenu.Item>
-					{subscribed !== "free" && (
-						<fetcher.Form
-							method={isBookmarked ? "DELETE" : "POST"}
-							action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
-						>
-							<input type="hidden" name="url" value={url} />
-							<DropdownMenu.Item>
-								<Button
-									type="submit"
-									className={styles.submitButtonDropdown}
-									variant="ghost"
-								>
-									{isBookmarked ? "Delete bookmark" : "Bookmark"}
-								</Button>
-							</DropdownMenu.Item>
-						</fetcher.Form>
-					)}
+					<fetcher.Form
+						method={isBookmarked ? "DELETE" : "POST"}
+						action={isBookmarked ? "/bookmarks/delete" : "/bookmarks/add"}
+					>
+						<input type="hidden" name="url" value={url} />
+						<DropdownMenu.Item>
+							<Button
+								type="submit"
+								className={styles.submitButtonDropdown}
+								variant="ghost"
+							>
+								{isBookmarked ? "Delete bookmark" : "Bookmark"}
+							</Button>
+						</DropdownMenu.Item>
+					</fetcher.Form>
 
 					{giftUrl && (
 						<DropdownMenu.Item>
