@@ -1,4 +1,5 @@
 import { Button, Heading, Hr, Link, Text } from "@react-email/components";
+import DigestPromo from "../components/DigestPromo.js";
 import EmailLayout from "../components/Layout.js";
 import LinkPost from "../components/LinkPost.js";
 import PlusTrial from "../components/PlusTrial.js";
@@ -35,6 +36,11 @@ const TopLinks = ({
 		day: "numeric",
 		timeZone: "America/New_York",
 	}).format(new Date());
+
+	// Place the promo after the middle link. Skip it for short digests where
+	// there is no real "middle" to drop it into.
+	const promoIndex =
+		links.length >= 4 ? Math.floor(links.length / 2) - 1 : -1;
 
 	return (
 		<EmailLayout preview={preview(links)}>
@@ -87,6 +93,8 @@ const TopLinks = ({
 								digestUrl={digestUrl}
 								layout={layout}
 							/>
+							{/* Drop a Sill+ promo midstream for non-subscribers. */}
+							{subscribed !== "plus" && i === promoIndex && <DigestPromo />}
 							{i < links.length - 1 && <Hr style={hr(layout)} />}
 						</>
 					))}

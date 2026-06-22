@@ -1,6 +1,5 @@
 // app/components/marketing/Features.tsx
 import {
-	Badge,
 	Box,
 	Card,
 	Flex,
@@ -73,19 +72,6 @@ const Features = () => {
 						<Flex direction="column" gap="2">
 							<Flex align="center" gap="2">
 								<Heading size="4">{feature.title}</Heading>
-								{feature.plus && (
-									<Badge color="yellow" variant="solid" size="1">
-										<Text
-											style={{
-												fontStyle: "italic",
-												fontWeight: "900",
-												color: "#9E6C00",
-											}}
-										>
-											sill+
-										</Text>
-									</Badge>
-								)}
 							</Flex>
 							<Text size="2" color="gray">
 								{feature.description}
