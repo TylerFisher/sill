@@ -83,6 +83,10 @@ export type RenderedLinkPost = LinkPost & {
   sources?: string[] | null;
   collection?: string | null;
   parent?: RenderedParentPost | null;
+  // 0–10 review score for collections that carry one (Popfeed reviews). The web
+  // feed renders it as lucide stars; other surfaces show the unicode stars baked
+  // into postText.
+  rating?: number | null;
 };
 
 export type Subscription = typeof subscription.$inferSelect;
@@ -199,6 +203,13 @@ export interface AboutCard {
  */
 export type RenderedLink = Link & {
   publisherIcon?: string | null;
+  // The original AppView URL when `url` was rewritten for display (Popfeed work
+  // URNs → popfeed.social pages). Hydration keys off this so the AppView is
+  // queried by the URL it actually indexed. Equals `url` when not rewritten.
+  sourceUrl?: string | null;
+  // Popfeed work type (`movie`, `tvShow`, `video_game`) for the review poster
+  // card's type label. Null for everything else.
+  workType?: string | null;
 };
 
 // Composite types

@@ -7,6 +7,7 @@ import {
 	mastodonRepostToLinkPost,
 	mastodonStatusToLinkPost,
 } from "./mastodon.js";
+import { popfeedReviewToLinkPost } from "./popfeed.js";
 import { scrobbleToLinkPost } from "./scrobble.js";
 import { emptyDenormalized } from "./shared.js";
 import { standardSiteDocumentToLinkPost } from "./standard-site.js";
@@ -22,6 +23,7 @@ import { standardSiteDocumentToLinkPost } from "./standard-site.js";
  * - `community.lexicon.bookmarks.bookmark` (Sill bookmark) → ./community-bookmark
  * - `site.standard.document` (Leaflet / Offprint docs) → ./standard-site
  * - `app.rocksky.scrobble` (music listen) → ./scrobble
+ * - `social.popfeed.feed.review` (film / TV / game review) → ./popfeed
  *
  * Everything starts from a neutral `base` (the sharer attributed as a bare
  * Bluesky post); unknown collections fall through to the `app.bsky.feed.post`
@@ -42,6 +44,8 @@ export const shareRowToLinkPost = (
 			return standardSiteDocumentToLinkPost(share, base);
 		case "app.rocksky.scrobble":
 			return scrobbleToLinkPost(share, base);
+		case "social.popfeed.feed.review":
+			return popfeedReviewToLinkPost(share, base);
 		case "mastodon.status":
 			return mastodonStatusToLinkPost(share, base);
 		case "mastodon.repost":

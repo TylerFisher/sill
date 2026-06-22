@@ -65,6 +65,10 @@ export interface UrlItem {
   /** Fallback publisher name (the domain's primary publisher) for when the
    *  article's own `siteName` didn't scrape — prefer `siteName` when present. */
   publisherName?: string;
+  /** Popfeed reviews only: the reviewed work's type (e.g. `movie`, `tvShow`,
+   *  `game`), used as the `{type}` segment of the popfeed.social card URL. When
+   *  absent, `popfeedWorkUrl` falls back to the URN's provider segment. */
+  workType?: string;
   // network-trending only: the most-shared post for this URL, hydrated.
   // `shares` here = that post's reposts + quotes ("Most shared").
   topPost?: ShareRow & { shares: number };
@@ -636,6 +640,8 @@ export interface UrlMetaItem {
   siteName?: string;
   byline?: string;
   publishedAt?: string;
+  /** Popfeed work type for the card URL — see `UrlItem.workType`. */
+  workType?: string;
 }
 
 interface UrlMetaResponse {
@@ -762,6 +768,8 @@ export interface QueryMatch {
   siteName?: string;
   byline?: string;
   publishedAt?: string;
+  /** Popfeed work type for the card URL — see `UrlItem.workType`. */
+  workType?: string;
   items: ShareRow[];
 }
 
@@ -853,6 +861,46 @@ const fetchRecordFromSlingshot = async (
 
 // --- UrlItem → link mapping ---
 
+/** Lowercase, accent-stripped, hyphenated slug — for Popfeed video-game URLs. */
+const slugify = (s: string): string =>
+  s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+/**
+ * Popfeed indexes a review under the reviewed work's URN (e.g.
+ * `urn:imdb:tt11743610`, `urn:tmdb:38321`). Rewrite that to the public Popfeed
+ * work page `https://popfeed.social/{type}/{id}` so the card links somewhere
+ * real instead of an unclickable URN. `{type}` is the AppView-supplied
+ * `workType` (e.g. `movie`, `tvShow`, `game`) when present, else the URN's
+ * provider segment (`imdb`, `tmdb`). The trailing segment is the URN's last `:`
+ * part (`id`) — except video games (`workType` `video_game`), which Popfeed keys
+ * by a slug of the title rather than the id. Any non-`urn:` URL passes through
+ * unchanged.
+ */
+export const popfeedWorkUrl = (
+  url: string,
+  workType?: string,
+  title?: string,
+): string => {
+  if (!url.startsWith("urn:")) return url;
+  const parts = url.split(":");
+  const id = parts.pop();
+  const provider = parts.pop();
+  const type = workType || provider;
+  if (!type || type === "urn") return url;
+  if (type === "video_game") {
+    const slug = slugify(title ?? "");
+    return slug ? `https://popfeed.social/${type}/${slug}` : url;
+  }
+  if (!id) return url;
+  return `https://popfeed.social/${type}/${id}`;
+};
+
 /**
  * Map an AppView UrlItem to Sill's `link` shape. When an existing DB `link`
  * row is supplied it is preferred (it carries the stable id, topics, metadata,
@@ -865,12 +913,19 @@ export const urlItemToLink = (
   // The AppView is the source of truth for URL metadata. The DB row is only a
   // fallback for URLs the AppView hasn't scraped yet (no title).
   const fromAppView = Boolean(item.title);
+  // Scraped metadata can carry raw HTML entities (e.g. `Tom &amp; Jerry`,
+  // `&#39;`); decode for display — and for the Popfeed game slug.
+  const title = decodeHtmlEntities(item.title ?? dbLink?.title ?? "");
   return {
     id: dbLink?.id ?? uuidv7(),
-    url: item.url,
-    // Scraped metadata can carry raw HTML entities (e.g. `Tom &amp; Jerry`,
-    // `&#39;`); decode for display.
-    title: decodeHtmlEntities(item.title ?? dbLink?.title ?? ""),
+    // Display/click URL. For Popfeed reviews this rewrites the work URN to the
+    // Popfeed page (using the AppView `workType` for the path, and the title for
+    // game slugs); everything else is unchanged. `sourceUrl` keeps the original
+    // so on-demand hydration still queries the AppView by the key it indexed.
+    url: popfeedWorkUrl(item.url, item.workType, title),
+    sourceUrl: item.url,
+    workType: item.workType ?? null,
+    title,
     description: decodeHtmlEntitiesMaybe(
       item.description ?? dbLink?.description ?? null,
     ),

@@ -39,6 +39,8 @@ const resolveSourceLogo = (post: Post): string | null => {
 			return "/sill.svg";
 		case "app.rocksky.scrobble":
 			return "/rocksky.png";
+		case "social.popfeed.feed.review":
+			return "/popfeed.svg";
 		case "pub.leaflet.content":
 			return "/leaflet.svg";
 		case "app.offprint.content":
@@ -151,6 +153,7 @@ const PostRep = ({
 									postText: post.postText,
 									postType: post.postType,
 									postImages: post.postImages,
+									rating: post.rating,
 								}}
 								layout={layout}
 							/>
