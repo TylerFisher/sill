@@ -5,3 +5,19 @@
 .link-image {
 	object-fit: cover;
 }
+
+/* Popfeed review poster: a vertical (2:3) movie/TV/game poster floated beside
+   the title, instead of the full-bleed 2:1 social-card image. */
+.poster {
+	width: 100px;
+	aspect-ratio: 2 / 3;
+	object-fit: cover;
+	border-radius: var(--radius-2);
+	display: block;
+}
+
+@media (min-width: 768px) {
+	.poster {
+		width: 120px;
+	}
+}

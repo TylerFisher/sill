@@ -95,7 +95,72 @@ const card = (
 	avatars: [AVATAR],
 });
 
+/** A Popfeed review card: vertical poster + rating, mirroring the mapper. */
+const popfeedCard = (
+	overrides: {
+		title: string;
+		workUrl: string;
+		credit: string;
+		workType: string;
+		year: string;
+		posterUrl: string;
+		postText: string;
+		rating: number;
+	},
+): MostRecentLinkPosts => ({
+	uniqueActorsCount: 1,
+	link: makeLink({
+		title: overrides.title,
+		url: overrides.workUrl,
+		authors: [overrides.credit],
+		siteName: null,
+		workType: overrides.workType,
+		sourceUrl: overrides.workUrl,
+		imageUrl: overrides.posterUrl,
+		publishedDate: `${overrides.year}-01-01 00:00:00`,
+		description: null,
+	}),
+	posts: [
+		makePost({
+			linkUrl: overrides.workUrl,
+			postType: "atbookmark",
+			collection: "social.popfeed.feed.review",
+			postUrl: "https://popfeed.social/review/at://example/review/3ktest",
+			postText: overrides.postText,
+			rating: overrides.rating,
+			actorUrl: "https://popfeed.social/profile/jane.test",
+		}),
+	],
+	avatars: [AVATAR],
+});
+
 const links: MostRecentLinkPosts[] = [
+	// Popfeed — a review with written text (stars, then the review).
+	popfeedCard({
+		title: "Priest",
+		workUrl: "https://popfeed.social/movie/tt0822847",
+		credit: "Scott Stewart",
+		workType: "movie",
+		year: "2011",
+		posterUrl: "https://placehold.co/300x450/1a1a2e/eee?text=Priest",
+		postText:
+			'<span class="popfeed-rating" style="white-space: nowrap">★★★★☆</span><br />Stylish, silly, and over before it wears out its welcome.',
+		rating: 8,
+	}),
+
+	// Popfeed — a rating with no written review ("rated this {type} {stars}").
+	popfeedCard({
+		title: "The Last of Us",
+		workUrl: "https://popfeed.social/tvShow/tt11743610",
+		credit: "HBO",
+		workType: "tvShow",
+		year: "2022",
+		posterUrl: "https://placehold.co/300x450/16213e/eee?text=TLOU",
+		postText:
+			'rated this TV show <span class="popfeed-rating" style="white-space: nowrap">★★★★★</span>',
+		rating: 10,
+	}),
+
 	// Bluesky — a normal post.
 	card(
 		"Bluesky · a normal post",

@@ -109,7 +109,10 @@ const LinkPostRep = ({
 }: LinkPostRepProps) => {
 	if (!linkPost) return null;
 	if (!linkPost.link) return null;
-	const linkUrl = linkPost.link.url;
+	// Hydrate by the AppView's original URL (sourceUrl), not the display URL —
+	// they differ when a URL was rewritten for display (e.g. a Popfeed work URN
+	// shown as a popfeed.social page). Falls back to `url` for everything else.
+	const linkUrl = linkPost.link.sourceUrl ?? linkPost.link.url;
 	const [open, setOpen] = useState(autoExpand);
 	// Posts arrive with the row (DB/list feeds, eager) or are hydrated on demand
 	// when the card is expanded (AppView feeds, `requested` guards one load).

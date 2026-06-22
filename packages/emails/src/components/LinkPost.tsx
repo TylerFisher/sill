@@ -15,6 +15,7 @@ import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 
 import { truncateDescription } from "../utils/misc.js";
+import { isReviewCard, workTypeYearLine } from "../utils/popfeed.js";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
@@ -97,73 +98,99 @@ const LinkPost = ({ linkPost, digestUrl, layout }: LinkPostProps) => {
 		? `PDF from ${displayHost}`
 		: link.title;
 
+	// Popfeed review: a vertical poster beside "{credit} / {title} / {type} • {year}".
+	const isPopfeed = isReviewCard(link);
+	const credit = link.authors?.filter(Boolean).join(", ") || null;
+	const typeYear = workTypeYearLine(link.workType, link.publishedDate);
+
 	return (
 		<div style={container}>
 			<Link href={link.url}>
 				<Section style={wrapper}>
-					{link.imageUrl && layout === "default" && (
-						<Row>
-							<Column style={imgWrapper}>
-								<Img src={link.imageUrl} style={img} />
+					{isPopfeed ? (
+						<Row style={row}>
+							{link.imageUrl && (
+								<Column style={posterCol}>
+									<Img src={link.imageUrl} style={posterImg} />
+								</Column>
+							)}
+							<Column style={posterContent}>
+								{credit && <Text style={metadata}>{credit}</Text>}
+								<Heading style={heading} as="h2">
+									{displayTitle || link.url}
+								</Heading>
+								{typeYear && <Text style={metadata}>{typeYear}</Text>}
 							</Column>
 						</Row>
+					) : (
+						<>
+							{link.imageUrl && layout === "default" && (
+								<Row>
+									<Column style={imgWrapper}>
+										<Img src={link.imageUrl} style={img} />
+									</Column>
+								</Row>
+							)}
+							<Row style={row}>
+								<Column>
+									<Text style={host}>
+										{displayHost}{" "}
+										{link.giftUrl && (
+											<Link style={giftLink} href={link.giftUrl}>
+												(gift link)
+											</Link>
+										)}
+									</Text>
+									<Heading style={heading} as="h2">
+										{displayTitle || link.url}
+									</Heading>
+									{link.description && (
+										<Text style={text}>
+											{truncateDescription(link.description)}
+										</Text>
+									)}
+									{(link.authors || link.publishedDate) && (
+										<Text style={metadata}>
+											{link.authors && (
+												<span>
+													by{" "}
+													{link.authors.length === 2 ? (
+														link.authors.map((author, index) => (
+															<span key={author}>
+																{author}
+																{index === 0 && " and "}
+															</span>
+														))
+													) : link.authors.length > 2 ? (
+														link.authors.map((author, index) => (
+															<span key={author}>
+																{author}
+																{index < link.authors!.length - 1 &&
+																	(index === link.authors!.length - 2
+																		? " and "
+																		: ", ")}
+															</span>
+														))
+													) : (
+														<span>{link.authors[0]}</span>
+													)}
+												</span>
+											)}
+											{link.authors && link.publishedDate && <span> • </span>}
+											{link.publishedDate && (
+												<span>
+													{timeAgo.format(
+														new Date(link.publishedDate),
+														"round-minute",
+													)}
+												</span>
+											)}
+										</Text>
+									)}
+								</Column>
+							</Row>
+						</>
 					)}
-					<Row style={row}>
-						<Column>
-							<Text style={host}>
-								{displayHost}{" "}
-								{link.giftUrl && (
-									<Link style={giftLink} href={link.giftUrl}>
-										(gift link)
-									</Link>
-								)}
-							</Text>
-							<Heading style={heading} as="h2">
-								{displayTitle || link.url}
-							</Heading>
-							{link.description && (
-								<Text style={text}>{truncateDescription(link.description)}</Text>
-							)}
-							{(link.authors || link.publishedDate) && (
-								<Text style={metadata}>
-									{link.authors && (
-										<span>
-											by{" "}
-											{link.authors.length === 2 ? (
-												link.authors.map((author, index) => (
-													<span key={author}>
-														{author}
-														{index === 0 && " and "}
-													</span>
-												))
-											) : link.authors.length > 2 ? (
-												link.authors.map((author, index) => (
-													<span key={author}>
-														{author}
-														{index < link.authors!.length - 1 &&
-															(index === link.authors!.length - 2
-																? " and "
-																: ", ")}
-													</span>
-												))
-											) : (
-												<span>{link.authors[0]}</span>
-											)}
-										</span>
-									)}
-									{link.authors && link.publishedDate && <span> • </span>}
-									{link.publishedDate && (
-										<span>
-											{timeAgo.format(
-												new Date(link.publishedDate),
-												"round-minute",
-											)}
-										</span>
-									)}
-								</Text>
-							)}
-						</Column>
-					</Row>
 				</Section>
 			</Link>
 			{digestUrl ? (
@@ -232,6 +259,23 @@ const img = {
 	borderTopLeftRadius: "12px",
 	borderTopRightRadius: "12px",
 	objectFit: "cover" as const,
+};
+
+const posterCol = {
+	width: "100px",
+	verticalAlign: "top" as const,
+	padding: "12px 0 12px 12px",
+};
+
+const posterImg = {
+	width: "100px",
+	display: "block",
+	borderRadius: "6px",
+};
+
+const posterContent = {
+	verticalAlign: "top" as const,
+	padding: "12px",
 };
 
 const host = {

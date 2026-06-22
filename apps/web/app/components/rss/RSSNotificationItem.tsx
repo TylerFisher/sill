@@ -2,6 +2,8 @@ import { Box, Link, Text } from "@radix-ui/themes";
 import groupBy from "object.groupby";
 import type { MostRecentLinkPosts, SubscriptionStatus } from "@sill/schema";
 import { notificationOutro } from "~/utils/digestText";
+import { isReviewCard } from "~/utils/popfeed";
+import RSSPopfeedHeader from "./RSSPopfeedHeader";
 import RSSPost from "./RSSPost";
 
 const RSSNotificationItem = ({
@@ -9,26 +11,31 @@ const RSSNotificationItem = ({
 	subscribed,
 }: { linkPost: MostRecentLinkPosts; subscribed: SubscriptionStatus }) => {
 	if (!linkPost.link || !linkPost.posts) return null;
+	const link = linkPost.link;
 	const groupedPosts = groupBy(linkPost.posts, (l) => l.postUrl);
-	const host = new URL(linkPost.link.url).host;
+	const host = new URL(link.url).host;
 
 	return (
-		<Box key={linkPost.link.url}>
-			{linkPost.link.imageUrl && (
-				<img src={linkPost.link.imageUrl} alt={linkPost.link.title} />
+		<Box key={link.url}>
+			{isReviewCard(link) ? (
+				<RSSPopfeedHeader link={link} />
+			) : (
+				<>
+					{link.imageUrl && <img src={link.imageUrl} alt={link.title} />}
+					<Text as="p">
+						<small>
+							<Link href={link.url}>{host}</Link>
+							{link.giftUrl ? (
+								<>
+									{" "}
+									<Link href={link.giftUrl}>(gift link)</Link>
+								</>
+							) : null}
+						</small>
+					</Text>
+					<Text as="p">{link.description}</Text>
+				</>
 			)}
-			<Text as="p">
-				<small>
-					<Link href={linkPost.link.url}>{host}</Link>
-					{linkPost.link.giftUrl ? (
-						<>
-							{" "}
-							<Link href={linkPost.link.giftUrl}>(gift link)</Link>
-						</>
-					) : null}
-				</small>
-			</Text>
-			<Text as="p">{linkPost.link.description}</Text>
 			{subscribed === "trial" && (
 				<Text as="p">
 					You are on a free trial of Sill+.{" "}

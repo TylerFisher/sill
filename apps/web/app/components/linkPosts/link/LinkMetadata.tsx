@@ -18,6 +18,10 @@ interface LinkMetadataProps {
 	host: string;
 	siteName: string | null;
 	layout: "default" | "dense";
+	// How to render `publishDate`. "relative" (default) is the article UX
+	// ("3 hours ago"); "year" shows a plain release year, for review posters where
+	// a years-old date reads better as "2011".
+	dateFormat?: "relative" | "year";
 }
 
 const LinkMetadata = ({
@@ -26,6 +30,7 @@ const LinkMetadata = ({
 	host,
 	siteName,
 	layout,
+	dateFormat = "relative",
 }: LinkMetadataProps) => {
 	const displayHost = siteName || host;
 
@@ -69,13 +74,15 @@ const LinkMetadata = ({
 					{authors && publishDate && <Text mx="1">•</Text>}
 					{publishDate && (() => {
 						const date = new Date(`${publishDate}`);
-						const isValidDate = !Number.isNaN(date.getTime());
+						if (Number.isNaN(date.getTime())) return null;
 
-						return isValidDate ? (
+						return (
 							<Text>
-								{timeAgo.format(date, "round-minute")}
+								{dateFormat === "year"
+									? date.getUTCFullYear()
+									: timeAgo.format(date, "round-minute")}
 							</Text>
-						) : null;
+						);
 					})()}
 				</Text>
 			)}

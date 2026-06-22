@@ -1,6 +1,7 @@
 import type { MostRecentLinkPosts } from "@sill/schema";
 import { intro, linkPlug, digestOutro } from "../utils/digestText.js";
 import { truncateDescription } from "../utils/misc.js";
+import { isReviewCard, workTypeYearLine } from "../utils/popfeed.js";
 import { renderToString } from "react-dom/server";
 
 interface RSSLinksProps {
@@ -56,15 +57,34 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				? `PDF from ${displayHost}`
 				: link.title;
 
+			const sharedBy = `<p style="font-size: 12px; color: #999;">Shared by ${linkPost.uniqueActorsCount} ${linkPost.uniqueActorsCount === 1 ? "person" : "people"}</p>`;
+
+			// Popfeed review: vertical poster beside "{credit} / {title} / {type} • {year}".
+			if (isReviewCard(link)) {
+				const typeYear = workTypeYearLine(link.workType, link.publishedDate);
+				return `
+			<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+				<table><tbody><tr>
+					${link.imageUrl ? `<td style="width: 100px; vertical-align: top;"><a href="${link.url}"><img src="${link.imageUrl}" alt="" style="width: 100px; display: block; border-radius: 6px;" /></a></td>` : ""}
+					<td style="vertical-align: top; padding-left: 12px;">
+						${authors ? `<p style="margin: 0; font-size: 12px; color: #999;">${authors}</p>` : ""}
+						<h2 style="margin: 2px 0;"><a href="${link.url}">${displayTitle}</a></h2>
+						${typeYear ? `<p style="margin: 0; font-size: 12px; color: #999;">${typeYear}</p>` : ""}
+					</td>
+				</tr></tbody></table>
+				${sharedBy}
+				<hr />
+			</div>
+		`;
+			}
+
 			return `
 			<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
        <h5 style="color: #999;">${displayHost}</h5>
 				<h2><a href="${link.url}">${displayTitle}</a></h2>
 				${link.description ? `<p style="color: #666;">${truncateDescription(link.description)}</p>` : ""}
         ${authors ? `<p style="font-size: 12px; color: #999;">by ${authors}</p>` : ""}
-				<p style="font-size: 12px; color: #999;">
-					Shared by ${linkPost.uniqueActorsCount} ${linkPost.uniqueActorsCount === 1 ? "person" : "people"}
-				</p>
+				${sharedBy}
         <hr />
 			</div>
 		`;

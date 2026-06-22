@@ -20,6 +20,7 @@ const COLLECTION_SOURCES: Record<
 	"network.cosmik.card": { brand: "Semble", noun: "card" },
 	"community.lexicon.bookmarks.bookmark": { brand: "Sill", noun: null },
 	"app.rocksky.scrobble": { brand: "Rocksky", noun: null },
+	"social.popfeed.feed.review": { brand: "Popfeed", noun: "review" },
 	"pub.leaflet.content": { brand: "Leaflet", noun: "post" },
 	"app.offprint.content": { brand: "Offprint", noun: "post" },
 	"blog.pckt.content": { brand: "Pckt", noun: "post" },

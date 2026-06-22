@@ -179,6 +179,11 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [nextPage, setNextPage] = useState(page + 1);
 	const [observer, setObserver] = useState<IntersectionObserver | null>(null);
 	const [fetchedLinks, setFetchedLinks] = useState<MostRecentLinkPosts[]>([]);
+	// URLs already rendered (page 1 + every fetched page). Cursor pagination can
+	// return the same URL on more than one page; without this an infinite-scroll
+	// page re-renders a card that's already shown — a duplicate React key (each
+	// page is deduped server-side, but not across pages). Reset on feed reload.
+	const seenUrls = useRef<Set<string>>(new Set());
 	const [key, setKey] = useState(loaderData.key);
 	const fetcher = useFetcher<typeof loader>();
 	const formRef = useRef<HTMLFormElement>(null);
@@ -272,33 +277,46 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 		isImmediate: true,
 	});
 
-	// Setup intersection observer after promise is resolved
+	// Setup intersection observer after promise is resolved, and seed the
+	// already-seen URLs with page 1 so fetched pages dedupe against it.
 	useEffect(() => {
-		loaderData.links.then(() => {
+		loaderData.links.then((data) => {
+			for (const link of data.links) {
+				if (link.link?.url) seenUrls.current.add(link.link.url);
+			}
 			if (!observer) {
 				setTimeout(debouncedObserver, 100);
 			}
 		});
 	});
 
-	// When the fetcher has returned new links, set the state and reset the observer
+	// When the fetcher has returned new links, append only the URLs not already
+	// shown (see `seenUrls`), then reset the observer.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Can't put setupIntersectionObserver in the dependency array
 	useEffect(() => {
 		if (fetcher.state === "idle" && fetcher.data?.links) {
 			fetcher.data.links.then((data) => {
-				if (data.links.length > 0) {
-					setFetchedLinks(fetchedLinks.concat(data.links));
+				const fresh = data.links.filter((link) => {
+					const url = link.link?.url;
+					if (!url || seenUrls.current.has(url)) return false;
+					seenUrls.current.add(url);
+					return true;
+				});
+				if (fresh.length > 0) {
+					setFetchedLinks((prev) => prev.concat(fresh));
 					setupIntersectionObserver();
 				}
 			});
 		}
 	}, [fetcher, fetchedLinks.concat]);
 
-	// A new key signifies the server loader got new data. Clear the pagination state.
+	// A new key signifies the server loader got new data. Clear the pagination
+	// state and the seen-URL set (page 1 reseeds via the observer effect above).
 	useEffect(() => {
 		if (key !== loaderData.key) {
 			setKey(loaderData.key);
 			setFetchedLinks([]);
+			seenUrls.current = new Set();
 		}
 	}, [key, loaderData.key]);
 
