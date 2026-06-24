@@ -27,10 +27,8 @@ import { mastodonActorUri, resolveViewer } from "./viewer.js";
 import {
   type AppViewNotificationQuery,
   appViewEnabled,
-  distinctActorCount,
   fetchByAuthor,
   fetchByPublication,
-  fetchHydration,
   fetchNetworkTrending,
   fetchQuery,
   networkFromService,
@@ -42,7 +40,6 @@ import {
   type QueryResponse,
   resolveLeafletPublications,
   resolveRepostSubjects,
-  type ShareRow,
   shareRowToLinkPost,
   type TimeWindow,
   toIso,
@@ -491,44 +488,20 @@ const DISCOVERY_WINDOW: TimeWindow = { days: 90 };
  * Hydrate AppView UrlItems (from by-domain/by-author) into the renderable shape,
  * eagerly loading each URL's posts for the viewer's network.
  */
-const linksFromAppViewItems = async (
-  items: UrlItem[],
-  viewer: string,
-  userId: string,
-): Promise<MostRecentLinkPosts[]> => {
-  if (items.length === 0) return [];
-
-  let shares = await fetchHydration({
-    viewer,
-    window: DISCOVERY_WINDOW,
-    urls: items.map((i) => i.url),
-    hideReposts: "include",
-    network: networkFromService("all"),
-  });
-  shares = await resolveRepostSubjects(shares);
-
-  const sharesByUrl = new Map<string, ShareRow[]>();
-  for (const s of shares) {
-    const list = sharesByUrl.get(s.url);
-    if (list) list.push(s);
-    else sharesByUrl.set(s.url, [s]);
-  }
-
-  return items.map((item) => {
-    const urlShares = sharesByUrl.get(item.url) ?? [];
-    const posts = urlShares
-      .map((s) => shareRowToLinkPost(s, userId))
-      .sort(
-        (a, b) =>
-          new Date(b.postDate).getTime() - new Date(a.postDate).getTime(),
-      );
-    return {
-      uniqueActorsCount: item.shares ?? distinctActorCount(urlShares),
-      link: urlItemToLink(item, null),
-      posts,
-    };
-  });
-};
+/**
+ * Map AppView URL items to Sill's render shape WITHOUT hydrating posts. The
+ * face-pile renders from `item.avatars`, and each card hydrates its posts on
+ * demand (via `/resources/link-posts`) using the page's own time window — so the
+ * shared-by list always matches the window the listing was counted over, and we
+ * avoid a second AppView round-trip on every page load.
+ */
+const linksFromAppViewItems = (items: UrlItem[]): MostRecentLinkPosts[] =>
+  items.map((item) => ({
+    uniqueActorsCount: item.shares ?? 0,
+    link: urlItemToLink(item, null),
+    avatars: item.avatars,
+    // `posts` omitted → hydrated lazily when the card is expanded.
+  }));
 
 /**
  * Finds links from a hostname (viewer-scoped) via the AppView's `/v1/by-domain`.
@@ -594,7 +567,7 @@ export const findLinksByDomain = async (
     minShares: filters?.minShares,
     sort: filters?.sort,
   });
-  const links = await linksFromAppViewItems(res.items, viewer, userId);
+  const links = linksFromAppViewItems(res.items);
   return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };
 
@@ -629,6 +602,6 @@ export const findLinksByAuthor = async (
     minShares: filters?.minShares,
     sort: filters?.sort,
   });
-  const links = await linksFromAppViewItems(res.items, viewer, userId);
+  const links = linksFromAppViewItems(res.items);
   return { links, cursor: res.cursor, about: resolveAboutAccount(res.about) };
 };

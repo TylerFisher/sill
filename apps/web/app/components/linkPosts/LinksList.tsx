@@ -10,6 +10,8 @@ interface LinksListProps {
 	bsky: string | undefined;
 	bookmarks: (typeof bookmark.$inferSelect)[];
 	subscribed: SubscriptionStatus;
+	/** Time-window param for on-demand hydration; see `LinkPostRep`. */
+	hydrationDefaultTime?: string;
 }
 
 const LinksList = ({
@@ -18,6 +20,7 @@ const LinksList = ({
 	bsky,
 	bookmarks,
 	subscribed,
+	hydrationDefaultTime,
 }: LinksListProps) => {
 	const layout = useLayout();
 
@@ -32,6 +35,7 @@ const LinksList = ({
 						layout={layout}
 						bookmarks={bookmarks}
 						subscribed={subscribed}
+						hydrationDefaultTime={hydrationDefaultTime}
 					/>
 					{index < links.length - 1 &&
 						(layout === "default" ? (

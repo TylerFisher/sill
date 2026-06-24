@@ -17,6 +17,13 @@ export interface LinkPostRepProps {
 	autoExpand?: boolean;
 	bookmarks: (typeof bookmark.$inferSelect)[];
 	subscribed: SubscriptionStatus;
+	/**
+	 * Time-window param (e.g. "14d") to use when hydrating posts on a page whose
+	 * default window differs from the shared hydration route's 24h default — so
+	 * the expanded shares match the window the card's count was computed over.
+	 * Only applied when the URL has no explicit `time`.
+	 */
+	hydrationDefaultTime?: string;
 }
 
 function normalizeActorName(name: string | null): string | null {
@@ -106,6 +113,7 @@ const LinkPostRep = ({
 	autoExpand = false,
 	bookmarks = [],
 	subscribed,
+	hydrationDefaultTime,
 }: LinkPostRepProps) => {
 	if (!linkPost) return null;
 	if (!linkPost.link) return null;
@@ -153,8 +161,22 @@ const LinkPostRep = ({
 		requested.current = true;
 		const params = new URLSearchParams(searchParams);
 		params.set("url", linkUrl);
+		// When the page's default window differs from the hydration route's 24h
+		// default (the discovery pages count over 14d), pin it so the expanded
+		// shares match the card's count. Only when no explicit `time` is set.
+		if (!params.has("time") && hydrationDefaultTime) {
+			params.set("time", hydrationDefaultTime);
+		}
 		fetcher.load(`/resources/link-posts?${params.toString()}`);
-	}, [open, visible, needsHydration, fetcher, linkUrl, searchParams]);
+	}, [
+		open,
+		visible,
+		needsHydration,
+		fetcher,
+		linkUrl,
+		searchParams,
+		hydrationDefaultTime,
+	]);
 
 	useEffect(() => {
 		if (fetcher.data?.posts) setPosts(fetcher.data.posts);
