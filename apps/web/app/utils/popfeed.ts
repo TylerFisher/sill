@@ -33,7 +33,8 @@ export const popfeedYear = (
 	publishedDate: string | null | undefined,
 ): number | null => {
 	if (!publishedDate) return null;
-	const d = new Date(publishedDate);
+	// Naive UTC string (no Z); append one so it isn't read as local time.
+	const d = new Date(`${publishedDate}Z`);
 	return Number.isNaN(d.getTime()) ? null : d.getUTCFullYear();
 };
 
