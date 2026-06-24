@@ -73,7 +73,9 @@ const LinkMetadata = ({
 					)}
 					{authors && publishDate && <Text mx="1">•</Text>}
 					{publishDate && (() => {
-						const date = new Date(`${publishDate}`);
+						// publishedDate is naive UTC (no Z); append one so it isn't
+						// parsed as local time and skewed by the viewer's offset.
+						const date = new Date(`${publishDate}Z`);
 						if (Number.isNaN(date.getTime())) return null;
 
 						return (

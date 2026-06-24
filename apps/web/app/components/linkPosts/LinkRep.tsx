@@ -78,7 +78,7 @@ const LinkRep = ({
 	// Release year for the poster's "{type} • {year}" line.
 	const posterYear = (() => {
 		if (!isPoster || !effectiveLink.publishedDate) return null;
-		const d = new Date(effectiveLink.publishedDate);
+		const d = new Date(`${effectiveLink.publishedDate}Z`);
 		return Number.isNaN(d.getTime()) ? null : d.getUTCFullYear();
 	})();
 	// Primary credit shown above the title (the network for TV, director for a
