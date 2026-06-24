@@ -1,25 +1,26 @@
 import { timeParamToMs } from "./timeRange";
 
 /** Default window for the discovery pages — wider than the main feed's 24h. */
-export const DISCOVERY_DEFAULT_MS = 1209600000; // 14 days
+export const DISCOVERY_DEFAULT_MS = 2592000000; // 30 days
 
 /**
  * Time-filter options for the discovery pages, replacing the main feed's
- * sub-day set. The default (empty value → no `time` param) is 14 days; see
+ * sub-day set. The default (empty value → no `time` param) is 30 days; see
  * `DISCOVERY_DEFAULT_MS`.
  */
 export const DISCOVERY_TIME_OPTIONS = [
 	{ value: "1d", label: "1 day" },
 	{ value: "3d", label: "3 days" },
 	{ value: "7d", label: "7 days" },
-	{ value: "", label: "14 days" },
+	{ value: "14d", label: "14 days" },
+	{ value: "", label: "30 days" },
 ];
 
-/** The active time-filter's human label (e.g. "14 days"), for copy. */
+/** The active time-filter's human label (e.g. "30 days"), for copy. */
 export const discoveryTimeLabel = (sp: URLSearchParams): string => {
 	const value = sp.get("time") || "";
 	return (
-		DISCOVERY_TIME_OPTIONS.find((o) => o.value === value)?.label ?? "14 days"
+		DISCOVERY_TIME_OPTIONS.find((o) => o.value === value)?.label ?? "30 days"
 	);
 };
 

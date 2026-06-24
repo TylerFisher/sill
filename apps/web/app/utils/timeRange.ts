@@ -21,6 +21,8 @@ export const timeParamToMs = (param: string | null): number => {
 			return 604800000; // 7 days
 		case "14d":
 			return 1209600000; // 14 days
+		case "30d":
+			return 2592000000; // 30 days
 		default:
 			return 86400000; // 24 hours
 	}

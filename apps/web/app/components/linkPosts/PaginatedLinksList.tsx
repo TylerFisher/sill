@@ -104,6 +104,9 @@ const PaginatedLinksList = ({
 				bsky={bsky}
 				bookmarks={bookmarks}
 				subscribed={subscribed}
+				// Discovery pages count over a 30-day default; pin on-demand
+				// hydration to match (the shared route otherwise defaults to 24h).
+				hydrationDefaultTime="30d"
 			/>
 			{nextCursor && (
 				<Box ref={sentinelRef} py="6">
