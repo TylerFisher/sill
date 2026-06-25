@@ -466,12 +466,20 @@ export const pushShares = async (
   await pushShareBatches([{ viewer, shares }]);
 };
 
-/** Collection NSIDs to request based on Sill's repost filter. */
+/**
+ * Collection NSIDs to request based on Sill's repost filter. The `collection`
+ * param is an allowlist, so each branch must name the equivalent record type on
+ * BOTH networks — Bluesky (`app.bsky.feed.*`) and Mastodon (`mastodon.*`).
+ * Listing only the Bluesky NSIDs silently drops every Mastodon share, which
+ * empties the feed/digest for a Mastodon-only viewer who set `exclude`/`only`.
+ */
 const collectionsForRepostFilter = (
   hideReposts: "include" | "exclude" | "only"
 ): string[] | undefined => {
-  if (hideReposts === "exclude") return ["app.bsky.feed.post"];
-  if (hideReposts === "only") return ["app.bsky.feed.repost"];
+  if (hideReposts === "exclude")
+    return ["app.bsky.feed.post", "mastodon.status"];
+  if (hideReposts === "only")
+    return ["app.bsky.feed.repost", "mastodon.repost"];
   return undefined; // include: all collections
 };
 
