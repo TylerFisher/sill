@@ -4,7 +4,12 @@ import {
   decodeHtmlEntities,
   decodeHtmlEntitiesMaybe,
 } from "./html-entities.js";
-import { isEmptyRecord, toDbDate, toIso } from "./record-mappers/shared.js";
+import {
+  isEmptyRecord,
+  publicImageUrl,
+  toDbDate,
+  toIso,
+} from "./record-mappers/shared.js";
 
 /**
  * Client for the Sill AppView API — a read-only HTTP index over atproto that
@@ -201,7 +206,7 @@ export const linkIdentities = async (ids: string[]): Promise<void> => {
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       console.error(
-        `AppView /v1/identities/link returned ${res.status}: ${body}`,
+        `AppView /v1/identities/link returned ${res.status}: ${body}`
       );
     }
   } catch (e) {
@@ -372,7 +377,7 @@ const clampShareText = (s: PushShare): PushShare => {
  * is one HTTP call per batch, replacing the old per-viewer N-call fanout.
  */
 export const pushShareBatches = async (
-  batches: PushShareBatch[],
+  batches: PushShareBatch[]
 ): Promise<void> => {
   if (batches.length === 0) return;
   const base = process.env.APPVIEW_API_URL;
@@ -387,7 +392,9 @@ export const pushShareBatches = async (
   const split: PushShareBatch[] = [];
   for (const b of batches) {
     if (!b.viewer) continue;
-    const cleaned = b.shares.filter((s) => isHttpUrl(s.url)).map(clampShareText);
+    const cleaned = b.shares
+      .filter((s) => isHttpUrl(s.url))
+      .map(clampShareText);
     if (cleaned.length === 0) continue;
     for (let i = 0; i < cleaned.length; i += SHARES_PER_VIEWER_CAP) {
       split.push({
@@ -422,20 +429,20 @@ export const pushShareBatches = async (
         if (m) {
           const [bi, si] = [Number(m[1]), Number(m[2])];
           console.warn(
-            `AppView /v1/shares: dropping invalid share batches.${bi}.shares.${si} and retrying (${body})`,
+            `AppView /v1/shares: dropping invalid share batches.${bi}.shares.${si} and retrying (${body})`
           );
           payload = payload
             .map((b, idx) =>
               idx === bi
                 ? { ...b, shares: b.shares.filter((_, j) => j !== si) }
-                : b,
+                : b
             )
             .filter((b) => b.shares.length > 0);
           continue;
         }
         const totalShares = payload.reduce((n, b) => n + b.shares.length, 0);
         console.error(
-          `AppView /v1/shares returned ${res.status} for ${payload.length} batches / ${totalShares} shares: ${body}`,
+          `AppView /v1/shares returned ${res.status} for ${payload.length} batches / ${totalShares} shares: ${body}`
         );
         break;
       } catch (e) {
@@ -453,7 +460,7 @@ export const pushShareBatches = async (
  */
 export const pushShares = async (
   viewer: string,
-  shares: PushShare[],
+  shares: PushShare[]
 ): Promise<void> => {
   if (!viewer || shares.length === 0) return;
   await pushShareBatches([{ viewer, shares }]);
@@ -528,7 +535,8 @@ export const fetchUrlPage = async (
   }
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ??
+    []) {
     params.append("collection", c);
   }
 
@@ -585,7 +593,8 @@ export const fetchByPublication = async (opts: {
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
   if (opts.cursor) params.set("cursor", opts.cursor);
-  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ??
+    []) {
     params.append("collection", c);
   }
   if (opts.minShares != null && opts.minShares > 1) {
@@ -658,7 +667,7 @@ const URL_META_PER_REQUEST_CAP = 100;
  * Chunks any input >100 URLs into multiple requests per the API.md cap.
  */
 export const fetchUrlMetadata = async (
-  urls: string[],
+  urls: string[]
 ): Promise<Map<string, UrlMetaItem>> => {
   const out = new Map<string, UrlMetaItem>();
   if (urls.length === 0 || !appViewEnabled()) return out;
@@ -697,7 +706,8 @@ export const fetchByAuthor = async (opts: {
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
   if (opts.cursor) params.set("cursor", opts.cursor);
-  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ??
+    []) {
     params.append("collection", c);
   }
   if (opts.minShares != null && opts.minShares > 1) {
@@ -729,7 +739,8 @@ export const fetchHydration = async (
   appendWindow(params, opts.window);
   if (opts.sourceId) params.set("sourceId", opts.sourceId);
   if (opts.network) params.set("network", opts.network);
-  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ?? []) {
+  for (const c of collectionsForRepostFilter(opts.hideReposts ?? "include") ??
+    []) {
     params.append("collection", c);
   }
   for (const url of opts.urls) params.append("urls", url);
@@ -816,7 +827,7 @@ export const fetchQuery = async (opts: {
  * the mapping.
  */
 export const networkFromService = (
-  service: "mastodon" | "bluesky" | "all" | undefined,
+  service: "mastodon" | "bluesky" | "all" | undefined
 ): string | undefined => {
   switch (service) {
     case "mastodon":
@@ -885,7 +896,7 @@ const slugify = (s: string): string =>
 export const popfeedWorkUrl = (
   url: string,
   workType?: string,
-  title?: string,
+  title?: string
 ): string => {
   if (!url.startsWith("urn:")) return url;
   const parts = url.split(":");
@@ -927,9 +938,12 @@ export const urlItemToLink = (
     workType: item.workType ?? null,
     title,
     description: decodeHtmlEntitiesMaybe(
-      item.description ?? dbLink?.description ?? null,
+      item.description ?? dbLink?.description ?? null
     ),
-    imageUrl: item.imageUrl ?? dbLink?.imageUrl ?? null,
+    // Drop scraped images that point at a local/private host (e.g. an og:image
+    // a scraper left unresolved against its own dev origin); they never load and
+    // make the browser probe the user's own network.
+    imageUrl: publicImageUrl(item.imageUrl) ?? publicImageUrl(dbLink?.imageUrl),
     giftUrl: item.giftUrl ?? dbLink?.giftUrl ?? null,
     metadata: dbLink?.metadata ?? (fromAppView ? { source: "appview" } : null),
     scraped: fromAppView || (dbLink?.scraped ?? false),
@@ -938,17 +952,16 @@ export const urlItemToLink = (
     // to the single `byline` string, then the DB row. Decode entities in names.
     authors:
       (
-        item.authors ??
-        (item.byline ? [item.byline] : dbLink?.authors ?? null)
+        item.authors ?? (item.byline ? [item.byline] : dbLink?.authors ?? null)
       )?.map(decodeHtmlEntities) ?? null,
     // Prefer the article's own `siteName`; fall back to `publisherName` (the
     // domain's primary publisher) only when the article scrape didn't yield one.
     siteName: decodeHtmlEntitiesMaybe(
-      item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null,
+      item.siteName ?? item.publisherName ?? dbLink?.siteName ?? null
     ),
     topics: dbLink?.topics ?? null,
     // Render-time: the publisher's brand icon for this URL (not a DB column).
-    publisherIcon: item.publisherIcon ?? null,
+    publisherIcon: publicImageUrl(item.publisherIcon),
   };
 };
 

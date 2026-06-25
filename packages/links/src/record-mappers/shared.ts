@@ -108,6 +108,53 @@ export const escapeAttr = (s: string): string =>
 export const safeHref = (uri: string): string | null =>
 	/^https?:\/\//i.test(uri) ? uri : null;
 
+/**
+ * A scraped URL safe to load as an `<img src>` (link image / publisher icon):
+ * http(s) only, and not pointing at a loopback / private / link-local host.
+ * Scrapers occasionally emit an unresolved relative og:image against their own
+ * origin (e.g. `http://localhost:4321/cover.png`); rendering that makes the
+ * browser fetch a service on the user's own machine, which trips the OS
+ * "access other devices on your network" permission prompt (and never loads).
+ * Returns the URL when public, else null.
+ */
+export const publicImageUrl = (uri?: string | null): string | null => {
+	if (!uri) return null;
+	let url: URL;
+	try {
+		url = new URL(uri);
+	} catch {
+		return null;
+	}
+	if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+	// Strip IPv6 brackets for comparison.
+	const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+	if (
+		host === "localhost" ||
+		host.endsWith(".localhost") ||
+		host.endsWith(".local") ||
+		host === "::1" ||
+		host === "0.0.0.0"
+	) {
+		return null;
+	}
+	// IPv4 loopback / private / link-local ranges.
+	const m = host.match(/^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+	if (m) {
+		const a = Number(m[1]);
+		const b = Number(m[2]);
+		if (
+			a === 127 ||
+			a === 10 ||
+			(a === 192 && b === 168) ||
+			(a === 172 && b >= 16 && b <= 31) ||
+			(a === 169 && b === 254)
+		) {
+			return null;
+		}
+	}
+	return uri;
+};
+
 // --- Record parsing / serialization ---
 
 /** Serialize a RichText's segments (links + mentions → anchors) to HTML. */
