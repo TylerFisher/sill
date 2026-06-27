@@ -16,6 +16,8 @@ interface WebhookCustomerStateChangedPayload {
     activeSubscriptions: Array<{
       id: string;
       productId: string;
+      // The customer's actual recurring amount in cents (pay-what-you-want).
+      amount: number;
       currentPeriodEnd: string;
       currentPeriodStart: string;
       cancelAtPeriodEnd: boolean;
@@ -196,6 +198,9 @@ const subscriptions = new Hono()
           userId: dbUser.id,
           polarId: polarSubscription.id,
           polarProductId: chosenProduct.id,
+          // The customer's actual recurring amount (pay-what-you-want, so it can
+          // exceed the product's minimum). Stored so the UI shows what they pay.
+          amount: polarSubscription.amount,
           periodEnd: new Date(polarSubscription.currentPeriodEnd),
           periodStart: new Date(polarSubscription.currentPeriodStart),
           cancelAtPeriodEnd: polarSubscription.cancelAtPeriodEnd,

@@ -465,6 +465,10 @@ export const subscription = pgTable("subscription", {
     .notNull()
     .references(() => polarProduct.id),
   status: text().notNull(),
+  // The customer's actual recurring amount in cents (Polar `subscription.amount`).
+  // Pay-what-you-want, so this can exceed the product's minimum — render this,
+  // not `polarProduct.amount` (which is only the floor). Nullable for safety.
+  amount: integer(),
   createdAt: timestamp().defaultNow(),
   periodStart: timestamp(),
   periodEnd: timestamp(),

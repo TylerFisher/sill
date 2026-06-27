@@ -1,7 +1,6 @@
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { Checkout } from "@polar-sh/sdk/models/components/checkout.js";
 import { Box, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { Sparkles } from "lucide-react";
 import { useEffect } from "react";
 
 interface SubscriptionPricingCardProps {
@@ -23,11 +22,11 @@ export default function SubscriptionPricingCard({
   return (
     <Card>
       <Box p="6">
-        <Heading as="h3" size="6" mb="4" align="center" color="yellow">
-          Support Sill
+        <Heading as="h3" size="6" mb="4" color="yellow">
+          Name your price
         </Heading>
-        <Flex direction="column" gap="4" align="center">
-          <Flex gap="3" align="center" justify="center" wrap="wrap">
+        <Flex direction="column" gap="4" align="start">
+          <Flex gap="3" align="center" justify="start" wrap="wrap">
             {checkoutLinks.map((checkout) => (
               <a
                 data-polar-checkout
@@ -47,8 +46,9 @@ export default function SubscriptionPricingCard({
               </a>
             ))}
           </Flex>
-          <Text as="p" size="3" color="gray" align="center">
-            Pay what you want. Cancel any time.
+          <Text as="p" size="3" color="gray">
+            Those are the minimums. Pay more if Sill is worth it to you, and
+            cancel any time.
           </Text>
         </Flex>
       </Box>

@@ -4,6 +4,7 @@ interface SubscriptionDetailsCardProps {
 	subscription: {
 		cancelAtPeriodEnd: boolean;
 		status: string;
+		amount?: number | null;
 		polarProduct: {
 			name: string;
 			amount: number;
@@ -35,11 +36,12 @@ export default function SubscriptionDetailsCard({
 				<DataList.Item align="center">
 					<DataList.Label>Price</DataList.Label>
 					<DataList.Value>
-						${sub.polarProduct.amount / 100}/{sub.polarProduct.interval}
+						${(sub.amount ?? sub.polarProduct.amount) / 100}/
+						{sub.polarProduct.interval}
 					</DataList.Value>
 				</DataList.Item>
 				<DataList.Item align="center">
-					<DataList.Label>Subscription started</DataList.Label>
+					<DataList.Label>Current period started</DataList.Label>
 					<DataList.Value>
 						{sub.periodStart?.toLocaleDateString()}
 					</DataList.Value>
