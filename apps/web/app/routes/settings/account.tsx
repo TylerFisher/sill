@@ -119,19 +119,6 @@ export default function AccountSettings({ loaderData }: Route.ComponentProps) {
               </Link>
             </Box>
           )}
-          <Box>
-            <Link to="/settings/subscription">
-              <Button
-                variant="soft"
-                style={{
-                  width: "100%",
-                }}
-              >
-                {subscribed ? "Manage subscription" : "Subscribe to Sill+"}
-              </Button>
-            </Link>
-          </Box>
-
           <AlertDialog.Root>
             <AlertDialog.Trigger>
               <Button

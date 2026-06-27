@@ -2,6 +2,8 @@ import { invariantResponse } from "@epic-web/invariant";
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { Heart, Smartphone } from "lucide-react";
 import Layout from "~/components/nav/Layout";
+import SettingsTabNav from "~/components/settings/SettingsTabNav";
+import FeatureRow from "~/components/subscription/FeatureRow";
 import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
 import SubscriptionHeader from "~/components/subscription/SubscriptionHeader";
 import SubscriptionPricingCard from "~/components/subscription/SubscriptionPricingCard";
@@ -63,6 +65,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <Layout>
+      <SettingsTabNav />
       {sub ? (
         <div>
           {canceled ? (
@@ -106,32 +109,16 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
         <Box>
           <SubscriptionHeader />
           <Flex direction="column" gap="4" mb="5">
-            <Flex gap="3" align="start">
-              <Box mt="1" style={{ color: "var(--accent-11)", flexShrink: 0 }}>
-                <Heart size={20} />
-              </Box>
-              <Box>
-                <Text as="p" size="3" weight="bold">
-                  Support the work
-                </Text>
-                <Text as="p" size="3" color="gray">
-                  Your support keeps Sill online and improving.
-                </Text>
-              </Box>
-            </Flex>
-            <Flex gap="3" align="start">
-              <Box mt="1" style={{ color: "var(--accent-11)", flexShrink: 0 }}>
-                <Smartphone size={20} />
-              </Box>
-              <Box>
-                <Text as="p" size="3" weight="bold">
-                  Early access to iOS
-                </Text>
-                <Text as="p" size="3" color="gray">
-                  Get the iOS app before it's public, and help shape it.
-                </Text>
-              </Box>
-            </Flex>
+            <FeatureRow
+              icon={<Heart size={20} />}
+              title="Support the work"
+              description="Your support keeps Sill online and improving."
+            />
+            <FeatureRow
+              icon={<Smartphone size={20} />}
+              title="Early access to iOS"
+              description="Get the iOS app before it's public, and help shape it."
+            />
           </Flex>
 
           <SubscriptionPricingCard

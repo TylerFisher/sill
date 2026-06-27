@@ -1,4 +1,4 @@
-import { Box, Text } from "@radix-ui/themes";
+import { Box, Heading, Text } from "@radix-ui/themes";
 
 interface SubscriptionThanksHeaderProps {
   /**
@@ -18,8 +18,8 @@ export default function SubscriptionThanksHeader({
 }: SubscriptionThanksHeaderProps) {
   return (
     <Box mb="6">
-      <Text
-        as="p"
+      <Heading
+        as="h2"
         size={{
           initial: "6",
           md: "7",
@@ -28,13 +28,8 @@ export default function SubscriptionThanksHeader({
         color="yellow"
       >
         Thanks for supporting Sill.
-      </Text>
-      <Text
-        as="p"
-        size="3"
-        color="gray"
-        style={{ maxWidth: "520px", marginTop: "var(--space-3)" }}
-      >
+      </Heading>
+      <Text as="p" size="3" color="gray">
         Your support keeps Sill independent and improving. {iosNote}
       </Text>
     </Box>
