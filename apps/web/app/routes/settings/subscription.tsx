@@ -1,6 +1,6 @@
 import { invariantResponse } from "@epic-web/invariant";
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
-import { Heart, Smartphone } from "lucide-react";
+import { Box, Button, Flex, Link, Text } from "@radix-ui/themes";
+import { Smartphone } from "lucide-react";
 import Layout from "~/components/nav/Layout";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import FeatureRow from "~/components/subscription/FeatureRow";
@@ -61,7 +61,8 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
   const theme = useTheme();
   // A subscription set to cancel at period end (or already canceled) gets the
   // "winding down" treatment instead of the thank-you header.
-  const canceled = !!sub && (sub.cancelAtPeriodEnd || sub.status === "canceled");
+  const canceled =
+    !!sub && (sub.cancelAtPeriodEnd || sub.status === "canceled");
 
   return (
     <Layout>
@@ -87,8 +88,8 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
                 color="gray"
                 style={{ maxWidth: "520px", marginTop: "var(--space-3)" }}
               >
-                Your access stays active until the end of your current period. You
-                can reactivate any time.
+                Your access stays active until the end of your current period.
+                You can reactivate any time.
               </Text>
             </Box>
           ) : (
@@ -106,20 +107,18 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
           </Flex>
         </div>
       ) : (
-        <Box>
+        <Box style={{ maxWidth: "620px" }}>
           <SubscriptionHeader />
-          <Flex direction="column" gap="4" mb="5">
-            <FeatureRow
-              icon={<Heart size={20} />}
-              title="Support the work"
-              description="Your support keeps Sill online and improving."
-            />
+          <Box mb="5">
+            <Text as="p" size="2" weight="bold" color="gray" mb="3">
+              Supporters get:
+            </Text>
             <FeatureRow
               icon={<Smartphone size={20} />}
-              title="Early access to iOS"
-              description="Get the iOS app before it's public, and help shape it."
+              title="Early access to the iOS app"
+              description="Sill is coming to iOS. Get into the beta before it's public, and a say in where it goes."
             />
-          </Flex>
+          </Box>
 
           <SubscriptionPricingCard
             checkoutLinks={checkoutLinks}
@@ -127,6 +126,14 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
             name={name}
             theme={theme}
           />
+          <Text as="p" color="gray" size="1" mt="4">
+            Sill is part of{" "}
+            <Link href="https://euphonos.studio">Euphonos LLC</Link>. Sill uses{" "}
+            <Link href="https://polar.sh">Polar</Link>, an online reseller and
+            Merchant of Record, to process payments. You are eligible for a
+            refund if you email tyler@euphonos.studio with a refund request
+            within 14 days.
+          </Text>
         </Box>
       )}
     </Layout>

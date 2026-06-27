@@ -6,15 +6,15 @@ import { Text } from "@radix-ui/themes";
  * references to the tier going through this so they stay consistent.
  */
 export default function SillPlus() {
-	return (
-		<Text
-			color="yellow"
-			style={{
-				fontWeight: 900,
-				fontStyle: "italic",
-			}}
-		>
-			sill+
-		</Text>
-	);
+  return (
+    <Text
+      color="yellow"
+      style={{
+        fontWeight: 900,
+        fontStyle: "italic",
+      }}
+    >
+      sill+
+    </Text>
+  );
 }
