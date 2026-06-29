@@ -303,6 +303,9 @@ export const isSubscribed = async (
   });
   if (!dbUser) return "free";
 
+  // Manual grant for dev/testing accounts (set `plus_override` in the DB).
+  if (dbUser.plusOverride) return "plus";
+
   // Plus is granted by an active subscription row (written by the Polar
   // webhook). There is no trial: Plus unlocks the iOS beta (handled in Polar),
   // not web features, so a non-subscriber is simply "free".
@@ -373,10 +376,13 @@ export const getUserProfile = async (userId: string) => {
   });
   const hasPassword = !!passwordRecord;
 
-  // Calculate subscription status. Plus comes from an active subscription row;
-  // everyone else is free. No trial (see isSubscribed).
+  // Calculate subscription status. Plus comes from a manual override (dev/testing
+  // accounts) or an active subscription row; everyone else is free. No trial (see
+  // isSubscribed).
   const subscriptionStatus: SubscriptionStatus =
-    userWithAccounts.subscriptions.length > 0 ? "plus" : "free";
+    userWithAccounts.plusOverride || userWithAccounts.subscriptions.length > 0
+      ? "plus"
+      : "free";
 
   // Return user with subscription status
   return {

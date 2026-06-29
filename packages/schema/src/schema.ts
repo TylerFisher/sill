@@ -325,6 +325,9 @@ export const user = pgTable(
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     emailConfirmed: boolean("email_confirmed").default(false).notNull(),
+    // Manual Plus grant for the developer's own and testing accounts. When true,
+    // subscription status resolves to "plus" regardless of any Polar subscription.
+    plusOverride: boolean("plus_override").default(false).notNull(),
   },
   (table) => [
     uniqueIndex("user_email_key")

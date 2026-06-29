@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "plus_override" boolean DEFAULT false NOT NULL;
