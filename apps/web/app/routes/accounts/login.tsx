@@ -23,6 +23,7 @@ import SubmitButton from "~/components/forms/SubmitButton";
 import TextInput from "~/components/forms/TextInput";
 import Layout from "~/components/nav/Layout";
 import { checkHoneypot } from "~/utils/honeypot.server";
+import { safeRedirect } from "~/utils/redirect";
 import { apiLogin } from "~/utils/api-client.server";
 import { EmailSchema, PasswordSchema } from "~/utils/userValidation";
 import type { Route } from "./+types/login";
@@ -104,13 +105,14 @@ export async function action({ request, context }: Route.ActionArgs) {
 		headers.append("set-cookie", apiSetCookie);
 	}
 
-	// Use the redirect URL from the API response or the form data
-	const finalRedirectTo =
+	// Use the redirect URL from the API response or the form data (validated so a
+	// crafted `?redirectTo=` can't bounce a logged-in user off-site).
+	const finalRedirectTo = safeRedirect(
 		(apiResponse && "redirectTo" in apiResponse
 			? apiResponse.redirectTo
-			: undefined) ||
-		redirectTo ||
-		"/links";
+			: undefined) || redirectTo,
+		"/links",
+	);
 
 	return redirect(finalRedirectTo, { headers });
 }

@@ -116,7 +116,7 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
             <FeatureRow
               icon={<Smartphone size={20} />}
               title="Early access to the iOS app"
-              description="Sill is coming to iOS. Get into the beta before it's public, and a say in where it goes."
+              description="Sill is coming to iOS. Try the beta before it's public."
             />
           </Box>
 
@@ -131,8 +131,11 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
             <Link href="https://euphonos.studio">Euphonos LLC</Link>. Sill uses{" "}
             <Link href="https://polar.sh">Polar</Link>, an online reseller and
             Merchant of Record, to process payments. You are eligible for a
-            refund if you email tyler@euphonos.studio with a refund request
-            within 14 days.
+            refund if you email{" "}
+            <Link href="mailto:tyler@euphonos.studio">
+              tyler@euphonos.studio
+            </Link>{" "}
+            with a refund request within 14 days.
           </Text>
         </Box>
       )}

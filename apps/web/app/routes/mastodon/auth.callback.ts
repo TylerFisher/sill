@@ -3,6 +3,7 @@ import {
 	apiMastodonAuthCallback,
 	apiCreateMobileCode,
 } from "~/utils/api-client.server";
+import { safeRedirect } from "~/utils/redirect";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
@@ -47,6 +48,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		| "signup"
 		| undefined;
 	const origin = session.get("mastodonOrigin") as string | undefined;
+	const redirectTo = session.get("mastodonRedirectTo") as string | undefined;
 	const isMobile = session.get("mobile") === true;
 	const apiSessionId = session.get("apiSessionId") as string | undefined;
 	const code = url.searchParams.get("code");
@@ -98,6 +100,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 				session.unset("mobile");
 				session.unset("mastodonMode");
 				session.unset("mastodonOrigin");
+				session.unset("mastodonRedirectTo");
 				session.unset("instance");
 				session.unset("apiSessionId");
 				const headers = new Headers();
@@ -138,7 +141,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			}
 
 			if ("isLogin" in data && data.isLogin) {
-				return redirect("/links", { headers });
+				return redirect(safeRedirect(redirectTo, "/links"), { headers });
 			}
 
 			if ("isSignup" in data && data.isSignup) {

@@ -38,6 +38,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		| undefined;
 	const mobile = requestUrl.searchParams.get("mobile") === "1";
 	const mobileCode = requestUrl.searchParams.get("code");
+	// Where to send the user after a successful login (set by the auth gate when
+	// it bounced an unauthenticated visitor here via the login page).
+	const redirectTo = requestUrl.searchParams.get("redirectTo");
 
 	// Extract pathname from referrer, defaulting to settings if not available or just root
 	let origin = "/settings?tabs=connect";
@@ -97,6 +100,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 		} else {
 			session.set("blueskyOrigin", origin);
 			session.unset("blueskyMode");
+		}
+
+		// Carry the post-login return URL through the OAuth round trip (login only).
+		if (mode === "login" && redirectTo) {
+			session.set("blueskyRedirectTo", redirectTo);
+		} else {
+			session.unset("blueskyRedirectTo");
 		}
 
 		if (mobile) {

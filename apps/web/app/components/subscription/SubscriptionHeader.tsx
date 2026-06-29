@@ -15,17 +15,16 @@ export default function SubscriptionHeader() {
         Become a <SillPlus /> supporter.
       </Heading>
       <Text as="p" size="3" mt="3" color="gray">
-        The{" "}
+        Social media is the "
         <Link
           href="https://reutersinstitute.politics.ox.ac.uk/digital-news-report/2026/dnr-executive-summary"
           target="_blank"
         >
-          Reuters Digital News Report
-        </Link>{" "}
-        found that social media is the "single most widely used way of accessing
-        online news." But our social media tools aren't designed for news
-        consumption. We need better tools that respect our time and help us
-        process a complicated world.
+          single most widely used way of accessing online news
+        </Link>
+        ." But our social media tools aren't designed for news consumption. We
+        need better tools that respect our time and help us process a
+        complicated world.
       </Text>
 
       <Text as="p" size="3" mt="3" color="gray">

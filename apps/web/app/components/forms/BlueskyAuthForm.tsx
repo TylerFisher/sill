@@ -29,6 +29,13 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 	return (
 		<Form action="/bluesky/auth" method="GET">
 			{mode !== "connect" && <input type="hidden" name="mode" value={mode} />}
+			{searchParams.get("redirectTo") && (
+				<input
+					type="hidden"
+					name="redirectTo"
+					value={searchParams.get("redirectTo") ?? ""}
+				/>
+			)}
 			<Box mb={isConnect ? "0" : "4"}>
 				<Text
 					as="label"

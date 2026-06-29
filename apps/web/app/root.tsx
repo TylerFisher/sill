@@ -24,7 +24,7 @@ import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme";
-import { userContext } from "./context/user-context";
+import { requestUrlContext, userContext } from "./context/user-context";
 import type { SubscriptionStatus } from "@sill/schema";
 
 // Routes that don't require authentication
@@ -41,6 +41,14 @@ const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
 }) => {
   const url = new URL(request.url);
   const pathname = url.pathname;
+
+  // Remember where an unauthenticated visitor was trying to go, so the auth gate
+  // (`requireUserFromContext`) can bounce them back after login. Skip React
+  // Router `.data` requests — their URLs aren't real pages to return to.
+  context.set(
+    requestUrlContext,
+    pathname.endsWith(".data") ? null : pathname + url.search,
+  );
 
   // Skip authentication for unauthenticated routes
   if (
