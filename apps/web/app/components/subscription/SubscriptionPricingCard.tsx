@@ -45,6 +45,7 @@ export default function SubscriptionPricingCard({
                     <Button
                       size="3"
                       style={{ width: "100%", fontWeight: "bold" }}
+                      variant="soft"
                     >
                       Pay {cadence}
                     </Button>

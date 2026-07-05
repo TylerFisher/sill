@@ -132,10 +132,8 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
             <Link href="https://polar.sh">Polar</Link>, an online reseller and
             Merchant of Record, to process payments. You are eligible for a
             refund if you email{" "}
-            <Link href="mailto:tyler@euphonos.studio">
-              tyler@euphonos.studio
-            </Link>{" "}
-            with a refund request within 14 days.
+            <Link href="mailto:tyler@sill.social">tyler@sill.social</Link> with
+            a refund request within 14 days.
           </Text>
         </Box>
       )}

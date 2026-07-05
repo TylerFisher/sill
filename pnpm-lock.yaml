@@ -112,8 +112,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       '@polar-sh/checkout':
-        specifier: ^0.3.0
-        version: 0.3.0(@stripe/react-stripe-js@3.9.0(@stripe/stripe-js@7.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@stripe/stripe-js@7.8.0)(react@18.3.1)
+        specifier: ^0.4.0
+        version: 0.4.0(@stripe/react-stripe-js@3.9.0(@stripe/stripe-js@7.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@stripe/stripe-js@7.8.0)(react@18.3.1)
       '@polar-sh/remix':
         specifier: ^0.6.6
         version: 0.6.6
@@ -1772,8 +1772,8 @@ packages:
   '@polar-sh/adapter-utils@0.4.6':
     resolution: {integrity: sha512-F2HsGmRdhczxyFk7bmTZR81gBf/Hj5XfOGe/6S5aGWeJ1YftcWEK8Of+aZijxXv82xktEn7usS+7tfKb4YXghQ==}
 
-  '@polar-sh/checkout@0.3.0':
-    resolution: {integrity: sha512-M94chIsffCgJx22AO5CfQiRKuH73q8IDGY7YbNr51831awlWJPSGR5bSs89TOgw1i6BCsPmiYt5XUuiUFmIr2Q==}
+  '@polar-sh/checkout@0.4.0':
+    resolution: {integrity: sha512-zrtVeTgyOlE6KzKypqxVYxT2ZlwBM5ns6vo1H5GIDVPnvbGoiW6a9GNwdsfwzkFgP0rMbusetTn1tmN1yQZo3w==}
     peerDependencies:
       '@stripe/react-stripe-js': ^3.6.0 || ^4.0.2 || ^5.6.1
       '@stripe/stripe-js': ^7.1.0 || ^8.11.0
@@ -2527,6 +2527,7 @@ packages:
   '@react-email/components@0.0.25':
     resolution: {integrity: sha512-lnfVVrThEcET5NPoeaXvrz9UxtWpGRcut2a07dLbyKgNbP7vj/cXTI5TuHtanCvhCddFpMDnElNRghDOfPzwUg==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
@@ -6991,7 +6992,7 @@ snapshots:
     dependencies:
       '@polar-sh/sdk': 0.47.1
 
-  '@polar-sh/checkout@0.3.0(@stripe/react-stripe-js@3.9.0(@stripe/stripe-js@7.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@stripe/stripe-js@7.8.0)(react@18.3.1)':
+  '@polar-sh/checkout@0.4.0(@stripe/react-stripe-js@3.9.0(@stripe/stripe-js@7.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@stripe/stripe-js@7.8.0)(react@18.3.1)':
     dependencies:
       '@stripe/react-stripe-js': 3.9.0(@stripe/stripe-js@7.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@stripe/stripe-js': 7.8.0
