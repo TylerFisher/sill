@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "seen_plus_promo" boolean DEFAULT false NOT NULL;

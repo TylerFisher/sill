@@ -328,6 +328,8 @@ export const user = pgTable(
     // Manual Plus grant for the developer's own and testing accounts. When true,
     // subscription status resolves to "plus" regardless of any Polar subscription.
     plusOverride: boolean("plus_override").default(false).notNull(),
+    // Whether the one-time Sill+ upsell popup has been shown to this user.
+    seenPlusPromo: boolean("seen_plus_promo").default(false).notNull(),
   },
   (table) => [
     uniqueIndex("user_email_key")

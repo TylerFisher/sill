@@ -1,7 +1,7 @@
 import { Box, Card, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import type { SubscriptionStatus } from "@sill/schema";
 import type { MostRecentLinkPosts } from "@sill/schema";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Await,
 	useFetcher,
@@ -17,6 +17,7 @@ import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 import SortPresetList from "~/components/forms/SortPresetList";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
+import PlusPromoCard from "~/components/subscription/PlusPromoCard";
 import {
 	SourceBadgeProvider,
 	buildSourceBadgeValue,
@@ -40,6 +41,19 @@ export const config = {
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
 	const userProfile = await requireUserFromContext(context);
 	const subscribed = userProfile.subscriptionStatus;
+
+	// Eligibility for the midstream Sill+ promo (rendered after the third feed
+	// item): a non-subscriber whose account is at least a day old, who hasn't
+	// dismissed it yet, and isn't mid-terms-agreement.
+	const createdAt = userProfile.createdAt
+		? new Date(`${userProfile.createdAt}Z`)
+		: null;
+	const showPlusPromo =
+		(userProfile.agreedToLatestTerms ?? true) &&
+		!!createdAt &&
+		Date.now() - createdAt.getTime() >= 24 * 60 * 60 * 1000 &&
+		subscribed !== "plus" &&
+		!userProfile.seenPlusPromo;
 
 	// Use the social accounts from the API response
 	const bsky = userProfile.blueskyAccounts[0] || null;
@@ -128,6 +142,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 		lists,
 		bookmarks,
 		subscribed,
+		showPlusPromo,
 	};
 };
 
@@ -171,6 +186,8 @@ const SeedingState = () => {
 
 const Links = ({ loaderData }: Route.ComponentProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
+	// Whether to drop the midstream Sill+ promo after the third feed item.
+	const showPlusPromo = loaderData.showPlusPromo;
 	const { clearFilterFromStorage } = useFilterStorage();
 	const page = Number.parseInt(searchParams.get("page") || "1");
 	const [nextPage, setNextPage] = useState(page + 1);
@@ -420,20 +437,25 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 									>
 										{data.links
 											.filter((link) => !isMuted(link))
-											.map((link) => (
+											.map((link, i) => (
 												// Include the loader key so cards remount when the feed
 												// reloads (e.g. filtering to a list), discarding any posts
 												// hydrated for a URL under the previous filters.
-												<div key={`${loaderData.key}:${link.link?.url}`}>
-													<LinkPost
-														linkPost={link}
-														instance={loaderData.instance}
-														bsky={loaderData.bsky}
-														layout={layout}
-														bookmarks={loaderData.bookmarks}
-														subscribed={loaderData.subscribed}
-													/>
-												</div>
+												<Fragment key={`${loaderData.key}:${link.link?.url}`}>
+													<div>
+														<LinkPost
+															linkPost={link}
+															instance={loaderData.instance}
+															bsky={loaderData.bsky}
+															layout={layout}
+															bookmarks={loaderData.bookmarks}
+															subscribed={loaderData.subscribed}
+														/>
+													</div>
+													{showPlusPromo && i === 2 && (
+													<PlusPromoCard layout={layout} />
+												)}
+												</Fragment>
 											))}
 										{fetchedLinks.length > 0 && (
 											<div>

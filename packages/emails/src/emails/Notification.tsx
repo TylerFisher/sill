@@ -1,5 +1,6 @@
 import React from "react"
 import { Button, Heading, Hr, Text } from "@react-email/components";
+import DigestPromo from "../components/DigestPromo.js";
 import EmailLayout from "../components/Layout.js";
 import LinkPost from "../components/LinkPost.js";
 import PlusTrial from "../components/PlusTrial.js";
@@ -41,6 +42,9 @@ const Notification = ({
 					{i < links.length - 1 && <Hr style={hr("default")} />}
 				</>
 			))}
+			{/* Sill+ promo for non-subscribers. Notifications are usually a single
+			    link, so it sits at the end rather than midstream like the digest. */}
+			{subscribed !== "plus" && <DigestPromo />}
 			<Button href="https://sill.social/links" style={button}>
 				See all links on Sill
 			</Button>

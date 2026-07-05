@@ -1222,6 +1222,15 @@ export async function apiGetCurrentSubscription(request: Request) {
 /**
  * Get active subscription for user via API
  */
+export async function apiDismissPlusPromo(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api.subscription["dismiss-promo"].$post();
+  if (!response.ok) {
+    throw new Error(`Failed to dismiss plus promo: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function apiGetActiveSubscription(request: Request) {
   const client = createApiClient(request);
   const response = await client.api.subscription.active.$get();

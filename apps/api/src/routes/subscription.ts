@@ -27,6 +27,24 @@ interface WebhookCustomerStateChangedPayload {
 }
 
 const subscriptions = new Hono()
+  // POST /api/subscription/dismiss-promo - Mark the one-time Sill+ upsell popup
+  // as seen so it doesn't fire again for this user.
+  .post("/dismiss-promo", async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+    try {
+      await db
+        .update(user)
+        .set({ seenPlusPromo: true })
+        .where(eq(user.id, userId));
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Dismiss plus promo error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
   // GET /api/subscription/current - Get current (non-canceled) subscription for user
   .get("/current", async (c) => {
     const userId = await getUserIdFromSession(c.req.raw);
