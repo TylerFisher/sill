@@ -1,6 +1,6 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box, Button, Flex, Link, Text } from "@radix-ui/themes";
-import { Smartphone } from "lucide-react";
+import { CalendarRange, Smartphone } from "lucide-react";
 import Layout from "~/components/nav/Layout";
 import SettingsTabNav from "~/components/settings/SettingsTabNav";
 import FeatureRow from "~/components/subscription/FeatureRow";
@@ -107,11 +107,18 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
             <Text as="p" size="2" weight="bold" color="gray" mb="3">
               Supporters get:
             </Text>
-            <FeatureRow
-              icon={<Smartphone size={20} />}
-              title="Early access to the iOS app"
-              description="Sill is coming to iOS. Try the beta before it's public."
-            />
+            <Flex direction="column" gap="4">
+              <FeatureRow
+                icon={<Smartphone size={20} />}
+                title="Early access to the iOS app"
+                description="Sill is coming to iOS. Try the beta before it's public."
+              />
+              <FeatureRow
+                icon={<CalendarRange size={20} />}
+                title="Extended time filters"
+                description="Look back over 7, 14, and 30 days of your network's links, not just the last day."
+              />
+            </Flex>
           </Box>
 
           <SubscriptionPricingCard
