@@ -1,28 +1,21 @@
-import { timeParamToMs } from "./timeRange";
+import { isPlusTimeValue, timeLabel, timeParamToMs } from "./timeRange";
 
-/** Default window for the discovery pages — wider than the main feed's 24h. */
-export const DISCOVERY_DEFAULT_MS = 2592000000; // 30 days
+/** The active time-filter's human label (e.g. "24 hours"), for copy. */
+export const discoveryTimeLabel = (
+	sp: URLSearchParams,
+	isPlus: boolean,
+): string => timeLabel(sp.get("time"), isPlus);
 
 /**
- * Time-filter options for the discovery pages, replacing the main feed's
- * sub-day set. The default (empty value → no `time` param) is 30 days; see
- * `DISCOVERY_DEFAULT_MS`.
+ * Append the active time window to a discovery link so the destination loads
+ * with the right filter on the first request, avoiding the restore-and-reload
+ * flash. Only the time window follows the user across pages (see
+ * `useFilterStorage`); other filters are intentionally left behind.
  */
-export const DISCOVERY_TIME_OPTIONS = [
-	{ value: "1d", label: "1 day" },
-	{ value: "3d", label: "3 days" },
-	{ value: "7d", label: "7 days" },
-	{ value: "14d", label: "14 days" },
-	{ value: "", label: "30 days" },
-];
-
-/** The active time-filter's human label (e.g. "30 days"), for copy. */
-export const discoveryTimeLabel = (sp: URLSearchParams): string => {
-	const value = sp.get("time") || "";
-	return (
-		DISCOVERY_TIME_OPTIONS.find((o) => o.value === value)?.label ?? "30 days"
-	);
-};
+export const discoveryHref = (
+	path: string,
+	time: string | null | undefined,
+): string => (time ? `${path}?time=${encodeURIComponent(time)}` : path);
 
 /**
  * The main-feed filters that the by-author / by-domain discovery pages support,
@@ -30,7 +23,7 @@ export const discoveryTimeLabel = (sp: URLSearchParams): string => {
  * filter UI's params to the API the same way.
  */
 export interface DiscoveryFilterParams {
-	/** Window in ms (defaults to 24h via `timeParamToMs`). */
+	/** Window in ms (defaults to 24h; multi-day windows are Sill+ only). */
 	time: number;
 	service?: "mastodon" | "bluesky" | "all";
 	/** Sill list id (`all`/absent → no list scope). */
@@ -43,6 +36,7 @@ export interface DiscoveryFilterParams {
 
 export const parseDiscoveryFilters = (
 	sp: URLSearchParams,
+	isPlus: boolean,
 ): DiscoveryFilterParams => {
 	const service = sp.get("service");
 	const reposts = sp.get("reposts");
@@ -52,9 +46,12 @@ export const parseDiscoveryFilters = (
 	const timeParam = sp.get("time");
 
 	return {
-		// No `time` param → the wider discovery default (14 days), not the main
-		// feed's 24h; an explicit pick (1d/3d/7d) uses the standard mapping.
-		time: timeParam ? timeParamToMs(timeParam) : DISCOVERY_DEFAULT_MS,
+		// Default 24h, matching the main feed. The multi-day windows are Sill+
+		// only, so clamp a free user who arrives with one (stale saved filter,
+		// hand-edited URL) back to the default.
+		time: timeParamToMs(
+			!isPlus && isPlusTimeValue(timeParam) ? null : timeParam,
+		),
 		service:
 			service === "mastodon" || service === "bluesky" || service === "all"
 				? service

@@ -1,14 +1,11 @@
-import { DropdownMenu, Spinner } from "@radix-ui/themes";
-import type { list } from "@sill/schema";
+import { DropdownMenu, Flex, Spinner } from "@radix-ui/themes";
+import type { SubscriptionStatus, list } from "@sill/schema";
 import { ChevronDown } from "lucide-react";
 import { useNavigation, useSearchParams } from "react-router";
+import SillPlus from "~/components/subscription/SillPlus";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
+import { TIME_OPTIONS, type TimeOption } from "~/utils/timeRange";
 import styles from "./PresetFilterItem.module.css";
-
-interface TimeOption {
-	value: string;
-	label: string;
-}
 
 interface FilterPresetListProps {
 	showService: boolean;
@@ -16,14 +13,9 @@ interface FilterPresetListProps {
 	hideSort?: boolean;
 	/** Override the time-window options (e.g. wider ranges for discovery pages). */
 	timeOptions?: TimeOption[];
+	/** Current subscription status; gates the Sill+ time windows. */
+	subscribed?: SubscriptionStatus;
 }
-
-const DEFAULT_TIME_OPTIONS: TimeOption[] = [
-	{ value: "3h", label: "3 hours" },
-	{ value: "6h", label: "6 hours" },
-	{ value: "12h", label: "12 hours" },
-	{ value: "", label: "24 hours" },
-];
 
 const repostOptions = [
 	{ value: "", label: "With reposts" },
@@ -43,11 +35,13 @@ const FilterPresetList = ({
 	showService,
 	lists,
 	hideSort = false,
-	timeOptions = DEFAULT_TIME_OPTIONS,
+	timeOptions = TIME_OPTIONS,
+	subscribed,
 }: FilterPresetListProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { clearFilterFromStorage } = useFilterStorage();
 	const navigation = useNavigation();
+	const isPlus = subscribed === "plus";
 
 	// While a filter navigation is in flight, reflect the target params
 	// optimistically and flag the control whose value is changing as pending.
@@ -62,6 +56,11 @@ const FilterPresetList = ({
 
 	const sort = params.get("sort");
 	const time = params.get("time") || "";
+	// A Sill+ window selected by a now-free user is clamped to 24h server-side,
+	// so treat it as inactive in the trigger.
+	const timeLocked =
+		!!timeOptions.find((o) => o.value === time)?.plus && !isPlus;
+	const timeActive = !!time && !timeLocked;
 	const reposts = params.get("reposts") || "";
 	const minShares = params.get("minShares") || "";
 	const activeService = params.get("service");
@@ -166,6 +165,9 @@ const FilterPresetList = ({
 
 	const getTimeLabel = () => {
 		const option = timeOptions.find((o) => o.value === time);
+		// A free user with a saved Sill+ window is clamped server-side to 24h,
+		// so reflect that in the trigger rather than showing the locked label.
+		if (option?.plus && !isPlus) return "24 hours";
 		return option?.label || "24 hours";
 	};
 
@@ -208,7 +210,7 @@ const FilterPresetList = ({
 				<DropdownMenu.Trigger>
 					<button
 						type="button"
-						className={`${styles.item} ${time ? styles.active : ""}`}
+						className={`${styles.item} ${timeActive ? styles.active : ""}`}
 					>
 						<span>{getTimeLabel()}</span>
 						{paramChanging("time") ? (
@@ -219,14 +221,23 @@ const FilterPresetList = ({
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
-					{timeOptions.map((option) => (
-						<DropdownMenu.Item
-							key={option.value}
-							onSelect={() => handleSelectTime(option.value)}
-						>
-							{option.label}
-						</DropdownMenu.Item>
-					))}
+					{timeOptions.map((option) => {
+						const locked = !!option.plus && !isPlus;
+						return (
+							<DropdownMenu.Item
+								key={option.value}
+								disabled={locked}
+								onSelect={
+									locked ? undefined : () => handleSelectTime(option.value)
+								}
+							>
+								<Flex align="center" justify="between" gap="3" width="100%">
+									<span>{option.label}</span>
+									{locked && <SillPlus />}
+								</Flex>
+							</DropdownMenu.Item>
+						);
+					})}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 

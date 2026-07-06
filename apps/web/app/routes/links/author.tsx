@@ -11,7 +11,6 @@ import Layout from "~/components/nav/Layout";
 import { apiFindLinksByAuthor } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
-	DISCOVERY_TIME_OPTIONS,
 	discoveryTimeLabel,
 	parseDiscoveryFilters,
 } from "~/utils/discoveryFilters";
@@ -30,7 +29,10 @@ export const loader = async ({
 	const author = params.author;
 	const url = new URL(request.url);
 	const cursor = url.searchParams.get("cursor") || undefined;
-	const filters = parseDiscoveryFilters(url.searchParams);
+	const filters = parseDiscoveryFilters(
+		url.searchParams,
+		subscribed === "plus",
+	);
 
 	// Stream the first page (HTML streaming, like the main feed); resolve cursor
 	// (infinite-scroll) requests so the paginating fetcher gets data directly.
@@ -53,7 +55,7 @@ export const loader = async ({
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		author,
-		timeLabel: discoveryTimeLabel(url.searchParams),
+		timeLabel: discoveryTimeLabel(url.searchParams, subscribed === "plus"),
 	};
 };
 
@@ -73,7 +75,7 @@ const LinksByAuthor = ({ loaderData }: Route.ComponentProps) => {
 					showService={showService}
 					lists={lists}
 					hideSearch
-					timeOptions={DISCOVERY_TIME_OPTIONS}
+					subscribed={subscribed}
 				/>
 			}
 		>
@@ -85,7 +87,7 @@ const LinksByAuthor = ({ loaderData }: Route.ComponentProps) => {
 					reverse
 					hideSort
 					hideSearch
-					timeOptions={DISCOVERY_TIME_OPTIONS}
+					subscribed={subscribed}
 				/>
 			</LinkFiltersCollapsible>
 			<Suspense

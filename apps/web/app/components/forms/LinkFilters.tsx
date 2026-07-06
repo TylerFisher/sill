@@ -1,5 +1,5 @@
 import { Box, Flex } from "@radix-ui/themes";
-import type { list } from "@sill/schema";
+import type { SubscriptionStatus, list } from "@sill/schema";
 import { Form } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import FilterPresetList from "./FilterPresetList";
@@ -13,13 +13,15 @@ const LinkFilters = ({
 	hideSort = false,
 	hideSearch = false,
 	timeOptions,
+	subscribed,
 }: {
 	showService: boolean;
 	lists: (typeof list.$inferSelect)[];
 	reverse?: boolean;
 	hideSort?: boolean;
 	hideSearch?: boolean;
-	timeOptions?: { value: string; label: string }[];
+	timeOptions?: { value: string; label: string; plus?: boolean }[];
+	subscribed?: SubscriptionStatus;
 }) => {
 	useFilterStorage();
 
@@ -39,6 +41,7 @@ const LinkFilters = ({
 						lists={lists}
 						hideSort={hideSort}
 						timeOptions={timeOptions}
+						subscribed={subscribed}
 					/>
 				</Box>
 			</Flex>

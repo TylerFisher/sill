@@ -35,7 +35,7 @@ import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
 import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
-import { timeParamToMs } from "~/utils/timeRange";
+import { isPlusTimeValue, timeParamToMs } from "~/utils/timeRange";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
 import type { Route } from "./+types/index";
 
@@ -115,7 +115,12 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     minShares: minShares && minShares > 0 ? minShares : undefined,
   };
 
-  const time = timeParamToMs(url.searchParams.get("time"));
+  // The wider windows (7/14/30d) are Sill+ only. Clamp a free user who somehow
+  // arrives with one (stale saved filter, hand-edited URL) back to the default.
+  const timeParam = url.searchParams.get("time");
+  const time = timeParamToMs(
+    subscribed !== "plus" && isPlusTimeValue(timeParam) ? null : timeParam
+  );
 
   const links = apiFilterLinkOccurrences(request, {
     time,
@@ -310,6 +315,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
           <LinkFilters
             showService={!!(loaderData.bsky && loaderData.instance)}
             lists={loaderData.lists}
+            subscribed={loaderData.subscribed}
           />
         }
       >
@@ -320,6 +326,7 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
             lists={loaderData.lists}
             reverse={true}
             hideSort={true}
+            subscribed={loaderData.subscribed}
           />
         </LinkFiltersCollapsible>
         <Box position="relative">
