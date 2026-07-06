@@ -52,8 +52,7 @@ const PlusPromoCard = ({ layout }: { layout: "default" | "dense" }) => {
           </dismissFetcher.Form>
         </Flex>
         <Text as="p" size="2" color="gray" mb={dense ? "3" : "4"}>
-          Sill is a solo developer effort. Supporters keep it running and get
-          early access to the iOS app. Pay what you want.
+          Support Sill and get early access to the iOS app. Pay what you want.
         </Text>
         <supportFetcher.Form action="/api/dismiss-plus-promo" method="post">
           <input
@@ -62,7 +61,7 @@ const PlusPromoCard = ({ layout }: { layout: "default" | "dense" }) => {
             value="/settings/subscription"
           />
           <Button type="submit" size={dense ? "1" : "2"}>
-            Support Sill
+            Upgrade now
           </Button>
         </supportFetcher.Form>
       </Card>
