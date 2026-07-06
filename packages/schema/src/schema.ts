@@ -365,6 +365,43 @@ export const mutePhrase = pgTable(
   ]
 );
 
+/**
+ * A named, saved combination of the main feed's sidebar filters (Sill+). Stored
+ * as a small JSON blob so the set can evolve without a migration; the free-text
+ * search query is intentionally excluded (it's transient). See the web
+ * `FilterPresets` component and the `filter-presets` API route.
+ */
+export type FilterPresetConfig = {
+  time?: string;
+  service?: string;
+  list?: string;
+  minShares?: string;
+  reposts?: string;
+  sort?: string;
+};
+
+export const filterPreset = pgTable(
+  "filter_preset",
+  {
+    id: uuid().primaryKey().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    filters: json().$type<FilterPresetConfig>().notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index("filter_preset_user_id_idx").using(
+      "btree",
+      table.userId.asc().nullsLast()
+    ),
+    unique().on(table.userId, table.name),
+  ]
+);
+
 export const linkPostDenormalized = pgTable(
   "link_post_denormalized",
   {
@@ -662,6 +699,13 @@ export const emailTokenRelations = relations(emailToken, ({ one }) => ({
 export const mutePhraseRelations = relations(mutePhrase, ({ one }) => ({
   user: one(user, {
     fields: [mutePhrase.userId],
+    references: [user.id],
+  }),
+}));
+
+export const filterPresetRelations = relations(filterPreset, ({ one }) => ({
+  user: one(user, {
+    fields: [filterPreset.userId],
     references: [user.id],
   }),
 }));

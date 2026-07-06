@@ -12,6 +12,8 @@
 .trigger {
 	width: 100%;
 	justify-content: space-between;
+	/* Match the filter chips (radius-2) instead of the theme's pill radius. */
+	border-radius: var(--radius-2);
 }
 
 .content {

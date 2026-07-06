@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   Await,
+  type ShouldRevalidateFunctionArgs,
   useFetcher,
   useLocation,
   useNavigation,
@@ -22,6 +23,7 @@ import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import LinkFilters from "~/components/forms/LinkFilters";
 import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
+import FilterPresets from "~/components/forms/FilterPresets";
 import SortPresetList from "~/components/forms/SortPresetList";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import PlusPromoCard from "~/components/subscription/PlusPromoCard";
@@ -33,7 +35,10 @@ import Layout from "~/components/nav/Layout";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 import { useOptimisticMutes } from "~/hooks/useOptimisticMutes";
 import { useLayout } from "~/routes/resources/layout-switch";
-import { apiFilterLinkOccurrences } from "~/utils/api-client.server";
+import {
+  apiFilterLinkOccurrences,
+  apiGetFilterPresets,
+} from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import { isPlusTimeValue, timeParamToMs } from "~/utils/timeRange";
 import type { BookmarkWithLinkPosts } from "../bookmarks";
@@ -130,6 +135,17 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   const lists = [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])];
 
+  // Saved filter presets for the sidebar. Resilient to API hiccups — a failure
+  // here shouldn't take down the feed.
+  const filterPresets = await apiGetFilterPresets(request)
+    .then((r) => r.presets)
+    .catch((error) => {
+      console.error("Load filter presets error:", error);
+      return [] as Awaited<
+        ReturnType<typeof apiGetFilterPresets>
+      >["presets"];
+    });
+
   return {
     links,
     key: uuidv7(),
@@ -139,8 +155,19 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     bookmarks,
     subscribed,
     showPlusPromo,
+    filterPresets,
   };
 };
+
+// Saving or deleting a filter preset must not reload the streaming feed; the
+// FilterPresets component refreshes itself from the mutation's returned list.
+export function shouldRevalidate({
+  formAction,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formAction === "/api/filter-presets") return false;
+  return defaultShouldRevalidate;
+}
 
 const SEEDING_POLL_MS = 5000;
 
@@ -316,6 +343,12 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
             showService={!!(loaderData.bsky && loaderData.instance)}
             lists={loaderData.lists}
             subscribed={loaderData.subscribed}
+            afterSearch={
+              <FilterPresets
+                presets={loaderData.filterPresets}
+                subscribed={loaderData.subscribed}
+              />
+            }
           />
         }
       >
@@ -327,6 +360,12 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
             reverse={true}
             hideSort={true}
             subscribed={loaderData.subscribed}
+            afterSearch={
+              <FilterPresets
+                presets={loaderData.filterPresets}
+                subscribed={loaderData.subscribed}
+              />
+            }
           />
         </LinkFiltersCollapsible>
         <Box position="relative">

@@ -49,6 +49,8 @@ const SearchField = () => {
 			value={query}
 			aria-label="Search"
 			size="3"
+			// Match the filter chips (radius-2) instead of the theme's pill radius.
+			style={{ borderRadius: "var(--radius-2)" }}
 			onChange={(event) => setQuery(event.target.value)}
 			onKeyDown={(event) => {
 				if (event.key === "Enter") {

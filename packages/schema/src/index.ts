@@ -19,6 +19,7 @@ import type {
   notificationItem,
   notificationGroup,
   mutePhrase,
+  filterPreset,
   termsUpdate,
   termsAgreement,
   bookmark,
@@ -112,6 +113,9 @@ export type NewNotificationGroup = typeof notificationGroup.$inferInsert;
 
 export type MutedPhrase = typeof mutePhrase.$inferSelect;
 export type NewMutedPhrase = typeof mutePhrase.$inferInsert;
+
+export type FilterPreset = typeof filterPreset.$inferSelect;
+export type NewFilterPreset = typeof filterPreset.$inferInsert;
 
 export type TermsUpdate = typeof termsUpdate.$inferSelect;
 export type NewTermsUpdate = typeof termsUpdate.$inferInsert;
