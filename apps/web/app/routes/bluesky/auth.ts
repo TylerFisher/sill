@@ -1,10 +1,19 @@
 import { redirect } from "react-router";
 import {
   apiBlueskyAuthStart,
+  apiCreateMobileCode,
   apiExchangeMobileCode,
 } from "~/utils/api-client.server";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth";
+
+function hasSessionCookie(request: Request): boolean {
+  const header = request.headers.get("cookie");
+  if (!header) return false;
+  return header
+    .split(";")
+    .some((part) => part.trim().startsWith("sessionId="));
+}
 
 /**
  * When the mobile app needs to connect an additional account, the
@@ -62,6 +71,25 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     if (mode === "signup") return "/accounts/signup";
     return origin;
   };
+
+  // If the mobile app opens the sign-in flow but the user is already signed
+  // into Sill in Safari (ASWebAuthenticationSession shares Safari's cookie
+  // jar), skip the full Bluesky OAuth round trip and hand a mobile code
+  // straight back to the app. `mobileCode` present means the connect flow,
+  // which needs the OAuth path below.
+  if (mobile && !mobileCode && hasSessionCookie(request)) {
+    try {
+      // No sessionId arg: the API validates the forwarded session cookie and
+      // only mints a code if the web session is genuinely valid.
+      const { code } = await apiCreateMobileCode(request);
+      return redirect(
+        `sill://callback?code=${encodeURIComponent(code)}&isSignup=0`
+      );
+    } catch (error) {
+      // Session turned out invalid/expired — fall through to normal OAuth.
+      console.error("Mobile session shortcut failed:", error);
+    }
+  }
 
   try {
     // For mobile connect flow, exchange the code for the real sessionId

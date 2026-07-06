@@ -794,11 +794,13 @@ export async function apiExchangeMobileCode(
  */
 export async function apiCreateMobileCode(
   request: Request,
-  sessionId: string,
+  sessionId?: string,
 ) {
   const client = createApiClient(request);
+  // When no sessionId is passed, the API reads and validates the session
+  // cookie forwarded on the request instead of trusting a body value.
   const response = await client.api.auth["create-mobile-code"].$post({
-    json: { sessionId },
+    json: sessionId ? { sessionId } : {},
   });
 
   if (!response.ok) {
