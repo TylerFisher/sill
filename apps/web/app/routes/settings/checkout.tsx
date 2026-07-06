@@ -1,127 +1,127 @@
-import { Box, DataList, Grid, Heading } from "@radix-ui/themes";
+import { Box, Button, Flex, Heading, Separator, Text } from "@radix-ui/themes";
 import { Bell, Bookmark, List, Mail } from "lucide-react";
 import { Suspense } from "react";
 import { Await } from "react-router";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
-import FeatureCard from "~/components/subscription/FeatureCard";
+import FeatureRow from "~/components/subscription/FeatureRow";
+import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
+import SubscriptionThanksHeader from "~/components/subscription/SubscriptionThanksHeader";
 import type { Route } from "./+types/checkout";
 import { requireUserFromContext } from "~/utils/context.server";
 import { apiGetActiveSubscription } from "~/utils/api-client.server";
 
-const pollForSubscription = async (
-	request: Request,
-): Promise<{ hasSubscription: boolean }> => {
-	const checkSubscription = async (): Promise<boolean> => {
-		try {
-			const { subscription } = await apiGetActiveSubscription(request);
-			return !!subscription;
-		} catch (error) {
-			return false;
-		}
-	};
+type ActiveSub = NonNullable<
+  Awaited<ReturnType<typeof apiGetActiveSubscription>>["subscription"]
+>;
 
-	return new Promise((resolve) => {
-		const poll = async () => {
-			const hasSubscription = await checkSubscription();
-			if (hasSubscription) {
-				resolve({ hasSubscription: true });
-			} else {
-				setTimeout(poll, 500);
-			}
-		};
-		poll();
-	});
+const pollForSubscription = async (request: Request): Promise<ActiveSub> => {
+  return new Promise((resolve) => {
+    const poll = async () => {
+      try {
+        const { subscription } = await apiGetActiveSubscription(request);
+        if (subscription) {
+          resolve(subscription);
+          return;
+        }
+      } catch (error) {
+        // Not ready yet (or transient error); keep polling.
+      }
+      setTimeout(poll, 500);
+    };
+    poll();
+  });
 };
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
-	await requireUserFromContext(context);
-	const subscriptionPromise = pollForSubscription(request);
-	return {
-		subscriptionResult: subscriptionPromise,
-	};
+  await requireUserFromContext(context);
+  return {
+    subscriptionResult: pollForSubscription(request),
+  };
 };
 
-const CheckoutContent = () => (
-	<>
-		<PageHeading
-			title="Congratulations!"
-			dek="Thank you for signing up for Sill+. Here's what you can expect."
-		/>
+const CheckoutContent = ({ subscription }: { subscription: ActiveSub }) => {
+  const sub = {
+    ...subscription,
+    periodStart: subscription.periodStart
+      ? new Date(subscription.periodStart)
+      : null,
+    periodEnd: subscription.periodEnd ? new Date(subscription.periodEnd) : null,
+  };
 
-		<Box mb="6">
-			<Heading as="h3" size="4" mb="3">
-				Your subscription
-			</Heading>
-			<DataList.Root>
-				<DataList.Item align="center">
-					<DataList.Label>Plan</DataList.Label>
-					<DataList.Value>Sill+ monthly</DataList.Value>
-				</DataList.Item>
-			</DataList.Root>
-		</Box>
+  return (
+    <>
+      <SubscriptionThanksHeader iosNote="Check your email for a link to the iOS beta." />
 
-		<Box>
-			<Heading as="h3" size="4" mb="4">
-				Get started with your new features
-			</Heading>
-			<Grid
-				columns={{
-					initial: "1",
-					sm: "2",
-				}}
-				gap="4"
-			>
-				<FeatureCard
-					icon={<Mail size={24} />}
-					title="Daily Digests"
-					description="Get a daily curated email or RSS feed of the most popular links from your network, delivered at your preferred time."
-					benefit="Never miss trending stories again"
-					url="/digest"
-				/>
-				<FeatureCard
-					icon={<Bell size={24} />}
-					title="Notifications"
-					description="Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords."
-					benefit="Stay ahead of the conversation"
-					url="/notifications"
-				/>
-				<FeatureCard
-					icon={<List size={24} />}
-					title="Lists & Feeds"
-					description="Track links from your favorite custom lists and feeds on Bluesky or Mastodon."
-					benefit="Follow your interests precisely"
-					url="/settings/connections"
-				/>
-				<FeatureCard
-					icon={<Bookmark size={24} />}
-					title="Bookmarks"
-					description="Save links to your bookmarks for easy access and organization."
-					benefit="Never lose important stories"
-					url="/bookmarks"
-				/>
-			</Grid>
-		</Box>
-	</>
-);
+      <SubscriptionDetailsCard subscription={sub} />
+
+      <Box>
+        <a href="/settings/subscription">
+          <Button size="2" variant="soft">
+            Manage your subscription
+          </Button>
+        </a>
+      </Box>
+
+      <Separator size="4" my="6" />
+
+      <Box>
+        <Heading as="h3" size="4" mb="1">
+          While you're here
+        </Heading>
+        <Text mb="4" as="p" size="3" color="gray">
+          A few things you can do with Sill.
+        </Text>
+        <Flex direction="column" gap="4">
+          <FeatureRow
+            to="/digest"
+            icon={<Mail size={20} />}
+            title="Daily Digests"
+            description="A daily email or RSS roundup of the most shared links in your network, at a time you choose."
+          />
+          <FeatureRow
+            to="/notifications"
+            icon={<Bell size={20} />}
+            title="Notifications"
+            description="Email or RSS alerts for the links you care about, by keyword, popularity, and more."
+          />
+          <FeatureRow
+            to="/settings/connections"
+            icon={<List size={20} />}
+            title="Lists & Feeds"
+            description="Follow links from custom lists and feeds on Bluesky and Mastodon."
+          />
+          <FeatureRow
+            to="/bookmarks"
+            icon={<Bookmark size={20} />}
+            title="Bookmarks"
+            description="Save links to read or come back to later."
+          />
+        </Flex>
+      </Box>
+    </>
+  );
+};
 
 const LoadingFallback = () => (
-	<PageHeading
-		title="Processing your subscription..."
-		dek="Please wait while we confirm your subscription."
-	/>
+  <PageHeading
+    title="Confirming your subscription…"
+    dek="This will only take a moment."
+  />
 );
 
 const Checkout = ({ loaderData }: Route.ComponentProps) => {
-	const { subscriptionResult } = loaderData;
+  const { subscriptionResult } = loaderData;
 
-	return (
-		<Layout>
-			<Suspense fallback={<LoadingFallback />}>
-				<Await resolve={subscriptionResult}>{() => <CheckoutContent />}</Await>
-			</Suspense>
-		</Layout>
-	);
+  return (
+    <Layout>
+      <Suspense fallback={<LoadingFallback />}>
+        <Await resolve={subscriptionResult}>
+          {(subscription) => <CheckoutContent subscription={subscription} />}
+        </Await>
+      </Suspense>
+    </Layout>
+  );
 };
 
 export default Checkout;

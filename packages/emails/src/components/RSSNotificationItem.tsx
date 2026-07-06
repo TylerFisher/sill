@@ -90,6 +90,26 @@ const RSSNotificationItem = ({
 					<hr />
 				</div>
 			))}
+			{subscribed !== "plus" && (
+				<>
+					<div style={{ textAlign: "center" }}>
+						<h3 style={{ color: "#9E6C00" }}>Want Sill on your phone?</h3>
+						<p>
+							Sill+ members get access to the private iOS beta. Subscribe to
+							support Sill and try it first.
+						</p>
+						<p>
+							<a
+								href="https://sill.social/settings/subscription"
+								style={{ color: "#9E6C00" }}
+							>
+								Subscribe to Sill+
+							</a>
+						</p>
+					</div>
+					<hr />
+				</>
+			)}
 			<p>
 				{notificationOutro("https://sill.social/notifications")}
 			</p>

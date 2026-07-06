@@ -25,3 +25,10 @@ export interface UserProfile
 }
 
 export const userContext = unstable_createContext<UserProfile | null>(null);
+
+/**
+ * Path (+ search) of the current request, captured by the auth middleware so
+ * `requireUserFromContext` can send an unauthenticated visitor to login and
+ * bounce them back to where they were headed after they sign in.
+ */
+export const requestUrlContext = unstable_createContext<string | null>(null);

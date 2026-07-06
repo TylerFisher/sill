@@ -28,7 +28,6 @@ const Toolbar = ({
 	bsky,
 	isBookmarked = false,
 	layout = "default",
-	subscribed,
 }: ToolbarProps) => {
 	return (
 		<Flex justify="between" mx="1" mt="2">
@@ -42,7 +41,7 @@ const Toolbar = ({
 				}}
 				layout={layout}
 			/>
-			{type === "link" && subscribed !== "free" && (
+			{type === "link" && (
 				<BookmarkLink
 					url={url}
 					isBookmarked={isBookmarked}

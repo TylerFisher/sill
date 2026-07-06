@@ -1,6 +1,5 @@
 import { and, eq } from "drizzle-orm";
 import { createRestAPIClient, type mastodon } from "masto";
-import { isSubscribed } from "@sill/auth";
 import {
   blueskyAccount,
   db,
@@ -683,28 +682,25 @@ export const getLinksFromMastodon = async (
       if (share) shares.push(share);
     }
 
-    const subscribed = await isSubscribed(userId);
-    if (subscribed !== "free") {
-      const instance = account.mastodonInstance.instance;
-      for (const list of account.lists) {
-        // Skip slow feeds the caller opted out of (see getLinksFromBluesky).
-        if (opts?.skipListNames?.includes(list.name)) continue;
-        const listSource: PushShareSource = {
-          kind: "mastodon-list",
-          instance,
-          id: list.uri, // Sill stores the Mastodon list id in `list.uri`
-        };
-        const listPosts = await Promise.race([
-          getMastodonList(list.uri, account, opts),
-          new Promise<mastodon.v1.Status[]>((_, reject) =>
-            setTimeout(() => reject(new Error("List fetch timeout")), 60000),
-          ),
-        ]);
-        for (const t of listPosts) {
-          if (!hasCard(t)) continue;
-          const share = await processMastodonLink(t, listSource);
-          if (share) shares.push(share);
-        }
+    const instance = account.mastodonInstance.instance;
+    for (const list of account.lists) {
+      // Skip slow feeds the caller opted out of (see getLinksFromBluesky).
+      if (opts?.skipListNames?.includes(list.name)) continue;
+      const listSource: PushShareSource = {
+        kind: "mastodon-list",
+        instance,
+        id: list.uri, // Sill stores the Mastodon list id in `list.uri`
+      };
+      const listPosts = await Promise.race([
+        getMastodonList(list.uri, account, opts),
+        new Promise<mastodon.v1.Status[]>((_, reject) =>
+          setTimeout(() => reject(new Error("List fetch timeout")), 60000),
+        ),
+      ]);
+      for (const t of listPosts) {
+        if (!hasCard(t)) continue;
+        const share = await processMastodonLink(t, listSource);
+        if (share) shares.push(share);
       }
     }
   } catch (e) {

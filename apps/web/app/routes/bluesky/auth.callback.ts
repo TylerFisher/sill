@@ -3,6 +3,7 @@ import {
 	apiBlueskyAuthCallback,
 	apiCreateMobileCode,
 } from "~/utils/api-client.server";
+import { safeRedirect } from "~/utils/redirect";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth.callback";
 
@@ -46,6 +47,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 		| "signup"
 		| undefined;
 	const origin = session.get("blueskyOrigin") as string | undefined;
+	const redirectTo = session.get("blueskyRedirectTo") as string | undefined;
 	const isMobile = session.get("mobile") === true;
 	const apiSessionId = session.get("apiSessionId") as string | undefined;
 
@@ -103,6 +105,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 				session.unset("mobile");
 				session.unset("blueskyMode");
 				session.unset("blueskyOrigin");
+				session.unset("blueskyRedirectTo");
 				session.unset("apiSessionId");
 				const headers = new Headers();
 				headers.append(
@@ -138,6 +141,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 			// Web flow: clear mode cookie and forward API session cookie
 			session.unset("blueskyMode");
 			session.unset("blueskyOrigin");
+			session.unset("blueskyRedirectTo");
 			const clearModeHeaders = new Headers();
 			clearModeHeaders.append(
 				"Set-Cookie",
@@ -148,7 +152,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 			}
 
 			if ("isLogin" in data && data.isLogin) {
-				return redirect("/links", { headers: clearModeHeaders });
+				return redirect(safeRedirect(redirectTo, "/links"), {
+					headers: clearModeHeaders,
+				});
 			}
 
 			if ("isSignup" in data && data.isSignup) {

@@ -23,6 +23,7 @@ export default [
   ]),
   ...prefix("api", [
     route("agree-to-terms", "routes/api/agree-to-terms.ts"),
+    route("dismiss-plus-promo", "routes/api/dismiss-plus-promo.ts"),
     route("bluesky/status", "routes/api/bluesky.status.ts"),
     route("email/send-verification", "routes/api/email.send-verification.ts"),
     route("email/verify", "routes/api/email.verify.ts"),

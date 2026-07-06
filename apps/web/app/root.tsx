@@ -24,14 +24,14 @@ import { getLayout } from "./utils/layout.server";
 import { getDomainUrl } from "./utils/misc";
 import { useNonce } from "./utils/nonce-provider";
 import { type Theme, getTheme } from "./utils/theme";
-import { userContext } from "./context/user-context";
+import { requestUrlContext, userContext } from "./context/user-context";
 import type { SubscriptionStatus } from "@sill/schema";
 
 // Routes that don't require authentication
 const UNAUTHENTICATED_ROUTES = [
-	"/client-metadata.json",
-	"/oauth-client-metadata.json",
-	"/jwks.json",
+  "/client-metadata.json",
+  "/oauth-client-metadata.json",
+  "/jwks.json",
 ] as const;
 
 // Middleware to fetch user profile and set in context
@@ -41,6 +41,11 @@ const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
 }) => {
   const url = new URL(request.url);
   const pathname = url.pathname;
+
+  context.set(
+    requestUrlContext,
+    pathname.endsWith(".data") ? null : pathname + url.search
+  );
 
   // Skip authentication for unauthenticated routes
   if (

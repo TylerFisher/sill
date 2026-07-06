@@ -1,126 +1,138 @@
 import { invariantResponse } from "@epic-web/invariant";
-import { Box, Button, Flex, Grid } from "@radix-ui/themes";
-import { Bell, Bookmark, List, Mail } from "lucide-react";
+import { Box, Button, Flex, Link, Text } from "@radix-ui/themes";
+import { Smartphone } from "lucide-react";
 import Layout from "~/components/nav/Layout";
-import FeatureCard from "~/components/subscription/FeatureCard";
+import SettingsTabNav from "~/components/settings/SettingsTabNav";
+import FeatureRow from "~/components/subscription/FeatureRow";
 import SubscriptionDetailsCard from "~/components/subscription/SubscriptionDetailsCard";
 import SubscriptionHeader from "~/components/subscription/SubscriptionHeader";
 import SubscriptionPricingCard from "~/components/subscription/SubscriptionPricingCard";
+import SubscriptionThanksHeader from "~/components/subscription/SubscriptionThanksHeader";
 import { createCheckout } from "~/utils/polar.server";
 import { useTheme } from "../resources/theme-switch";
 import type { Route } from "./+types/subscription";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
-	apiGetCurrentSubscription,
-	apiGetPolarProducts,
+  apiGetCurrentSubscription,
+  apiGetPolarProducts,
 } from "~/utils/api-client.server";
 
-export const meta: Route.MetaFunction = () => [
-	{ title: "Sill | Subscription" },
-];
+export const meta: Route.MetaFunction = () => [{ title: "Get Sill+" }];
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
-	const existingUser = await requireUserFromContext(context);
-	invariantResponse(existingUser, "user not found", { status: 404 });
+  const existingUser = await requireUserFromContext(context);
+  invariantResponse(existingUser, "user not found", { status: 404 });
 
-	const userId = existingUser.id;
+  const userId = existingUser.id;
 
-	const { subscription: rawSub } = await apiGetCurrentSubscription(request);
-	
-	// Convert date strings to Date objects if subscription exists
-	const sub = rawSub ? {
-		...rawSub,
-		periodStart: rawSub.periodStart ? new Date(`${rawSub.periodStart}Z`) : null,
-		periodEnd: rawSub.periodEnd ? new Date(`${rawSub.periodEnd}Z`) : null,
-	} : null;
-	
-	const { products } = await apiGetPolarProducts(request);
+  const { subscription: rawSub } = await apiGetCurrentSubscription(request);
 
-	const checkoutLinks = await Promise.all(
-		products.map(
-			async (product) =>
-				await createCheckout(product.polarId, existingUser?.email, userId),
-		),
-	);
+  const sub = rawSub
+    ? {
+        ...rawSub,
+        periodStart: rawSub.periodStart ? new Date(rawSub.periodStart) : null,
+        periodEnd: rawSub.periodEnd ? new Date(rawSub.periodEnd) : null,
+      }
+    : null;
 
-	return {
-		sub,
-		checkoutLinks,
-		email: existingUser?.email,
-		name: existingUser?.name,
-	};
+  const { products } = await apiGetPolarProducts(request);
+
+  const checkoutLinks = await Promise.all(
+    products.map(
+      async (product) =>
+        await createCheckout(product.polarId, existingUser?.email, userId)
+    )
+  );
+
+  return {
+    sub,
+    checkoutLinks,
+    email: existingUser?.email,
+    name: existingUser?.name,
+  };
 };
 
 const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
-	const { sub, checkoutLinks, email, name } = loaderData;
-	const theme = useTheme();
+  const { sub, checkoutLinks, email, name } = loaderData;
+  const theme = useTheme();
+  const canceled =
+    !!sub && (sub.cancelAtPeriodEnd || sub.status === "canceled");
 
-	return (
-		<Layout>
-			{sub ? (
-				<div>
-					<SubscriptionDetailsCard subscription={sub} />
-					<Flex direction="column" gap="3">
-						<a href="/settings/portal">
-							{sub.cancelAtPeriodEnd || sub.status === "canceled" ? (
-								<Button size="2">Reactivate subscription</Button>
-							) : (
-								<Button size="2">Manage subscription</Button>
-							)}
-						</a>
-					</Flex>
-				</div>
-			) : (
-				<Box>
-					<SubscriptionHeader />
-					<Grid
-						columns={{
-							initial: "1",
-							sm: "2",
-						}}
-						gap="4"
-						mb="4"
-					>
-						<FeatureCard
-							icon={<Mail size={24} />}
-							title="Daily Digests"
-							description="Get a daily curated email or RSS feed of the most popular links from your network, delivered at your preferred time."
-							benefit="Never miss trending stories again"
-							url="https://docs.sill.social/sill-plus/daily-digest"
-						/>
-						<FeatureCard
-							icon={<Bell size={24} />}
-							title="Notifications"
-							description="Set up personalized email or RSS alerts for any criteria you define, from popularity thresholds to specific keywords."
-							benefit="Stay ahead of the conversation"
-							url="https://docs.sill.social/sill-plus/notifications"
-						/>
-						<FeatureCard
-							icon={<List size={24} />}
-							title="Lists & Feeds"
-							description="Track links from your favorite custom lists and feeds on Bluesky or Mastodon."
-							benefit="Follow your interests precisely"
-							url="https://docs.sill.social/sill-plus/lists"
-						/>
-						<FeatureCard
-							icon={<Bookmark size={24} />}
-							title="Bookmarks"
-							description="Save links to your bookmarks for easy access and organization."
-							benefit="Never lose important stories"
-							url="https://docs.sill.social/sill-plus/bookmarks"
-						/>
-					</Grid>
+  return (
+    <Layout>
+      <SettingsTabNav />
+      {sub ? (
+        <div>
+          {canceled ? (
+            <Box mb="6">
+              <Text
+                as="p"
+                size={{
+                  initial: "6",
+                  md: "7",
+                }}
+                weight="bold"
+                color="yellow"
+              >
+                Sorry to see you go.
+              </Text>
+              <Text
+                as="p"
+                size="3"
+                color="gray"
+                style={{ maxWidth: "520px", marginTop: "var(--space-3)" }}
+              >
+                Your access stays active until the end of your current period.
+                You can reactivate any time.
+              </Text>
+            </Box>
+          ) : (
+            <SubscriptionThanksHeader />
+          )}
+          <SubscriptionDetailsCard subscription={sub} />
+          <Flex direction="column" gap="3">
+            <a href="/settings/portal">
+              {canceled ? (
+                <Button size="2">Reactivate subscription</Button>
+              ) : (
+                <Button size="2">Manage subscription</Button>
+              )}
+            </a>
+          </Flex>
+        </div>
+      ) : (
+        <Box style={{ maxWidth: "620px" }}>
+          <SubscriptionHeader />
+          <Box mb="5">
+            <Text as="p" size="2" weight="bold" color="gray" mb="3">
+              Supporters get:
+            </Text>
+            <FeatureRow
+              icon={<Smartphone size={20} />}
+              title="Early access to the iOS app"
+              description="Sill is coming to iOS. Try the beta before it's public."
+            />
+          </Box>
 
-					<SubscriptionPricingCard
-						checkoutLinks={checkoutLinks}
-						email={email}
-						name={name}
-						theme={theme}
-					/>
-				</Box>
-			)}
-		</Layout>
-	);
+          <SubscriptionPricingCard
+            checkoutLinks={checkoutLinks}
+            email={email}
+            name={name}
+            theme={theme}
+          />
+          <Text as="p" color="gray" size="1" mt="4">
+            Sill is part of{" "}
+            <Link href="https://euphonos.studio">Euphonos LLC</Link>. Sill uses{" "}
+            <Link href="https://polar.sh">Polar</Link>, an online reseller and
+            Merchant of Record, to process payments. You are eligible for a
+            refund if you email{" "}
+            <Link href="mailto:tyler@sill.social">tyler@sill.social</Link> with
+            a refund request within 14 days.
+          </Text>
+        </Box>
+      )}
+    </Layout>
+  );
 };
 
 export default SubscriptionPage;

@@ -50,6 +50,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 	const instance = requestUrl.searchParams.get("instance");
 	const modeParam = requestUrl.searchParams.get("mode");
 	const mode = modeParam === "login" || modeParam === "signup" ? modeParam : undefined;
+	// Where to send the user after a successful login (set by the auth gate).
+	const redirectTo = requestUrl.searchParams.get("redirectTo");
 
 	if (!instance) {
 		return null;
@@ -86,6 +88,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 			session.set("mastodonMode", mode);
 		} else {
 			session.unset("mastodonMode");
+		}
+
+		// Carry the post-login return URL through the OAuth round trip (login only).
+		if (mode === "login" && redirectTo) {
+			session.set("mastodonRedirectTo", redirectTo);
+		} else {
+			session.unset("mastodonRedirectTo");
 		}
 
 		session.set("mastodonOrigin", referrer);

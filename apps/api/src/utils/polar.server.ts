@@ -1,34 +1,37 @@
 import { Polar } from "@polar-sh/sdk";
 import type { Product } from "@polar-sh/sdk/models/components/product";
-import type { ProductPriceFixed } from "@polar-sh/sdk/models/components/productpricefixed";
 import { uuidv7 } from "uuidv7-js";
 import { db, polarProduct } from "@sill/schema";
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",
-  server: "sandbox",
+  server: process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
 });
 
+const PRICE_CURRENCIES = ["usd", "eur", "gbp"] as const;
+
+/**
+ * Create a pay-what-you-want product: the customer chooses the amount at
+ * checkout, with `minimum` (in whole units) as both the floor and the starting
+ * value shown. One price is created per supported currency.
+ */
 export const createProduct = async (
   name: string,
   description: string,
   interval: "month" | "year",
-  price: number
-): Promise<Product & { prices: ProductPriceFixed[] }> => {
-  const product = await polar.products.create({
+  minimum: number
+): Promise<Product> => {
+  return await polar.products.create({
     name,
     description,
     recurringInterval: interval,
-    prices: [
-      {
-        amountType: "fixed",
-        priceAmount: price * 100,
-        priceCurrency: "usd",
-      },
-    ],
+    prices: PRICE_CURRENCIES.map((priceCurrency) => ({
+      amountType: "custom" as const,
+      priceCurrency,
+      minimumAmount: minimum * 100,
+      presetAmount: minimum * 100,
+    })),
   });
-
-  return product as Product & { prices: ProductPriceFixed[] };
 };
 
 export const createCheckoutLink = async (product: Product) => {
@@ -41,20 +44,29 @@ export const createCheckoutLink = async (product: Product) => {
 };
 
 export const bootstrapProducts = async () => {
-  const month = await createProduct("Sill+ Monthly", "description", "month", 5);
-  const year = await createProduct("Sill+ Yearly", "description", "year", 50);
+  const description = "Support Sill and get access to the iOS beta.";
+  const plans = [
+    { name: "Sill+ Monthly", interval: "month" as const, minimum: 4 },
+    { name: "Sill+ Yearly", interval: "year" as const, minimum: 40 },
+  ];
 
-  for (const product of [month, year]) {
+  for (const plan of plans) {
+    const product = await createProduct(
+      plan.name,
+      description,
+      plan.interval,
+      plan.minimum
+    );
     const checkoutLink = await createCheckoutLink(product);
 
     await db.insert(polarProduct).values({
       id: uuidv7(),
       name: product.name,
-      description: product.description || "",
-      amount: product.prices[0].priceAmount,
-      currency: product.prices[0].priceCurrency,
+      description: product.description || description,
+      amount: plan.minimum * 100,
+      currency: "usd",
       polarId: product.id,
-      interval: product.recurringInterval || "monthly",
+      interval: product.recurringInterval || plan.interval,
       checkoutLinkUrl: checkoutLink.url,
     });
   }

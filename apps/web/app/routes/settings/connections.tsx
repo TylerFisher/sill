@@ -57,7 +57,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	}
 
 	const bskyPromise =
-		existingUser.blueskyAccounts.length > 0 && subscribed
+		existingUser.blueskyAccounts.length > 0
 			? apiGetBlueskyLists(request).catch((e) => {
 					console.error("error getting bluesky lists", e);
 					return { lists: [] };
@@ -65,7 +65,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 			: Promise.resolve({ lists: [] });
 
 	const mastodonPromise =
-		existingUser.mastodonAccounts.length > 0 && subscribed !== "free"
+		existingUser.mastodonAccounts.length > 0
 			? apiGetMastodonLists(request).catch((e) => {
 					console.error("error getting mastodon lists", e);
 					return { lists: [] };

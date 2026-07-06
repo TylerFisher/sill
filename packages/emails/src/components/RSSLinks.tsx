@@ -39,10 +39,29 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 		`;
 	}
 
+	// Drop a Sill+ promo after the middle link for non-subscribers. Skip short
+	// digests where there is no real "middle".
+	const promoIndex = links.length >= 4 ? Math.floor(links.length / 2) - 1 : -1;
+	const promoHtml =
+		subscribed !== "plus"
+			? `
+			<br />
+			<div style="text-align: center;">
+				<h3 style="color: #9E6C00;">Want Sill on your phone?</h3>
+				<p>Sill+ members get access to the private iOS beta. Subscribe to support Sill and try it first.</p>
+				<p><a href="https://sill.social/settings/subscription" style="color: #9E6C00;">Subscribe to Sill+</a></p>
+			</div>
+			<br />
+			<hr />
+		`
+			: "";
+
 	const linksHtml = links
 		.map((linkPost, i) => {
 			const link = linkPost.link;
 			if (!link?.url) return "";
+
+			const promo = i === promoIndex ? promoHtml : "";
 
 			let authors = link.authors?.join(", ");
 
@@ -75,7 +94,7 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				${sharedBy}
 				<hr />
 			</div>
-		`;
+		${promo}`;
 			}
 
 			return `
@@ -87,7 +106,7 @@ const RSSLinks = ({ links, name, digestUrl, subscribed }: RSSLinksProps) => {
 				${sharedBy}
         <hr />
 			</div>
-		`;
+		${promo}`;
 		})
 		.join("");
 

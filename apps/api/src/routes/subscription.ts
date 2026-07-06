@@ -16,6 +16,8 @@ interface WebhookCustomerStateChangedPayload {
     activeSubscriptions: Array<{
       id: string;
       productId: string;
+      // The customer's actual recurring amount in cents (pay-what-you-want).
+      amount: number;
       currentPeriodEnd: string;
       currentPeriodStart: string;
       cancelAtPeriodEnd: boolean;
@@ -25,6 +27,24 @@ interface WebhookCustomerStateChangedPayload {
 }
 
 const subscriptions = new Hono()
+  // POST /api/subscription/dismiss-promo - Mark the one-time Sill+ upsell popup
+  // as seen so it doesn't fire again for this user.
+  .post("/dismiss-promo", async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+    try {
+      await db
+        .update(user)
+        .set({ seenPlusPromo: true })
+        .where(eq(user.id, userId));
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Dismiss plus promo error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
   // GET /api/subscription/current - Get current (non-canceled) subscription for user
   .get("/current", async (c) => {
     const userId = await getUserIdFromSession(c.req.raw);
@@ -196,6 +216,9 @@ const subscriptions = new Hono()
           userId: dbUser.id,
           polarId: polarSubscription.id,
           polarProductId: chosenProduct.id,
+          // The customer's actual recurring amount (pay-what-you-want, so it can
+          // exceed the product's minimum). Stored so the UI shows what they pay.
+          amount: polarSubscription.amount,
           periodEnd: new Date(polarSubscription.currentPeriodEnd),
           periodStart: new Date(polarSubscription.currentPeriodStart),
           cancelAtPeriodEnd: polarSubscription.cancelAtPeriodEnd,

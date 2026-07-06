@@ -1,7 +1,7 @@
 import { parseWithZod } from "@conform-to/zod";
 import { Box, Flex, Heading, Link as RLink, Tabs, Text } from "@radix-ui/themes";
 import { ChevronRight } from "lucide-react";
-import { redirect, data, Link } from "react-router";
+import { data, Link } from "react-router";
 import { z } from "zod";
 import { NotificationsProvider } from "~/components/contexts/NotificationsContext";
 import NotificationForm from "~/components/forms/NotificationForm";
@@ -128,10 +128,6 @@ export const action = async ({ request, context }: Route.ActionArgs) => {
 export const loader = async ({ context, request }: Route.LoaderArgs) => {
 	const existingUser = await requireUserFromContext(context);
 	const subscribed = existingUser.subscriptionStatus;
-
-	if (subscribed === "free") {
-		return redirect("/settings/subscription");
-	}
 
 	// Get notification groups via API
 	let notificationGroups: NotificationGroups;

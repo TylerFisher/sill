@@ -1,5 +1,9 @@
 import { redirect, type unstable_RouterContextProvider } from "react-router";
-import { userContext, type UserProfile } from "~/context/user-context";
+import {
+  requestUrlContext,
+  userContext,
+  type UserProfile,
+} from "~/context/user-context";
 
 /**
  * Get user profile from context (set by middleware)
@@ -20,8 +24,17 @@ export async function requireUserFromContext(
   const user = await getUserFromContext(context);
 
   if (!user) {
-    const finalRedirectTo = redirectTo || "/accounts/login";
-    throw redirect(finalRedirectTo);
+    if (redirectTo) {
+      throw redirect(redirectTo);
+    }
+    // Send them to login carrying where they were headed, so login (and the
+    // OAuth callbacks) can return them there afterward.
+    const requested = context.get(requestUrlContext);
+    throw redirect(
+      requested
+        ? `/accounts/login?redirectTo=${encodeURIComponent(requested)}`
+        : "/accounts/login"
+    );
   }
 
   return user;

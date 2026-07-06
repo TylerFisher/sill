@@ -61,11 +61,9 @@ const newsletter = new Hono()
           continue;
         }
 
+        // Plus is no longer required to receive the digest; `subscribed` is
+        // still read for the supporter messaging in the email/RSS.
         const subscribed = await isSubscribed(dbUser.id);
-
-        if (subscribed === "free") {
-          continue;
-        }
 
         let links: MostRecentLinkPosts[] = [];
         try {
