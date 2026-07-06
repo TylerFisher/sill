@@ -15,9 +15,6 @@ type ActiveSub = NonNullable<
   Awaited<ReturnType<typeof apiGetActiveSubscription>>["subscription"]
 >;
 
-// Poll until the webhook has created the active subscription, then hand back the
-// full record (with its product) so the page can render the same details card as
-// the manage page.
 const pollForSubscription = async (request: Request): Promise<ActiveSub> => {
   return new Promise((resolve) => {
     const poll = async () => {
@@ -44,8 +41,6 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 };
 
 const CheckoutContent = ({ subscription }: { subscription: ActiveSub }) => {
-  // Same conversion the manage page does: the period columns come over the wire
-  // as ISO strings, but SubscriptionDetailsCard wants Date objects.
   const sub = {
     ...subscription,
     periodStart: subscription.periodStart

@@ -29,9 +29,9 @@ import type { SubscriptionStatus } from "@sill/schema";
 
 // Routes that don't require authentication
 const UNAUTHENTICATED_ROUTES = [
-	"/client-metadata.json",
-	"/oauth-client-metadata.json",
-	"/jwks.json",
+  "/client-metadata.json",
+  "/oauth-client-metadata.json",
+  "/jwks.json",
 ] as const;
 
 // Middleware to fetch user profile and set in context
@@ -42,12 +42,9 @@ const authMiddleware: unstable_MiddlewareFunction<Response> = async ({
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // Remember where an unauthenticated visitor was trying to go, so the auth gate
-  // (`requireUserFromContext`) can bounce them back after login. Skip React
-  // Router `.data` requests — their URLs aren't real pages to return to.
   context.set(
     requestUrlContext,
-    pathname.endsWith(".data") ? null : pathname + url.search,
+    pathname.endsWith(".data") ? null : pathname + url.search
   );
 
   // Skip authentication for unauthenticated routes

@@ -1,7 +1,7 @@
 import { redirect } from "react-router";
 import {
-	apiBlueskyAuthStart,
-	apiExchangeMobileCode,
+  apiBlueskyAuthStart,
+  apiExchangeMobileCode,
 } from "~/utils/api-client.server";
 import { authSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/auth";
@@ -14,129 +14,122 @@ import type { Route } from "./+types/auth";
  * real sessionId, then inject it into the cookie header before calling the API.
  */
 function injectSessionId(request: Request, sessionId: string): Request {
-	const headers = new Headers(request.headers);
-	const existing = headers.get("cookie") || "";
-	headers.set(
-		"cookie",
-		existing
-			? `${existing}; sessionId=${sessionId}`
-			: `sessionId=${sessionId}`,
-	);
-	return new Request(request.url, {
-		method: request.method,
-		headers,
-	});
+  const headers = new Headers(request.headers);
+  const existing = headers.get("cookie") || "";
+  headers.set(
+    "cookie",
+    existing ? `${existing}; sessionId=${sessionId}` : `sessionId=${sessionId}`
+  );
+  return new Request(request.url, {
+    method: request.method,
+    headers,
+  });
 }
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-	const requestUrl = new URL(request.url);
-	const refererHeader = request.headers.get("referer");
-	const handle = requestUrl.searchParams.get("handle");
-	const mode = requestUrl.searchParams.get("mode") as
-		| "login"
-		| "signup"
-		| undefined;
-	const mobile = requestUrl.searchParams.get("mobile") === "1";
-	const mobileCode = requestUrl.searchParams.get("code");
-	// Where to send the user after a successful login (set by the auth gate when
-	// it bounced an unauthenticated visitor here via the login page).
-	const redirectTo = requestUrl.searchParams.get("redirectTo");
+  const requestUrl = new URL(request.url);
+  const refererHeader = request.headers.get("referer");
+  const handle = requestUrl.searchParams.get("handle");
+  const mode = requestUrl.searchParams.get("mode") as
+    | "login"
+    | "signup"
+    | undefined;
+  const mobile = requestUrl.searchParams.get("mobile") === "1";
+  const mobileCode = requestUrl.searchParams.get("code");
+  const redirectTo = requestUrl.searchParams.get("redirectTo");
 
-	// Extract pathname from referrer, defaulting to settings if not available or just root
-	let origin = "/settings?tabs=connect";
-	if (refererHeader) {
-		try {
-			const refererUrl = new URL(refererHeader);
-			// Only use the referrer if it has a meaningful path (not just root)
-			if (refererUrl.pathname && refererUrl.pathname !== "/") {
-				origin = refererUrl.pathname + refererUrl.search;
-			}
-		} catch {
-			// If it's already a path, use it directly
-			if (refererHeader.startsWith("/") && refererHeader !== "/") {
-				origin = refererHeader;
-			}
-		}
-	}
+  // Extract pathname from referrer, defaulting to settings if not available or just root
+  let origin = "/settings?tabs=connect";
+  if (refererHeader) {
+    try {
+      const refererUrl = new URL(refererHeader);
+      // Only use the referrer if it has a meaningful path (not just root)
+      if (refererUrl.pathname && refererUrl.pathname !== "/") {
+        origin = refererUrl.pathname + refererUrl.search;
+      }
+    } catch {
+      // If it's already a path, use it directly
+      if (refererHeader.startsWith("/") && refererHeader !== "/") {
+        origin = refererHeader;
+      }
+    }
+  }
 
-	// Determine where to redirect on error based on mode and origin
-	const getErrorRedirectPath = () => {
-		if (mobile && mobileCode) return "sill://callback";
-		if (mode === "login") return "/accounts/login";
-		if (mode === "signup") return "/accounts/signup";
-		return origin;
-	};
+  // Determine where to redirect on error based on mode and origin
+  const getErrorRedirectPath = () => {
+    if (mobile && mobileCode) return "sill://callback";
+    if (mode === "login") return "/accounts/login";
+    if (mode === "signup") return "/accounts/signup";
+    return origin;
+  };
 
-	try {
-		// For mobile connect flow, exchange the code for the real sessionId
-		// and inject it into the cookie header before calling the API
-		let apiRequest = request;
-		let mobileSessionId: string | undefined;
-		if (mobile && mobileCode) {
-			const { sessionId } = await apiExchangeMobileCode(
-				request,
-				mobileCode,
-			);
-			mobileSessionId = sessionId;
-			apiRequest = injectSessionId(request, sessionId);
-		}
+  try {
+    // For mobile connect flow, exchange the code for the real sessionId
+    // and inject it into the cookie header before calling the API
+    let apiRequest = request;
+    let mobileSessionId: string | undefined;
+    if (mobile && mobileCode) {
+      const { sessionId } = await apiExchangeMobileCode(request, mobileCode);
+      mobileSessionId = sessionId;
+      apiRequest = injectSessionId(request, sessionId);
+    }
 
-		const result = await apiBlueskyAuthStart(
-			apiRequest,
-			handle || undefined,
-			mode || undefined,
-		);
+    const result = await apiBlueskyAuthStart(
+      apiRequest,
+      handle || undefined,
+      mode || undefined
+    );
 
-		// Set cookies to persist mode, origin, and mobile flag across OAuth redirect
-		const session = await authSessionStorage.getSession(
-			request.headers.get("cookie"),
-		);
+    // Set cookies to persist mode, origin, and mobile flag across OAuth redirect
+    const session = await authSessionStorage.getSession(
+      request.headers.get("cookie")
+    );
 
-		if (mode) {
-			session.set("blueskyMode", mode);
-			if (origin) {
-				session.set("blueskyOrigin", origin);
-			}
-		} else {
-			session.set("blueskyOrigin", origin);
-			session.unset("blueskyMode");
-		}
+    if (mode) {
+      session.set("blueskyMode", mode);
+      if (origin) {
+        session.set("blueskyOrigin", origin);
+      }
+    } else {
+      session.set("blueskyOrigin", origin);
+      session.unset("blueskyMode");
+    }
 
-		// Carry the post-login return URL through the OAuth round trip (login only).
-		if (mode === "login" && redirectTo) {
-			session.set("blueskyRedirectTo", redirectTo);
-		} else {
-			session.unset("blueskyRedirectTo");
-		}
+    // Carry the post-login return URL through the OAuth round trip (login only).
+    if (mode === "login" && redirectTo) {
+      session.set("blueskyRedirectTo", redirectTo);
+    } else {
+      session.unset("blueskyRedirectTo");
+    }
 
-		if (mobile) {
-			session.set("mobile", true);
-		}
+    if (mobile) {
+      session.set("mobile", true);
+    }
 
-		// Store the API sessionId so the callback route can forward it too
-		if (mobileSessionId) {
-			session.set("apiSessionId", mobileSessionId);
-		}
+    // Store the API sessionId so the callback route can forward it too
+    if (mobileSessionId) {
+      session.set("apiSessionId", mobileSessionId);
+    }
 
-		const headers = new Headers();
-		headers.append(
-			"Set-Cookie",
-			await authSessionStorage.commitSession(session),
-		);
+    const headers = new Headers();
+    headers.append(
+      "Set-Cookie",
+      await authSessionStorage.commitSession(session)
+    );
 
-		return redirect(result.redirectUrl, { headers });
-	} catch (error) {
-		console.error("Bluesky auth error:", error);
+    return redirect(result.redirectUrl, { headers });
+  } catch (error) {
+    console.error("Bluesky auth error:", error);
 
-		const errorPath = getErrorRedirectPath();
-		const errorCode =
-			(error as Error & { code?: string }).code ||
-			(error instanceof Error && error.message.includes("resolver")
-				? "resolver"
-				: "oauth");
+    const errorPath = getErrorRedirectPath();
+    const errorCode =
+      (error as Error & { code?: string }).code ||
+      (error instanceof Error && error.message.includes("resolver")
+        ? "resolver"
+        : "oauth");
 
-		const errorUrl = new URL(errorPath, requestUrl.origin);
-		errorUrl.searchParams.set("error", errorCode);
-		return redirect(errorUrl.pathname + errorUrl.search);
-	}
+    const errorUrl = new URL(errorPath, requestUrl.origin);
+    errorUrl.searchParams.set("error", errorCode);
+    return redirect(errorUrl.pathname + errorUrl.search);
+  }
 };

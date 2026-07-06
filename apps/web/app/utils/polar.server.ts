@@ -2,7 +2,6 @@ import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",
-  // Defaults to sandbox; set POLAR_SERVER=production in prod to charge real cards.
   server: process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
 });
 

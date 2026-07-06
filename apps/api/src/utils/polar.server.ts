@@ -5,15 +5,9 @@ import { db, polarProduct } from "@sill/schema";
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN ?? "",
-  // Defaults to sandbox so local dev and tests never touch live Polar. Set
-  // POLAR_SERVER=production in the production environment to charge real cards.
   server: process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
 });
 
-// Sill+ is sold in these currencies, each at the same round amount (so $4 / €4
-// / £4, and $40 / €40 / £40). Polar shows the customer the price in their own
-// currency at checkout (multi-currency products). USD, EUR, and GBP all use
-// 1/100 minor units, so `minimum * 100` is correct for every one.
 const PRICE_CURRENCIES = ["usd", "eur", "gbp"] as const;
 
 /**
@@ -25,7 +19,7 @@ export const createProduct = async (
   name: string,
   description: string,
   interval: "month" | "year",
-  minimum: number,
+  minimum: number
 ): Promise<Product> => {
   return await polar.products.create({
     name,
@@ -61,7 +55,7 @@ export const bootstrapProducts = async () => {
       plan.name,
       description,
       plan.interval,
-      plan.minimum,
+      plan.minimum
     );
     const checkoutLink = await createCheckoutLink(product);
 
@@ -69,8 +63,6 @@ export const bootstrapProducts = async () => {
       id: uuidv7(),
       name: product.name,
       description: product.description || description,
-      // Pay-what-you-want has no single price; store the minimum (in cents) so
-      // the UI can show "from $4/mo".
       amount: plan.minimum * 100,
       currency: "usd",
       polarId: product.id,
@@ -83,7 +75,7 @@ export const bootstrapProducts = async () => {
 export const createCheckout = async (
   productId: string,
   email: string,
-  userId: string,
+  userId: string
 ) => {
   const session = await polar.checkouts.create({
     products: [productId],

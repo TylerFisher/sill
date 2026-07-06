@@ -27,10 +27,6 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 
   const { subscription: rawSub } = await apiGetCurrentSubscription(request);
 
-  // Convert date strings to Date objects if subscription exists. These come from
-  // `timestamp()` columns (mode "date"), so the API already serializes them as
-  // full ISO strings (UTC, with `Z`) — parse as-is. Appending another `Z` (as the
-  // naive `mode:"string"` columns need) would produce an Invalid Date.
   const sub = rawSub
     ? {
         ...rawSub,
@@ -59,8 +55,6 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
 const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
   const { sub, checkoutLinks, email, name } = loaderData;
   const theme = useTheme();
-  // A subscription set to cancel at period end (or already canceled) gets the
-  // "winding down" treatment instead of the thank-you header.
   const canceled =
     !!sub && (sub.cancelAtPeriodEnd || sub.status === "canceled");
 

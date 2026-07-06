@@ -16,7 +16,7 @@ function extractDomain(url: string | undefined) {
  * Evaluates new items, sends emails or generates RSS items, and updates seen links.
  */
 export async function processNotificationGroup(
-  group: typeof notificationGroup.$inferSelect,
+  group: typeof notificationGroup.$inferSelect
 ): Promise<void> {
   const groupUser = await db.query.user.findFirst({
     where: eq(user.id, group.userId),
@@ -27,27 +27,24 @@ export async function processNotificationGroup(
     return;
   }
 
-  // Plus is no longer required to receive notifications; `subscribed` is still
-  // read so the email/RSS can show the right supporter messaging.
   const subscribed = await isSubscribed(groupUser.id);
-
   const newItems = await evaluateNotifications(
     group.userId,
     group.query,
     group.seenLinks,
-    new Date(group.createdAt),
+    new Date(group.createdAt)
   );
 
   if (newItems.length > 0) {
     console.log(
-      `sending notification for group ${group.name}, user ${groupUser.email}`,
+      `sending notification for group ${group.name}, user ${groupUser.email}`
     );
 
     if (group.notificationType === "email") {
       // Skip email notification for users without email
       if (!groupUser.email) {
         console.log(
-          `Skipping email notification for user ${groupUser.id} - no email address`,
+          `Skipping email notification for user ${groupUser.id} - no email address`
         );
         return;
       }

@@ -302,13 +302,7 @@ export const isSubscribed = async (
     },
   });
   if (!dbUser) return "free";
-
-  // Manual grant for dev/testing accounts (set `plus_override` in the DB).
   if (dbUser.plusOverride) return "plus";
-
-  // Plus is granted by an active subscription row (written by the Polar
-  // webhook). There is no trial: Plus unlocks the iOS beta (handled in Polar),
-  // not web features, so a non-subscriber is simply "free".
   return dbUser.subscriptions.length > 0 ? "plus" : "free";
 };
 
