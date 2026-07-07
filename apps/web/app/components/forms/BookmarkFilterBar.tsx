@@ -71,6 +71,7 @@ const BookmarkFilterBar = ({ tags }: BookmarkFilterBarProps) => {
 			<Flex align="center" gap="2" style={{ minWidth: 0 }}>
 				<Text truncate>{currentTag ?? "Tags"}</Text>
 				{currentTag ? (
+					// biome-ignore lint/a11y/useSemanticElements: a <button> can't be nested inside the chip trigger button
 					<span
 						role="button"
 						tabIndex={0}
