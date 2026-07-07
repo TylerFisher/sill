@@ -50,6 +50,7 @@ const FilterBar = ({
 	const {
 		isPlus,
 		activeCount,
+		savable,
 		canSave,
 		pendingGroup,
 		resetFilters,
@@ -145,10 +146,10 @@ const FilterBar = ({
 							</Dialog.Description>
 							<FilterPanel variant="rows" {...panelProps} />
 							<Box mt="4">
-								{(isPlus || activeCount > 0) && (
+								{(isPlus || savable) && (
 									<Flex justify="between" align="center" mb="3">
 										{saveButton("2") ?? <span />}
-										{activeCount > 0 ? (
+										{savable ? (
 											<Button
 												size="2"
 												variant="ghost"
@@ -175,10 +176,10 @@ const FilterBar = ({
 						<Popover.Trigger>{filtersTrigger}</Popover.Trigger>
 						<Popover.Content width="340px" maxHeight="70vh">
 							<FilterPanel variant="chips" {...panelProps} />
-							{(isPlus || activeCount > 0) && (
+							{(isPlus || savable) && (
 								<Flex justify="between" align="center" gap="3" mt="3">
 									{saveButton("2") ?? <span />}
-									{activeCount > 0 ? (
+									{savable ? (
 										<Button
 											size="2"
 											variant="ghost"

@@ -16,7 +16,7 @@ import { setStoredFilters } from "~/hooks/useFilterStorage";
 import { TIME_OPTIONS } from "~/utils/timeRange";
 import styles from "./PresetFilterItem.module.css";
 
-// The filter params a view captures (search query excluded).
+// The filter params a view captures, including the free-text search query.
 const PRESET_KEYS = [
 	"time",
 	"service",
@@ -24,6 +24,7 @@ const PRESET_KEYS = [
 	"minShares",
 	"reposts",
 	"sort",
+	"query",
 ] as const;
 
 type PresetConfig = Partial<Record<(typeof PRESET_KEYS)[number], string>>;
@@ -62,6 +63,7 @@ const summarizeConfig = (
 	lists: { id: string; name: string }[],
 ): string => {
 	const parts: string[] = [];
+	if (config.query) parts.push(`"${config.query}"`);
 	if (config.sort === "newest") parts.push("Newest");
 	if (config.time) {
 		const label = TIME_OPTIONS.find((o) => o.value === config.time)?.label;

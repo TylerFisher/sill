@@ -378,6 +378,7 @@ export type FilterPresetConfig = {
   minShares?: string;
   reposts?: string;
   sort?: string;
+  query?: string;
 };
 
 export const filterPreset = pgTable(

@@ -10,8 +10,8 @@ import { db, filterPreset } from "@sill/schema";
 // stop runaway growth.
 const MAX_PRESETS = 24;
 
-// The sidebar filter values a preset captures (the free-text search is
-// intentionally excluded). All optional — an empty preset is just "clear all".
+// The filter values a preset captures, including the free-text search query.
+// All optional — an empty preset is just "clear all".
 const FilterConfigSchema = z.object({
   time: z.string().optional(),
   service: z.string().optional(),
@@ -19,6 +19,7 @@ const FilterConfigSchema = z.object({
   minShares: z.string().optional(),
   reposts: z.string().optional(),
   sort: z.string().optional(),
+  query: z.string().optional(),
 });
 
 const CreatePresetSchema = z.object({

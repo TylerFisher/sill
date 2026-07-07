@@ -104,6 +104,8 @@ export const useLinkFilters = ({
 	const resetFilters = () => {
 		setSearchParams((prev) => {
 			for (const key of FILTER_KEYS) prev.delete(key);
+			// The search query is part of the savable state, so Reset clears it too.
+			prev.delete("query");
 			return prev;
 		});
 		for (const key of FILTER_KEYS) clearFilterFromStorage(key);
@@ -116,8 +118,12 @@ export const useLinkFilters = ({
 			? `service:${activeService}`
 			: "all";
 
+	// The "Filters (N)" badge counts the filter-panel filters only (not search
+	// or sort). Saving/resetting, though, also consider the search query.
 	const activeCount = FILTER_KEYS.filter((k) => eff.get(k)).length;
-	// Whether the live filters already match a saved view (don't offer to save a
+	const query = eff.get("query") ?? "";
+	const savable = activeCount > 0 || query !== "";
+	// Whether the live state already matches a saved view (don't offer to save a
 	// duplicate). Uses the loader list, so a just-created view only registers on
 	// the next load — acceptable.
 	const currentSort = eff.get("sort") ?? "";
@@ -128,9 +134,10 @@ export const useLinkFilters = ({
 			(p.filters.reposts ?? "") === reposts &&
 			(p.filters.service ?? "") === (activeService ?? "") &&
 			(p.filters.list ?? "") === (activeList ?? "") &&
-			(p.filters.sort ?? "") === currentSort,
+			(p.filters.sort ?? "") === currentSort &&
+			(p.filters.query ?? "") === query,
 	);
-	const canSave = activeCount > 0 && !alreadySaved;
+	const canSave = savable && !alreadySaved;
 
 	const panelProps = {
 		time,
@@ -148,6 +155,7 @@ export const useLinkFilters = ({
 	return {
 		isPlus,
 		activeCount,
+		savable,
 		canSave,
 		pendingGroup,
 		resetFilters,

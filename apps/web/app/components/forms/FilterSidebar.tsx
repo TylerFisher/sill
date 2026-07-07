@@ -45,7 +45,7 @@ const FilterSidebar = ({
 }: FilterSidebarProps) => {
 	const {
 		isPlus,
-		activeCount,
+		savable,
 		canSave,
 		resetFilters,
 		panelProps,
@@ -88,7 +88,7 @@ const FilterSidebar = ({
 				</Box>
 
 				{/* Only when there's something to act on: no lonely disabled button. */}
-				{activeCount > 0 && (
+				{savable && (
 					<Flex justify="between" align="center" gap="3">
 						{isPlus && canSave ? (
 							<Button
