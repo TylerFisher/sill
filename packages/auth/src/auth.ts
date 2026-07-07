@@ -18,6 +18,63 @@ export const getSessionExpirationDate = () =>
 export const sessionKey = "sessionId";
 
 /**
+ * All values for the `sessionId` cookie. A browser can send more than one
+ * cookie with the same name when they were set under different Domain/Path
+ * scopes (for example a stale host-only cookie lingering alongside a newer
+ * one). Returning every candidate lets the caller pick the one that still maps
+ * to a live session instead of blindly trusting whichever came first.
+ */
+export function getSessionIdsFromCookie(cookieHeader: string | null): string[] {
+  if (!cookieHeader) return [];
+
+  const ids: string[] = [];
+  for (const part of cookieHeader.split(";")) {
+    const trimmed = part.trim();
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    if (trimmed.slice(0, eq) !== sessionKey) continue;
+    const value = trimmed.slice(eq + 1);
+    if (value) ids.push(value);
+  }
+  return ids;
+}
+
+/**
+ * Resolve the request's cookies to the first `sessionId` that maps to a live
+ * (unexpired) session, returning that id together with its user. This tolerates
+ * duplicate `sessionId` cookies: a stale duplicate that sorts first no longer
+ * masks a valid session sitting behind it. Callers that need the id itself
+ * (e.g. to persist or delete it) should use the returned `sessionId` so they
+ * act on the session that actually authenticated the request.
+ */
+export async function resolveSessionFromRequest(
+  request: Request
+): Promise<{ sessionId: string; userId: string } | null> {
+  const sessionIds = getSessionIdsFromCookie(request.headers.get("cookie"));
+
+  for (const sessionId of sessionIds) {
+    const existingSession = await db.query.session.findFirst({
+      columns: {},
+      with: {
+        user: {
+          columns: { id: true },
+        },
+      },
+      where: and(
+        eq(session.id, sessionId),
+        gt(session.expirationDate, new Date().toISOString())
+      ),
+    });
+
+    if (existingSession?.user) {
+      return { sessionId, userId: existingSession.user.id };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Validates session from request headers and returns user ID
  * @param request Request object
  * @returns User ID from session or null
@@ -25,44 +82,8 @@ export const sessionKey = "sessionId";
 export async function getUserIdFromSession(
   request: Request
 ): Promise<string | null> {
-  const sessionId = getSessionIdFromCookie(request.headers.get("cookie"));
-  if (!sessionId) return null;
-
-  const existingSession = await db.query.session.findFirst({
-    columns: {},
-    with: {
-      user: {
-        columns: { id: true },
-      },
-    },
-    where: and(
-      eq(session.id, sessionId),
-      gt(session.expirationDate, new Date().toISOString())
-    ),
-  });
-
-  if (!existingSession?.user) {
-    return null;
-  }
-  return existingSession.user.id;
-}
-
-/**
- * Extracts session ID from cookie header
- * @param cookieHeader Cookie header string
- * @returns Session ID or null
- */
-function getSessionIdFromCookie(cookieHeader: string | null): string | null {
-  if (!cookieHeader) return null;
-
-  const cookies = cookieHeader.split(";").map((c) => c.trim());
-  for (const cookie of cookies) {
-    const [name, value] = cookie.split("=");
-    if (name === sessionKey) {
-      return value;
-    }
-  }
-  return null;
+  const resolved = await resolveSessionFromRequest(request);
+  return resolved?.userId ?? null;
 }
 
 /**

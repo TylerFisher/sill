@@ -6,8 +6,10 @@ import { z } from "zod";
 import {
   deleteSession,
   getPasswordHash,
+  getSessionIdsFromCookie,
   getUserIdFromSession,
   getUserProfile,
+  resolveSessionFromRequest,
   login,
   resetUserPassword,
   signup,
@@ -208,9 +210,12 @@ const auth = new Hono()
     }
 
     try {
-      // Get session ID from cookie to delete it
-      const sessionId = getSessionIdFromCookie(c.req.header("cookie"));
-      if (sessionId) {
+      // Delete every session the cookie references, not just the first token,
+      // so a stale duplicate `sessionId` cookie can't leave the real session
+      // alive after logout.
+      for (const sessionId of getSessionIdsFromCookie(
+        c.req.header("cookie") ?? null
+      )) {
         await deleteSession(sessionId);
       }
 
@@ -402,9 +407,10 @@ const auth = new Hono()
       // Delete the user (cascade deletes will handle related data)
       await db.delete(user).where(eq(user.id, userId));
 
-      // Get session ID from cookie to delete it
-      const sessionId = getSessionIdFromCookie(c.req.header("cookie"));
-      if (sessionId) {
+      // Delete any sessions the cookie references (covers a stale duplicate).
+      for (const sessionId of getSessionIdsFromCookie(
+        c.req.header("cookie") ?? null
+      )) {
         await deleteSession(sessionId);
       }
 
@@ -894,22 +900,19 @@ const auth = new Hono()
     async (c) => {
       const { sessionId: bodySessionId } = c.req.valid("json");
 
-      // Use sessionId from body if provided (web callback flow),
-      // otherwise read from cookie (iOS app flow)
-      const sessionId =
-        bodySessionId ??
-        getSessionIdFromCookie(c.req.raw.headers.get("cookie") ?? undefined);
-
+      // Use sessionId from body if provided (web callback flow), otherwise
+      // resolve it from the cookie (iOS app flow). Resolving (rather than taking
+      // the first `sessionId` token) matters when a stale duplicate cookie sits
+      // in front of the valid one: we must both authenticate against and store
+      // the session that is actually live, or the exchanged code would map back
+      // to the dead session.
+      let sessionId = bodySessionId;
       if (!sessionId) {
-        return c.json({ error: "No session provided" }, 401);
-      }
-
-      // If using cookie auth, verify the session is valid
-      if (!bodySessionId) {
-        const userId = await getUserIdFromSession(c.req.raw);
-        if (!userId) {
+        const resolved = await resolveSessionFromRequest(c.req.raw);
+        if (!resolved) {
           return c.json({ error: "Not authenticated" }, 401);
         }
+        sessionId = resolved.sessionId;
       }
 
       try {
@@ -930,23 +933,5 @@ const auth = new Hono()
       }
     },
   );
-
-/**
- * Extracts session ID from cookie header
- */
-function getSessionIdFromCookie(
-  cookieHeader: string | undefined
-): string | null {
-  if (!cookieHeader) return null;
-
-  const cookies = cookieHeader.split(";").map((c) => c.trim());
-  for (const cookie of cookies) {
-    const [name, value] = cookie.split("=");
-    if (name === "sessionId") {
-      return value;
-    }
-  }
-  return null;
-}
 
 export default auth;

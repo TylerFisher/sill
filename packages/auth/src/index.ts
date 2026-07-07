@@ -1,6 +1,8 @@
 export {
   isSubscribed,
   getUserIdFromSession,
+  resolveSessionFromRequest,
+  getSessionIdsFromCookie,
   getSessionExpirationDate,
   validateSession,
   deleteSession,
