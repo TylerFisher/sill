@@ -22,6 +22,7 @@ import { redirect } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import FilterBar from "~/components/forms/FilterBar";
+import FilterSidebar from "~/components/forms/FilterSidebar";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import PlusPromoCard from "~/components/subscription/PlusPromoCard";
 import {
@@ -334,13 +335,26 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <SourceBadgeProvider value={sourceBadge}>
-      <Layout>
-        <FilterBar
-          showService={!!(loaderData.bsky && loaderData.instance)}
-          lists={loaderData.lists}
-          subscribed={loaderData.subscribed}
-          presets={loaderData.filterPresets}
-        />
+      <Layout
+        sidebar={
+          <FilterSidebar
+            showService={!!(loaderData.bsky && loaderData.instance)}
+            lists={loaderData.lists}
+            subscribed={loaderData.subscribed}
+            presets={loaderData.filterPresets}
+          />
+        }
+      >
+        {/* The sidebar (Layout's right rail) appears at 768px, so hide the bar
+            at the matching Radix `sm` breakpoint — not `md`, which is 1024px. */}
+        <Box display={{ initial: "block", sm: "none" }}>
+          <FilterBar
+            showService={!!(loaderData.bsky && loaderData.instance)}
+            lists={loaderData.lists}
+            subscribed={loaderData.subscribed}
+            presets={loaderData.filterPresets}
+          />
+        </Box>
         <Box position="relative">
           {/* Floating overlay indicator. `position: fixed` takes the pill
 				    completely out of document flow so toggling it never shifts

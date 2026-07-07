@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 
-const SearchField = () => {
+const SearchField = ({ rounded = false }: { rounded?: boolean }) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [query, setQuery] = useState(searchParams.get("query") || "");
 	const { saveFiltersToStorage } = useFilterStorage();
@@ -48,16 +48,21 @@ const SearchField = () => {
 			type="text"
 			value={query}
 			aria-label="Search"
-			size="3"
+			size="2"
 			variant="soft"
 			color="gray"
-			// Match the filter chips exactly: same radius, soft gray fill, and a
-			// real 1px border (the surface variant's border is darker/heavier).
-			style={{
-				borderRadius: "var(--radius-2)",
-				backgroundColor: "var(--gray-a2)",
-				border: "1px solid var(--gray-a5)",
-			}}
+			// In the bar, match the chips: a lighter fill with a real 1px border and
+			// --radius-2. In the sidebar (`rounded`), match the soft pill dropdowns —
+			// native soft fill, no border, fully rounded.
+			style={
+				rounded
+					? { borderRadius: "var(--radius-full)" }
+					: {
+							borderRadius: "var(--radius-2)",
+							backgroundColor: "var(--gray-a2)",
+							border: "1px solid var(--gray-a5)",
+						}
+			}
 			onChange={(event) => setQuery(event.target.value)}
 			onKeyDown={(event) => {
 				if (event.key === "Enter") {

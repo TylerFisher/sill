@@ -15,23 +15,13 @@ import type {
 } from "@sill/schema";
 import { ChevronDown, X } from "lucide-react";
 import { useState } from "react";
-import { Form, useNavigation, useSearchParams } from "react-router";
-import { useFilterStorage } from "~/hooks/useFilterStorage";
+import { Form } from "react-router";
 import { useIsMobile } from "~/hooks/useIsMobile";
+import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FilterPanel from "./FilterPanel";
 import FilterPresets from "./FilterPresets";
 import styles from "./PresetFilterItem.module.css";
 import SearchField from "./SearchField";
-
-// Keys the "Reset" action and the active-count consider. Sort is excluded: it's
-// chosen via the built-in Views (Most popular / Newest), not the Filters panel.
-const FILTER_KEYS = [
-	"time",
-	"minShares",
-	"reposts",
-	"service",
-	"list",
-] as const;
 
 interface FilterBarProps {
 	showService: boolean;
@@ -43,10 +33,10 @@ interface FilterBarProps {
 }
 
 /**
- * The feed filters: a Views chip (saved presets), a Filters control, and an
- * inline search field. On desktop Filters is a compact popover of chips; on
- * mobile it's a full-screen panel of large tappable rows. Search sits in the row
- * on desktop and drops to its own full-width row on mobile.
+ * The mobile feed filters: a Views chip (saved presets), a Filters control, and
+ * a search field. Filters open in a full-screen panel of large tappable rows.
+ * On desktop the filters live in FilterSidebar instead, so the routes render
+ * this bar only below the `md` breakpoint.
  */
 const FilterBar = ({
 	showService,
@@ -55,128 +45,42 @@ const FilterBar = ({
 	presets,
 	hideSearch = false,
 }: FilterBarProps) => {
-	const [searchParams, setSearchParams] = useSearchParams();
-	// The stable owner of filter restore on the main feed (it stays mounted,
-	// unlike the search field, which lives in a popover).
-	const { clearFilterFromStorage } = useFilterStorage({ restoreOnMount: true });
-	const isPlus = subscribed === "plus";
 	const isMobile = useIsMobile();
 	const [filtersOpen, setFiltersOpen] = useState(false);
-	// Save dialog lives in FilterPresets (it owns the presets fetcher), but it's
-	// opened from the Filters panel where the filters are actually built.
-	const [saveOpen, setSaveOpen] = useState(false);
-
-	// While a filter change is loading (the wider windows can take a while),
-	// reflect the target selection optimistically and flag which group is pending
-	// so its option can show a spinner.
-	const navigation = useNavigation();
-	const pendingSearch =
-		navigation.state === "loading" && navigation.location
-			? new URLSearchParams(navigation.location.search)
-			: null;
-	const eff = pendingSearch ?? searchParams;
-	const changed = (key: string) =>
-		pendingSearch !== null &&
-		(pendingSearch.get(key) ?? "") !== (searchParams.get(key) ?? "");
-	const pendingGroup = changed("time")
-		? "time"
-		: changed("minShares")
-			? "shares"
-			: changed("reposts")
-				? "reposts"
-				: changed("service") || changed("list")
-					? "from"
-					: null;
-
-	const time = eff.get("time") || "";
-	const reposts = eff.get("reposts") || "";
-	const minShares = eff.get("minShares") || "";
-	const activeService = eff.get("service");
-	const activeList = eff.get("list");
-
-	const setParam = (key: "time" | "minShares" | "reposts", value: string) => {
-		setSearchParams((prev) => {
-			if (value) prev.set(key, value);
-			else prev.delete(key);
-			return prev;
-		});
-		if (!value) clearFilterFromStorage(key);
-	};
-
-	// Service and list are mutually exclusive, so one control drives both params.
-	const selectFrom = (value: string) => {
-		setSearchParams((prev) => {
-			prev.delete("service");
-			prev.delete("list");
-			if (value.startsWith("service:")) prev.set("service", value.slice(8));
-			else if (value.startsWith("list:")) prev.set("list", value.slice(5));
-			return prev;
-		});
-		if (value === "all") {
-			clearFilterFromStorage("service");
-			clearFilterFromStorage("list");
-		}
-	};
-
-	const resetFilters = () => {
-		setSearchParams((prev) => {
-			for (const key of FILTER_KEYS) prev.delete(key);
-			return prev;
-		});
-		for (const key of FILTER_KEYS) clearFilterFromStorage(key);
-	};
-
-	const sortedLists = [...lists].sort((a, b) => a.name.localeCompare(b.name));
-	const fromValue = activeList
-		? `list:${activeList}`
-		: activeService
-			? `service:${activeService}`
-			: "all";
-
-	const activeCount = FILTER_KEYS.filter((k) => eff.get(k)).length;
-	// Whether the live filters already match a saved view (don't offer to save a
-	// duplicate). Uses the loader list, so a just-created view only registers on
-	// the next load — acceptable.
-	const currentSort = eff.get("sort") ?? "";
-	const alreadySaved = presets.some(
-		(p) =>
-			(p.filters.time ?? "") === time &&
-			(p.filters.minShares ?? "") === minShares &&
-			(p.filters.reposts ?? "") === reposts &&
-			(p.filters.service ?? "") === (activeService ?? "") &&
-			(p.filters.list ?? "") === (activeList ?? "") &&
-			(p.filters.sort ?? "") === currentSort,
-	);
-	const canSave = activeCount > 0 && !alreadySaved;
+	const {
+		isPlus,
+		activeCount,
+		canSave,
+		pendingGroup,
+		resetFilters,
+		panelProps,
+		saveOpen,
+		setSaveOpen,
+	} = useLinkFilters({
+		lists,
+		subscribed,
+		presets,
+		showService,
+		ownsRestore: true,
+	});
 
 	const chip = (active: boolean) =>
 		`${styles.item} ${styles.chip} ${active ? styles.active : ""}`;
 
 	const filtersTrigger = (
-		<button type="button" className={chip(false)}>
-			<Flex align="center" gap="2">
-				<Text>{activeCount ? `Filters (${activeCount})` : "Filters"}</Text>
-				{pendingGroup ? (
-					<Spinner size="1" />
-				) : (
-					<ChevronDown width={14} height={14} style={{ opacity: 0.5 }} />
-				)}
-			</Flex>
+		<button type="button" className={`${chip(false)} ${styles.barChip}`}>
+			<Text>{activeCount ? `Filters (${activeCount})` : "Filters"}</Text>
+			{pendingGroup ? (
+				<Spinner size="1" />
+			) : (
+				<ChevronDown
+					width={14}
+					height={14}
+					style={{ opacity: 0.5, flexShrink: 0 }}
+				/>
+			)}
 		</button>
 	);
-
-	const panelProps = {
-		time,
-		minShares,
-		reposts,
-		fromValue,
-		isPlus,
-		showService,
-		lists: sortedLists,
-		setParam,
-		selectFrom,
-		pendingGroup,
-	};
 
 	// Filters apply live as they're tapped, so saving is optional. "Save as view"
 	// is a secondary (ghost) action rather than the panel's main button.
@@ -292,26 +196,27 @@ const FilterBar = ({
 					</Popover.Root>
 				)}
 
-				{/* Desktop/tablet: an inline search field fills the rest of the row. */}
+				{/* Wider phones/tablet (>= 520px): search shares the row with the
+				    chips so it isn't a too-wide band on its own. */}
 				{!hideSearch && (
 					<Box
-						display={{ initial: "none", sm: "block" }}
+						display={{ initial: "none", xs: "block" }}
 						flexGrow="1"
 						minWidth="0"
 					>
 						<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-							<SearchField />
+							<SearchField rounded />
 						</Form>
 					</Box>
 				)}
 			</Flex>
 
-			{/* Mobile: search gets its own full-width row so the chips above stay
-			    a consistent size. */}
+			{/* Narrow phones (< 520px): not enough room, so search drops to its own
+			    full-width row below the chips. */}
 			{!hideSearch && (
-				<Box display={{ initial: "block", sm: "none" }} mt="2">
+				<Box display={{ initial: "block", xs: "none" }} mt="2">
 					<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-						<SearchField />
+						<SearchField rounded />
 					</Form>
 				</Box>
 			)}

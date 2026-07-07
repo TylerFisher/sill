@@ -3,6 +3,7 @@ import { Box, Flex, Spinner, Text } from "@radix-ui/themes";
 import { Suspense } from "react";
 import { Await, type ShouldRevalidateFunctionArgs } from "react-router";
 import FilterBar from "~/components/forms/FilterBar";
+import FilterSidebar from "~/components/forms/FilterSidebar";
 import AboutTopper from "~/components/linkPosts/AboutTopper";
 import PaginatedLinksList from "~/components/linkPosts/PaginatedLinksList";
 import Layout from "~/components/nav/Layout";
@@ -101,14 +102,26 @@ const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
 	const showService = !!(bsky && instance);
 
 	return (
-		<Layout>
-			<FilterBar
-				showService={showService}
-				lists={lists}
-				subscribed={subscribed}
-				presets={filterPresets}
-				hideSearch
-			/>
+		<Layout
+			sidebar={
+				<FilterSidebar
+					showService={showService}
+					lists={lists}
+					subscribed={subscribed}
+					presets={filterPresets}
+					hideSearch
+				/>
+			}
+		>
+			<Box display={{ initial: "block", sm: "none" }}>
+				<FilterBar
+					showService={showService}
+					lists={lists}
+					subscribed={subscribed}
+					presets={filterPresets}
+					hideSearch
+				/>
+			</Box>
 			<Suspense
 				fallback={
 					<Flex justify="center" py="6">

@@ -1,6 +1,14 @@
-import { Box, Button, Flex, Spinner, Text } from "@radix-ui/themes";
+import {
+	Box,
+	Button,
+	Flex,
+	Select,
+	Slider,
+	Spinner,
+	Text,
+} from "@radix-ui/themes";
 import { Check, ChevronDown, Lock } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import SillPlus from "~/components/subscription/SillPlus";
 import { TIME_OPTIONS } from "~/utils/timeRange";
@@ -21,28 +29,9 @@ const repostOptions = [
 ];
 
 const FREE_TIME = TIME_OPTIONS.filter((o) => !o.plus);
-const PLUS_TIME = TIME_OPTIONS.filter((o) => o.plus);
 
 const timeShort = (label: string) =>
 	label.replace(" hours", "h").replace(" days", "d");
-
-// Compact chip-group heading (module-level so it keeps a stable identity).
-const Group = ({ label, children }: { label: string; children: ReactNode }) => (
-	<Box mb="3">
-		<Text
-			as="p"
-			size="1"
-			color="gray"
-			mb="2"
-			style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
-		>
-			{label}
-		</Text>
-		<Flex wrap="wrap" gap="1">
-			{children}
-		</Flex>
-	</Box>
-);
 
 interface FilterPanelProps {
 	// "chips" = compact desktop popover; "rows" = big mobile full-screen rows.
@@ -75,6 +64,10 @@ const FilterPanel = ({
 }: FilterPanelProps) => {
 	// Which mobile accordion group is expanded (one at a time).
 	const [expanded, setExpanded] = useState<string | null>(null);
+	// Desktop slider thumb positions while dragging, so the label tracks the
+	// thumb live but the filter (and its reload) only commits on release.
+	const [timeDrag, setTimeDrag] = useState<number | null>(null);
+	const [sharesDrag, setSharesDrag] = useState<number | null>(null);
 
 	const fromOptions = [
 		{ value: "all", label: "Everywhere" },
@@ -255,96 +248,170 @@ const FilterPanel = ({
 		);
 	}
 
-	// ---- Compact chips (desktop) ----
-	const chip = (active: boolean) =>
-		`${styles.filterOption} ${active ? styles.active : ""}`;
+	// ---- Expanded controls (desktop sidebar) ----
+	// Time and minimum shares are ordered scales, so a slider reads more
+	// naturally here than a row of chips. Steps map to the preset options; free
+	// users only get the windows up to 24h (the Sill+ callout covers the rest).
+	const timeSteps = isPlus ? TIME_OPTIONS : FREE_TIME;
+	const foundTime = timeSteps.findIndex((o) => o.value === time);
+	const timeIdx =
+		foundTime >= 0
+			? foundTime
+			: Math.max(
+					0,
+					timeSteps.findIndex((o) => o.value === ""),
+				);
+	const displayTimeIdx = timeDrag ?? timeIdx;
+	// Shares is a plain 1–10 continuum (1 = no filter), not the preset steps.
+	const parsedShares = Number.parseInt(minShares, 10);
+	const sharesValue = Number.isFinite(parsedShares)
+		? Math.min(10, Math.max(1, parsedShares))
+		: 1;
+	const displayShares = sharesDrag ?? sharesValue;
 
-	const chipContent = (text: string, pending: boolean) => (
-		<Flex align="center" gap="1">
-			<span>{text}</span>
-			{pending && <Spinner size="1" />}
+	const sliderHeader = (label: string, value: string, pending: boolean) => (
+		<Flex justify="between" align="center" mb="2">
+			<Text
+				as="span"
+				size="1"
+				color="gray"
+				style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+			>
+				{label}
+			</Text>
+			<Flex align="center" gap="1">
+				<Text size="2" weight="medium">
+					{value}
+				</Text>
+				{pending && <Spinner size="1" />}
+			</Flex>
 		</Flex>
 	);
 
-	const timeChip = (o: (typeof TIME_OPTIONS)[number]) => {
-		const locked = !!o.plus && !isPlus;
-		return (
-			<button
-				key={o.value}
-				type="button"
-				disabled={locked}
-				className={chip(!locked && time === o.value)}
-				style={locked ? { opacity: 0.55 } : undefined}
-				onClick={locked ? undefined : () => setParam("time", o.value)}
-			>
-				<Flex align="center" gap="1">
-					<span>{timeShort(o.label)}</span>
-					{pendingGroup === "time" && time === o.value && <Spinner size="1" />}
-					{locked && <Lock size={12} style={{ opacity: 0.5 }} />}
-				</Flex>
-			</button>
-		);
-	};
+	const sliderTicks = (left: string, right: string) => (
+		<Flex justify="between" mt="1">
+			<Text size="1" color="gray">
+				{left}
+			</Text>
+			<Text size="1" color="gray">
+				{right}
+			</Text>
+		</Flex>
+	);
 
 	return (
 		<>
-			<Group label="Time">
-				<Flex wrap="wrap" gap="1" width="100%">
-					{FREE_TIME.map(timeChip)}
-				</Flex>
-				<Flex wrap="wrap" gap="1" width="100%">
-					{PLUS_TIME.map(timeChip)}
-				</Flex>
-			</Group>
+			<Box mb="4">
+				{sliderHeader(
+					"Time",
+					timeSteps[displayTimeIdx].label,
+					pendingGroup === "time",
+				)}
+				<Slider
+					value={[displayTimeIdx]}
+					min={0}
+					max={timeSteps.length - 1}
+					step={1}
+					size="2"
+					aria-label="Time window"
+					onValueChange={([v]) => setTimeDrag(v)}
+					onValueCommit={([v]) => {
+						setTimeDrag(null);
+						setParam("time", timeSteps[v].value);
+					}}
+				/>
+				{sliderTicks(
+					timeShort(timeSteps[0].label),
+					timeShort(timeSteps[timeSteps.length - 1].label),
+				)}
+			</Box>
 
-			<Group label="Minimum shares">
-				{sharesOptions.map((o) => (
-					<button
-						key={o.value}
-						type="button"
-						className={chip(minShares === o.value)}
-						onClick={() => setParam("minShares", o.value)}
-					>
-						{chipContent(
-							o.label,
-							pendingGroup === "shares" && minShares === o.value,
-						)}
-					</button>
-				))}
-			</Group>
+			<Box mb="4">
+				{sliderHeader(
+					"Minimum shares",
+					`${displayShares}+ shares`,
+					pendingGroup === "shares",
+				)}
+				<Slider
+					value={[displayShares]}
+					min={1}
+					max={10}
+					step={1}
+					size="2"
+					aria-label="Minimum shares"
+					onValueChange={([v]) => setSharesDrag(v)}
+					onValueCommit={([v]) => {
+						setSharesDrag(null);
+						setParam("minShares", v <= 1 ? "" : String(v));
+					}}
+				/>
+				{sliderTicks("1+", "10+")}
+			</Box>
 
-			<Group label="Reposts">
-				{repostOptions.map((o) => (
-					<button
-						key={o.value}
-						type="button"
-						className={chip(reposts === o.value)}
-						onClick={() => setParam("reposts", o.value)}
+			<Box mb="4">
+				<Flex justify="between" align="center" mb="2">
+					<Text
+						as="span"
+						size="1"
+						color="gray"
+						style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
 					>
-						{chipContent(
-							o.label,
-							pendingGroup === "reposts" && reposts === o.value,
-						)}
-					</button>
-				))}
-			</Group>
+						Reposts
+					</Text>
+					{pendingGroup === "reposts" && <Spinner size="1" />}
+				</Flex>
+				{/* The default ("with reposts") is an empty param, but Radix Select
+				    forbids empty item values, so it rides under "include" here. */}
+				<Select.Root
+					value={reposts || "include"}
+					onValueChange={(v) => setParam("reposts", v === "include" ? "" : v)}
+					size="2"
+				>
+					<Select.Trigger
+						variant="soft"
+						color="gray"
+						aria-label="Reposts"
+						style={{ width: "100%", color: "var(--gray-12)" }}
+					/>
+					<Select.Content>
+						{repostOptions.map((o) => (
+							<Select.Item key={o.value || "include"} value={o.value || "include"}>
+								{o.label}
+							</Select.Item>
+						))}
+					</Select.Content>
+				</Select.Root>
+			</Box>
 
 			{showFrom && (
-				<Group label="From">
-					{fromOptions.map((o) => (
-						<button
-							key={o.value}
-							type="button"
-							className={chip(fromValue === o.value)}
-							onClick={() => selectFrom(o.value)}
+				<Box mb="4">
+					<Flex justify="between" align="center" mb="2">
+						<Text
+							as="span"
+							size="1"
+							color="gray"
+							style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
 						>
-							{chipContent(
-								o.label,
-								pendingGroup === "from" && fromValue === o.value,
-							)}
-						</button>
-					))}
-				</Group>
+							From
+						</Text>
+						{pendingGroup === "from" && <Spinner size="1" />}
+					</Flex>
+					<Select.Root value={fromValue} onValueChange={selectFrom} size="2">
+						<Select.Trigger
+							variant="soft"
+							color="gray"
+							aria-label="From"
+							style={{ width: "100%", color: "var(--gray-12)" }}
+						/>
+						<Select.Content>
+							{fromOptions.map((o) => (
+								<Select.Item key={o.value} value={o.value}>
+									{o.label}
+								</Select.Item>
+							))}
+						</Select.Content>
+					</Select.Root>
+				</Box>
 			)}
 			{plusCallout}
 		</>

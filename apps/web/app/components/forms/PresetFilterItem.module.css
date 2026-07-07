@@ -30,26 +30,27 @@
 	margin-top: 0.5rem;
 }
 
-/* Sort, Filter, and From items - filled style */
+/* Bar trigger chips, styled to match the sidebar's soft-gray Select/Button
+   pills: borderless soft fill, high-contrast value text, no accent. */
 .item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: var(--space-2);
 	width: 100%;
 	padding: 0.5rem 0.75rem;
-	background: var(--gray-a2);
-	border: 1px solid var(--gray-a5);
+	background: var(--gray-a3);
+	border: none;
 	border-radius: var(--radius-2);
 	cursor: pointer;
 	transition: all 150ms ease;
 	font-size: var(--font-size-2);
-	color: var(--gray-11);
+	color: var(--gray-12);
 	text-align: left;
 }
 
 .item:hover {
-	background: var(--gray-a3);
-	border-color: var(--gray-a6);
+	background: var(--gray-a4);
 }
 
 .item:focus-visible {
@@ -58,15 +59,13 @@
 }
 
 .item.active {
-	background: var(--accent-a3);
-	border-color: var(--accent-a7);
-	color: var(--accent-11);
-	font-weight: 600;
+	background: var(--gray-a4);
+	color: var(--gray-12);
+	font-weight: 500;
 }
 
 .item.active:hover {
-	background: var(--accent-a4);
-	border-color: var(--accent-a8);
+	background: var(--gray-a5);
 }
 
 .fullWidth {
@@ -74,14 +73,33 @@
 }
 
 /* Auto-width variant used in the horizontal filter bar (wraps, never shrinks).
-   Height/padding pinned to Radix size-3 (40px) so it matches the search field. */
+   Height pinned to Radix size-2 (32px) so it matches the search field; fully
+   rounded to match the curved pill controls elsewhere. */
 .item.chip {
 	width: auto;
 	flex-shrink: 0;
 	white-space: nowrap;
-	min-height: 2.5rem;
-	padding: 0 0.875rem;
-	font-size: var(--font-size-3);
+	min-height: 2rem;
+	padding-top: 0;
+	padding-bottom: 0;
+	border-radius: var(--radius-full);
+}
+
+/* The feed bar's two trigger chips split the row into equal halves on narrow
+   phones; once the search joins the row (>= 520px, Radix xs) they shrink back
+   to their content width. Overrides the chip's auto width / no-shrink. */
+.item.chip.barChip {
+	flex: 1 1 0;
+	width: auto;
+	min-width: 0;
+	max-width: none;
+}
+
+@media (min-width: 520px) {
+	.item.chip.barChip {
+		flex: 0 0 auto;
+		max-width: 180px;
+	}
 }
 
 /* A big, tappable filter option row inside the mobile Filters dialog. Sized to

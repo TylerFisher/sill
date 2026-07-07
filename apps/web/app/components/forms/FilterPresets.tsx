@@ -86,6 +86,9 @@ interface FilterPresetsProps {
 	// owned by the parent.
 	saveOpen: boolean;
 	onSaveOpenChange: (open: boolean) => void;
+	// "chip" is the compact mobile bar trigger; "select" is a full-width control
+	// that matches the sidebar's From dropdown.
+	triggerVariant?: "chip" | "select";
 }
 
 const FilterPresets = ({
@@ -93,6 +96,7 @@ const FilterPresets = ({
 	lists,
 	saveOpen,
 	onSaveOpenChange,
+	triggerVariant = "chip",
 }: FilterPresetsProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	// Presets refresh via the mutation action's returned list so the (streaming)
@@ -184,20 +188,43 @@ const FilterPresets = ({
 		<>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
-					<button
-						type="button"
-						className={`${styles.item} ${styles.chip}`}
-						style={{ maxWidth: 180 }}
-					>
-						<Flex align="center" gap="2" style={{ minWidth: 0 }}>
-							<Text truncate>{active ? active.name : "Views"}</Text>
+					{triggerVariant === "select" ? (
+						<Button
+							variant="soft"
+							color="gray"
+							size="2"
+							aria-label="View"
+							style={{
+								width: "100%",
+								justifyContent: "space-between",
+								color: "var(--gray-12)",
+							}}
+						>
+							<Text truncate>{active ? active.name : "View"}</Text>
+							<ChevronDown
+								width={16}
+								height={16}
+								style={{ opacity: 0.7, flexShrink: 0 }}
+							/>
+						</Button>
+					) : (
+						<button
+							type="button"
+							className={`${styles.item} ${styles.chip} ${styles.barChip}`}
+						>
+							{/* Lead with "View" so the term is introduced on the bar (before
+							    "Save as view" in the Filters panel), then the active view so
+							    it's still visible at a glance. Truncates in the half-width chip. */}
+							<Text truncate style={{ minWidth: 0 }}>
+								{active ? `View · ${active.name}` : "View"}
+							</Text>
 							<ChevronDown
 								width={14}
 								height={14}
 								style={{ opacity: 0.5, flexShrink: 0 }}
 							/>
-						</Flex>
-					</button>
+						</button>
+					)}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
 					{BUILT_IN_VIEWS.map((view) => {
