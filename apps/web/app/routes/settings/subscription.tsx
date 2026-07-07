@@ -103,9 +103,19 @@ const SubscriptionPage = ({ loaderData }: Route.ComponentProps) => {
       ) : (
         <Box style={{ maxWidth: "620px" }}>
           <SubscriptionHeader />
-          <Box mb="5">
-            <Text as="p" size="2" weight="bold" color="gray" mb="3">
-              Supporters get:
+          <Box mb="6">
+            <Text
+              as="p"
+              size="2"
+              weight="bold"
+              color="gray"
+              mb="4"
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Supporters get
             </Text>
             <Flex direction="column" gap="4">
               <FeatureRow
