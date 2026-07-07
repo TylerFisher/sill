@@ -57,7 +57,22 @@ const writeStore = (filters: FilterState) => {
 	}
 };
 
-export const useFilterStorage = () => {
+/**
+ * Overwrite the remembered main-feed filters with exactly `filters`. Applying a
+ * view replaces the filter state, so an empty set (e.g. "Most popular") clears
+ * storage and therefore persists across reloads. Imperative, so it never races
+ * the mount-time restore. No-op on discovery pages (which don't persist), so
+ * applying a view there can't clobber the main feed's remembered set.
+ */
+export const setStoredFilters = (filters: FilterState) => {
+	if (typeof window !== "undefined" && !shouldPersist(window.location.pathname))
+		return;
+	writeStore(filters);
+};
+
+export const useFilterStorage = ({
+	restoreOnMount = false,
+}: { restoreOnMount?: boolean } = {}) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { pathname } = useLocation();
 	const hasLoadedOnMount = useRef(false);
@@ -140,8 +155,11 @@ export const useFilterStorage = () => {
 		return searchParams.size > 0;
 	}, [searchParams]);
 
-	// Restore saved filters on mount.
+	// Restore saved filters on mount. Only the designated owner runs this, so a
+	// component that mounts later (e.g. the search field inside a popover) can't
+	// re-trigger it and clobber the current filters.
 	useEffect(() => {
+		if (!restoreOnMount) return;
 		if (hasLoadedOnMount.current) return;
 		hasLoadedOnMount.current = true;
 
@@ -160,7 +178,13 @@ export const useFilterStorage = () => {
 		if (savedFilters.time && !searchParams.has("time")) {
 			applyFiltersToUrl({ time: savedFilters.time });
 		}
-	}, [persist, searchParams, loadFiltersFromStorage, applyFiltersToUrl]);
+	}, [
+		restoreOnMount,
+		persist,
+		searchParams,
+		loadFiltersFromStorage,
+		applyFiltersToUrl,
+	]);
 
 	useEffect(() => {
 		const currentFilters = getCurrentFilters();

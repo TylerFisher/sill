@@ -49,8 +49,15 @@ const SearchField = () => {
 			value={query}
 			aria-label="Search"
 			size="3"
-			// Match the filter chips (radius-2) instead of the theme's pill radius.
-			style={{ borderRadius: "var(--radius-2)" }}
+			variant="soft"
+			color="gray"
+			// Match the filter chips exactly: same radius, soft gray fill, and a
+			// real 1px border (the surface variant's border is darker/heavier).
+			style={{
+				borderRadius: "var(--radius-2)",
+				backgroundColor: "var(--gray-a2)",
+				border: "1px solid var(--gray-a5)",
+			}}
 			onChange={(event) => setQuery(event.target.value)}
 			onKeyDown={(event) => {
 				if (event.key === "Enter") {
@@ -59,13 +66,14 @@ const SearchField = () => {
 			}}
 		>
 			<TextField.Slot>
-				<Search height="16" width="16" />
+				<Search height="16" width="16" color="var(--gray-11)" />
 			</TextField.Slot>
 			{query && (
 				<TextField.Slot>
 					<X
 						width="18"
 						height="18"
+						color="var(--gray-11)"
 						cursor="pointer"
 						onClick={() => setSearchParam("query", "")}
 					/>
@@ -75,8 +83,10 @@ const SearchField = () => {
 				<Button
 					type="button"
 					variant="ghost"
+					color="gray"
 					style={{
 						marginRight: "1px",
+						color: "var(--gray-11)",
 					}}
 					onClick={handleSubmit}
 				>

@@ -73,6 +73,111 @@
 	grid-column: 1 / -1;
 }
 
+/* Auto-width variant used in the horizontal filter bar (wraps, never shrinks).
+   Height/padding pinned to Radix size-3 (40px) so it matches the search field. */
+.item.chip {
+	width: auto;
+	flex-shrink: 0;
+	white-space: nowrap;
+	min-height: 2.5rem;
+	padding: 0 0.875rem;
+	font-size: var(--font-size-3);
+}
+
+/* A big, tappable filter option row inside the mobile Filters dialog. Sized to
+   the dialog's content (no edge-to-edge padding) so the default card rules. */
+.filterRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	width: 100%;
+	min-height: 3rem;
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--gray-a3);
+	cursor: pointer;
+	font-size: var(--font-size-3);
+	color: var(--gray-12);
+	text-align: left;
+}
+
+.filterRow.active {
+	color: var(--accent-11);
+	font-weight: 600;
+}
+
+.filterRow:disabled {
+	color: var(--gray-a9);
+	cursor: default;
+}
+
+/* Collapsible group header inside the mobile Filters dialog: group name on the
+   left, the current selection + chevron on the right. */
+.accordionHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	width: 100%;
+	min-height: 3rem;
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--gray-a3);
+	cursor: pointer;
+	font-size: var(--font-size-3);
+	color: var(--gray-12);
+	text-align: left;
+}
+
+.accordionChevron {
+	flex-shrink: 0;
+	transition: transform 150ms ease;
+}
+
+.accordionChevron.open {
+	transform: rotate(180deg);
+}
+
+/* Compact single-select options inside the Filters panel popover. Smaller and
+   lighter than the bar chips, which are tap targets. */
+.filterOption {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.3rem 0.7rem;
+	background: var(--gray-a2);
+	border: 1px solid var(--gray-a5);
+	border-radius: var(--radius-2);
+	cursor: pointer;
+	font-size: var(--font-size-2);
+	line-height: 1.6;
+	color: var(--gray-11);
+	white-space: nowrap;
+	transition: background 120ms ease, border-color 120ms ease;
+}
+
+.filterOption:hover {
+	background: var(--gray-a3);
+	border-color: var(--gray-a6);
+}
+
+.filterOption:disabled {
+	cursor: default;
+}
+
+.filterOption:disabled:hover {
+	background: var(--gray-a2);
+	border-color: var(--gray-a5);
+}
+
+.filterOption.active {
+	background: var(--accent-a3);
+	border-color: var(--accent-a6);
+	color: var(--accent-11);
+	font-weight: 500;
+}
+
 .chevron {
 	opacity: 0.5;
 	flex-shrink: 0;

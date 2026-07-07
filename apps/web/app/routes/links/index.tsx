@@ -21,10 +21,7 @@ import {
 import { redirect } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
-import LinkFilters from "~/components/forms/LinkFilters";
-import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
-import FilterPresets from "~/components/forms/FilterPresets";
-import SortPresetList from "~/components/forms/SortPresetList";
+import FilterBar from "~/components/forms/FilterBar";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import PlusPromoCard from "~/components/subscription/PlusPromoCard";
 import {
@@ -337,37 +334,13 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <SourceBadgeProvider value={sourceBadge}>
-      <Layout
-        sidebar={
-          <LinkFilters
-            showService={!!(loaderData.bsky && loaderData.instance)}
-            lists={loaderData.lists}
-            subscribed={loaderData.subscribed}
-            afterSearch={
-              <FilterPresets
-                presets={loaderData.filterPresets}
-                subscribed={loaderData.subscribed}
-              />
-            }
-          />
-        }
-      >
-        <SortPresetList />
-        <LinkFiltersCollapsible>
-          <LinkFilters
-            showService={!!(loaderData.bsky && loaderData.instance)}
-            lists={loaderData.lists}
-            reverse={true}
-            hideSort={true}
-            subscribed={loaderData.subscribed}
-            afterSearch={
-              <FilterPresets
-                presets={loaderData.filterPresets}
-                subscribed={loaderData.subscribed}
-              />
-            }
-          />
-        </LinkFiltersCollapsible>
+      <Layout>
+        <FilterBar
+          showService={!!(loaderData.bsky && loaderData.instance)}
+          lists={loaderData.lists}
+          subscribed={loaderData.subscribed}
+          presets={loaderData.filterPresets}
+        />
         <Box position="relative">
           {/* Floating overlay indicator. `position: fixed` takes the pill
 				    completely out of document flow so toggling it never shifts

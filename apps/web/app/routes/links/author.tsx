@@ -1,14 +1,15 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box, Flex, Spinner, Text } from "@radix-ui/themes";
 import { Suspense } from "react";
-import { Await } from "react-router";
-import LinkFilters from "~/components/forms/LinkFilters";
-import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
-import SortPresetList from "~/components/forms/SortPresetList";
+import { Await, type ShouldRevalidateFunctionArgs } from "react-router";
+import FilterBar from "~/components/forms/FilterBar";
 import AboutTopper from "~/components/linkPosts/AboutTopper";
 import PaginatedLinksList from "~/components/linkPosts/PaginatedLinksList";
 import Layout from "~/components/nav/Layout";
-import { apiFindLinksByAuthor } from "~/utils/api-client.server";
+import {
+	apiFindLinksByAuthor,
+	apiGetFilterPresets,
+} from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
 	discoveryTimeLabel,
@@ -47,6 +48,13 @@ export const loader = async ({
 	const mastodon = existingUser.mastodonAccounts[0] || null;
 	const lists = [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])];
 
+	const filterPresets = await apiGetFilterPresets(request)
+		.then((r) => r.presets)
+		.catch((error) => {
+			console.error("Load filter presets error:", error);
+			return [] as Awaited<ReturnType<typeof apiGetFilterPresets>>["presets"];
+		});
+
 	return {
 		result,
 		instance: mastodon?.mastodonInstance?.instance,
@@ -55,41 +63,47 @@ export const loader = async ({
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		author,
+		filterPresets,
 		timeLabel: discoveryTimeLabel(url.searchParams, subscribed === "plus"),
 	};
 };
+
+// Saving/deleting a view shouldn't reload the streaming feed; FilterPresets
+// refreshes itself from the mutation's returned list.
+export function shouldRevalidate({
+	formAction,
+	defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+	if (formAction === "/api/filter-presets") return false;
+	return defaultShouldRevalidate;
+}
 
 export const meta: Route.MetaFunction = ({ data }) => [
 	{ title: `Sill | Links by ${data?.author || ""}` },
 ];
 
 const LinksByAuthor = ({ loaderData }: Route.ComponentProps) => {
-	const { result, instance, bsky, lists, bookmarks, subscribed, timeLabel } =
-		loaderData;
+	const {
+		result,
+		instance,
+		bsky,
+		lists,
+		bookmarks,
+		subscribed,
+		filterPresets,
+		timeLabel,
+	} = loaderData;
 	const showService = !!(bsky && instance);
 
 	return (
-		<Layout
-			sidebar={
-				<LinkFilters
-					showService={showService}
-					lists={lists}
-					hideSearch
-					subscribed={subscribed}
-				/>
-			}
-		>
-			<SortPresetList />
-			<LinkFiltersCollapsible>
-				<LinkFilters
-					showService={showService}
-					lists={lists}
-					reverse
-					hideSort
-					hideSearch
-					subscribed={subscribed}
-				/>
-			</LinkFiltersCollapsible>
+		<Layout>
+			<FilterBar
+				showService={showService}
+				lists={lists}
+				subscribed={subscribed}
+				presets={filterPresets}
+				hideSearch
+			/>
 			<Suspense
 				fallback={
 					<Flex justify="center" py="6">

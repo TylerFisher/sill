@@ -8,14 +8,15 @@ import {
 	Text,
 	TextField,
 } from "@radix-ui/themes";
-import type { FilterPreset, SubscriptionStatus } from "@sill/schema";
-import { Check, ChevronDown, Plus, SlidersHorizontal, X } from "lucide-react";
+import type { FilterPreset } from "@sill/schema";
+import { Check, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher, useSearchParams } from "react-router";
-import SillPlus from "~/components/subscription/SillPlus";
+import { setStoredFilters } from "~/hooks/useFilterStorage";
+import { TIME_OPTIONS } from "~/utils/timeRange";
 import styles from "./PresetFilterItem.module.css";
 
-// The sidebar filter params a preset captures (search query excluded).
+// The filter params a view captures (search query excluded).
 const PRESET_KEYS = [
 	"time",
 	"service",
@@ -44,41 +45,100 @@ const isActivePreset = (
 ): boolean =>
 	PRESET_KEYS.every((key) => (config[key] ?? "") === (params.get(key) ?? ""));
 
+// Built-in sort views everyone gets. They only set the sort (keeping any filters
+// layered on top): "Most popular" is the default, "Newest" flips it.
+const BUILT_IN_VIEWS: { id: string; name: string; sort: string }[] = [
+	{ id: "view-popular", name: "Most popular", sort: "" },
+	{ id: "view-newest", name: "Newest", sort: "newest" },
+];
+
+/**
+ * A plain-language summary of a view's filters, e.g.
+ * "Newest · 5+ shares · Bluesky", so a saved view reads clearly even when the
+ * name is vague, and the save dialog can show exactly what's being saved.
+ */
+const summarizeConfig = (
+	config: PresetConfig,
+	lists: { id: string; name: string }[],
+): string => {
+	const parts: string[] = [];
+	if (config.sort === "newest") parts.push("Newest");
+	if (config.time) {
+		const label = TIME_OPTIONS.find((o) => o.value === config.time)?.label;
+		if (label) parts.push(label);
+	}
+	if (config.minShares) parts.push(`${config.minShares}+ shares`);
+	if (config.reposts === "exclude") parts.push("No reposts");
+	else if (config.reposts === "only") parts.push("Reposts only");
+	if (config.service === "bluesky") parts.push("Bluesky");
+	else if (config.service === "mastodon") parts.push("Mastodon");
+	if (config.list) {
+		const name = lists.find((l) => l.id === config.list)?.name;
+		if (name) parts.push(name);
+	}
+	return parts.join(" · ");
+};
+
 interface FilterPresetsProps {
 	presets: Pick<FilterPreset, "id" | "name" | "filters">[];
-	subscribed: SubscriptionStatus;
+	lists: { id: string; name: string }[];
+	// The save dialog is opened from the Filters panel, so its open state is
+	// owned by the parent.
+	saveOpen: boolean;
+	onSaveOpenChange: (open: boolean) => void;
 }
 
-const FilterPresets = ({ presets, subscribed }: FilterPresetsProps) => {
+const FilterPresets = ({
+	presets,
+	lists,
+	saveOpen,
+	onSaveOpenChange,
+}: FilterPresetsProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	// Presets refresh via the mutation action's returned list so the (streaming)
 	// feed never has to reload; fall back to the loader-provided list.
 	const mutation = useFetcher<{ presets?: typeof presets; error?: string }>();
 	const list = mutation.data?.presets ?? presets;
 
-	const isPlus = subscribed === "plus";
 	const activeConfig = configFromParams(searchParams);
-	const active = list.find((p) =>
+	const currentSort = searchParams.get("sort") ?? "";
+	// A saved preset is active only on a full match. The built-in views match on
+	// sort alone, so the chip keeps showing "Newest" while filters are layered on.
+	const savedMatch = list.find((p) =>
 		isActivePreset(p.filters as PresetConfig, searchParams),
 	);
-	// Something to save, and it isn't already an existing preset.
-	const canSave = Object.keys(activeConfig).length > 0 && !active;
+	const active =
+		savedMatch ?? BUILT_IN_VIEWS.find((v) => v.sort === currentSort);
 
-	const [saveOpen, setSaveOpen] = useState(false);
 	const [name, setName] = useState("");
+
+	// A descriptive default name from the filters (e.g. "Newest, 5+ shares"), so a
+	// saved view reads clearly in the single-line Views list even if untouched.
+	const suggestedName = summarizeConfig(configFromParams(searchParams), lists)
+		.split(" · ")
+		.join(", ")
+		.slice(0, 60);
+
+	// Prefill the name when the dialog opens; user edits are respected afterward.
+	useEffect(() => {
+		if (saveOpen) setName((n) => n || suggestedName);
+	}, [saveOpen, suggestedName]);
 
 	// Close the save dialog once a create succeeds (no error came back).
 	const submitting = mutation.state !== "idle";
 	const prevSubmitting = useRef(submitting);
 	useEffect(() => {
 		if (prevSubmitting.current && !submitting && !mutation.data?.error) {
-			setSaveOpen(false);
+			onSaveOpenChange(false);
 			setName("");
 		}
 		prevSubmitting.current = submitting;
-	}, [submitting, mutation.data]);
+	}, [submitting, mutation.data, onSaveOpenChange]);
 
 	const applyPreset = (config: PresetConfig) => {
+		// Applying a view replaces the filter state, so remember exactly this set
+		// (an empty config clears storage, keeping "Most popular" across reloads).
+		setStoredFilters(config);
 		setSearchParams((prev) => {
 			const next = new URLSearchParams(prev);
 			for (const key of PRESET_KEYS) {
@@ -90,6 +150,14 @@ const FilterPresets = ({ presets, subscribed }: FilterPresetsProps) => {
 			next.delete("page");
 			return next;
 		});
+	};
+
+	// Selecting a built-in sort view. Leaving a saved preset resets to a clean
+	// sort (its filters are wiped); on an ad-hoc state, switching sort keeps the
+	// current filters in place.
+	const applySort = (sortValue: string) => {
+		const sort = sortValue || undefined;
+		applyPreset(savedMatch ? { sort } : { ...activeConfig, sort });
 	};
 
 	const savePreset = () => {
@@ -113,137 +181,95 @@ const FilterPresets = ({ presets, subscribed }: FilterPresetsProps) => {
 	};
 
 	return (
-		<div className={styles.list}>
-			<span className={styles.label}>Presets</span>
-
-			{list.length === 0 ? (
-				// Nothing saved yet: skip the dropdown, just offer to save.
-				isPlus ? (
+		<>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
 					<button
 						type="button"
-						className={`${styles.item} ${styles.fullWidth}`}
-						disabled={!canSave}
-						style={{ opacity: canSave ? 1 : 0.5 }}
-						onClick={() => setSaveOpen(true)}
+						className={`${styles.item} ${styles.chip}`}
+						style={{ maxWidth: 180 }}
 					>
-						<Flex align="center" gap="2">
-							<Plus size={14} />
-							<Text>Save filters</Text>
+						<Flex align="center" gap="2" style={{ minWidth: 0 }}>
+							<Text truncate>{active ? active.name : "Views"}</Text>
+							<ChevronDown
+								width={14}
+								height={14}
+								style={{ opacity: 0.5, flexShrink: 0 }}
+							/>
 						</Flex>
 					</button>
-				) : (
-					<button
-						type="button"
-						className={`${styles.item} ${styles.fullWidth}`}
-						disabled
-						style={{ opacity: 0.6, cursor: "default" }}
-					>
-						<Flex align="center" justify="between" gap="3" width="100%">
-							<Flex align="center" gap="2">
-								<Plus size={14} />
-								<Text>Save filters</Text>
-							</Flex>
-							<SillPlus />
-						</Flex>
-					</button>
-				)
-			) : (
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						<button
-							type="button"
-							className={`${styles.item} ${styles.fullWidth} ${
-								active ? styles.active : ""
-							}`}
-						>
-							<Flex align="center" gap="2" style={{ minWidth: 0 }}>
-								<SlidersHorizontal size={14} style={{ flexShrink: 0 }} />
-								<Text truncate>{active ? active.name : "Saved filters"}</Text>
-							</Flex>
-							<ChevronDown className={styles.chevron} width={14} height={14} />
-						</button>
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content>
-						{list.map((preset) => {
-							const isActive = isActivePreset(
-								preset.filters as PresetConfig,
-								searchParams,
-							);
-							return (
-								<DropdownMenu.Item
-									key={preset.id}
-									onSelect={() => applyPreset(preset.filters as PresetConfig)}
-								>
-									<Flex align="center" justify="between" gap="3" width="100%">
-										<Flex align="center" gap="2" style={{ minWidth: 0 }}>
-											{isActive ? (
-												<Check size={14} style={{ flexShrink: 0 }} />
-											) : (
-												<SlidersHorizontal
-													size={14}
-													style={{ flexShrink: 0 }}
-												/>
-											)}
-											<Text truncate>{preset.name}</Text>
-										</Flex>
-										<IconButton
-											size="1"
-											variant="ghost"
-											color="gray"
-											aria-label={`Delete preset ${preset.name}`}
-											onClick={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												deletePreset(preset.id);
-											}}
-										>
-											<X size={14} />
-										</IconButton>
-									</Flex>
-								</DropdownMenu.Item>
-							);
-						})}
-
-						<DropdownMenu.Separator />
-
-						{isPlus ? (
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content>
+					{BUILT_IN_VIEWS.map((view) => {
+						const isActive = !savedMatch && view.sort === currentSort;
+						return (
 							<DropdownMenu.Item
-								disabled={!canSave}
-								onSelect={(e) => {
-									e.preventDefault();
-									setSaveOpen(true);
-								}}
+								key={view.id}
+								onSelect={() => applySort(view.sort)}
 							>
 								<Flex align="center" gap="2">
-									<Plus size={14} />
-									<Text>Save current filters</Text>
+									{isActive ? (
+										<Check size={14} style={{ flexShrink: 0 }} />
+									) : (
+										<span style={{ width: 14, flexShrink: 0 }} />
+									)}
+									<Text>{view.name}</Text>
 								</Flex>
 							</DropdownMenu.Item>
-						) : (
-							<DropdownMenu.Item disabled onSelect={(e) => e.preventDefault()}>
-								<Flex align="center" justify="between" gap="3" width="100%">
-									<Flex align="center" gap="2">
-										<Plus size={14} />
-										<Text>Save current filters</Text>
-									</Flex>
-									<SillPlus />
-								</Flex>
-							</DropdownMenu.Item>
-						)}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			)}
+						);
+					})}
 
-			<Dialog.Root open={saveOpen} onOpenChange={setSaveOpen}>
+					{list.length > 0 && <DropdownMenu.Separator />}
+					{list.map((preset) => {
+						const config = preset.filters as PresetConfig;
+						const isActive = isActivePreset(config, searchParams);
+						return (
+							<DropdownMenu.Item
+								key={preset.id}
+								onSelect={() => applyPreset(config)}
+							>
+								<Flex align="center" justify="between" gap="3" width="100%">
+									<Flex align="center" gap="2" style={{ minWidth: 0 }}>
+										{isActive ? (
+											<Check size={14} style={{ flexShrink: 0 }} />
+										) : (
+											<span style={{ width: 14, flexShrink: 0 }} />
+										)}
+										<Text truncate>{preset.name}</Text>
+									</Flex>
+									<IconButton
+										size="1"
+										variant="ghost"
+										aria-label={`Delete view ${preset.name}`}
+										// Inherit the row's text color so the X flips to dark on the
+										// highlighted row instead of staying gray on yellow.
+										style={{ color: "inherit", opacity: 0.7 }}
+										onClick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											deletePreset(preset.id);
+										}}
+									>
+										<X size={14} />
+									</IconButton>
+								</Flex>
+							</DropdownMenu.Item>
+						);
+					})}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+
+			<Dialog.Root open={saveOpen} onOpenChange={onSaveOpenChange}>
 				<Dialog.Content maxWidth="360px">
-					<Dialog.Title size="3">Save filters</Dialog.Title>
+					<Dialog.Title size="3">Save view</Dialog.Title>
 					<Dialog.Description size="2" color="gray" mb="3">
-						Name this filter set to reuse it later.
+						Name this view so you can reapply it in one tap. We've suggested a
+						name from your filters.
 					</Dialog.Description>
 					<TextField.Root
 						value={name}
 						maxLength={60}
-						placeholder="e.g. Bluesky, last 7 days"
+						placeholder="Name this view"
 						onChange={(e) => setName(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") {
@@ -269,7 +295,7 @@ const FilterPresets = ({ presets, subscribed }: FilterPresetsProps) => {
 					</Flex>
 				</Dialog.Content>
 			</Dialog.Root>
-		</div>
+		</>
 	);
 };
 

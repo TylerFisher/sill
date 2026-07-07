@@ -1,4 +1,5 @@
-import { Box, Button, Flex, Link, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, IconButton, Link, Text } from "@radix-ui/themes";
+import { Bookmark } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function getBookmarkletCode(origin: string) {
@@ -7,6 +8,19 @@ function getBookmarkletCode(origin: string) {
 
 const IOS_SHORTCUT_URL =
   "https://www.icloud.com/shortcuts/fd3767fca4af467ba8c76379599162ad";
+
+const PlatformLabel = ({ children }: { children: React.ReactNode }) => (
+  <Text
+    as="p"
+    size="1"
+    weight="bold"
+    color="gray"
+    mb="1"
+    style={{ textTransform: "uppercase", letterSpacing: "0.06em" }}
+  >
+    {children}
+  </Text>
+);
 
 export default function BookmarkletSetup() {
   const [bookmarkletCode, setBookmarkletCode] = useState("");
@@ -20,45 +34,61 @@ export default function BookmarkletSetup() {
   }
 
   return (
-    <Flex direction="column" gap="3">
-      <Text as="p" size="2">
-        On desktop, drag the{" "}
-        <Text weight="bold" style={{ whiteSpace: "nowrap" }}>
-          Save to Sill
-        </Text>{" "}
-        button to your bookmarks bar:
-      </Text>
+    <Flex direction="column" gap="4">
+      <Box>
+        <PlatformLabel>In Sill</PlatformLabel>
+        <Text as="p" size="2" color="gray">
+          Tap the bookmark icon{" "}
+          <IconButton
+            variant="ghost"
+            size="1"
+            aria-hidden
+            style={{ verticalAlign: "middle" }}
+          >
+            <Bookmark size={16} />
+          </IconButton>{" "}
+          on any link in <Link href="/links">your feed</Link> to save it here.
+        </Text>
+      </Box>
 
       <Box>
+        <PlatformLabel>Desktop</PlatformLabel>
+        <Text as="p" size="2" color="gray" mb="3">
+          Drag this button to your bookmarks bar, then click it on any page.
+        </Text>
         <a
           href={bookmarkletCode}
           draggable="true"
           onClick={(e) => e.preventDefault()}
         >
-          <Button
-            draggable="true"
-            style={{
-              cursor: "grab",
-            }}
-          >
+          <Button draggable="true" style={{ cursor: "grab" }}>
             Save to Sill
           </Button>
         </a>
       </Box>
 
-      <Text as="p" size="2">
-        On iOS, install the{" "}
-        <Link href={IOS_SHORTCUT_URL} target="_blank" rel="noopener noreferrer">
-          Save to Sill shortcut
-        </Link>{" "}
-        to save links from the share sheet.
-      </Text>
+      <Box>
+        <PlatformLabel>iOS</PlatformLabel>
+        <Text as="p" size="2" color="gray">
+          Install the{" "}
+          <Link
+            href={IOS_SHORTCUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Save to Sill shortcut
+          </Link>{" "}
+          to save links from the share sheet.
+        </Text>
+      </Box>
 
-      <Text as="p" size="2">
-        On Android, install Sill as an app (tap the browser menu and select "Add
-        to Home Screen" or "Install"), then Sill will appear in your share
-        sheet.
-      </Text>
+      <Box>
+        <PlatformLabel>Android</PlatformLabel>
+        <Text as="p" size="2" color="gray">
+          Install Sill as an app (browser menu, then "Add to Home Screen"). It
+          will then appear in your share sheet.
+        </Text>
+      </Box>
     </Flex>
   );
 }
