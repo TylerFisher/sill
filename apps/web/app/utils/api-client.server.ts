@@ -804,7 +804,16 @@ export async function apiCreateMobileCode(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create mobile code: ${response.status}`);
+    // Include the API's error message (e.g. "No session provided" vs
+    // "Not authenticated") so callers logging the failure can see the subtype.
+    let detail = "";
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body?.error) detail = `: ${body.error}`;
+    } catch {
+      // Non-JSON error body; the status code alone is enough.
+    }
+    throw new Error(`Failed to create mobile code: ${response.status}${detail}`);
   }
 
   const json = await response.json();

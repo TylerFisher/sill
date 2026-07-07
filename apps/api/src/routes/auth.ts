@@ -908,6 +908,16 @@ const auth = new Hono()
       // to the dead session.
       let sessionId = bodySessionId;
       if (!sessionId) {
+        // Distinguish "no sessionId cookie at all" from "cookie(s) present but
+        // none map to a live session" so the failure mode is legible in logs.
+        // resolveSessionFromRequest tolerates duplicate sessionId cookies (a
+        // stale one riding in front won't mask a valid one).
+        const cookieSessionIds = getSessionIdsFromCookie(
+          c.req.raw.headers.get("cookie")
+        );
+        if (cookieSessionIds.length === 0) {
+          return c.json({ error: "No session provided" }, 401);
+        }
         const resolved = await resolveSessionFromRequest(c.req.raw);
         if (!resolved) {
           return c.json({ error: "Not authenticated" }, 401);

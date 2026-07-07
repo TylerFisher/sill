@@ -86,8 +86,24 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         `sill://callback?code=${encodeURIComponent(code)}&isSignup=0`
       );
     } catch (error) {
-      // Session turned out invalid/expired — fall through to normal OAuth.
-      console.error("Mobile session shortcut failed:", error);
+      // Session turned out invalid/expired — fall through to normal OAuth. In
+      // dev, spell out why so a simulator run that *does* send a cookie is
+      // self-explanatory: how many sessionId cookies rode along, and the API's
+      // 401 subtype ("No session provided" vs "Not authenticated") carried in
+      // the thrown message.
+      if (process.env.NODE_ENV === "development") {
+        const sessionCookieCount = (request.headers.get("cookie") ?? "")
+          .split(";")
+          .map((c) => c.trim())
+          .filter((c) => c.startsWith("sessionId=")).length;
+        console.error(
+          `[mobile shortcut] fell through to OAuth — ${sessionCookieCount} sessionId cookie(s) sent, none valid. ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      } else {
+        console.error("Mobile session shortcut failed:", error);
+      }
     }
   }
 
