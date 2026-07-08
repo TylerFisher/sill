@@ -32,11 +32,17 @@ const DeletePresetSchema = z.object({
 });
 
 const filterPresets = new Hono()
-  // GET /api/filter-presets - List the user's saved presets
+  // GET /api/filter-presets - List the user's saved presets (Sill+ only)
   .get("/", async (c) => {
     const userId = await getUserIdFromSession(c.req.raw);
     if (!userId) {
       return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    // Saved feeds are a Sill+ feature: don't surface them for non-plus users
+    // even if rows linger in the DB from a past subscription.
+    if ((await isSubscribed(userId)) !== "plus") {
+      return c.json({ presets: [] });
     }
 
     try {

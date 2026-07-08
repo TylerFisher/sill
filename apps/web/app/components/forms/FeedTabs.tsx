@@ -46,6 +46,8 @@ const FeedTabs = ({ presets, isPlus, canSave, onSave }: FeedTabsProps) => {
 	const mutation = useFetcher<{ presets?: typeof presets; error?: string }>({
 		key: "filter-presets",
 	});
+	// The API only returns saved feeds for Sill+ users (see /api/filter-presets),
+	// so the list is already empty for free users.
 	const list = mutation.data?.presets ?? presets;
 
 	const savedMatch = list.find((p) =>
