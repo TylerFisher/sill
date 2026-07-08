@@ -62,12 +62,7 @@ const FilterSidebar = ({
 	return (
 		<Box pt="6" pr="3">
 			<Flex direction="column" gap="4">
-				{!hideSearch && (
-					<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-						<SearchField rounded />
-					</Form>
-				)}
-
+				{/* Above the separator: pick a view. */}
 				<Box>
 					<SectionLabel>View</SectionLabel>
 					<FilterPresets
@@ -81,10 +76,23 @@ const FilterSidebar = ({
 
 				<Separator size="4" />
 
+				{/* Below the separator: the savable state — search plus filters — that
+				    Save as view captures and Reset clears. Labeled like the filter
+				    groups; the field's own "Search" button is dropped to avoid saying
+				    it twice (Enter still submits). */}
+				{!hideSearch && (
+					<Box>
+						<SectionLabel>Search</SectionLabel>
+						<Form method="GET" onSubmit={(e) => e.preventDefault()}>
+							<SearchField rounded hideSubmitButton />
+						</Form>
+					</Box>
+				)}
+
 				{/* Wrapped so the panel's own group spacing (mb) governs, rather than
 				    stacking with this column's gap into a double gap. */}
 				<Box>
-					<FilterPanel variant="chips" {...panelProps} />
+					<FilterPanel {...panelProps} />
 				</Box>
 
 				{/* Only when there's something to act on: no lonely disabled button. */}

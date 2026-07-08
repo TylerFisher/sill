@@ -1,26 +1,6 @@
-import {
-	Box,
-	Button,
-	Flex,
-	Select,
-	Slider,
-	Spinner,
-	Text,
-} from "@radix-ui/themes";
-import { Check, ChevronDown, Lock } from "lucide-react";
+import { Box, Flex, Select, Slider, Spinner, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import { Link as RouterLink } from "react-router";
-import SillPlus from "~/components/subscription/SillPlus";
 import { TIME_OPTIONS } from "~/utils/timeRange";
-import styles from "./PresetFilterItem.module.css";
-
-const sharesOptions = [
-	{ value: "", label: "1+" },
-	{ value: "2", label: "2+" },
-	{ value: "3", label: "3+" },
-	{ value: "5", label: "5+" },
-	{ value: "10", label: "10+" },
-];
 
 const repostOptions = [
 	{ value: "", label: "With reposts" },
@@ -34,8 +14,6 @@ const timeShort = (label: string) =>
 	label.replace(" hours", "h").replace(" days", "d");
 
 interface FilterPanelProps {
-	// "chips" = compact desktop popover; "rows" = big mobile full-screen rows.
-	variant: "chips" | "rows";
 	time: string;
 	minShares: string;
 	reposts: string;
@@ -49,8 +27,12 @@ interface FilterPanelProps {
 	pendingGroup: string | null;
 }
 
+/**
+ * The feed filter controls: Time and Minimum shares as sliders, Reposts and
+ * From as selects. One UI shared by the desktop sidebar and the mobile Filters
+ * dialog.
+ */
 const FilterPanel = ({
-	variant,
 	time,
 	minShares,
 	reposts,
@@ -62,10 +44,8 @@ const FilterPanel = ({
 	selectFrom,
 	pendingGroup,
 }: FilterPanelProps) => {
-	// Which mobile accordion group is expanded (one at a time).
-	const [expanded, setExpanded] = useState<string | null>(null);
-	// Desktop slider thumb positions while dragging, so the label tracks the
-	// thumb live but the filter (and its reload) only commits on release.
+	// Slider thumb positions while dragging, so the label tracks the thumb live
+	// but the filter (and its reload) only commits on release.
 	const [timeDrag, setTimeDrag] = useState<number | null>(null);
 	const [sharesDrag, setSharesDrag] = useState<number | null>(null);
 
@@ -81,177 +61,9 @@ const FilterPanel = ({
 	];
 	const showFrom = fromOptions.length > 1;
 
-	// A single, unobtrusive promotion of the panel's Sill+ capabilities, instead
-	// of a "sill+" tag scattered on every locked row.
-	const plusCallout = !isPlus ? (
-		<Flex
-			direction="column"
-			gap="1"
-			mt="4"
-			p="3"
-			style={{
-				background: "var(--gray-a2)",
-				borderRadius: "var(--radius-3)",
-			}}
-		>
-			<Text as="p" size="2">
-				Look back up to 30 days and save filters as views with <SillPlus />.
-			</Text>
-			<Button asChild size="1" variant="ghost" style={{ width: "fit-content" }}>
-				<RouterLink to="/settings/subscription">Upgrade now</RouterLink>
-			</Button>
-		</Flex>
-	) : null;
-
-	// ---- Collapsible groups (mobile) ----
-	if (variant === "rows") {
-		const row = (
-			key: string,
-			label: string,
-			selected: boolean,
-			onClick: () => void,
-			opts: { locked?: boolean; pending?: boolean } = {},
-		) => {
-			const { locked = false, pending = false } = opts;
-			return (
-				<button
-					key={key}
-					type="button"
-					className={`${styles.filterRow} ${
-						selected && !locked ? styles.active : ""
-					}`}
-					disabled={locked}
-					onClick={locked ? undefined : onClick}
-				>
-					<span>{label}</span>
-					<Flex align="center" gap="2" style={{ flexShrink: 0 }}>
-						{locked && <Lock size={16} style={{ opacity: 0.5 }} />}
-						{pending ? (
-							<Spinner size="2" />
-						) : (
-							selected && !locked && <Check size={18} />
-						)}
-					</Flex>
-				</button>
-			);
-		};
-
-		const label = (
-			options: { value: string; label: string }[],
-			value: string,
-		) => options.find((o) => o.value === value)?.label ?? options[0].label;
-
-		const groups = [
-			{
-				key: "time",
-				label: "Time",
-				value: label(TIME_OPTIONS, time),
-				render: () =>
-					TIME_OPTIONS.map((o) =>
-						row(
-							o.value,
-							o.label,
-							time === o.value,
-							() => setParam("time", o.value),
-							{
-								locked: !!o.plus && !isPlus,
-								pending: pendingGroup === "time" && time === o.value,
-							},
-						),
-					),
-			},
-			{
-				key: "shares",
-				label: "Minimum shares",
-				value: `${label(sharesOptions, minShares)} shares`,
-				render: () =>
-					sharesOptions.map((o) =>
-						row(
-							o.value,
-							`${o.label} shares`,
-							minShares === o.value,
-							() => setParam("minShares", o.value),
-							{ pending: pendingGroup === "shares" && minShares === o.value },
-						),
-					),
-			},
-			{
-				key: "reposts",
-				label: "Reposts",
-				value: label(repostOptions, reposts),
-				render: () =>
-					repostOptions.map((o) =>
-						row(
-							o.value,
-							o.label,
-							reposts === o.value,
-							() => setParam("reposts", o.value),
-							{ pending: pendingGroup === "reposts" && reposts === o.value },
-						),
-					),
-			},
-			...(showFrom
-				? [
-						{
-							key: "from",
-							label: "From",
-							value: label(fromOptions, fromValue),
-							render: () =>
-								fromOptions.map((o) =>
-									row(
-										o.value,
-										o.label,
-										fromValue === o.value,
-										() => selectFrom(o.value),
-										{
-											pending: pendingGroup === "from" && fromValue === o.value,
-										},
-									),
-								),
-						},
-					]
-				: []),
-		];
-
-		return (
-			<Box>
-				{groups.map((g) => {
-					const open = expanded === g.key;
-					return (
-						<Box key={g.key}>
-							<button
-								type="button"
-								className={styles.accordionHeader}
-								onClick={() => setExpanded(open ? null : g.key)}
-							>
-								<span>{g.label}</span>
-								<Flex
-									align="center"
-									gap="2"
-									style={{ color: "var(--gray-10)", flexShrink: 0 }}
-								>
-									<span>{g.value}</span>
-									<ChevronDown
-										size={16}
-										className={`${styles.accordionChevron} ${
-											open ? styles.open : ""
-										}`}
-									/>
-								</Flex>
-							</button>
-							{open && <Box pl="2">{g.render()}</Box>}
-						</Box>
-					);
-				})}
-				{plusCallout}
-			</Box>
-		);
-	}
-
-	// ---- Expanded controls (desktop sidebar) ----
 	// Time and minimum shares are ordered scales, so a slider reads more
-	// naturally here than a row of chips. Steps map to the preset options; free
-	// users only get the windows up to 24h (the Sill+ callout covers the rest).
+	// naturally than a row of chips. Steps map to the preset options; free users
+	// only get the windows up to 24h.
 	const timeSteps = isPlus ? TIME_OPTIONS : FREE_TIME;
 	const foundTime = timeSteps.findIndex((o) => o.value === time);
 	const timeIdx =
@@ -413,7 +225,6 @@ const FilterPanel = ({
 					</Select.Root>
 				</Box>
 			)}
-			{plusCallout}
 		</>
 	);
 };

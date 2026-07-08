@@ -1,35 +1,3 @@
-.list {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 0.25rem;
-}
-
-.mobileOnly {
-	display: none;
-}
-
-@media (max-width: 767px) {
-	.mobileOnly {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.25rem;
-		margin-bottom: var(--space-2);
-	}
-}
-
-.label {
-	grid-column: 1 / -1;
-	font-size: var(--font-size-1);
-	color: var(--gray-10);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	margin-bottom: 0.125rem;
-}
-
-.label:not(:first-child) {
-	margin-top: 0.5rem;
-}
-
 /* Bar trigger chips, styled to match the sidebar's soft-gray Select/Button
    pills: borderless soft fill, high-contrast value text, no accent. */
 .item {
@@ -68,10 +36,6 @@
 	background: var(--gray-a5);
 }
 
-.fullWidth {
-	grid-column: 1 / -1;
-}
-
 /* Auto-width variant used in the horizontal filter bar (wraps, never shrinks).
    Height pinned to Radix size-2 (32px) so it matches the search field; fully
    rounded to match the curved pill controls elsewhere. */
@@ -102,63 +66,7 @@
 	}
 }
 
-/* A big, tappable filter option row inside the mobile Filters dialog. Sized to
-   the dialog's content (no edge-to-edge padding) so the default card rules. */
-.filterRow {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.75rem;
-	width: 100%;
-	min-height: 3rem;
-	background: transparent;
-	border: none;
-	border-bottom: 1px solid var(--gray-a3);
-	cursor: pointer;
-	font-size: var(--font-size-3);
-	color: var(--gray-12);
-	text-align: left;
-}
-
-.filterRow.active {
-	color: var(--accent-11);
-	font-weight: 600;
-}
-
-.filterRow:disabled {
-	color: var(--gray-a9);
-	cursor: default;
-}
-
-/* Collapsible group header inside the mobile Filters dialog: group name on the
-   left, the current selection + chevron on the right. */
-.accordionHeader {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.75rem;
-	width: 100%;
-	min-height: 3rem;
-	background: transparent;
-	border: none;
-	border-bottom: 1px solid var(--gray-a3);
-	cursor: pointer;
-	font-size: var(--font-size-3);
-	color: var(--gray-12);
-	text-align: left;
-}
-
-.accordionChevron {
-	flex-shrink: 0;
-	transition: transform 150ms ease;
-}
-
-.accordionChevron.open {
-	transform: rotate(180deg);
-}
-
-/* Compact single-select options inside the Filters panel popover. Smaller and
-   lighter than the bar chips, which are tap targets. */
+/* Single-select option pills inside the bookmarks Tags popover/dialog. */
 .filterOption {
 	display: inline-flex;
 	align-items: center;
@@ -194,10 +102,4 @@
 	border-color: var(--accent-a6);
 	color: var(--accent-11);
 	font-weight: 500;
-}
-
-.chevron {
-	opacity: 0.5;
-	flex-shrink: 0;
-	margin-left: auto;
 }

@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 
-const SearchField = ({ rounded = false }: { rounded?: boolean }) => {
+const SearchField = ({
+	rounded = false,
+	hideSubmitButton = false,
+}: {
+	rounded?: boolean;
+	// Drop the redundant "Search" button where the field is labeled (the sidebar);
+	// Enter still submits.
+	hideSubmitButton?: boolean;
+}) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [query, setQuery] = useState(searchParams.get("query") || "");
 	const { saveFiltersToStorage } = useFilterStorage();
@@ -84,20 +92,22 @@ const SearchField = ({ rounded = false }: { rounded?: boolean }) => {
 					/>
 				</TextField.Slot>
 			)}
-			<TextField.Slot>
-				<Button
-					type="button"
-					variant="ghost"
-					color="gray"
-					style={{
-						marginRight: "1px",
-						color: "var(--gray-11)",
-					}}
-					onClick={handleSubmit}
-				>
-					Search
-				</Button>
-			</TextField.Slot>
+			{!hideSubmitButton && (
+				<TextField.Slot>
+					<Button
+						type="button"
+						variant="ghost"
+						color="gray"
+						style={{
+							marginRight: "1px",
+							color: "var(--gray-11)",
+						}}
+						onClick={handleSubmit}
+					>
+						Search
+					</Button>
+				</TextField.Slot>
+			)}
 		</TextField.Root>
 	);
 };

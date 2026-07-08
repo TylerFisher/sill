@@ -4,7 +4,6 @@ import {
 	Dialog,
 	Flex,
 	IconButton,
-	Popover,
 	Spinner,
 	Text,
 } from "@radix-ui/themes";
@@ -16,7 +15,6 @@ import type {
 import { ChevronDown, X } from "lucide-react";
 import { useState } from "react";
 import { Form } from "react-router";
-import { useIsMobile } from "~/hooks/useIsMobile";
 import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FilterPanel from "./FilterPanel";
 import FilterPresets from "./FilterPresets";
@@ -33,10 +31,10 @@ interface FilterBarProps {
 }
 
 /**
- * The mobile feed filters: a Views chip (saved presets), a Filters control, and
- * a search field. Filters open in a full-screen panel of large tappable rows.
- * On desktop the filters live in FilterSidebar instead, so the routes render
- * this bar only below the `md` breakpoint.
+ * The mobile feed filters: a View chip (saved presets), a Filters control, and
+ * a search field. Filters open in a dialog with the same sliders/selects as the
+ * desktop sidebar. The routes render this bar only below the `sm` breakpoint;
+ * at `sm`+ the filters live in FilterSidebar.
  */
 const FilterBar = ({
 	showService,
@@ -45,7 +43,6 @@ const FilterBar = ({
 	presets,
 	hideSearch = false,
 }: FilterBarProps) => {
-	const isMobile = useIsMobile();
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const {
 		isPlus,
@@ -114,70 +111,39 @@ const FilterBar = ({
 					onSaveOpenChange={setSaveOpen}
 				/>
 
-				{isMobile ? (
-					<Dialog.Root open={filtersOpen} onOpenChange={setFiltersOpen}>
-						<Dialog.Trigger>{filtersTrigger}</Dialog.Trigger>
-						<Dialog.Content maxWidth="440px">
-							<Flex align="center" justify="between" mb="2">
-								<Dialog.Title size="4" mb="0">
-									Filters
-								</Dialog.Title>
-								<Dialog.Close>
-									<IconButton
-										variant="ghost"
-										color="gray"
-										size="2"
-										aria-label="Close"
-									>
-										<X size={20} />
-									</IconButton>
-								</Dialog.Close>
-							</Flex>
-							<Dialog.Description
-								style={{
-									position: "absolute",
-									width: 1,
-									height: 1,
-									overflow: "hidden",
-									clip: "rect(0 0 0 0)",
-								}}
-							>
-								Filter and sort the feed
-							</Dialog.Description>
-							<FilterPanel variant="rows" {...panelProps} />
-							<Box mt="4">
-								{(isPlus || savable) && (
-									<Flex justify="between" align="center" mb="3">
-										{saveButton("2") ?? <span />}
-										{savable ? (
-											<Button
-												size="2"
-												variant="ghost"
-												color="gray"
-												onClick={resetFilters}
-											>
-												Reset
-											</Button>
-										) : (
-											<span />
-										)}
-									</Flex>
-								)}
-								<Dialog.Close>
-									<Button size="3" style={{ width: "100%" }}>
-										Done
-									</Button>
-								</Dialog.Close>
-							</Box>
-						</Dialog.Content>
-					</Dialog.Root>
-				) : (
-					<Popover.Root open={filtersOpen} onOpenChange={setFiltersOpen}>
-						<Popover.Trigger>{filtersTrigger}</Popover.Trigger>
-						<Popover.Content width="340px" maxHeight="70vh">
-							<FilterPanel variant="chips" {...panelProps} />
+				<Dialog.Root open={filtersOpen} onOpenChange={setFiltersOpen}>
+					<Dialog.Trigger>{filtersTrigger}</Dialog.Trigger>
+					<Dialog.Content maxWidth="440px">
+						<Flex align="center" justify="between" mb="2">
+							<Dialog.Title size="4" mb="0">
+								Filters
+							</Dialog.Title>
+							<Dialog.Close>
+								<IconButton
+									variant="ghost"
+									color="gray"
+									size="2"
+									aria-label="Close"
+								>
+									<X size={20} />
+								</IconButton>
+							</Dialog.Close>
+						</Flex>
+						<Dialog.Description
+							style={{
+								position: "absolute",
+								width: 1,
+								height: 1,
+								overflow: "hidden",
+								clip: "rect(0 0 0 0)",
+							}}
+						>
+							Filter and sort the feed
+						</Dialog.Description>
+						<FilterPanel {...panelProps} />
+						<Box mt="4">
 							{(isPlus || savable) && (
-								<Flex justify="between" align="center" gap="3" mt="3">
+								<Flex justify="between" align="center" mb="3">
 									{saveButton("2") ?? <span />}
 									{savable ? (
 										<Button
@@ -193,9 +159,14 @@ const FilterBar = ({
 									)}
 								</Flex>
 							)}
-						</Popover.Content>
-					</Popover.Root>
-				)}
+							<Dialog.Close>
+								<Button size="3" style={{ width: "100%" }}>
+									Done
+								</Button>
+							</Dialog.Close>
+						</Box>
+					</Dialog.Content>
+				</Dialog.Root>
 
 				{/* Wider phones/tablet (>= 520px): search shares the row with the
 				    chips so it isn't a too-wide band on its own. */}
