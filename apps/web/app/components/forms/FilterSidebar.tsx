@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Separator, Text } from "@radix-ui/themes";
+import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import type {
 	FilterPreset,
 	SubscriptionStatus,
@@ -7,7 +7,6 @@ import type {
 import { Form } from "react-router";
 import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FilterPanel from "./FilterPanel";
-import FilterPresets from "./FilterPresets";
 import SearchField from "./SearchField";
 
 interface FilterSidebarProps {
@@ -32,9 +31,10 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 );
 
 /**
- * The desktop feed filters: everything expanded in the right rail rather than
- * behind a popover. Shares all state with the mobile FilterBar via
- * useLinkFilters, so both layouts stay in sync through the URL.
+ * The desktop refine controls: search plus the filter sliders/selects, expanded
+ * in the right rail. Sort and saved views live in the FeedTabs strip at the top
+ * of the center column instead. Shares all state with the tabs via
+ * useLinkFilters (through the URL).
  */
 const FilterSidebar = ({
 	showService,
@@ -43,15 +43,7 @@ const FilterSidebar = ({
 	presets,
 	hideSearch = false,
 }: FilterSidebarProps) => {
-	const {
-		isPlus,
-		savable,
-		canSave,
-		resetFilters,
-		panelProps,
-		saveOpen,
-		setSaveOpen,
-	} = useLinkFilters({
+	const { savable, resetFilters, panelProps } = useLinkFilters({
 		lists,
 		subscribed,
 		presets,
@@ -62,24 +54,6 @@ const FilterSidebar = ({
 	return (
 		<Box pt="6" pr="3">
 			<Flex direction="column" gap="4">
-				{/* Above the separator: pick a view. */}
-				<Box>
-					<SectionLabel>View</SectionLabel>
-					<FilterPresets
-						presets={presets}
-						lists={lists}
-						saveOpen={saveOpen}
-						onSaveOpenChange={setSaveOpen}
-						triggerVariant="select"
-					/>
-				</Box>
-
-				<Separator size="4" />
-
-				{/* Below the separator: the savable state — search plus filters — that
-				    Save as view captures and Reset clears. Labeled like the filter
-				    groups; the field's own "Search" button is dropped to avoid saying
-				    it twice (Enter still submits). */}
 				{!hideSearch && (
 					<Box>
 						<SectionLabel>Search</SectionLabel>
@@ -95,20 +69,8 @@ const FilterSidebar = ({
 					<FilterPanel {...panelProps} />
 				</Box>
 
-				{/* Only when there's something to act on: no lonely disabled button. */}
 				{savable && (
-					<Flex justify="between" align="center" gap="3">
-						{isPlus && canSave ? (
-							<Button
-								size="2"
-								variant="ghost"
-								onClick={() => setSaveOpen(true)}
-							>
-								Save as view
-							</Button>
-						) : (
-							<span />
-						)}
+					<Flex justify="end">
 						<Button
 							size="2"
 							variant="ghost"

@@ -23,6 +23,7 @@ import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import FilterBar from "~/components/forms/FilterBar";
 import FilterSidebar from "~/components/forms/FilterSidebar";
+import FiltersDialog from "~/components/forms/FiltersDialog";
 import LinkPostRep from "~/components/linkPosts/LinkPostRep";
 import PlusPromoCard from "~/components/subscription/PlusPromoCard";
 import {
@@ -344,17 +345,23 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
             presets={loaderData.filterPresets}
           />
         }
-      >
-        {/* The sidebar (Layout's right rail) appears at 768px, so hide the bar
-            at the matching Radix `sm` breakpoint — not `md`, which is 1024px. */}
-        <Box display={{ initial: "block", sm: "none" }}>
-          <FilterBar
+        headerAction={
+          <FiltersDialog
             showService={!!(loaderData.bsky && loaderData.instance)}
             lists={loaderData.lists}
             subscribed={loaderData.subscribed}
             presets={loaderData.filterPresets}
           />
-        </Box>
+        }
+      >
+        {/* The feed-tab strip sits at the top of the center column on all sizes;
+            filters/search live in the sidebar (desktop) or header dialog (mobile). */}
+        <FilterBar
+          showService={!!(loaderData.bsky && loaderData.instance)}
+          lists={loaderData.lists}
+          subscribed={loaderData.subscribed}
+          presets={loaderData.filterPresets}
+        />
         <Box position="relative">
           {/* Floating overlay indicator. `position: fixed` takes the pill
 				    completely out of document flow so toggling it never shifts

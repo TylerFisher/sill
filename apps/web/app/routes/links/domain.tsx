@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Await, type ShouldRevalidateFunctionArgs } from "react-router";
 import FilterBar from "~/components/forms/FilterBar";
 import FilterSidebar from "~/components/forms/FilterSidebar";
+import FiltersDialog from "~/components/forms/FiltersDialog";
 import AboutTopper from "~/components/linkPosts/AboutTopper";
 import PaginatedLinksList from "~/components/linkPosts/PaginatedLinksList";
 import Layout from "~/components/nav/Layout";
@@ -112,16 +113,22 @@ const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
 					hideSearch
 				/>
 			}
-		>
-			<Box display={{ initial: "block", sm: "none" }}>
-				<FilterBar
+			headerAction={
+				<FiltersDialog
 					showService={showService}
 					lists={lists}
 					subscribed={subscribed}
 					presets={filterPresets}
 					hideSearch
 				/>
-			</Box>
+			}
+		>
+			<FilterBar
+				showService={showService}
+				lists={lists}
+				subscribed={subscribed}
+				presets={filterPresets}
+			/>
 			<Suspense
 				fallback={
 					<Flex justify="center" py="6">

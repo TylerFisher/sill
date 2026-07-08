@@ -49,23 +49,6 @@
 	border-radius: var(--radius-full);
 }
 
-/* The feed bar's two trigger chips split the row into equal halves on narrow
-   phones; once the search joins the row (>= 520px, Radix xs) they shrink back
-   to their content width. Overrides the chip's auto width / no-shrink. */
-.item.chip.barChip {
-	flex: 1 1 0;
-	width: auto;
-	min-width: 0;
-	max-width: none;
-}
-
-@media (min-width: 520px) {
-	.item.chip.barChip {
-		flex: 0 0 auto;
-		max-width: 180px;
-	}
-}
-
 /* Single-select option pills inside the bookmarks Tags popover/dialog. */
 .filterOption {
 	display: inline-flex;

@@ -1,0 +1,73 @@
+/* Horizontally scrolling strip of "feeds": the built-in sorts and saved views,
+   like Bluesky's pinned-feed tabs. Plain text labels, scrollbar hidden. */
+.strip {
+	display: flex;
+	align-items: center;
+	/* Spread the feeds across the width, so the common two-feed case (Most
+	   popular / Newest) fills the row instead of hugging the left. Extra feeds
+	   pack with this gap and scroll. */
+	justify-content: space-around;
+	gap: 1.25rem;
+	overflow-x: auto;
+	scrollbar-width: none;
+	/* A rule under the tabs delineates the feed switcher from the feed itself,
+	   letting the gap below tighten up. Break out of the content's 1em padding so
+	   the rule runs edge to edge, then pad the tabs back in to stay aligned. The
+	   negative top margin trims the content's top padding so the labels sit
+	   centered between the nav and the rule. */
+	margin: -0.5rem -1em 0;
+	padding: 0 1em 0.5rem;
+	border-bottom: 1px solid var(--gray-a5);
+}
+
+.strip::-webkit-scrollbar {
+	display: none;
+}
+
+.tab {
+	flex-shrink: 0;
+	white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.25rem 0;
+	background: none;
+	border: none;
+	color: var(--gray-11);
+	font-size: var(--font-size-3);
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 120ms ease;
+}
+
+.tab:hover {
+	color: var(--gray-12);
+}
+
+/* The current feed reads in the accent color so it's unmistakable. */
+.tab.active {
+	color: var(--accent-11);
+	font-weight: 600;
+}
+
+.tabName {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 160px;
+}
+
+.tabClose {
+	display: inline-flex;
+	flex-shrink: 0;
+	cursor: pointer;
+	opacity: 0.5;
+}
+
+.tabClose:hover {
+	opacity: 1;
+}
+
+/* The trailing "save current state as a new feed" tab. */
+.addTab {
+	color: var(--gray-11);
+}

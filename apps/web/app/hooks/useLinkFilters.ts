@@ -86,6 +86,10 @@ export const useLinkFilters = ({
 		if (!value) clearFilterFromStorage(key);
 	};
 
+	// Sort is applied via the FeedTabs strip (as a clean feed); this value is only
+	// read here for the already-saved comparison below.
+	const sort = eff.get("sort") ?? "";
+
 	// Service and list are mutually exclusive, so one control drives both params.
 	const selectFrom = (value: string) => {
 		setSearchParams((prev) => {
@@ -126,7 +130,6 @@ export const useLinkFilters = ({
 	// Whether the live state already matches a saved view (don't offer to save a
 	// duplicate). Uses the loader list, so a just-created view only registers on
 	// the next load — acceptable.
-	const currentSort = eff.get("sort") ?? "";
 	const alreadySaved = presets.some(
 		(p) =>
 			(p.filters.time ?? "") === time &&
@@ -134,7 +137,7 @@ export const useLinkFilters = ({
 			(p.filters.reposts ?? "") === reposts &&
 			(p.filters.service ?? "") === (activeService ?? "") &&
 			(p.filters.list ?? "") === (activeList ?? "") &&
-			(p.filters.sort ?? "") === currentSort &&
+			(p.filters.sort ?? "") === sort &&
 			(p.filters.query ?? "") === query,
 	);
 	const canSave = savable && !alreadySaved;

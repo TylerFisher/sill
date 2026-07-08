@@ -1,6 +1,6 @@
-import { Box, Button, Dialog, IconButton, Text } from "@radix-ui/themes";
+import { Box, Dialog, IconButton } from "@radix-ui/themes";
 import { Menu } from "lucide-react";
-import { NavLink } from "react-router";
+import type { ReactNode } from "react";
 import { useTheme } from "~/routes/resources/theme-switch";
 import type { SubscriptionStatus } from "@sill/schema";
 import styles from "./Header.module.css";
@@ -11,10 +11,13 @@ const Header = ({
 	headerClass,
 	hideNav,
 	subscribed,
+	action,
 }: {
 	headerClass: string;
 	hideNav: boolean;
 	subscribed?: SubscriptionStatus;
+	// Optional control pinned to the top-right of the mobile header.
+	action?: ReactNode;
 }) => {
 	const theme = useTheme();
 
@@ -61,31 +64,17 @@ const Header = ({
 					</Box>
 				)}
 				<Logo subscribed={subscribed} />
-				{subscribed === "free" && (
+				{action && (
 					<Box
 						position="absolute"
-						top="0.8rem"
+						top="1.1rem"
 						right="1rem"
 						display={{
 							initial: "inline-block",
-							md: "none",
+							sm: "none",
 						}}
 					>
-						<NavLink to="/settings/subscription">
-							<Button variant="soft">
-								Get
-								<Text
-									style={{
-										fontWeight: 900,
-										fontStyle: "italic",
-										marginTop: "1px",
-									}}
-									ml="-1"
-								>
-									sill+
-								</Text>
-							</Button>
-						</NavLink>
+						{action}
 					</Box>
 				)}
 			</Box>
