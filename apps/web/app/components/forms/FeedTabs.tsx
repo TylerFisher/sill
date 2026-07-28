@@ -1,57 +1,68 @@
 import type { FilterPreset } from "@sill/schema";
-import { Plus, X } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useFetcher, useNavigation, useSearchParams } from "react-router";
 import { setStoredFilters } from "~/hooks/useFilterStorage";
 import {
+	BUILT_IN_FEEDS,
 	PRESET_KEYS,
 	type PresetConfig,
 	isActivePreset,
 } from "~/utils/filterPresets";
 import styles from "./FeedTabs.module.css";
 
-// The built-in feeds everyone gets: clean sort-only states. Switching to one
-// clears any filters/search, so it's a fresh feed rather than a refined one.
-const BUILT_IN = [
-	{ id: "popular", name: "Most popular", sort: "" },
-	{ id: "newest", name: "Newest", sort: "newest" },
-];
+type PresetTab = Pick<FilterPreset, "id" | "name" | "filters">;
 
 interface FeedTabsProps {
-	presets: Pick<FilterPreset, "id" | "name" | "filters">[];
+	presets: PresetTab[];
 	isPlus: boolean;
 	// The current state is worth saving as a new feed (drives the "+" tab).
 	canSave: boolean;
 	onSave: () => void;
+	// Open the feed manager (rename / update / delete live there, not inline).
+	onManage: () => void;
 }
 
 /**
- * The feed switcher: built-in sorts and saved views as one horizontally
- * scrolling tab strip. A built-in tab resets to a clean feed (that sort, no
- * filters/search); a saved-view tab recalls its full config; the trailing "+"
- * saves the current state as a new view.
+ * The feed switcher: the built-in feeds (Trending, Fresh links) and saved views
+ * as one horizontally scrolling strip of plain-text switch targets. Selecting a
+ * feed recalls its clean config; a "Custom" marker shows when the state matches
+ * no feed; "Edit" opens the manager; the trailing "+" saves the current state.
+ *
+ * The strip is switch-only: management (rename, update, delete) moved to the
+ * ManageFeedsDialog so a feed's tap target is the whole label, not a label
+ * fighting a tiny inline ✕.
  */
-const FeedTabs = ({ presets, isPlus, canSave, onSave }: FeedTabsProps) => {
+const FeedTabs = ({
+	presets,
+	isPlus,
+	canSave,
+	onSave,
+	onManage,
+}: FeedTabsProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const navigation = useNavigation();
 	// Reflect the target feed optimistically while it loads, so the tab you tapped
-	// highlights immediately — rather than a built-in matching the pending sort
-	// before `savedMatch` catches up.
+	// highlights immediately rather than lagging until the load commits.
 	const pendingSearch =
 		navigation.state === "loading" && navigation.location
 			? new URLSearchParams(navigation.location.search)
 			: null;
 	const eff = pendingSearch ?? searchParams;
-	const sort = eff.get("sort") ?? "";
 
-	const mutation = useFetcher<{ presets?: typeof presets; error?: string }>({
+	const mutation = useFetcher<{ presets?: PresetTab[] }>({
 		key: "filter-presets",
 	});
 	// The API only returns saved feeds for Sill+ users (see /api/filter-presets),
 	// so the list is already empty for free users.
-	const list = mutation.data?.presets ?? presets;
+	const saved = mutation.data?.presets ?? presets;
 
-	const savedMatch = list.find((p) =>
-		isActivePreset(p.filters as PresetConfig, eff),
+	// Built-in feeds and saved feeds are one kind of thing: the active feed is
+	// whichever one the current state matches exactly. Built-ins come first, so a
+	// saved view that duplicates one doesn't steal its highlight. Nothing matches
+	// once the feed is refined off a preset (see the Custom marker below).
+	const feeds = [...BUILT_IN_FEEDS, ...saved];
+	const activeFeed = feeds.find((f) =>
+		isActivePreset(f.filters as PresetConfig, eff),
 	);
 
 	const applyPreset = (config: PresetConfig) => {
@@ -68,73 +79,56 @@ const FeedTabs = ({ presets, isPlus, canSave, onSave }: FeedTabsProps) => {
 		});
 	};
 
-	const deletePreset = (id: string) =>
-		mutation.submit(
-			{ intent: "delete", id },
-			{ method: "post", action: "/api/filter-presets" },
-		);
-
 	return (
 		<div className={styles.strip}>
-			{BUILT_IN.map((b) => {
-				const active = !savedMatch && sort === b.sort;
+			{feeds.map((feed) => {
+				const active = activeFeed?.id === feed.id;
 				return (
 					<button
-						key={b.id}
+						key={feed.id}
 						type="button"
 						className={`${styles.tab} ${active ? styles.active : ""}`}
-						// A clean feed: just this sort, wiping any filters/search.
-						onClick={() => applyPreset(b.sort ? { sort: b.sort } : {})}
+						onClick={() => applyPreset(feed.filters as PresetConfig)}
 					>
-						{b.name}
+						{feed.name}
 					</button>
 				);
 			})}
 
-			{list.map((preset) => {
-				const active = savedMatch?.id === preset.id;
-				return (
+			{/* Off every feed: a one-off refinement. Marked so the strip never reads
+			    as "nothing selected," and paired with the save action. */}
+			{/* Off every feed. If it can be saved, the marker *is* the save action
+			    (which already signals "unsaved view"), so there's no separate Custom
+			    label to puzzle over. Otherwise a plain marker keeps the strip from
+			    reading as "nothing selected." */}
+			{!activeFeed &&
+				(isPlus && canSave ? (
 					<button
-						key={preset.id}
 						type="button"
-						className={`${styles.tab} ${active ? styles.active : ""}`}
-						onClick={() => applyPreset(preset.filters as PresetConfig)}
+						className={`${styles.tab} ${styles.addTab}`}
+						aria-label="Save current view as a feed"
+						onClick={onSave}
 					>
-						<span className={styles.tabName}>{preset.name}</span>
-						{/* biome-ignore lint/a11y/useSemanticElements: a <button> can't be nested in the tab's button */}
-						<span
-							role="button"
-							tabIndex={0}
-							aria-label={`Delete view ${preset.name}`}
-							className={styles.tabClose}
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								deletePreset(preset.id);
-							}}
-							onPointerDown={(e) => e.stopPropagation()}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									e.stopPropagation();
-									deletePreset(preset.id);
-								}
-							}}
-						>
-							<X size={12} />
-						</span>
+						<Plus size={15} />
+						Save feed
 					</button>
-				);
-			})}
+				) : (
+					<span
+						className={`${styles.tab} ${styles.active} ${styles.customTab}`}
+					>
+						Custom
+					</span>
+				))}
 
-			{isPlus && canSave && !savedMatch && (
+			{saved.length > 0 && (
 				<button
 					type="button"
-					className={`${styles.tab} ${styles.addTab}`}
-					aria-label="Save current view"
-					onClick={onSave}
+					className={`${styles.tab} ${styles.manageTab}`}
+					aria-label="Manage feeds"
+					onClick={onManage}
 				>
-					<Plus size={16} />
+					<Pencil size={13} />
+					Manage
 				</button>
 			)}
 		</div>

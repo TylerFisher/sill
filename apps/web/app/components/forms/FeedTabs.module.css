@@ -50,24 +50,20 @@
 	font-weight: 600;
 }
 
-.tabName {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	max-width: 160px;
-}
-
-.tabClose {
-	display: inline-flex;
-	flex-shrink: 0;
-	cursor: pointer;
-	opacity: 0.5;
-}
-
-.tabClose:hover {
-	opacity: 1;
-}
-
-/* The trailing "save current state as a new feed" tab. */
+/* The "manage feeds" entry and the trailing "save current state" tab: quiet,
+   set apart from the feeds by weight and color. */
+.manageTab,
 .addTab {
 	color: var(--gray-11);
+	font-weight: 400;
+}
+
+.manageTab:hover {
+	color: var(--gray-12);
+}
+
+/* Status marker shown when the feed is refined off every preset. It reads as the
+   active feed (amber) but isn't a destination, so it takes no pointer. */
+.customTab {
+	cursor: default;
 }

@@ -1,4 +1,11 @@
-import { Button, Dialog, Flex, Spinner, Text, TextField } from "@radix-ui/themes";
+import {
+	Button,
+	Dialog,
+	Flex,
+	Spinner,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
 import type { FilterPreset } from "@sill/schema";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher, useSearchParams } from "react-router";
@@ -22,8 +29,12 @@ const SaveViewDialog = ({ lists, open, onOpenChange }: SaveViewDialogProps) => {
 	const mutation = useFetcher<{
 		presets?: Pick<FilterPreset, "id" | "name" | "filters">[];
 		error?: string;
+		intent?: string;
 	}>({ key: "filter-presets" });
 	const [name, setName] = useState("");
+	// The delete confirm shares this fetcher, so only surface our own errors.
+	const createError =
+		mutation.data?.intent === "create" ? mutation.data.error : undefined;
 
 	// A descriptive default name from the current state (e.g. "Newest, 5+ shares").
 	const suggestedName = summarizeConfig(configFromParams(searchParams), lists)
@@ -40,12 +51,12 @@ const SaveViewDialog = ({ lists, open, onOpenChange }: SaveViewDialogProps) => {
 	const submitting = mutation.state !== "idle";
 	const prevSubmitting = useRef(submitting);
 	useEffect(() => {
-		if (prevSubmitting.current && !submitting && !mutation.data?.error) {
+		if (prevSubmitting.current && !submitting && !createError) {
 			onOpenChange(false);
 			setName("");
 		}
 		prevSubmitting.current = submitting;
-	}, [submitting, mutation.data, onOpenChange]);
+	}, [submitting, createError, onOpenChange]);
 
 	const savePreset = () => {
 		const trimmed = name.trim();
@@ -63,15 +74,15 @@ const SaveViewDialog = ({ lists, open, onOpenChange }: SaveViewDialogProps) => {
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
 			<Dialog.Content maxWidth="360px">
-				<Dialog.Title size="3">Save view</Dialog.Title>
+				<Dialog.Title size="3">Save feed</Dialog.Title>
 				<Dialog.Description size="2" color="gray" mb="3">
-					Name this view so you can reapply it in one tap. We've suggested a name
-					from your current filters.
+					Name this feed so you can reapply it in one tap. We've suggested a
+					name from your current filters.
 				</Dialog.Description>
 				<TextField.Root
 					value={name}
 					maxLength={60}
-					placeholder="Name this view"
+					placeholder="Name this feed"
 					onChange={(e) => setName(e.target.value)}
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
@@ -80,9 +91,9 @@ const SaveViewDialog = ({ lists, open, onOpenChange }: SaveViewDialogProps) => {
 						}
 					}}
 				/>
-				{mutation.data?.error && (
+				{createError && (
 					<Text as="p" size="1" color="red" mt="2">
-						{mutation.data.error}
+						{createError}
 					</Text>
 				)}
 				<Flex justify="end" gap="2" mt="4">

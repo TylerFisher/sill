@@ -8,6 +8,7 @@ import { Form } from "react-router";
 import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FilterPanel from "./FilterPanel";
 import SearchField from "./SearchField";
+import SortControl from "./SortControl";
 
 interface FilterSidebarProps {
 	showService: boolean;
@@ -43,22 +44,29 @@ const FilterSidebar = ({
 	presets,
 	hideSearch = false,
 }: FilterSidebarProps) => {
-	const { savable, resetFilters, panelProps } = useLinkFilters({
-		lists,
-		subscribed,
-		presets,
-		showService,
-		ownsRestore: false,
-	});
+	const { sort, setSort, pendingGroup, savable, resetFilters, panelProps } =
+		useLinkFilters({
+			lists,
+			subscribed,
+			presets,
+			showService,
+			ownsRestore: false,
+		});
 
 	return (
 		<Box pt="6" pr="3">
 			<Flex direction="column" gap="4">
+				<SortControl
+					sort={sort}
+					setSort={setSort}
+					pending={pendingGroup === "sort"}
+				/>
+
 				{!hideSearch && (
 					<Box>
 						<SectionLabel>Search</SectionLabel>
 						<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-							<SearchField rounded hideSubmitButton />
+							<SearchField hideSubmitButton />
 						</Form>
 					</Box>
 				)}

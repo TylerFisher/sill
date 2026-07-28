@@ -18,6 +18,7 @@ import { Form } from "react-router";
 import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FilterPanel from "./FilterPanel";
 import SearchField from "./SearchField";
+import SortControl from "./SortControl";
 
 interface FiltersDialogProps {
 	showService: boolean;
@@ -54,36 +55,55 @@ const FiltersDialog = ({
 	hideSearch = false,
 }: FiltersDialogProps) => {
 	const [open, setOpen] = useState(false);
-	const { pendingGroup, savable, resetFilters, panelProps } = useLinkFilters({
-		lists,
-		subscribed,
-		presets,
-		showService,
-		ownsRestore: false,
-	});
+	const { sort, setSort, pendingGroup, refineCount, resetFilters, panelProps } =
+		useLinkFilters({
+			lists,
+			subscribed,
+			presets,
+			showService,
+			ownsRestore: false,
+		});
 
 	return (
 		<Dialog.Root open={open} onOpenChange={setOpen}>
 			<Dialog.Trigger>
 				<IconButton
 					variant="ghost"
-					aria-label="Search and filter"
+					aria-label={
+						refineCount > 0
+							? `Search and filter, ${refineCount} active`
+							: "Search and filter"
+					}
 					style={{ position: "relative" }}
 				>
 					{pendingGroup ? <Spinner size="2" /> : <Filter size={24} />}
-					{/* A dot marks an active search or filter. */}
-					{savable && (
+					{/* How many filters/search are narrowing the feed, so the count is
+					    legible before opening the dialog (not just a binary dot). */}
+					{refineCount > 0 && (
 						<Box
+							aria-hidden
 							style={{
 								position: "absolute",
-								top: 4,
-								right: 4,
-								width: 8,
-								height: 8,
-								borderRadius: "50%",
+								top: -3,
+								right: -5,
+								minWidth: 16,
+								height: 16,
+								padding: "0 4px",
+								borderRadius: "var(--radius-full)",
 								background: "var(--accent-9)",
+								// accent-9 (bright yellow) is the same in both themes, so the
+								// number must always be dark. --accent-contrast is the token
+								// Radix guarantees readable on the accent-9 solid fill; a raw
+								// gray-12 flips to near-white in dark mode (the bug this fixes).
+								color: "var(--accent-contrast)",
+								fontSize: "10px",
+								fontWeight: 700,
+								lineHeight: "16px",
+								textAlign: "center",
 							}}
-						/>
+						>
+							{refineCount}
+						</Box>
 					)}
 				</IconButton>
 			</Dialog.Trigger>
@@ -116,11 +136,16 @@ const FiltersDialog = ({
 				</Dialog.Description>
 
 				<Flex direction="column" gap="4">
+					<SortControl
+						sort={sort}
+						setSort={setSort}
+						pending={pendingGroup === "sort"}
+					/>
 					{!hideSearch && (
 						<Box>
 							<SectionLabel>Search</SectionLabel>
 							<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-								<SearchField rounded hideSubmitButton />
+								<SearchField hideSubmitButton />
 							</Form>
 						</Box>
 					)}
@@ -130,7 +155,7 @@ const FiltersDialog = ({
 				</Flex>
 
 				<Box mt="4">
-					{savable && (
+					{refineCount > 0 && (
 						<Flex justify="end" mb="3">
 							<Button
 								size="2"

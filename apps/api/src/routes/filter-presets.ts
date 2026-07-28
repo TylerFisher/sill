@@ -31,6 +31,12 @@ const DeletePresetSchema = z.object({
   id: z.string().min(1),
 });
 
+const UpdatePresetSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1, "Name cannot be empty").max(60).optional(),
+  filters: FilterConfigSchema.optional(),
+});
+
 const filterPresets = new Hono()
   // GET /api/filter-presets - List the user's saved presets (Sill+ only)
   .get("/", async (c) => {
@@ -135,6 +141,61 @@ const filterPresets = new Hono()
       return c.json({ success: true, deleted: result[0] });
     } catch (error) {
       console.error("Delete filter preset error:", error);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+  })
+  // PATCH /api/filter-presets - Rename a preset or repoint it at new filters
+  .patch("/", zValidator("json", UpdatePresetSchema), async (c) => {
+    const userId = await getUserIdFromSession(c.req.raw);
+    if (!userId) {
+      return c.json({ error: "Not authenticated" }, 401);
+    }
+
+    // Editing presets is a Sill+ feature, like creating them.
+    if ((await isSubscribed(userId)) !== "plus") {
+      return c.json({ error: "Saved filters are a Sill+ feature" }, 403);
+    }
+
+    const { id, name, filters } = c.req.valid("json");
+    if (name === undefined && filters === undefined) {
+      return c.json({ error: "Nothing to update" }, 400);
+    }
+
+    const updates: { name?: string; filters?: typeof filters } = {};
+    if (name !== undefined) updates.name = name;
+    if (filters !== undefined) updates.filters = filters;
+
+    try {
+      const result = await db
+        .update(filterPreset)
+        .set(updates)
+        .where(and(eq(filterPreset.id, id), eq(filterPreset.userId, userId)))
+        .returning({
+          id: filterPreset.id,
+          name: filterPreset.name,
+          filters: filterPreset.filters,
+          createdAt: filterPreset.createdAt,
+        });
+
+      if (result.length === 0) {
+        return c.json({ error: "Preset not found" }, 404);
+      }
+
+      return c.json({ success: true, preset: result[0] });
+    } catch (error) {
+      // Unique (userId, name) violation from a rename.
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        return c.json(
+          { error: "You already have a preset with that name", field: "name" },
+          409
+        );
+      }
+      console.error("Update filter preset error:", error);
       return c.json({ error: "Internal server error" }, 500);
     }
   });

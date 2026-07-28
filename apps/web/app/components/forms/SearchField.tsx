@@ -5,10 +5,8 @@ import { useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 
 const SearchField = ({
-	rounded = false,
 	hideSubmitButton = false,
 }: {
-	rounded?: boolean;
 	// Drop the redundant "Search" button where the field is labeled (the sidebar);
 	// Enter still submits.
 	hideSubmitButton?: boolean;
@@ -59,18 +57,9 @@ const SearchField = ({
 			size="2"
 			variant="soft"
 			color="gray"
-			// In the bar, match the chips: a lighter fill with a real 1px border and
-			// --radius-2. In the sidebar (`rounded`), match the soft pill dropdowns —
-			// native soft fill, no border, fully rounded.
-			style={
-				rounded
-					? { borderRadius: "var(--radius-full)" }
-					: {
-							borderRadius: "var(--radius-2)",
-							backgroundColor: "var(--gray-a2)",
-							border: "1px solid var(--gray-a5)",
-						}
-			}
+			// A fully rounded pill with the native soft fill, matching the sort
+			// toggle and the panel's pill selects (DESIGN.md's signature silhouette).
+			style={{ borderRadius: "var(--radius-full)" }}
 			onChange={(event) => setQuery(event.target.value)}
 			onKeyDown={(event) => {
 				if (event.key === "Enter") {

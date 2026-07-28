@@ -69,7 +69,9 @@ export const useLinkFilters = ({
 				? "reposts"
 				: changed("service") || changed("list")
 					? "from"
-					: null;
+					: changed("sort")
+						? "sort"
+						: null;
 
 	const time = eff.get("time") || "";
 	const reposts = eff.get("reposts") || "";
@@ -86,9 +88,25 @@ export const useLinkFilters = ({
 		if (!value) clearFilterFromStorage(key);
 	};
 
-	// Sort is applied via the FeedTabs strip (as a clean feed); this value is only
-	// read here for the already-saved comparison below.
+	// Sort has two entry points that share this one param: the FeedTabs built-in
+	// tabs (which set it as part of a clean feed, wiping filters) and the refine
+	// layer's sort toggle (which re-orders the current feed without touching
+	// filters). Both write here; the toggle uses setSort, below.
 	const sort = eff.get("sort") ?? "";
+
+	// Re-order the current feed. Unlike a built-in tab, this preserves every
+	// active filter and the search query — it only changes ordering. Empty value
+	// means "most popular" (the default, an absent param), so clear its storage
+	// too, mirroring setParam, or a reload would restore the old sort.
+	const setSort = (value: string) => {
+		setSearchParams((prev) => {
+			if (value) prev.set("sort", value);
+			else prev.delete("sort");
+			prev.delete("page");
+			return prev;
+		});
+		if (!value) clearFilterFromStorage("sort");
+	};
 
 	// Service and list are mutually exclusive, so one control drives both params.
 	const selectFrom = (value: string) => {
@@ -127,6 +145,10 @@ export const useLinkFilters = ({
 	const activeCount = FILTER_KEYS.filter((k) => eff.get(k)).length;
 	const query = eff.get("query") ?? "";
 	const savable = activeCount > 0 || query !== "";
+	// How many refinements narrow the feed right now (filters plus an active
+	// search), for the mobile funnel's count badge. Sort is excluded: it always
+	// has a value and never narrows.
+	const refineCount = activeCount + (query ? 1 : 0);
 	// Whether the live state already matches a saved view (don't offer to save a
 	// duplicate). Uses the loader list, so a just-created view only registers on
 	// the next load — acceptable.
@@ -158,8 +180,11 @@ export const useLinkFilters = ({
 	return {
 		isPlus,
 		activeCount,
+		refineCount,
 		savable,
 		canSave,
+		sort,
+		setSort,
 		pendingGroup,
 		resetFilters,
 		panelProps,

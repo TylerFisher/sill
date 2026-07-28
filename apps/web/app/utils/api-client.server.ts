@@ -1113,6 +1113,26 @@ export async function apiDeleteFilterPreset(request: Request, id: string) {
   return json;
 }
 
+export async function apiUpdateFilterPreset(
+  request: Request,
+  id: string,
+  updates: { name?: string; filters?: FilterPresetConfig }
+) {
+  const client = createApiClient(request);
+  const response = await client.api["filter-presets"].$patch({
+    json: { id, ...updates },
+  });
+
+  const json = await response.json();
+  if (json && "error" in json) {
+    throw new Error(json.error as string);
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to update filter preset: ${response.status}`);
+  }
+  return json;
+}
+
 /**
  * Get digest feed data for RSS generation via API
  */

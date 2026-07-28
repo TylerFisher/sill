@@ -15,6 +15,24 @@ export type PresetConfig = Partial<
 	Record<(typeof PRESET_KEYS)[number], string>
 >;
 
+export interface Feed {
+	id: string;
+	name: string;
+	filters: PresetConfig;
+}
+
+/**
+ * The two feeds everyone starts with, modeled like saved views so the tab strip
+ * treats built-ins and saved feeds as one kind of thing. Switching to one is
+ * changing feeds (a clean state), not re-sorting in place, so their names stay
+ * clear of the sort toggle's "Popular/Newest" vocabulary. Trending is the
+ * default popular feed (no params); Fresh links is the same network newest-first.
+ */
+export const BUILT_IN_FEEDS: Feed[] = [
+	{ id: "trending", name: "Trending", filters: {} },
+	{ id: "fresh", name: "Fresh links", filters: { sort: "newest" } },
+];
+
 /** Build a preset config from the currently active URL params. */
 export const configFromParams = (params: URLSearchParams): PresetConfig => {
 	const config: PresetConfig = {};

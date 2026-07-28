@@ -1,4 +1,4 @@
-import { Box, Card, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Separator, Spinner, Text } from "@radix-ui/themes";
 import type { SubscriptionStatus } from "@sill/schema";
 import type { MostRecentLinkPosts } from "@sill/schema";
 import {
@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   Await,
+  Link,
   type ShouldRevalidateFunctionArgs,
   useFetcher,
   useLocation,
@@ -198,6 +199,77 @@ const SeedingState = () => {
   );
 };
 
+/**
+ * Shown when the feed has no links to display. Distinguishes the reasons so the
+ * copy and the next action fit: a search or filter set that matched nothing (let
+ * them reset), everything on the page muted (point to moderation), or a quiet
+ * window with nothing shared yet (just reassure).
+ */
+const EmptyFeedState = ({
+  hasFilters,
+  query,
+  allMuted,
+  onReset,
+}: {
+  hasFilters: boolean;
+  query: string;
+  allMuted: boolean;
+  onReset: () => void;
+}) => {
+  let title: string;
+  let body: string;
+  // The reset button's label names exactly what it clears, since one action
+  // clears both search and filters.
+  let resetLabel = "";
+  if (allMuted) {
+    title = "Everything here is muted";
+    body =
+      "Your network shared links in this window. Your mute rules hide all of them right now. Adjust your muted words and accounts in moderation settings.";
+  } else if (query && hasFilters) {
+    title = `No links match “${query}”`;
+    body =
+      "No one in your network shared a link matching this search and your filters in the selected window. Widen your filters or clear them to see more.";
+    resetLabel = "Clear search & filters";
+  } else if (query) {
+    title = `No links match “${query}”`;
+    body =
+      "No one in your network shared a link matching this search in the selected window. Try a broader search or clear it to see more.";
+    resetLabel = "Clear search";
+  } else if (hasFilters) {
+    title = "No links match these filters";
+    body =
+      "Try a longer time window or a lower minimum share count to see more of your network's links.";
+    resetLabel = "Reset filters";
+  } else {
+    title = "No links in this window yet";
+    body =
+      "No one you follow has shared a link here yet. Check back soon or widen the time window.";
+  }
+
+  return (
+    <Card mt="4">
+      <Flex direction="column" align="center" gap="3" py="6" px="4">
+        <Text as="p" size="3" weight="bold" align="center">
+          {title}
+        </Text>
+        <Text as="p" size="2" color="gray" align="center">
+          {body}
+        </Text>
+        {allMuted && (
+          <Button asChild variant="soft" color="gray">
+            <Link to="/settings/moderation">Review moderation</Link>
+          </Button>
+        )}
+        {resetLabel && (
+          <Button variant="soft" onClick={onReset}>
+            {resetLabel}
+          </Button>
+        )}
+      </Flex>
+    </Card>
+  );
+};
+
 const Links = ({ loaderData }: Route.ComponentProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const showPlusPromo = loaderData.showPlusPromo;
@@ -324,6 +396,28 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
   const layout = useLayout();
   const { isMuted } = useOptimisticMutes();
 
+  // Whether a filter (not search) is narrowing the feed, so an empty result can
+  // name what to clear. Query is tracked separately (the empty state words the
+  // search and the filters distinctly). Sort is excluded: it never empties a
+  // feed and Reset leaves it alone.
+  const hasFilters = ["time", "minShares", "reposts", "service", "list"].some(
+    (k) => (searchParams.get(k) ?? "") !== ""
+  );
+
+  // Clear the filters and search that produced an empty feed, mirroring the
+  // refine layer's Reset (filter keys + query, leaving sort), and drop the
+  // remembered set so a reload doesn't restore it.
+  const resetFeedFilters = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const k of ["time", "minShares", "reposts", "service", "list", "query"])
+        next.delete(k);
+      return next;
+    });
+    for (const k of ["time", "minShares", "reposts", "service", "list"] as const)
+      clearFilterFromStorage(k);
+  };
+
   const sourceBadge = useMemo(
     () =>
       buildSourceBadgeValue(
@@ -416,10 +510,24 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
                 </Box>
               }
             >
-              {(data) =>
-                data.cold && data.links.length === 0 ? (
-                  <SeedingState />
-                ) : (
+              {(data) => {
+                if (data.cold && data.links.length === 0)
+                  return <SeedingState />;
+
+                const visibleLinks = data.links.filter(
+                  (link) => !isMuted(link)
+                );
+                const visibleFetched = fetchedLinks.filter(
+                  (link) => !isMuted(link)
+                );
+                const nothingVisible =
+                  visibleLinks.length === 0 && visibleFetched.length === 0;
+                // The server returned rows but muting hid them all; later pages
+                // may still hold unmuted links, so keep the pagination sentinel
+                // alive below. A truly empty result drops it (nothing to page).
+                const serverEmpty = data.links.length === 0;
+
+                return (
                   <Box
                     aria-busy={showPending}
                     style={{
@@ -428,65 +536,71 @@ const Links = ({ loaderData }: Route.ComponentProps) => {
                       pointerEvents: showPending ? "none" : "auto",
                     }}
                   >
-                    {data.links
-                      .filter((link) => !isMuted(link))
-                      .map((link, i) => (
-                        // Include the loader key so cards remount when the feed
-                        // reloads (e.g. filtering to a list), discarding any posts
-                        // hydrated for a URL under the previous filters.
-                        <Fragment key={`${loaderData.key}:${link.link?.url}`}>
-                          <div>
-                            <LinkPost
-                              linkPost={link}
-                              instance={loaderData.instance}
-                              bsky={loaderData.bsky}
-                              layout={layout}
-                              bookmarks={loaderData.bookmarks}
-                              subscribed={loaderData.subscribed}
-                            />
-                          </div>
-                          {showPlusPromo && i === 2 && (
-                            <PlusPromoCard layout={layout} />
-                          )}
-                        </Fragment>
-                      ))}
-                    {fetchedLinks.length > 0 && (
-                      <div>
-                        {fetchedLinks
-                          .filter((link) => !isMuted(link))
-                          .map((link) => (
-                            <LinkPost
-                              key={link.link?.url}
-                              linkPost={link}
-                              instance={loaderData.instance}
-                              bsky={loaderData.bsky}
-                              layout={layout}
-                              bookmarks={loaderData.bookmarks}
-                              subscribed={loaderData.subscribed}
-                            />
-                          ))}
-                      </div>
+                    {nothingVisible && (
+                      <EmptyFeedState
+                        hasFilters={hasFilters}
+                        query={searchParams.get("query") ?? ""}
+                        allMuted={!serverEmpty}
+                        onReset={resetFeedFilters}
+                      />
                     )}
-                    <Box position="absolute" top="90%">
-                      <fetcher.Form
-                        method="GET"
-                        preventScrollReset
-                        ref={formRef}
-                      >
-                        <input type="hidden" name="page" value={nextPage} />
-                        {[...searchParams.entries()].map(([key, value]) => (
-                          <input
-                            key={key}
-                            type="hidden"
-                            name={key}
-                            value={value}
+                    {visibleLinks.map((link, i) => (
+                      // Include the loader key so cards remount when the feed
+                      // reloads (e.g. filtering to a list), discarding any posts
+                      // hydrated for a URL under the previous filters.
+                      <Fragment key={`${loaderData.key}:${link.link?.url}`}>
+                        <div>
+                          <LinkPost
+                            linkPost={link}
+                            instance={loaderData.instance}
+                            bsky={loaderData.bsky}
+                            layout={layout}
+                            bookmarks={loaderData.bookmarks}
+                            subscribed={loaderData.subscribed}
+                          />
+                        </div>
+                        {showPlusPromo && i === 2 && (
+                          <PlusPromoCard layout={layout} />
+                        )}
+                      </Fragment>
+                    ))}
+                    {visibleFetched.length > 0 && (
+                      <div>
+                        {visibleFetched.map((link) => (
+                          <LinkPost
+                            key={link.link?.url}
+                            linkPost={link}
+                            instance={loaderData.instance}
+                            bsky={loaderData.bsky}
+                            layout={layout}
+                            bookmarks={loaderData.bookmarks}
+                            subscribed={loaderData.subscribed}
                           />
                         ))}
-                      </fetcher.Form>
-                    </Box>
+                      </div>
+                    )}
+                    {!serverEmpty && (
+                      <Box position="absolute" top="90%">
+                        <fetcher.Form
+                          method="GET"
+                          preventScrollReset
+                          ref={formRef}
+                        >
+                          <input type="hidden" name="page" value={nextPage} />
+                          {[...searchParams.entries()].map(([key, value]) => (
+                            <input
+                              key={key}
+                              type="hidden"
+                              name={key}
+                              value={value}
+                            />
+                          ))}
+                        </fetcher.Form>
+                      </Box>
+                    )}
                   </Box>
-                )
-              }
+                );
+              }}
             </Await>
           </Suspense>
         </Box>

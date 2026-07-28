@@ -4,8 +4,10 @@ import type {
 	SubscriptionStatus,
 	list as listTable,
 } from "@sill/schema";
+import { useState } from "react";
 import { useLinkFilters } from "~/hooks/useLinkFilters";
 import FeedTabs from "./FeedTabs";
+import ManageFeedsDialog from "./ManageFeedsDialog";
 import SaveViewDialog from "./SaveViewDialog";
 
 interface FilterBarProps {
@@ -33,6 +35,7 @@ const FilterBar = ({
 		showService,
 		ownsRestore: true,
 	});
+	const [manageOpen, setManageOpen] = useState(false);
 
 	return (
 		<Box mb="3">
@@ -41,8 +44,19 @@ const FilterBar = ({
 				isPlus={isPlus}
 				canSave={canSave}
 				onSave={() => setSaveOpen(true)}
+				onManage={() => setManageOpen(true)}
 			/>
-			<SaveViewDialog lists={lists} open={saveOpen} onOpenChange={setSaveOpen} />
+			<SaveViewDialog
+				lists={lists}
+				open={saveOpen}
+				onOpenChange={setSaveOpen}
+			/>
+			<ManageFeedsDialog
+				presets={presets}
+				lists={lists}
+				open={manageOpen}
+				onOpenChange={setManageOpen}
+			/>
 		</Box>
 	);
 };

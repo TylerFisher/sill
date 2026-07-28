@@ -120,12 +120,16 @@ const FilterPanel = ({
           pendingGroup === "time"
         )}
         <Slider
+          className="filterSlider"
           value={[displayTimeIdx]}
           min={0}
           max={timeSteps.length - 1}
           step={1}
           size="2"
+          radius="full"
           aria-label="Time window"
+          // The slider value is a step index; announce the human label instead.
+          aria-valuetext={timeSteps[displayTimeIdx].label}
           onValueChange={([v]) => setTimeDrag(v)}
           onValueCommit={([v]) => {
             setTimeDrag(null);
@@ -145,12 +149,15 @@ const FilterPanel = ({
           pendingGroup === "shares"
         )}
         <Slider
+          className="filterSlider"
           value={[displayShares]}
           min={1}
           max={10}
           step={1}
           size="2"
+          radius="full"
           aria-label="Minimum shares"
+          aria-valuetext={`${displayShares}+ shares`}
           onValueChange={([v]) => setSharesDrag(v)}
           onValueCommit={([v]) => {
             setSharesDrag(null);
@@ -182,6 +189,7 @@ const FilterPanel = ({
           <Select.Trigger
             variant="soft"
             color="gray"
+            radius="full"
             aria-label="Reposts"
             style={{ width: "100%", color: "var(--gray-12)" }}
           />
@@ -215,6 +223,7 @@ const FilterPanel = ({
             <Select.Trigger
               variant="soft"
               color="gray"
+              radius="full"
               aria-label="From"
               style={{ width: "100%", color: "var(--gray-12)" }}
             />

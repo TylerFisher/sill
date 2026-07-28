@@ -184,7 +184,7 @@ const BookmarkFilterBar = ({ tags }: BookmarkFilterBarProps) => {
 				    Tags is a compact chip, so both fit on one line on mobile too. */}
 				<Box flexGrow="1" minWidth="0">
 					<Form method="GET" onSubmit={(e) => e.preventDefault()}>
-						<SearchField rounded />
+						<SearchField />
 					</Form>
 				</Box>
 			</Flex>
