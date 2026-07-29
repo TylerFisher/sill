@@ -1,23 +1,33 @@
-/* Horizontally scrolling strip of "feeds": the built-in sorts and saved views,
-   like Bluesky's pinned-feed tabs. Plain text labels, scrollbar hidden. */
-.strip {
+/* The feed switcher bar: a horizontally scrolling strip of "feeds" (built-in
+   feeds + saved views, like Bluesky's pinned-feed tabs) with the manage cog
+   pinned at the right so it never scrolls out of reach.
+
+   The rule under the bar delineates the switcher from the feed itself. Break out
+   of the content's 1em padding so it runs edge to edge, then pad the contents
+   back in to stay aligned. The negative top margin trims the content's top
+   padding so the labels sit centered between the nav and the rule. */
+.bar {
 	display: flex;
 	align-items: center;
-	/* Spread the feeds across the width, so the common two-feed case (Most
-	   popular / Newest) fills the row instead of hugging the left. Extra feeds
-	   pack with this gap and scroll. */
+	gap: 0.75rem;
+	margin: -0.5rem -1em 0;
+	padding: 0 1em 0.5rem;
+	border-bottom: 1px solid var(--gray-a5);
+}
+
+.strip {
+	flex: 1;
+	/* Allow the strip to shrink below its content so it scrolls rather than
+	   pushing the pinned cog off-screen. */
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	/* Spread the feeds across the width, so the common case fills the row instead
+	   of hugging the left. Extra feeds pack with this gap and scroll. */
 	justify-content: space-around;
 	gap: 1.25rem;
 	overflow-x: auto;
 	scrollbar-width: none;
-	/* A rule under the tabs delineates the feed switcher from the feed itself,
-	   letting the gap below tighten up. Break out of the content's 1em padding so
-	   the rule runs edge to edge, then pad the tabs back in to stay aligned. The
-	   negative top margin trims the content's top padding so the labels sit
-	   centered between the nav and the rule. */
-	margin: -0.5rem -1em 0;
-	padding: 0 1em 0.5rem;
-	border-bottom: 1px solid var(--gray-a5);
 }
 
 .strip::-webkit-scrollbar {
@@ -50,20 +60,34 @@
 	font-weight: 600;
 }
 
-/* The "manage feeds" entry and the trailing "save current state" tab: quiet,
-   set apart from the feeds by weight and color. */
-.manageTab,
+/* The trailing "save current state as a feed" tab: quiet, set apart from the
+   feeds by weight and color. */
 .addTab {
 	color: var(--gray-11);
 	font-weight: 400;
-}
-
-.manageTab:hover {
-	color: var(--gray-12);
 }
 
 /* Status marker shown when the feed is refined off every preset. It reads as the
    active feed (amber) but isn't a destination, so it takes no pointer. */
 .customTab {
 	cursor: default;
+}
+
+/* The manage cog, pinned outside the scrolling strip. Quiet at rest so it never
+   competes with the feeds or the accent. */
+.manage {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.25rem;
+	background: none;
+	border: none;
+	color: var(--gray-11);
+	cursor: pointer;
+	transition: color 120ms ease;
+}
+
+.manage:hover {
+	color: var(--gray-12);
 }

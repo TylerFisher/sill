@@ -80,55 +80,57 @@ const FeedTabs = ({
 	};
 
 	return (
-		<div className={styles.strip}>
-			{feeds.map((feed) => {
-				const active = activeFeed?.id === feed.id;
-				return (
-					<button
-						key={feed.id}
-						type="button"
-						className={`${styles.tab} ${active ? styles.active : ""}`}
-						onClick={() => applyPreset(feed.filters as PresetConfig)}
-					>
-						{feed.name}
-					</button>
-				);
-			})}
+		<div className={styles.bar}>
+			<div className={styles.strip}>
+				{feeds.map((feed) => {
+					const active = activeFeed?.id === feed.id;
+					return (
+						<button
+							key={feed.id}
+							type="button"
+							className={`${styles.tab} ${active ? styles.active : ""}`}
+							onClick={() => applyPreset(feed.filters as PresetConfig)}
+						>
+							{feed.name}
+						</button>
+					);
+				})}
 
-			{/* Off every feed: a one-off refinement. Marked so the strip never reads
-			    as "nothing selected," and paired with the save action. */}
-			{/* Off every feed. If it can be saved, the marker *is* the save action
-			    (which already signals "unsaved view"), so there's no separate Custom
-			    label to puzzle over. Otherwise a plain marker keeps the strip from
-			    reading as "nothing selected." */}
-			{!activeFeed &&
-				(isPlus && canSave ? (
-					<button
-						type="button"
-						className={`${styles.tab} ${styles.addTab}`}
-						aria-label="Save current view as a feed"
-						onClick={onSave}
-					>
-						<Plus size={15} />
-						Save feed
-					</button>
-				) : (
-					<span
-						className={`${styles.tab} ${styles.active} ${styles.customTab}`}
-					>
-						Custom
-					</span>
-				))}
+				{/* Off every feed. If it can be saved, the marker *is* the save action
+				    (which already signals "unsaved view"), so there's no separate
+				    Custom label to puzzle over. Otherwise a plain marker keeps the
+				    strip from reading as "nothing selected." */}
+				{!activeFeed &&
+					(isPlus && canSave ? (
+						<button
+							type="button"
+							className={`${styles.tab} ${styles.addTab}`}
+							aria-label="Save current view as a feed"
+							onClick={onSave}
+						>
+							<Plus size={15} />
+							Save feed
+						</button>
+					) : (
+						<span
+							className={`${styles.tab} ${styles.active} ${styles.customTab}`}
+						>
+							Custom
+						</span>
+					))}
+			</div>
 
+			{/* Feed management is a rare, deliberate action, so it's pinned outside
+			    the scrolling strip where it stays reachable instead of scrolling off
+			    the right edge. */}
 			{saved.length > 0 && (
 				<button
 					type="button"
-					className={`${styles.tab} ${styles.manageTab}`}
+					className={styles.manage}
 					aria-label="Manage feeds"
 					onClick={onManage}
 				>
-					<Pencil size={13} />
-					Manage
+					<Pencil size={17} />
 				</button>
 			)}
 		</div>
