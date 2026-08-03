@@ -80,3 +80,12 @@
 		animation: rt-dialog-content-hide 100ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 	}
 }
+
+/* Paint the filter sliders' filled range with the amber link color
+   (--accent-11) instead of the default pale accent-9 (too faint on the sand
+   track) or Radix's highContrast olive (a hue off the links), so one warm amber
+   runs across links, the active feed, and the sliders. The doubled class beats
+   Radix's own range rule on specificity. */
+.filterSlider .rt-SliderRange.rt-SliderRange {
+	background-color: var(--accent-11);
+}

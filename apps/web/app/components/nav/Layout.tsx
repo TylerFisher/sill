@@ -12,9 +12,12 @@ import TrialBanner from "./TrialBanner";
 interface LayoutProps extends PropsWithChildren {
 	hideNav?: boolean;
 	sidebar?: React.ReactNode;
+	// A control pinned to the top-right of the mobile header (e.g. the feed's
+	// search/filter entry).
+	headerAction?: React.ReactNode;
 }
 
-const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
+const Layout = ({ children, hideNav, sidebar, headerAction }: LayoutProps) => {
 	const data = useRouteLoaderData<typeof loader>("root");
 	return (
 		<>
@@ -37,6 +40,7 @@ const Layout = ({ children, hideNav, sidebar }: LayoutProps) => {
 						headerClass={hideNav ? "onboarding-logo" : "mobile-logo"}
 						hideNav={hideNav || false}
 						subscribed={data?.subscribed}
+						action={headerAction}
 					/>
 					{!hideNav && (
 						<aside className={styles.side}>

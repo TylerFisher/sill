@@ -10,7 +10,7 @@ export default function SubscriptionHeader() {
           initial: "6",
           md: "7",
         }}
-        color="yellow"
+        style={{ letterSpacing: "-0.01em" }}
       >
         Become a <SillPlus /> supporter.
       </Heading>

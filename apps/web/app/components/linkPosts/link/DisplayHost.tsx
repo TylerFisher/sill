@@ -1,5 +1,7 @@
 import { Flex, Link, Text } from "@radix-ui/themes";
 import type { MostRecentLinkPosts } from "@sill/schema";
+import { useSearchParams } from "react-router";
+import { discoveryHref } from "~/utils/discoveryFilters";
 
 interface DisplayHostProps {
 	link: MostRecentLinkPosts["link"];
@@ -9,7 +11,10 @@ interface DisplayHostProps {
 }
 
 const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
+	const [searchParams] = useSearchParams();
 	if (!link) return null;
+
+	const time = searchParams.get("time");
 
 	return (
 		<Flex
@@ -44,7 +49,7 @@ const DisplayHost = ({ link, host, theme, image }: DisplayHostProps) => {
 			/>
 			<Text size="1" color="gray" as="span" style={{ lineHeight: "16px" }}>
 				<Link
-					href={`/links/domain/${host}`}
+					href={discoveryHref(`/links/domain/${host}`, time)}
 					style={{ lineHeight: "16px" }}
 					color="gray"
 				>

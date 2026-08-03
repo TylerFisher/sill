@@ -1,55 +1,24 @@
-.list {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 0.25rem;
-}
-
-.mobileOnly {
-	display: none;
-}
-
-@media (max-width: 767px) {
-	.mobileOnly {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.25rem;
-		margin-bottom: var(--space-2);
-	}
-}
-
-.label {
-	grid-column: 1 / -1;
-	font-size: var(--font-size-1);
-	color: var(--gray-10);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	margin-bottom: 0.125rem;
-}
-
-.label:not(:first-child) {
-	margin-top: 0.5rem;
-}
-
-/* Sort, Filter, and From items - filled style */
+/* Bar trigger chips, styled to match the sidebar's soft-gray Select/Button
+   pills: borderless soft fill, high-contrast value text, no accent. */
 .item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: var(--space-2);
 	width: 100%;
 	padding: 0.5rem 0.75rem;
-	background: var(--gray-a2);
-	border: 1px solid var(--gray-a5);
+	background: var(--gray-a3);
+	border: none;
 	border-radius: var(--radius-2);
 	cursor: pointer;
 	transition: all 150ms ease;
 	font-size: var(--font-size-2);
-	color: var(--gray-11);
+	color: var(--gray-12);
 	text-align: left;
 }
 
 .item:hover {
-	background: var(--gray-a3);
-	border-color: var(--gray-a6);
+	background: var(--gray-a4);
 }
 
 .item:focus-visible {
@@ -58,23 +27,62 @@
 }
 
 .item.active {
-	background: var(--accent-a3);
-	border-color: var(--accent-a7);
-	color: var(--accent-11);
-	font-weight: 600;
+	background: var(--gray-a4);
+	color: var(--gray-12);
+	font-weight: 500;
 }
 
 .item.active:hover {
-	background: var(--accent-a4);
-	border-color: var(--accent-a8);
+	background: var(--gray-a5);
 }
 
-.fullWidth {
-	grid-column: 1 / -1;
-}
-
-.chevron {
-	opacity: 0.5;
+/* Auto-width variant used in the horizontal filter bar (wraps, never shrinks).
+   Height pinned to Radix size-2 (32px) so it matches the search field; fully
+   rounded to match the curved pill controls elsewhere. */
+.item.chip {
+	width: auto;
 	flex-shrink: 0;
-	margin-left: auto;
+	white-space: nowrap;
+	min-height: 2rem;
+	padding-top: 0;
+	padding-bottom: 0;
+	border-radius: var(--radius-full);
+}
+
+/* Single-select option pills inside the bookmarks Tags popover/dialog. */
+.filterOption {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.3rem 0.7rem;
+	background: var(--gray-a2);
+	border: 1px solid var(--gray-a5);
+	border-radius: var(--radius-2);
+	cursor: pointer;
+	font-size: var(--font-size-2);
+	line-height: 1.6;
+	color: var(--gray-11);
+	white-space: nowrap;
+	transition: background 120ms ease, border-color 120ms ease;
+}
+
+.filterOption:hover {
+	background: var(--gray-a3);
+	border-color: var(--gray-a6);
+}
+
+.filterOption:disabled {
+	cursor: default;
+}
+
+.filterOption:disabled:hover {
+	background: var(--gray-a2);
+	border-color: var(--gray-a5);
+}
+
+.filterOption.active {
+	background: var(--accent-a3);
+	border-color: var(--accent-a6);
+	color: var(--accent-11);
+	font-weight: 500;
 }

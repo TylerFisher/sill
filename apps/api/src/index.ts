@@ -10,6 +10,7 @@ import bluesky from "./routes/bluesky.js";
 import bookmarks from "./routes/bookmarks.js";
 import devices from "./routes/devices.js";
 import digest from "./routes/digest.js";
+import filterPresets from "./routes/filter-presets.js";
 import links from "./routes/links.js";
 import lists from "./routes/lists.js";
 import maintainPartitions from "./routes/maintain-partitions.js";
@@ -40,6 +41,7 @@ const routes = app
   .route("/api/bookmarks", bookmarks)
   .route("/api/devices", devices)
   .route("/api/digest", digest)
+  .route("/api/filter-presets", filterPresets)
   .route("/api/links", links)
   .route("/api/lists", lists)
   .route("/api/maintain-partitions", maintainPartitions)

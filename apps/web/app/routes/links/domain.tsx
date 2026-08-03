@@ -1,17 +1,19 @@
 import { invariantResponse } from "@epic-web/invariant";
 import { Box, Flex, Spinner, Text } from "@radix-ui/themes";
 import { Suspense } from "react";
-import { Await } from "react-router";
-import LinkFilters from "~/components/forms/LinkFilters";
-import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
-import SortPresetList from "~/components/forms/SortPresetList";
+import { Await, type ShouldRevalidateFunctionArgs } from "react-router";
+import FilterBar from "~/components/forms/FilterBar";
+import FilterSidebar from "~/components/forms/FilterSidebar";
+import FiltersDialog from "~/components/forms/FiltersDialog";
 import AboutTopper from "~/components/linkPosts/AboutTopper";
 import PaginatedLinksList from "~/components/linkPosts/PaginatedLinksList";
 import Layout from "~/components/nav/Layout";
-import { apiFindLinksByDomain } from "~/utils/api-client.server";
+import {
+	apiFindLinksByDomain,
+	apiGetFilterPresets,
+} from "~/utils/api-client.server";
 import { requireUserFromContext } from "~/utils/context.server";
 import {
-	DISCOVERY_TIME_OPTIONS,
 	discoveryTimeLabel,
 	parseDiscoveryFilters,
 } from "~/utils/discoveryFilters";
@@ -32,7 +34,10 @@ export const loader = async ({
 	const cursor = url.searchParams.get("cursor") || undefined;
 	// A specific publication on the host (e.g. "The Athletic"); omit → primary.
 	const publication = url.searchParams.get("publication") || undefined;
-	const filters = parseDiscoveryFilters(url.searchParams);
+	const filters = parseDiscoveryFilters(
+		url.searchParams,
+		subscribed === "plus",
+	);
 
 	// Stream the first page (HTML streaming, like the main feed); resolve cursor
 	// (infinite-scroll) requests so the paginating fetcher gets data directly.
@@ -48,6 +53,13 @@ export const loader = async ({
 	const mastodon = existingUser.mastodonAccounts[0] || null;
 	const lists = [...(bsky?.lists ?? []), ...(mastodon?.lists ?? [])];
 
+	const filterPresets = await apiGetFilterPresets(request)
+		.then((r) => r.presets)
+		.catch((error) => {
+			console.error("Load filter presets error:", error);
+			return [] as Awaited<ReturnType<typeof apiGetFilterPresets>>["presets"];
+		});
+
 	return {
 		result,
 		instance: mastodon?.mastodonInstance?.instance,
@@ -56,9 +68,20 @@ export const loader = async ({
 		bookmarks: existingUser.bookmarks,
 		subscribed,
 		domain,
-		timeLabel: discoveryTimeLabel(url.searchParams),
+		filterPresets,
+		timeLabel: discoveryTimeLabel(url.searchParams, subscribed === "plus"),
 	};
 };
+
+// Saving/deleting a view shouldn't reload the streaming feed; FilterPresets
+// refreshes itself from the mutation's returned list.
+export function shouldRevalidate({
+	formAction,
+	defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+	if (formAction === "/api/filter-presets") return false;
+	return defaultShouldRevalidate;
+}
 
 // Title uses the raw domain: the human-readable publisher name lives on the
 // streamed `about` card, which isn't available to `meta` (deferred data).
@@ -67,32 +90,45 @@ export const meta: Route.MetaFunction = ({ data }) => [
 ];
 
 const LinksByDomain = ({ loaderData }: Route.ComponentProps) => {
-	const { result, instance, bsky, lists, bookmarks, subscribed, timeLabel } =
-		loaderData;
+	const {
+		result,
+		instance,
+		bsky,
+		lists,
+		bookmarks,
+		subscribed,
+		filterPresets,
+		timeLabel,
+	} = loaderData;
 	const showService = !!(bsky && instance);
 
 	return (
 		<Layout
 			sidebar={
-				<LinkFilters
+				<FilterSidebar
 					showService={showService}
 					lists={lists}
+					subscribed={subscribed}
+					presets={filterPresets}
 					hideSearch
-					timeOptions={DISCOVERY_TIME_OPTIONS}
+				/>
+			}
+			headerAction={
+				<FiltersDialog
+					showService={showService}
+					lists={lists}
+					subscribed={subscribed}
+					presets={filterPresets}
+					hideSearch
 				/>
 			}
 		>
-			<SortPresetList />
-			<LinkFiltersCollapsible>
-				<LinkFilters
-					showService={showService}
-					lists={lists}
-					reverse
-					hideSort
-					hideSearch
-					timeOptions={DISCOVERY_TIME_OPTIONS}
-				/>
-			</LinkFiltersCollapsible>
+			<FilterBar
+				showService={showService}
+				lists={lists}
+				subscribed={subscribed}
+				presets={filterPresets}
+			/>
 			<Suspense
 				fallback={
 					<Flex justify="center" py="6">

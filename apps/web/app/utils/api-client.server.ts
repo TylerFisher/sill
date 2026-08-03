@@ -1,6 +1,7 @@
 import { redirect } from "react-router";
 import { hc } from "hono/client";
 import type { AppType } from "@sill/api";
+import type { FilterPresetConfig } from "@sill/schema";
 
 // API URL for server-to-server communication
 // Defaults to localhost for local development, Docker service name for containerized
@@ -1058,6 +1059,86 @@ export async function apiDeleteMutePhrase(request: Request, phrase: string) {
     throw new Error(json.error as string);
   }
 
+  return json;
+}
+
+/**
+ * List the user's saved filter presets.
+ */
+export async function apiGetFilterPresets(request: Request) {
+  const client = createApiClient(request);
+  const response = await client.api["filter-presets"].$get();
+
+  const json = await response.json();
+  if (json && "error" in json) {
+    throw new Error(json.error as string);
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to get filter presets: ${response.status}`);
+  }
+  return json;
+}
+
+/**
+ * Create a saved filter preset (Sill+ only; the API enforces the gate). Surfaces
+ * the server's message so the caller can relay it (gate, duplicate name, limit).
+ */
+export async function apiCreateFilterPreset(
+  request: Request,
+  name: string,
+  filters: FilterPresetConfig
+) {
+  const client = createApiClient(request);
+  const response = await client.api["filter-presets"].$post({
+    json: { name, filters },
+  });
+
+  const json = await response.json();
+  if (json && "error" in json) {
+    throw new Error(json.error as string);
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to create filter preset: ${response.status}`);
+  }
+  return json;
+}
+
+/**
+ * Delete a saved filter preset by id.
+ */
+export async function apiDeleteFilterPreset(request: Request, id: string) {
+  const client = createApiClient(request);
+  const response = await client.api["filter-presets"].$delete({
+    json: { id },
+  });
+
+  const json = await response.json();
+  if (json && "error" in json) {
+    throw new Error(json.error as string);
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to delete filter preset: ${response.status}`);
+  }
+  return json;
+}
+
+export async function apiUpdateFilterPreset(
+  request: Request,
+  id: string,
+  updates: { name?: string; filters?: FilterPresetConfig }
+) {
+  const client = createApiClient(request);
+  const response = await client.api["filter-presets"].$patch({
+    json: { id, ...updates },
+  });
+
+  const json = await response.json();
+  if (json && "error" in json) {
+    throw new Error(json.error as string);
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to update filter preset: ${response.status}`);
+  }
   return json;
 }
 

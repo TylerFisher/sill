@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useFilterStorage } from "~/hooks/useFilterStorage";
 
-const SearchField = () => {
+const SearchField = ({
+	hideSubmitButton = false,
+}: {
+	// Drop the redundant "Search" button where the field is labeled (the sidebar);
+	// Enter still submits.
+	hideSubmitButton?: boolean;
+}) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [query, setQuery] = useState(searchParams.get("query") || "");
 	const { saveFiltersToStorage } = useFilterStorage();
@@ -48,7 +54,12 @@ const SearchField = () => {
 			type="text"
 			value={query}
 			aria-label="Search"
-			size="3"
+			size="2"
+			variant="soft"
+			color="gray"
+			// A fully rounded pill with the native soft fill, matching the sort
+			// toggle and the panel's pill selects (DESIGN.md's signature silhouette).
+			style={{ borderRadius: "var(--radius-full)" }}
 			onChange={(event) => setQuery(event.target.value)}
 			onKeyDown={(event) => {
 				if (event.key === "Enter") {
@@ -57,30 +68,35 @@ const SearchField = () => {
 			}}
 		>
 			<TextField.Slot>
-				<Search height="16" width="16" />
+				<Search height="16" width="16" color="var(--gray-11)" />
 			</TextField.Slot>
 			{query && (
 				<TextField.Slot>
 					<X
 						width="18"
 						height="18"
+						color="var(--gray-11)"
 						cursor="pointer"
 						onClick={() => setSearchParam("query", "")}
 					/>
 				</TextField.Slot>
 			)}
-			<TextField.Slot>
-				<Button
-					type="button"
-					variant="ghost"
-					style={{
-						marginRight: "1px",
-					}}
-					onClick={handleSubmit}
-				>
-					Search
-				</Button>
-			</TextField.Slot>
+			{!hideSubmitButton && (
+				<TextField.Slot>
+					<Button
+						type="button"
+						variant="ghost"
+						color="gray"
+						style={{
+							marginRight: "1px",
+							color: "var(--gray-11)",
+						}}
+						onClick={handleSubmit}
+					>
+						Search
+					</Button>
+				</TextField.Slot>
+			)}
 		</TextField.Root>
 	);
 };

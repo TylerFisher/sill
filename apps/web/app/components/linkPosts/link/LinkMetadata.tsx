@@ -1,10 +1,11 @@
 import { Badge, Flex, HoverCard, Link, Spinner, Text } from "@radix-ui/themes";
 import { X } from "lucide-react";
-import { useFetcher } from "react-router";
+import { useFetcher, useSearchParams } from "react-router";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import styles from "./LinkMetadata.module.css";
 import type { BookmarkWithLinkPosts } from "~/routes/bookmarks";
+import { discoveryHref } from "~/utils/discoveryFilters";
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo("en-US");
@@ -32,6 +33,8 @@ const LinkMetadata = ({
 	layout,
 	dateFormat = "relative",
 }: LinkMetadataProps) => {
+	const [searchParams] = useSearchParams();
+	const time = searchParams.get("time");
 	const displayHost = siteName || host;
 
 	return (
@@ -41,7 +44,10 @@ const LinkMetadata = ({
 					{layout === "dense" && (
 						<Text>
 							{displayHost && (
-								<Link href={`/links/domain/${host}`} color="gray">
+								<Link
+									href={discoveryHref(`/links/domain/${host}`, time)}
+									color="gray"
+								>
 									{displayHost}
 								</Link>
 							)}
@@ -58,7 +64,10 @@ const LinkMetadata = ({
 							{authors.map((author, index) => (
 								<Text key={author}>
 									<Link
-										href={`/links/author/${encodeURIComponent(author)}`}
+										href={discoveryHref(
+											`/links/author/${encodeURIComponent(author)}`,
+											time,
+										)}
 										color="gray"
 									>
 										{author}

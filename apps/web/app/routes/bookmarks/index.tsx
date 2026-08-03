@@ -15,7 +15,7 @@ import { useFetcher, useSearchParams } from "react-router";
 import { debounce } from "ts-debounce";
 import { uuidv7 } from "uuidv7-js";
 import AddBookmarkDialog from "~/components/forms/AddBookmarkDialog";
-import BookmarkFilters from "~/components/forms/BookmarkFilters";
+import BookmarkFilterBar from "~/components/forms/BookmarkFilterBar";
 import Layout from "~/components/nav/Layout";
 import PageHeading from "~/components/nav/PageHeading";
 import BookmarkletSetup from "~/components/settings/BookmarkletSetup";
@@ -29,7 +29,6 @@ import type { Route } from "./+types";
 import { invariantResponse } from "@epic-web/invariant";
 import { requireUserFromContext } from "~/utils/context.server";
 import type { MostRecentLinkPosts, tag } from "@sill/schema";
-import LinkFiltersCollapsible from "~/components/forms/LinkFiltersCollapsible";
 export const meta: Route.MetaFunction = () => [{ title: "Sill | Bookmarks" }];
 
 type TagData = {
@@ -172,35 +171,28 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
 
   const hasActiveFilters = searchParams.get("query") || searchParams.get("tag");
 
+  const saveLinksSidebar = (
+    <Box pt="6" pr="3">
+      <Card>
+        <Heading as="h2" size="3" mb="3">
+          Save links from any website
+        </Heading>
+        <BookmarkletSetup />
+      </Card>
+    </Box>
+  );
+
   return (
-    <Layout sidebar={<BookmarkFilters tags={tags} />}>
-      <LinkFiltersCollapsible>
-        <BookmarkFilters tags={tags} reverse={true} />
-      </LinkFiltersCollapsible>
+    <Layout sidebar={saveLinksSidebar}>
       <PageHeading
         title="Bookmarks"
-        dek="Sill can save links you bookmark for easy access later. If you bookmark a link, Sill will track all posts sharing that link for you."
+        dek="Sill can save links you bookmark for easy access later."
+        action={
+          <Button onClick={() => setDialogOpen(true)}>Add Bookmark</Button>
+        }
       />
 
-      <Flex my="4" gap="3" align="center" wrap="wrap">
-        <Button onClick={() => setDialogOpen(true)}>Add Bookmark</Button>
-        {bookmarksByDate.length > 0 && (
-          <Text size="2" color="gray">
-            or{" "}
-            <Link
-              href="#save-links-info"
-              onClick={(e) => {
-                e.preventDefault();
-                document
-                  .getElementById("save-links-info")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              learn how to save links from any website
-            </Link>
-          </Text>
-        )}
-      </Flex>
+      <BookmarkFilterBar tags={tags} />
 
       <AddBookmarkDialog
         open={dialogOpen}
@@ -245,12 +237,11 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
                   on links <Link href="/links">in your feed</Link>.
                 </Text>
 
-                <Separator size="4" />
-
-                <Box id="save-links-info">
-                  <Text as="p" weight="medium" mb="3">
+                <Box display={{ initial: "block", md: "none" }}>
+                  <Separator size="4" mb="4" />
+                  <Heading as="h2" size="3" mb="3">
                     Save links from any website
-                  </Text>
+                  </Heading>
                   <BookmarkletSetup />
                 </Box>
               </Flex>
@@ -268,12 +259,14 @@ export default function BookmarksPage({ loaderData }: Route.ComponentProps) {
       </Box>
 
       {bookmarksByDate.length > 0 && (
-        <Card mt="6" mb={{ initial: "9", md: "0" }} id="save-links-info">
-          <Text as="p" size="2" weight="medium" mb="2">
-            Save links from any website
-          </Text>
-          <BookmarkletSetup />
-        </Card>
+        <Box display={{ initial: "block", md: "none" }}>
+          <Card mt="6" mb="9" id="save-links-info">
+            <Heading as="h2" size="3" mb="3">
+              Save links from any website
+            </Heading>
+            <BookmarkletSetup />
+          </Card>
+        </Box>
       )}
     </Layout>
   );
