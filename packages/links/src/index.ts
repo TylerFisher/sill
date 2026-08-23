@@ -25,7 +25,11 @@ export {
   findLinksByDomain,
   networkTopTen,
 } from "./links.js";
-export { getTimeline, getMergedOccurrences } from "./timeline.js";
+export {
+  getTimeline,
+  getMergedOccurrences,
+  invalidateTimelineCache,
+} from "./timeline.js";
 export {
   appViewEnabled,
   distinctActorCount,

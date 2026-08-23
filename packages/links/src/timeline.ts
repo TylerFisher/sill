@@ -92,6 +92,24 @@ interface CachedRanking {
 
 const rankingCache = new Map<string, CachedRanking>();
 
+/**
+ * Drop every cached ranking belonging to one viewer.
+ *
+ * The cache key covers the feed's filters only (see `cacheKey`), so a change to
+ * the viewer's *preferences* — a new or removed mute phrase, which the AppView
+ * applies server-side — is invisible to it. Without this, a freshly muted
+ * phrase keeps showing up in the feed for the rest of `CACHE_TTL_MS`.
+ *
+ * Keys are `userId|...` and user ids never contain `|`, so a prefix match is
+ * exact. Deleting during iteration is safe on a Map.
+ */
+export const invalidateTimelineCache = (userId: string): void => {
+  const prefix = `${userId}|`;
+  for (const key of rankingCache.keys()) {
+    if (key.startsWith(prefix)) rankingCache.delete(key);
+  }
+};
+
 /** Trailing-slash-insensitive key so URL variants merge as one. */
 const urlMergeKey = (url: string): string => url.replace(/\/+$/, "");
 

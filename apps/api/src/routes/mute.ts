@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { uuidv7 } from "uuidv7-js";
 import { getUserIdFromSession } from "@sill/auth";
-import { syncUserMutesToAppView } from "@sill/links";
+import { invalidateTimelineCache, syncUserMutesToAppView } from "@sill/links";
 import { db, mutePhrase } from "@sill/schema";
 
 // Schema for adding a new mute phrase
@@ -91,7 +91,15 @@ const mute = new Hono()
       // the action returns immediately; the client hides the muted card
       // optimistically (see useOptimisticMutes) while this lands in the
       // background, and the feed converges on the next load.
-      void syncUserMutesToAppView(userId);
+      //
+      // Drop the viewer's cached rankings on both sides of that push: now, so
+      // the pre-mute ranking can't be served at all, and again once the AppView
+      // has the new phrase, since a feed load landing in between would re-cache
+      // an unfiltered page for another full TTL.
+      invalidateTimelineCache(userId);
+      void syncUserMutesToAppView(userId).finally(() =>
+        invalidateTimelineCache(userId)
+      );
 
       return c.json({ success: true, mutePhrase: result[0] });
     } catch (error) {
@@ -133,8 +141,13 @@ const mute = new Hono()
 
       // Push the updated combined mute list to the AppView (a removed phrase
       // must be dropped there too — it's a full last-write-wins list).
-      // Fire-and-forget; the feed converges on the next load.
-      void syncUserMutesToAppView(userId);
+      // Fire-and-forget; the feed converges on the next load. Same two-step
+      // cache invalidation as the add path — an unmuted phrase has to come
+      // back to the feed just as promptly as a muted one leaves it.
+      invalidateTimelineCache(userId);
+      void syncUserMutesToAppView(userId).finally(() =>
+        invalidateTimelineCache(userId)
+      );
 
       return c.json({ success: true, deleted: result[0] });
     } catch (error) {
