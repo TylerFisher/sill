@@ -1,21 +1,22 @@
 // app/components/marketing/MainHero.tsx
 import {
 	Box,
-	Button,
-	Callout,
 	Flex,
 	Heading,
 	Link as RLink,
+	Separator,
 	Text,
 } from "@radix-ui/themes";
-import { CircleAlert } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useTheme } from "~/routes/resources/theme-switch";
+import BlueskyAuthForm from "../forms/BlueskyAuthForm";
+import MastodonAuthForm from "../forms/MastodonAuthForm";
 import Logo from "../nav/Logo";
 import styles from "./MainHero.module.css";
 
 const MainHero = () => {
 	const theme = useTheme();
+	const [searchParams] = useSearchParams();
 
 	return (
 		<Flex
@@ -70,32 +71,31 @@ const MainHero = () => {
 						Sill monitors your Bluesky and Mastodon feeds to find the most
 						popular links in your network.
 					</Text>
-					<Flex gap="4" width="100%" mt="2">
-						<Link to="/accounts/signup" style={{ width: "100%" }}>
-							<Button
-								size={{
-									initial: "2",
-									sm: "4",
-								}}
-								variant="solid"
-								style={{ width: "100%" }}
-							>
-								Sign up
-							</Button>
-						</Link>
-						<Link to="/accounts/login" style={{ width: "100%" }}>
-							<Button
-								size={{
-									initial: "2",
-									sm: "4",
-								}}
-								variant="outline"
-								style={{ width: "100%" }}
-							>
-								Log in
-							</Button>
-						</Link>
-					</Flex>
+					<Box width="100%" mt="2">
+						<BlueskyAuthForm
+							mode="login"
+							searchParams={searchParams}
+							buttonLabel="See your top links"
+						/>
+						<Flex align="center" gap="3" mb="4">
+							<Separator style={{ flex: 1 }} />
+							<Text size="2" color="gray">
+								or
+							</Text>
+							<Separator style={{ flex: 1 }} />
+						</Flex>
+						<MastodonAuthForm
+							mode="login"
+							searchParams={searchParams}
+							buttonLabel="See your top links"
+						/>
+						<Text size="2" color="gray">
+							Signed up with email?{" "}
+							<RLink asChild>
+								<Link to="/accounts/login">Log in here</Link>
+							</RLink>
+						</Text>
+					</Box>
 				</Flex>
 
 				{/* Right image container */}

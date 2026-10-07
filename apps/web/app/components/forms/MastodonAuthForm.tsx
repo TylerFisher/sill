@@ -7,6 +7,7 @@ type AuthMode = "login" | "signup" | "connect";
 interface MastodonAuthFormProps {
 	mode: AuthMode;
 	searchParams: URLSearchParams;
+	buttonLabel?: string;
 }
 
 const modeLabels: Record<AuthMode, { button: string }> = {
@@ -15,7 +16,11 @@ const modeLabels: Record<AuthMode, { button: string }> = {
 	connect: { button: "Connect" },
 };
 
-const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
+const MastodonAuthForm = ({
+	mode,
+	searchParams,
+	buttonLabel,
+}: MastodonAuthFormProps) => {
 	const { button } = modeLabels[mode];
 	const isConnect = mode === "connect";
 
@@ -63,7 +68,7 @@ const MastodonAuthForm = ({ mode, searchParams }: MastodonAuthFormProps) => {
 							borderBottomLeftRadius: 0,
 						}}
 					>
-						{button}
+						{buttonLabel ?? button}
 					</Button>
 				</Flex>
 			</Box>

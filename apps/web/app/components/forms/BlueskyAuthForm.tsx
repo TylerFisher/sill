@@ -8,6 +8,7 @@ type AuthMode = "login" | "signup" | "connect";
 interface BlueskyAuthFormProps {
 	mode: AuthMode;
 	searchParams: URLSearchParams;
+	buttonLabel?: string;
 }
 
 const modeLabels: Record<AuthMode, { button: string }> = {
@@ -22,7 +23,11 @@ const modeLabels: Record<AuthMode, { button: string }> = {
 	},
 };
 
-const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
+const BlueskyAuthForm = ({
+	mode,
+	searchParams,
+	buttonLabel,
+}: BlueskyAuthFormProps) => {
 	const { button } = modeLabels[mode];
 	const isConnect = mode === "connect";
 
@@ -67,7 +72,7 @@ const BlueskyAuthForm = ({ mode, searchParams }: BlueskyAuthFormProps) => {
 							borderBottomLeftRadius: 0,
 						}}
 					>
-						{button}
+						{buttonLabel ?? button}
 					</Button>
 				</Flex>
 			</Box>
