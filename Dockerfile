@@ -1,5 +1,5 @@
 # Adjust NODE_VERSION as desired
-ARG NODE_VERSION=22.17.1
+ARG NODE_VERSION=22.23.4
 FROM node:${NODE_VERSION}-slim AS base
 
 # Remix app lives here
